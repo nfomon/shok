@@ -4,8 +4,8 @@ module Scanner where
 
 %wrapper "basic"
 
-$digit = 0-9			-- digits
-$alpha = [a-zA-Z]		-- alphabetic characters
+$digit = 0-9      -- digits
+$alpha = [a-zA-Z]    -- alphabetic characters
 $graphic    = $printable # $white
 
 @string     = \" ($graphic # \")* \"
@@ -20,97 +20,104 @@ $graphic    = $printable # $white
 
 tokens :-
 
-  $white+				;
+  $white+   ;
 
-  "new"					{ \s -> TNew }
+  "new"     { \s -> TNew }
 
-  "bool"				{ \s -> TBool }
-  "int"					{ \s -> TInt }
-  "str"				  { \s -> TStr}
+-- Types
+  "bool"    { \s -> TBool }
+  "int"     { \s -> TInt }
+  "str"     { \s -> TStr}
 
-  "void"				{ \s -> TVoid }
-  "return"      { \s -> TReturn }
+  "void"    { \s -> TVoid }
+  "return"  { \s -> TReturn }
 
-  "if"					{ \s -> TIf }
-  "elif"				{ \s -> TElif }
-  "else"				{ \s -> TElse }
-  "while"				{ \s -> TWhile }
+-- Control flow
+  "if"      { \s -> TIf }
+  "elif"    { \s -> TElif }
+  "else"    { \s -> TElse }
+  "while"   { \s -> TWhile }
 
-  "true"				{ \s -> TTrue }
-  "false"				{ \s -> TFalse }
-  $digit+				{ \s -> TIntLiteral (read s) }
-  @string 	    { \s -> TStrLiteral (init (tail s)) -- remove the leading " and trailing " }
-  -- TODO: fixed literal, path literal
+-- Literals
+  "true"    { \s -> TTrue }
+  "false"   { \s -> TFalse }
+  $digit+   { \s -> TIntLiteral (read s) }
+  @string   { \s -> TStrLiteral (init (tail s)) -- remove the leading " and trailing " }
+  -- TODO: fixed-point literal, path literal
 
-  "."           { \s -> TPeriod }
-  "!"					{ \s -> TNot }
-  "and"       { \s -> TAnd }
-  "xor"        { \s -> TXor }
-  "or"        { \s -> TOr }
+-- Identifiers
+  $alpha[$alpha $digit \_ \']*    { \s -> TIdent s }
 
-  [\+\-\*\/]                            { \s -> TOp (head s) }
-  "<"                                   { \s -> TLessThan (head s) }
-  "=="					{ \s -> TEquals }
-  "="					{ \s -> TAssign }
-  ";" 					{ \s -> TSemiColon }
-  "("					{ \s -> TLeftParen }
-  ")"					{ \s -> TRightParen }
-  $alpha[$alpha $digit \_ \']*		{ \s -> TIdent s }
-  "{"	 	 	   		{ \s -> TLeftBrace }
-  "}"					{ \s -> TRightBrace }
-  ","					{ \s -> TComma }
-  "["					{ \s -> TLeftBracket }
-  "]"					{ \s -> TRightBracket }
-  "print"     { \s -> TPrint }
+-- Symbols and operators
+  "."       { \s -> TPeriod }
+  "!"       { \s -> TNot }
+  "and"     { \s -> TAnd }
+  "xor"     { \s -> TXor }
+  "or"      { \s -> TOr }
+  [\+\-\*\/]    { \s -> TOp (head s) }
+  "<"       { \s -> TLessThan (head s) }
+  "=="      { \s -> TEquals }
+  "="       { \s -> TAssign }
+  ";"       { \s -> TSemiColon }
+  "("       { \s -> TLeftParen }
+  ")"       { \s -> TRightParen }
+  "{"       { \s -> TLeftBrace }
+  "}"       { \s -> TRightBrace }
+  ","       { \s -> TComma }
+  "["       { \s -> TLeftBracket }
+  "]"       { \s -> TRightBracket }
+
+-- Built-ins (temporary)
+  "print"   { \s -> TPrint }
 {
 -- Each action has type :: String -> Token
 
 -- The token type:
 data Token =
-	TType 		|
-	TNew		|
+    TNew
 
-	TBool		|
-	TInt		|
-	TStr |
+  | TBool
+  | TInt
+  | TStr
 
-	TVoid		|
-  TReturn |
+  | TVoid
+  | TReturn
 
-	TIf		|
-	TElif		|
-	TElse		|
-	TWhile		|
+  | TIf
+  | TElif
+  | TElse
+  | TWhile
 
-	TTrue		|
-	TFalse		|
-	TIntLiteral Int |
-	TStrLiteral String |
+  | TTrue
+  | TFalse
+  | TIntLiteral Int
+  | TStrLiteral String
 
-	TPeriod         |
-  TNot            |
-  TAnd |
-  TXor |
-  TOr |
+  | TIdent String
 
-	TOp Char        |
-	TLessThan Char     |
+  | TPeriod
+  | TNot
+  | TAnd
+  | TXor
+  | TOr
 
-	TEquals         |
-	TAssign         |
-	TSemiColon      |
+  | TOp Char
+  | TLessThan Char
 
-	TLeftParen 	|
-	TRightParen 	|
-	TIdent String	|
+  | TEquals
+  | TAssign
+  | TSemiColon
 
-  TLeftBrace	|
-	TRightBrace	|
-	TComma		|
-	TLeftBracket	|
-	TRightBracket	|
-  TPrint
-	deriving (Eq,Show)
+  | TLeftParen
+  | TRightParen
+
+  | TLeftBrace
+  | TRightBrace
+  | TComma
+  | TLeftBracket
+  | TRightBracket
+  | TPrint
+  deriving (Eq,Show)
 
 --main = do
 --  s <- getContents

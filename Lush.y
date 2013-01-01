@@ -8,21 +8,27 @@ import Scanner
 %tokentype { Token }
 %error { parseError }
 %token
-  "type"        { TType }
-  "new"          { TNew }
-  "str"        { TStr }
-  "void"        { TVoid }
-  "return"      { TReturn }
-  "int"                { TInt }
-  "bool"        { TBool }
-  "if"                { TIf }
-  "elif"        { TElif }
-  "else"        { TElse }
-  "true"        { TTrue }
-  "false"        { TFalse }
-  "while"        { TWhile }
-  integer_literal      { TIntLiteral $$ }
-  ident         { TIdent $$ }
+  "new"     { TNew }
+
+  "bool"    { TBool }
+  "int"     { TInt }
+  "str"     { TStr }
+
+  "void"    { TVoid }
+  "return"  { TReturn }
+
+  "if"      { TIf }
+  "elif"    { TElif }
+  "else"    { TElse }
+  "while"   { TWhile }
+
+  "true"    { TTrue }
+  "false"   { TFalse }
+  integer_literal { TIntLiteral $$ }
+  str_literal     { TStrLiteral $$ }
+
+  ident     { TIdent $$ }
+
   "{"               { TLeftBrace }
   "}"          { TRightBrace }
   ","          { TComma }
