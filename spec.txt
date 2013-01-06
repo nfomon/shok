@@ -1,0 +1,207 @@
+# MISSING:
+# ternary operator (not sure I want one / how I want it.  coffee-script style?)
+
+LushScript -> Commandline*
+
+Commandline ->
+    Program ArgumentList
+  | CodeBlock
+
+Program ->
+    Builtin
+  | [alphanumeric + some symbols too]
+
+Builtin -> '!' ArgumentList
+
+ArgumentList -> [alphanumeric + some symbols too]*
+
+CodeBlock -> '{' Statement+ '}'   # an empty CodeBlock { }  is an error
+
+Statement ->
+    CommandBlock EOL        # Multi-line commandmode (an embedded shell)
+  | GoInteractive EOL
+  | ':' Commandline EOL     # Might actually just want '\n' here not EOL
+  | VarInitialization EOL
+  | VarAssignment EOL
+  | IfStatement EOL
+  | WhileStatement EOL
+  | EachStatement EOL
+  | ControlFlowStatement EOL
+  | Label? CodeBlock EOL
+  | Exp       # yes, bare expressions are allowed.  reluctantly.
+              # I kind of only want this to ever happen as the last statement
+              # of a block that's returning to commandmode...
+
+CommandBlock -> '{::' Commandline+ '::}'
+
+EOL -> ';' | '\n'
+
+# Drop user to an interactive shell here (they get whatever's in scope, etc.)
+GoInteractive ->  '::interactive::'
+
+VarInitialization ->
+    'new' Identifier
+  | 'new' Identifier '=' Exp
+
+VarAssignment ->
+    Identifier '=' Exp
+  | Identifier '+=' Exp
+  | Identifier '-=' Exp
+  | Identifier '*=' Exp
+  | Identifier '/=' Exp
+  | Identifier '%=' Exp
+  | Identifier '^=' Exp
+
+IfStatement ->
+    'if' Exp CodeBlock ElifStatement* ElseStatement?
+ElifStatement -> 'elif' Exp CodeBlock
+ElseStatement -> 'else' CodeBlock
+
+WhileStatement ->
+    'while' Exp CodeBlock
+  | LabelDef 'while' Exp CodeBlock
+
+EachStatement ->
+    'each' TypeList? Identifier? 'in' Exp CodeBlock
+  | LabelDef 'each' TypeList? Identifier? 'in' Exp CodeBlock
+  | Exp CodeBlock   # quick loop:  /bin { echo $ }  # prints each file in /bin
+  | LabelDef Exp CodeBlock
+
+TypeList ->
+    Type
+  | Type ',' TypeList
+
+Type -> Identifier
+
+ControlFlowStatement ->
+    'return'
+  | 'return' Exp
+  | 'break' Label?
+  | 'continue' Label?
+
+# Not sure how to express this.  e.g. *foo* while(x) { /*block named foo */ }
+LabelDef -> '*' NOWHITESPACE Label NOWHITESPACE '*'
+
+Label -> [alpha][alphanumeric + '_']
+
+# $ is the read-only automatic each-loop variable  e.g.  each in x { print($) }
+Identifier -> [alpha][alphanumeric + '_'] | '$'
+
+# Following from DragonBook appendix A to get precedence right
+Exp -> Bool
+
+Bool ->
+    Bool '||' Join
+  |  Join
+
+Join ->
+    Join '&&' Equality
+  | Equality
+
+Equality ->
+    Equality '==' Relation
+  | Equality '!=' Relation
+  | Equality 'is' Type
+  | Relation
+
+Relation ->
+    SubExp '<' SubExp
+  | SubExp '<=' SubExp
+  | SubExp '>=' SubExp
+  | SubExp '>' SubExp
+  | SubExp
+
+SubExp ->
+    SubExp '+' Term
+  | SubExp '-' Term
+  | Term
+
+Term ->
+    Term '*' Unary
+  | Term '/' Unary
+  | Term '%' Unary    # not sure
+  | Term '^' Unary    # where these should go
+  | Unary
+
+Unary ->
+    '!' Unary   # should these really
+  | '-' Unary   # be recursive?
+  | Factor
+
+Factor ->
+    '(' Bool ')'
+  | FunctionDef
+  | FunctionCall
+  | ObjectAccessor
+  | Literal
+
+FunctionDef ->
+    '@' CodeBlock   # Don't-execute-me-right-now block  (i.e. void f(void))
+  | '@' '(' FunctionArgDefList ')' CodeBlock              # function def
+  | '@' '(' FunctionArgDefList ')' '->' Type CodeBlock    # return type
+
+# type new_ident, type new_ident, ...
+FunctionArgDefList ->
+    Type Identifier ',' FunctionArgDefList
+  | Identifier ',' FunctionArgDefList
+  | Type Identifier
+  | Identifier
+
+FunctionCall -> Identifier '(' FunctionArgs ')'
+
+FunctionArgs ->
+    Exp
+  | Exp ',' FunctionArgs
+
+ObjectAccessor ->
+    Identifier '.' ObjectAccessor     # Property access
+  | Identifier '->' TypeAccessor      # Cast
+  | Identifier
+
+TypeAccessor ->
+    Type '.' ObjectAccessor
+  | Type '->' TypeAccessor
+  | Type
+
+Literal ->
+    BoolLiteral
+  | IntLiteral
+  | FixedLiteral
+  | StrLiteral
+  | PathLiteral
+  | ListLiteral
+
+BoolLiteral -> 'true' | 'false'
+IntLiteral -> [0-9]+
+FixedLiteral -> [0-9]+\.? | [0-9]*\.[0-9]+
+StrLiteral ->
+    DoubleQuotedStrLiteral
+  | SingleQuotedStrLiteral
+  | BlockQuotedStrLiteral
+
+# I don't know what to do with these
+DoubleQuotedStrLiteral -> '"' DoubleQuotedStr '"'
+SingleQuotedStrLiteral -> '\'' SingleQuotedStr '\''
+BlockQuotedStrLiteral -> 'QUOTE{' BlockQuotedStr '}QUOTE'
+
+# [fssym] means symbols allowed by the filesystem (might be anything)
+PathLiteral ->
+  \./[fssym]*     # anything starting with ./
+  \.\./[fssym]*   # anything starting with ../
+  /[fssym]*       # anything starting with /
+  [fssym]*/       # anything ending with /
+  ~[fssym]*       # anything starting with ~
+
+# This might be all wrong
+ListLiteral -> '[' ListBody ']'
+
+ListBody ->
+    Identifier ',' ListBody
+  | Literal ',' ListBody
+  | Identifier
+  | Literal
+
+
+# What about 'protocol literals'?  e.g.  ftp://mbiggs:hunter2@www.com/lolz?x=y
+# We could have the type "ftp" receive the rest, parsed, in some nice way?
+# kind of dumb...  probably best to leave that as strings.
