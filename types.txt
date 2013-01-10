@@ -1,0 +1,46 @@
+PROPOSAL:  MULTIPLE INHERITANCE
+-------------------------------
+
+new var = @{
+  @()->self { return self }     # default constructor does nothing
+  new i = immutable-positive-int
+  new env = [str]
+  new self->str {
+    return "var"   # todo: describe its members, or say a unique id, or smthg!
+  }
+}
+
+new evil = @(str msg)->var {
+  new operator(=) = @{ throw self.exception
+}
+
+new immutable = @{
+  new operator(=) = @{ throw self.exception("Cannot assign to an immutable") }
+  new operator(+) = @{ throw
+}
+
+new num = @{
+  new operator(+) = @(num a, num b)->num;
+}
+
+
+
+
+
+
+
+
+#####
+
+Types can be combined:
+  '|' means "or": I will be one of either of these types.  I get whichever members are shared between the two types (there will at least be the root members inherited from var), and you should use the 'is' keyword to figure which of the possibilities I am if you want to discover which deeper type I am.
+  '-' means "and": I have the members from both types.
+
+A valid type:    immutable-positive-int|[negative-int]|null
+  "either an immutable positive int, or a list of negative int, or null"
+
+If there are collisions, that's ok.  The member will throw an exception if it's ever accessed, letting you know which parent types are colliding.  You can choose which one you want to use by casting back to that parent.
+  freddie.age()         # 29 in cat-years           # are those parens optional?
+  freddie->animal.age   # 5 in actual Earth-years
+
+

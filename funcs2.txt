@@ -1,0 +1,26 @@
+:{
+  # statement
+  # never has args
+  # returns last expression as ->str.escape()
+}
+
+{                         *foo* {
+  # statement             }
+  # never has args
+  # void return
+}
+
+object
+@{
+  # any of a number of constructors (same alias, different signature)
+  # any number of members
+  # optional destructor
+  # derives from some types, i.e. is copies of them, with unclear semantics
+  # a constructor returns "self"
+}
+
+function
+@() {
+  # a
+}
+
