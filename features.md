@@ -3,7 +3,7 @@ lush
 
 lush is a command language interpreter.  It helps the user compose and run commands, manage system processes, manipulate the filesystem, and more.
 
-A shell has to make a trade-off between simplicity for command invocation, and the expressive power of a rich embedded toolset.  Most shells include a scripting language with an awkward and error-prone syntax, designed as such so that it does not interfere with the user''s ability to write commands.  General-purpose scripting languages, alternatively, tend to be very poor environments for running programs interactively.
+A shell has to make a trade-off between simplicity for command invocation, and the expressive power of a rich embedded toolset.  Most shells include a scripting language with an awkward and error-prone syntax, designed as such so that it does not interfere with the user's ability to write commands.  General-purpose scripting languages, conversely, tend to be very poor environments for running programs interactively.
 
 lush takes a different approach in order to minimize the trade-off.  The key is to provide a simple syntax with which to switch between the command invocation shell and the embedded scripting language.  When the two modes are complementary, an elegant user experience emerges.
 
