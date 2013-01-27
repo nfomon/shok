@@ -38,7 +38,7 @@ Variables
         del color                             # Delete variable
         isvar color                           # Check if variable exists
 
-`'new'` makes a copy an object and assigns it to a new variable name.  This new
+`new` makes a copy an object and assigns it to a new variable name.  This new
 variable is a new object.  Its parent is set to the original (right-hand side)
 object; the new variable is a "child" of the original.  This is the variable's
 "type" and that may not change for the lifetime of the variable.  Its first
@@ -53,26 +53,26 @@ its values -- so long as our types match).
                           # x may have members found only in 'giraffe' but not 'animal'.
         x = plum          # error: plum is not an animal
 
-`'del'` deletes a variable.  This can only be done at the original scope of the
+`del` deletes a variable.  This can only be done at the original scope of the
 variable.  This is primarily meant for interactive use, to clean up unnecessary
 objects/names and save memory.
 
-`'renew'` is similar to deleting a variable and then re-`new`ing it as perhaps a different type.  There are two places you can do this:
+`renew` is similar to deleting a variable and then re-`new`ing it as perhaps a different type.  There are two places you can do this:
 
 1. At the original scope of the variable, e.g. to re-use a variable name or fix a mistake.
 1. When making a child object, to restrict the variable's type to a subset of the parent's.
 
-`'isvar'` tells you if the name of a variable is defined.
+`isvar` tells you if the name of a variable is defined.
 
 We have seen that `new` sets a variable's type: its initial value must be the
 parent of all future values.  When constructing new objects (described later),
 it's nice to be able to set the type of a variable to one object, but then also
 set its first value to something more specific, as a default.  We can do this
-with `'new'`:
+with `new`:
 
         new x = animal = giraffe      # x's type is 'animal', but it has a giraffe!
 
-Multiple variables can be defined with the same `'new`' using a comma:
+Multiple variables can be defined with the same `new' using a comma:
 
         new x=animal=giraffe, y=fruit, z=fruit=plum
 
@@ -243,7 +243,7 @@ unambiguous, but try not to get confused:
         print(/bin/bash)      A path
         print(bin/bash/)      Another path
 
-`'str'` does not define the '/' operator, but still.
+`str` does not define the '/' operator, but still.
 
 Using variables to extend path literals...
 
@@ -257,7 +257,7 @@ Processes
         %123.signal($SIGKILL)   # kill it!
 
 We just used the  `$` scope operator, which will be described later.  It let us
-conveniently refer to `'SIGKILL'` which is a symbol defined in the
+conveniently refer to `SIGKILL` which is a symbol defined in the
 `@process.signal()` function itself.  What we wrote was equivalent to:
 
         %123.signal(%123.signal.SIGKILL)
@@ -274,13 +274,13 @@ Control flow
             print("small")
         }
 
-Compact form of `if`.  The `','` is only required for `if` and `elif`.
+Compact form of `if`.  The "`,`" is only required for `if` and `elif`.
 
         if x > 500, print("big")
         elif x > 50, print("medium")
         else print("small")
 
-You could do that on one-line using explicit `';'`'s to end lines:
+You could do that on one-line using explicit "`;`"'s to end lines:
 
         if x > 500, print("big"); elif x > 50, print("medium"); else print("small")
 
@@ -293,9 +293,9 @@ You could do that on one-line using explicit `';'`'s to end lines:
             case "cookie" | "pie" {
                 print("dessert")
             }
-            # "case_is" lets you select based on type rather than operator==
+            # "case is" lets you select based on type rather than operator==
             # This is useful for specific types of fall-through
-            case_is food {
+            case is food {
                 print("Well, at least it's some kind of food")
             }
             case else {
@@ -456,6 +456,7 @@ Functions
 an object, though these objects are sometimes made behind-the-scenes.
 
 Consider an enhanced 'animal':
+
         new animal = {
             new name = str = "(none)"
             new age = int
@@ -739,7 +740,7 @@ We use `is` to discover what functionality we're allowed to access
         new dateIn2013 = date?($year==2013)
         new dateInQ4of2013 = date?($year==2013 and $month>=10)
 
-These `'?'` checks will be performed as run-time checks every time the object
+These `?` checks will be performed as run-time checks every time the object
 is modified.  So they may have a noticeable affect on performance.
 Nevertheless they can be very useful, especially for quick scripts and
 prototyping.
@@ -866,7 +867,7 @@ Generators
 Locale
 ------
 
-OS-dependent functionality
+OS-specific functionality
 --------------------------
 
 Full grammar
