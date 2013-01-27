@@ -2,95 +2,140 @@ lush: language walkthrough
 ==========================
 
 lush is a an object-oriented language with a strongly-typed prototype-based
-inheritance model.  Everything is an object.  An object's name is just the name
-of a variable to which it's assigned.  An object knows its prototype (a
-permanent set of members: variables and functions, and their types), as well as
-the current values of its members which can change over time.  You make new
-objects by copying or combining existing object prototypes, adding new
-functionality and putting deeper restrictions on its members.
+inheritance model.
+
+Everything is an object.  The name of an object is just the name of a variable
+that holds the object.  An object contains "members": functions and data.
+
+Objects are made by copying or combining existing objects, by extending an
+object with new members, or by restricting the domain of some of its members.
+
+The "prototype" (or just "type") of an object is its name, the names and types
+of its members, and the names and types of its parents.  The type describes the
+set of all possible values for an object.
+
 
 Comments
 --------
         # this is a single-line comment
 
-        /* this is a
-            /* multi-line comment */
-           that allows /*nesting*/
-        */
+        (* this is a
+            (* multi-line comment *)
+           that allows (*nesting*)
+        *)
 
 Help operator: `?`
 ------------------
-        ? date    # describes an object
+        ? foo     # describes an object 'foo'
         ? :grep   # man/info/--help integration
         ? ->      # describes language symbols and operators
 
 Variables
 ---------
-        var color = "orange"                  # Declare variable
-        var color = "green"                   # Error! 'color' already defined.
-        revar color = 3                       # Re-declare (change type)
+        new color = "orange"                  # Declare variable
+        new color = "green"                   # Error! 'color' already defined.
+        renew color = 3                       # Re-declare (change type)
         del color                             # Delete variable
-        if isvar color { print("Color!") }    # Check if variable exists
+        isvar color                           # Check if variable exists
 
-Each variable knows its `type` (set of all possible values it could have) as
-well as its current value (a specific object in memory).  The `var` and `revar`
-statements used the return type of the right-hand side of the `=` to determine
-the type of the variable.  It's harder to see with literals like `"orange"`,
-but it's equivalent to `str.new("orange")` which has return type `str`.  Thus
-`color` has type `str` and current value `"orange"`.
+`'new'` makes a copy an object and assigns it to a new variable name.  This new
+variable is a new object.  Its parent is set to the original (right-hand side)
+object; the new variable is a "child" of the original.  This is the variable's
+"type" and that may not change for the lifetime of the variable.  Its first
+value (the values of all its members) start as a copy of the original object,
+and this value may change to any other object that matches the variable's type.
+The value can change by mutation (change the value of one of the object's
+members) or by assignment (copy another object and replace all our values with
+its values -- so long as our types match).
 
-If we want to be more specific about the type, we can either split the statements:
+        new x = animal    # 'x' is a child of 'animal', and is currently a copy of 'animal'
+        x = giraffe       # 'x' is now a copy of 'giraffe', but still has type 'animal'
+                          # x may have members found only in 'giraffe' but not 'animal'.
+        x = plum          # error: plum is not an animal
 
-        var color = str?($length==6)    # a type restriction; more on this later
-        color = "orange"
-        color = "blue"                  # Error; does not match $length==6
+`'del'` deletes a variable.  This can only be done at the original scope of the
+variable.  This is primarily meant for interactive use, to clean up unnecessary
+objects/names and save memory.
 
-Or we could use the comma form of `var` to set a default value:
+`'renew'` is similar to deleting a variable and then re-`new`ing it as perhaps a different type.  There are two places you can do this:
 
-        var color = str?($length==6), "orange"
+1. At the original scope of the variable, e.g. to re-use a variable name or fix a mistake.
+1. When making a child object, to restrict the variable's type to a subset of the parent's.
 
-You can't just use comma to bunch `var` statements together:
+`'isvar'` tells you if the name of a variable is defined.
 
-        var x = str, y = int, z = "blue"      # Error
+We have seen that `new` sets a variable's type: its initial value must be the
+parent of all future values.  When constructing new objects (described later),
+it's nice to be able to set the type of a variable to one object, but then also
+set its first value to something more specific, as a default.  We can do this
+with `'new'`:
 
-Instead you have to use multiple `var` statements with '`;`'.  Sorry.
+        new x = animal = giraffe      # x's type is 'animal', but it has a giraffe!
 
-        var x = str; var y = int; var z = "blue"
+Multiple variables can be defined with the same `'new`' using a comma:
+
+        new x=animal=giraffe, y=fruit, z=fruit=plum
+
+'x', 'y', and 'z' are all new variables.
+
+If `new` is used without assigning a value, the default `object` is assumed:
+
+        new q
+        typeof q    # object
 
 Expressions
 -----------
-        var wantPapaya = (isTasty and isJuicy) or (amIStarving() and !isRotten)
-        var x = (14 + 12) * 3 / (9 `mod` 4)
+Pretty standard.
 
-`` ` ``backticks`` ` `` let you make your own infix operators.
+        new wantPapaya = (isTasty and isJuicy) or (amIStarving() and not isRotten)
+        new x = (14 + 12) * 3 / (9 `mod` 4)
+
+`` ` ``backticks`` ` `` let you make your own infix operators.  You get to
+specify its evaluation precedence... somehow.
 
 int defines `` `mod` `` because `%` is already taken, as we shall see.
 
 Operators and precedence
 ------------------------
 
+Special keywords
+----------------
+These special keywords check meta-information about variables.  They cannot be
+used in expressions with boolean logic (and/or/not), because the interpreter
+may allow or disallow code depending on the result.
+
+        keyword     type    description
+        typeof      [str]   A list of the immediate parents of a variable
+        whatis      str     The best known name of the variable's current value
+        is          bool    Check if a variable has an object in its parent tree
+        isvar       bool    Check if a variable is defined in the current scope
+
 Standard types
 --------------
 lush includes these standard types:
 
-        anything    Parent of both 'object' and '@'.  Rarely used directly.
-        @           Function
         object      Parent of all objects; automatic default.
+        @           Function.  A child of 'object' just like everything else.
         null        Stubborn object that refuses to do anything.
         bool        = true | false
         str         Text string
         num         Abstract parent of numeric types: int, fixed, float
         int         Any integer (unbounded).  Use int32 or int64 if you need to.
         fixed       Fixed-precision decimal-point number.  Literals like 014.3600
-        float       IEEE 754-2008 binar64 floating-point number
+        float       IEEE 754-2008 binary64 floating-point number
         <"hi", 12>  Tuple: Collection with fixed length and types
         [4, 1, 17]  List: Ordered collection of any length and one specific type
-                    (though the type could be "anything")
         table       Data table with typed columns
         path        Filesystem path, with children: file, dir, link, pipe, bdev, cdev
         %           Process,  e.g. %123 refers to process #123
         cmd         A command invocation; its I/O streams, filehandles, exit code...
-                    Returned by command-line invocations:  var x = {: wget www.com}
+                    Returned by command-line invocations:  new x = {: wget www.com}
+
+These might be included but require deep thought:
+
+        date        A calendar date
+        time        # A time of day, independent of date
+        datetime    # A specific date and time
 
 Good programs will use lush's object-composition system to hand-craft subsets
 and combinations of these to describe the exact domain required for any
@@ -102,12 +147,12 @@ String concatenation
 
 `~~` is sugar for `~' '~`  i.e. "string concat with a space in-between"
 
-        var h = "hello"
-        var w = "world"
+        new h = "hello"
+        new w = "world"
         print(h ~ w)      # helloworld
         print(h ~~ w)     # hello world
 
-These are the only operators that do an implicit cast:  `->str`
+These are the only operators that do an implicit cast, and it's `->str`.
 
 Every object has a `->str` cast.
 
@@ -127,11 +172,21 @@ No implicit casts
         fixed x = 1.0 + 5         # error
         fixed x = 1.0 + 5->fixed  # ok
 
+int
+---
+
+fixed
+-----
+
+float
+-----
+
 Tuples
 ------
 
 Lists
 -----
+Slicing/splitting/splicing...
 
 Tables
 ------
@@ -141,28 +196,29 @@ and you can declare which ones should be indexed so that you can use them as
 keys with which to select rows.
 
 A multi-set is a table with one column that is set 'sorted'.
+
 A set is a table with a single column that is set 'sorted' and 'unique'.
+
 A map is a table with two columns, the first of which is sorted and unique.
+
 A multi-map is a table with two columns, the first of which is sorted.
 
 Paths
 -----
-The filesystem path is a native object in lush, and the root of an object tree:
-
-        path
-        file, dir, link, pipe, bdev, cdev
+The filesystem path is a native object in lush.  It has child types for
+different kinds of filesystem nodes: file, dir, link, pipe, bdev, cdev
 
 paths can be constructed from strings, in which case they'll interpret the
 '`/`' character to mean a platform-independent path separator.
 
-        var bindir = path.new('/usr/bin/')
+        new bindir = path.new('/usr/bin/')
 
 In the statement above, the path has not been evaluated, so it needn't exist on
 the target system for the variable "bindir" to get assigned.
 
 The previous statement is equivalent to:
 
-        var bindir = /usr/bin/
+        new bindir = /usr/bin/
 
 In this case, we used a "path literal" -- a string directly in the sourcecode
 that gets parsed to be a path.  A path literal must either:
@@ -177,6 +233,22 @@ that gets parsed to be a path.  A path literal must either:
 A `path` object gives you easy access to all its file attributes and helps you
 build command invocations or manipulate the filesystem.
 
+Note that `/` has two meanings.  One is an overloadable operator, typically
+"division".  The other is as part of a path literal.  The two uses are
+unambiguous, but try not to get confused:
+
+        new bin = "I has a bucket"
+        new bash = "a monster bash!"
+        print(bin/bash)       The '/' operator between str's
+        print(/bin/bash)      A path
+        print(bin/bash/)      Another path
+
+`'str'` does not define the '/' operator, but still.
+
+Using variables to extend path literals...
+
+Hidden files (vs. files starting with '.'), and wildcard path literals...
+
 Processes
 ---------
 `%123` is a literal that means "process #123", if it exists.
@@ -184,9 +256,9 @@ Processes
         print(%123.runtime)     # how long has this process been running?
         %123.signal($SIGKILL)   # kill it!
 
-We just used the  `$` scope operator.  It let us conveniently refer to
-`'SIGKILL'` which is a symbol defined in the `process.signal()` function
-itself.  What we wrote was equivalent to:
+We just used the  `$` scope operator, which will be described later.  It let us
+conveniently refer to `'SIGKILL'` which is a symbol defined in the
+`@process.signal()` function itself.  What we wrote was equivalent to:
 
         %123.signal(%123.signal.SIGKILL)
 
@@ -202,11 +274,15 @@ Control flow
             print("small")
         }
 
-One-line `if`.  The `','` is only required for `if` and `elif`.
+Compact form of `if`.  The `','` is only required for `if` and `elif`.
 
         if x > 500, print("big")
         elif x > 50, print("medium")
         else print("small")
+
+You could do that on one-line using explicit `';'`'s to end lines:
+
+        if x > 500, print("big"); elif x > 50, print("medium"); else print("small")
 
 `switch` statement.  The object must have type 'comparable' which gives it `==`
 
@@ -217,9 +293,9 @@ One-line `if`.  The `','` is only required for `if` and `elif`.
             case "cookie" | "pie" {
                 print("dessert")
             }
-            # "case is" lets you select based on type rather than operator==
+            # "case_is" lets you select based on type rather than operator==
             # This is useful for specific types of fall-through
-            case is food {
+            case_is food {
                 print("Well, at least it's some kind of food")
             }
             case else {
@@ -235,7 +311,7 @@ Alternatively you can provide your own comparison function
 
 Easy loops
 
-        var x = int
+        new x = int
         loop {
             x += 1
             if x > 7, break
@@ -274,11 +350,19 @@ Easy loops
             print(whatis x)   # int?($ > 0)
         }
 
-        # If you don't specify a loop variable, the automagic var '_' is used
-        # instead:
+        # If you don't specify a loop variable, the automagic variable '_' is used instead:
         each in [5, 10, 15] {
             print(typeof _)     # int
             print("My number is: ~~ _)
+        }
+
+        # So useful with paths:
+        each file|dir f in ~/music/ {
+            if f is file {
+                : mp3blaster {f}
+            } else {
+                if f.count() == 0, f.rmdir(); else {:mp3blaster {f}}
+            }
         }
 
 Every object has a magic member `i` that you're not allowed to change.  It gets
@@ -294,7 +378,7 @@ set by the `each` loop, and tells you how far along you are:
 
         each food f in ["pie", "cookie", "cake"] {
             each size s in ["small", "large"] {
-                print(size.i ~'.'~ item.i ~~ ": a" ~~ s ~~ f)
+                print(s.i ~'.'~ f.i ~~ ": a" ~~ s ~~ f)
             }
         }
 
@@ -306,6 +390,7 @@ set by the `each` loop, and tells you how far along you are:
 
 
 Other control-flow statements include `continue`, `break`, and `return`.
+
 Blocks can be given labels, which the `continue` and `break` can refer to.
 
         *first* each x in [1 2 3] {
@@ -328,119 +413,245 @@ collisions for objects that aren't identical.
         import my_date_lib.date     # import a single object from a module
         import my_date_lib          # ok, just grabs the rest
 
-Using objects
--------------
-Make a copy of `date`:
+Creating new objects
+--------------------
+Every `new` statement creates a new object by copying some existing object, and
+maybe adding things to it.
 
-        var today = date
+        new x = object
+        new y             # same as above; 'object' is the automatic default
+        new z = {}        # same as above; 'object' is included by default
 
-Note that we didn't use `()`'s; no code or constructor was called.  This
-'today' is just a prototype, a child object of `'date'` that didn't add any new
-functionality.  Not really useful, yet.  You can ask 'today' meta-information
-about its members and their types, but you didn't call `new()`, so you can't
-really use it.
+        new animal = {
+            new name = str
+            new age = int
+            print("Rawr")
+        }
+        typeof animal       # object
 
-        print(typeof date)      # object
-        print(attribs date)     # const proto     # const because it was imported,
-        print(typeof today)     # date
-        print(attribs today)    # proto
-        today.addDays(1)        # error: 'adate' is just a proto.
+        new lion = animal   # makes a copy of 'animal', called 'lion'.
+                            # "Rawr" gets printed, oh my.
+        typeof lion         # animal
 
-What we did above was give the variable `'today'` its type -- it's allowed to
-be any date.  Every object has a `'new()'` that returns a newly-constructed
-object of its specific type.
+When we write `new lion = animal`, this is what happens:
 
-        today = date.new(2014, 1, 18)
-        print(typeof today)     # date
-        print(attribs today)    # var   (just a variable)
-        var tomorrow = today.addDays(1)
-        print(typeof tomorrow)  # date  (the return type of date.addDays(int))
+1. A variable called `lion` is made.
+1. Its parent is set to 'animal'.
+1. The body of the 'animal' block is copied into 'lion', and then run.  
 
-The `new` call is important because it assigns initial values to the object's
-members, rather than just set their types.
+   In this case, first the members inherited from 'object' will be initialized
+for 'lion'.  Then lion's 'name' and 'age' members are new'd, and then "Rawr"
+gets printed.
+
+`object` comes with some members; for example:
+
+        member          type
+        object.i        int                 # Loop increment
+        object.env      table(<str,str>)    # Environment variables
+        object->str     @()->str            # to-string (cast)
 
 Functions
 ---------
+`@` means "function".  Every function is the `op()` (parenthesis operator) of
+an object, though these objects are sometimes made behind-the-scenes.
+
+Consider an enhanced 'animal':
+        new animal = {
+            new name = str = "(none)"
+            new age = int
+            new op() = @(str s) {
+                name = s
+                stdout.print("Rawr! My name is" ~~ name)
+            }
+        }
+
+'animal' has an `op()`, meaning it can be called like a function.  Its `op()`
+takes a str called 's', and has no return value.
+
+Let's try using it:
+
+        new lion = animal
+        print(lion.name)      # (none)
+        lion()                # error: lion() is not defined
+        lion("Simba")         # Rawr! My name is Simba
+        print(lion.name)      # Simba
+
+A function can be made on-its-own, seemingly without an object.  Some examples:
+
         # No args, no return type
-        var func1 = @() {
+        new func1 = @() {
             print("hello")
         }
-        func1()     # prints "hello"
+        func1()         # prints "hello"
+        typeof func1    # @()
 
         # No args, returns an int
-        var func2 = @()->int {
+        new func2 = @()->int {
             return 14 * 3
         }
+        typeof func2    # @()->int
 
         # takes a str and an int, and returns a 'fixed' (a decimal-point number)
-        var func3 = @(str s, int n)->fixed {
+        new func3 = @(str s, int n)->fixed {
             print("s:" ~~ s ~~ "and n:" ~~ n)
             return n->fixed + 0.123
         }
-        var x = func3("hello", 5)   # s: hello and n: 5
-        print(x)                    # 5.123
+        typeof func3              # @(str,int)->fixed
+        new x = func3("hi", 5)    # s: hi and n: 5
+        print(x)                  # 5.123
 
-When you assign a function to a variable, you actually have a size-1 set of
-functions that take different sets of arguments, but must all return the same
-type.  You can append more functions into the set:
+`func3` above is nearly equivalent to:
 
-        func3 = func3 & @(str s, fixed n)->fixed {
-            print("Now you've given me a fixed-pt number!");
-            return func3(s, n->floor->int)      # can call its other form
+        new func4 = {
+            new op() = @(str s, int n)->fixed {
+                print("s:" ~~ s ~~ "and n:" ~~ n)
+                return n->fixed + 0.123
+            }
         }
 
-        func3 &= @(str s, num n, str msg) {
-            print(msg);
-            return func3(s, n)
+        typeof func4    # @(str,int)->fixed
+
+The only difference between a function defined "as a function" (func3) vs. "as
+an object" (func4) is the meaning of 'self'.  When you make an object, it gets
+a special member variable 'self' that refers to the object itself.  Functions
+(made "as a function") do not get this member, so that within a function
+defined inside an object, 'self' will still refer to the *object* being defined
+(in nearest scope).
+
+If a function returns 'self', then each call of this function will create a
+copy of the 'self' object (whatever it is) as if `new` had been used, and then
+the function is executed in the context of this new object, which is then
+automatically returned when the function is done (or by an explicit call to
+`return` within the function).
+
+Recall that every object is its own 'default value' that you get (a copy of)
+when you assign it to a new variable.  What about an object that doesn't have a
+sensible default -- where some data is required in order to make one?  In this
+case, you use a "factory" function:
+
+        # A function that, given a strength, returns to you a lion-like object.
+        new lion = @(int strength)->object {
+            return {
+                new roar = @() {
+                    print("ROAR" ~ "!".repeat(strength))
+                }
+            } with(strength)      # see "closures" section for why we need this
         }
 
-Functions can call themselves (recursion) and expect the tail-call
-optimization.
+        new simba = lion(2)
+        typeof simba        # lion(2)
+        simba.roar()        # ROAR!!
 
-If the type of an argument is not specified, it is assumed to be '`object`':
+        new scar = lion     # what is this?
+        typeof scar         # @lion(int)->object
+        scar.roar()         # error!  scar doesn't have "roar".
+        scar = simba        # error!  scar is a lion-maker function, it can't be a lion
+        new mufasa = scar(3)  # ok!
+        mufasa.roar()         # ROAR!!!
 
-        var f1 = @(int n, thing) {
-            print(typeof thing)     # object
-            print(whatis thing)     # who knows!? depends on the caller!
-            print("What is this thing:" ~~ thing)   # object still has ->str  :)
+When you assign a function to a variable, you are just making the first of a
+possible set of functions that can take different sets of arguments, and can
+even return different types (though this actually means that your variable has
+a return type of the "OR" union of all the return types you've mentioned).  You
+can append more functions into the set:
 
-            print(typeof args)      # [|n=int|, |
+        lion = lion & @(str name, int strength)->object {
+            return {
+                new roar = @() {
+                    print(name ~~ "says, ROAR" ~ "!".repeat(strength))
+                }
+            } with(name, strength)
         }
 
-Inside a function, the special variable 'args' is set to a tuple or list of the
-arguments that were passed in.  An ellipsis (`...`) can be used to allow a
-function to accept any number of arguments, and it may be attached to a type
-(default: object)
-
-        var f2 = @(int, ...) {          # Takes an int and any number of objects
-            print(typeof args)            # [int, object...]    # lists can use ... too
+        lion &= @(str name, int strength, str msg)->object {
+            print("I'm making a lion." ~~ msg);
+            return lion(name, strength)
         }
-        var f3 = @(int, str...) {}      # Takes an int and any number of strings
 
-You can use the `$` scope operator to set values for named parameters:
+        typeof lion     # @[(int strength),
+                        #   (str name, int strength),
+                        #   (str name, int strength, str msg)]->object
 
-        func3("ok", $msg="muffins", $n=42)
+        renew mufasa = lion("Mufasa", 6, "Aw yea")    # I'm making a lion. Aw yea
+        mufasa.roar()   # Mufasa says, ROAR!!!!!!
+
+Like with `new`, if the type of a function argument is not specified, it is
+assumed to be '`object`':
+
+        new f1 = @(int n, thing) {
+            typeof thing      # object
+        }
+
+Inside a function, the special variable 'args' is a tuple of the arguments that
+were passed in.  An ellipsis (`...`) can be used to make a function that
+accepts any number of arguments, and these trailing arguments may be given a
+specific type (default: `object`).
+
+        new f2 = @(int, ...) {      # Takes an int and any number of objects
+            typeof args             # <int, [object]>
+        }
+
+        new f3 = @(int, str...) {   # Takes an int and any number of str's
+            typeof args             # <int, [str]>
+        }
+
+You can use the `$` scope operator to set values for named parameters.
+Consider the '$' to mean "his/her/its" -- it refers to variables that live
+within the function being called.
+
+        # Make a lion with "Nala", her message is "Ohai", and her age is 4
+        lion("Nala", $message="Ohai", $age=4)
+
+Any positional (unnamed) arguments must precede the ones that are named.  
 
 Specify optional arguments with a prefix `?`:
 
-        func4 = @(str s, num n, ?str msg, ?str another)
+        new foo = @(str s, num n, ?str msg, ?str another) {
+            if isvar msg {
+                print("Thanks for this nice message:" ~~ msg)
+            }
+        }
 
-Defining new objects
---------------------
-        var date = {
-            # Define some members, and their types and default values
-            var year = 1970     # type 'int', current value 'int.new(1970)'
-            var month = 1
-            var day = 1
+Functions can call themselves recursively, and expect the "tail-call
+optimization" aka "tail recursion".
 
-            # A function with no return value
-            var print = @() {
+When you call a function, lush uses "pattern-matching" of the arguments you've
+provided to find the best version of the function to call.
+
+        new fib = @(0)->0 { return 0 }
+                & @(1)->1 { return 1 }
+                & @(int n)->int {
+                  return fib(n-1) + fib(n-2)
+                }
+        typeof fib        # @[(0)->0, (1)->1, int]->int
+
+TODO: can we append code to a function?  Can we replace a function?  Under what
+conditions can we remove a specific function signature from a function?
+
+Object conversions and casts
+----------------------------
+Casts are convenient conversions of an object from one type to another.  In
+`lush` these are just normal functions, but we give them an 'arrow' syntax to
+help them stand out.
+
+`object` has a ->str ("to string") function that takes no arguments, and is
+pre-defined to tell you the variable name of the object.  An object
+automatically gets a default cast function to any of its parents, but you can
+replace these with your own at anytime.  You can arbitrarily make your own
+->whatever functions, too, but a '->foo' function must always return 'foo'.
+
+        new date = {
+            int year; int month; int day
+
+            new print = @() {
                 stdout.print(self->str)    # just use our ->str cast
             }
 
-            # We already have a self->str (inherited from 'object'), so we don't
-            # declare with 'var'.  We'll just replace the parent version with '='.
-            self->str = @() {
+            typeof self->str    # @self->str()->str
+
+            # Since we inherit self->str from 'object', we don't need to
+            # declare with 'new'.  We just replace the parent version with '='.
+            self->str = @()->str {
                 # yyyy-MM-dd
                 return year->str.pad('0',4) ~'-'~       # beware of bats!  ~'-'~
                        month->str.pad('0',2) ~'-'~
@@ -448,19 +659,15 @@ Defining new objects
             }
             # Append another ->str cast function.  This one takes an argument.
             # format is passed in by-value (copy-on-write) so it's ok to modify.
-            self->str &= @(str format) {
+            self->str &= @(str format)->str {
                 format.replace('%YEAR%', year)
                 format.replace('%MONTH%', month)
                 format.replace('%DAY%', day)
                 return format
             }
 
-            # "new" is the special constructor function.  Some magic happens
-            # behind-the-scenes to make new memory-space for the new object, which also
-            # gets automatically returned at the end of the function.
-            # Here we're using '=' to replace any inherited forms.  So the default
-            # new() that takes no arguments, will not be permitted.
-            new = @(int year, int month, int day)->self {
+            # Automatically returns a new 'date' after this code is run
+            op() = @(int year, int month, int day)->self {
                 self.year = year; self.month = month; self.day = day
             }
         }
@@ -469,27 +676,27 @@ Object inheritance and composition
 ----------------------------------
 Assigning a block (`{...}`) implicitly means it inherits from `'object'`
 
-        var date = {          # equivalent:  var date = object & { ... }
-            var year = int
-            var month = int
-            var day = int
+        new date = {          # equivalent:  new date = object & { ... }
+            new year = int
+            new month = int
+            new day = int
         }
 
 `&` is the "append code" operator.  We extend `date` by making a child that
 appends some more code:
 
-        var datetime = date & {
-            var hour = int
-            var minute = int
-            var second = int
+        new datetime = date & {
+            new hour = int
+            new minute = int
+            new second = int
         }
 
 We can just merge objects together:
 
-        var cool = {
-            var wow = @() { print("Woooo!") }
+        new cool = {
+            new wow = @() { print("Woooo!") }
         }
-        var cooldate = date & cool
+        new cooldate = date & cool
 
 If any members collide (have the same name but different types or values), then
 the child can't access them directly.  It must cast itself to a specific parent
@@ -498,14 +705,14 @@ access the version of the variable appropriate for the method.
 
 We can use `|` to say an object could be one thing or another.
 
-    var nullableInt = int|null
+        new nullableInt = int|null
 
-    var something = cool|date|datetime
-    print(typeof something)     # cool|date|datetime
-    print(whatis something)     # cool|date|datetime
-    something = datetime.new(2012, 01, 20)
-    print(typeof something)     # cool|date|datetime
-    print(whatis something)     # datetime
+        new something = cool|date|datetime
+        print(typeof something)     # cool|date|datetime
+        print(whatis something)     # cool|date|datetime
+        something = datetime.new(2012, 01, 20)
+        print(typeof something)     # cool|date|datetime
+        print(whatis something)     # datetime
 
 `typeof` tells you the type, which is always the full range of possible values.
 
@@ -513,74 +720,99 @@ We can use `|` to say an object could be one thing or another.
 
 We use `is` to discover what functionality we're allowed to access
 
-    var foo = @(cool|date|datetime thing) {
-        if thing is cool {
-            thing.wow()
-        } else {
-            print(whatis thing)     # date|datetime
-            print(thing.month)      # date and datetime can both do this
-            print(thing.minute)     # error!  don't know it's a datetime
+        new foo = @(cool|date|datetime thing) {
+            if thing is cool {
+                thing.wow()
+            } else {
+                print(whatis thing)     # date|datetime
+                print(thing.month)      # date and datetime can both do this
+                print(thing.minute)     # error!  don't know it's a datetime
+            }
         }
-    }
 
-    # x is either a positive int, or a null
-    var x = positive & int | null
+        # x is either a positive int, or a null
+        new x = positive & int | null
 
 `?` lets you quickly declare an object with some restrictions on its members
 
-    var positive = int?($ > 0)
-    var dateIn2013 = date?($year==2013)
-    var dateInQ4of2013 = date?($year==2013 and $month>=10)
+        new nonnegative = int?($ >= 0)
+        new dateIn2013 = date?($year==2013)
+        new dateInQ4of2013 = date?($year==2013 and $month>=10)
+
+These `'?'` checks will be performed as run-time checks every time the object
+is modified.  So they may have a noticeable affect on performance.
+Nevertheless they can be very useful, especially for quick scripts and
+prototyping.
+
+Note that in some cases the 'default value' of an object will not match the
+criteria, and thus the new object cannot be defined.  Instead you'll have to
+add extra code to set up your object properly:
+
+        new positive = int?($ > 0)                    # error!  int defaults to 0
+        new positive = int?($ > 0) & { value = 1 }    # ok!
 
 Scope and self
 --------------
-`self` is an object member that always automatically refers to the object itself.
+`self` is an object member that always automatically refers to the object
+itself.
 
 If you're defining a method (member function of an object), then `self` is
 still in scope from the owning object.
 
-Alternatively, `$` is the "scope operator".  It has type `anything` meaning it
-can be either `object` or `@`.  On its own it's a reference to the current
-scope in which you're operating:
+Alternatively, `$` is the "scope operator".  On its own it's a reference to the
+current scope in which you're operating:
 
-    var x = "outside"
-    {
-        var w = 42
-        print(w)        # as a local variable
-        print($.w)      # as a member of $
-        print($w)       # you don't need to write the '.'
-        print($x)       # Error: does not exist
-    }
+        new x = "outside"
+        {
+            new w = 42
+            print(w)        # as a local variable
+            print($w)       # access anything that's in scope
+            print($.w)      # as a member of this immediate scope, via $
+            print($.x)      # nope, x was not defined by this specific scope
+            print($x)       # yes, in this style you get anything visible to this scope
+            print($../x)    # yes, finds x via the "scope hierarchy"
+        }
 
-In a type restriction (`?`), within the ()'s, the $ refers to the object in
+`$` is a way to talk about the object "under discussion".  You can understand
+it to be similar to "he/she/it" or "his/hers/its".
+
+In a type restriction (`?`), within the `()`'s, the `$` refers to the object in
 question:
 
-    var x = int?($ > 12)
-    var y = str?($length > 4 and $length < 12)
+        new x = int?($ > 12)        # x is an int where itself is greater than 12
+
+        # y is a str where its length is greater than 4 and less than 12
+        new y = str?($length > 4 and $length < 12)
+
+Within the `()`'s of a function call, `$` refers to the scope of the function
+being called.  This lets you refer to the function's parameters by name, or
+access public-facing members of the object/function you're calling into.
 
 `$` lets you use a "filesystem-like" syntax to refer to variables that were
 defined in a parent scope:
 
-    var x = "toast"
-    {
-        var x = "soup"
-        var y = "salad"
-        if y.length > 2 {
-            var x = "burrito"
-            print($x)           # burrito
-            print($.x)          # burrito
-            print($./x)         # burrito
-            print($../x)        # soup
-            print($../y)        # salad
-            print($../../x)     # toast
-            print($/x)          # toast  (via "absolute variable path")
+        new x = "toast"
+        {
+            new x = "soup"
+            new y = "salad"
+            if y.length > 2 {
+                new x = "burrito"
+                print($x)           # burrito
+                print($.x)          # burrito
+                print($./x)         # burrito
+                print($../x)        # soup
+                print($../y)        # salad
+                print($../../x)     # toast
+                print($/x)          # toast  (via "absolute variable path")
+                print($.y)          # error! no 'y' is *immediately* here
+                print($y)           # salad.  y is, however, visible.
+            }
         }
-    }
 
 The "variable path hierarchy" root is at the nearest object definition, or the
 base command-line scope that started this code block.  Its use is mainly for
-interactive discovery.  Within a function, the $/ and $../ forms can only be
-used with member variables that are explicitly closed over (see the next
+user-interactive discovery.  Within a function, the $/ and $../ forms can only
+be used with member variables that are explicitly closed over (see the next
 section).
 
 Closure
@@ -592,27 +824,27 @@ in when the function is called.
 
 Here is our version of wikipedia's Closure (Programming) first Python3 example:
 
-    var counter = @()->@() {
-        var x = 0
-        var increment = @(int) with(x) {     # explicitly closes over x
-            x += y
-            print(x)
+        new counter = @()->@() {
+            new x = 0
+            new increment = @(int) with(x) {     # explicitly closes over x
+                x += y
+                print(x)
+            }
+            return increment
         }
-        return increment
-    }
-    counter1_increment = counter()
-    counter2_increment = counter()
-    counter1_increment(1)   # prints 1
-    counter1_increment(7)   # prints 8
-    counter2_increment(1)   # prints 1    # counter2 has its own copy of x
-    counter1_increment(1)   # prints 9
+        counter1_increment = counter()
+        counter2_increment = counter()
+        counter1_increment(1)   # prints 1
+        counter1_increment(7)   # prints 8
+        counter2_increment(1)   # prints 1    # counter2 has its own copy of x
+        counter1_increment(1)   # prints 9
 
 Since interactively it's easy to forget (or not know) upfront what parent-scope
 variables we might need, the `with()` clause can go at the end of the function:
 
-    var increment = @(int) {
-        x += y; print(x)
-    } with(x)
+        new increment = @(int) {
+            x += y; print(x)
+        } with(x)
 
 In this form, the `with()` must be on the same line as the `}`.
 
@@ -621,14 +853,21 @@ If a function is a method (member of an object), it should not declare
 so that `self` and its members are implied.  (I'm not sure if this is true /
 actually works....)
 
+Object attributes and permissions
+---------------------------------
+abstract, const
+
 Exceptions
 ----------
 
-Object attributes and permissions
----------------------------------
-proto, etc.
+Generators
+----------
 
-const, etc.
+Locale
+------
+
+OS-dependent functionality
+--------------------------
 
 Full grammar
 ------------
