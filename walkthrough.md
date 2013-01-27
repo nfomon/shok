@@ -39,12 +39,12 @@ Variables
         isvar color                           # Check if variable exists
 
 `new` makes a new variable (object) by making a copy of an existing object.
-The new object's "parent" is the name object that was copied; the new object is
-a "child".  This parent-assignment is called the object's "type" and it cannot
-change for the lifetime of the object.  Its first value is a copy of its
-parent, but this value may change over time: either by mutation (changing any
-of the object's members' values) or by assignment (copying in another object
-entirely -- as long as it matches our type).
+The new object's "parent" is the name of the object that was copied; the new
+object is a "child".  This parent-assignment is called the object's "type" and
+it cannot change for the lifetime of the object.  Its first value is a copy of
+its parent, but this value may change over time: either by mutation (changing
+any of the object's members' values) or by assignment (copying in another
+object entirely -- as long as it matches our type).
 
         new x = animal    # x is a child of 'animal', and is currently a copy of 'animal'
         x = giraffe       # x is now a copy of 'giraffe', but still has type 'animal'
@@ -55,7 +55,7 @@ entirely -- as long as it matches our type).
 variable.  This is primarily meant for interactive use, to clean up unnecessary
 objects/names and save memory.
 
-`renew` is similar to deleting a variable and then re-`new`ing it as perhaps a
+`renew` is similar to deleting a variable and then re-'new'ing it as perhaps a
 different type.  There are two places you can do this:
 
 1. At the original scope of the variable, e.g. to re-use a variable name or fix a mistake.
@@ -71,13 +71,17 @@ with `new`:
 
         new x = animal = giraffe      # x's type is 'animal', but it has a giraffe!
 
+This is just a shorthand for
+
+        new x = animal
+        x = giraffe
+
 Multiple variables can be defined with the same `new' using a comma:
 
         new x=animal=giraffe, y=fruit, z=fruit=plum
 
-'x', 'y', and 'z' are all new variables.
-
-If `new` is used without assigning a value, the default `object` is assumed:
+If `new` is used without assigning a type/value, the default `object` is
+assumed:
 
         new q
         typeof q    # object
@@ -99,16 +103,27 @@ Operators and precedence
 
 Special keywords
 ----------------
-These special keywords check meta-information about variables.  They cannot be
-used in expressions with boolean logic (and/or/not), because the interpreter
-may allow or disallow code depending on the result.
+These special keywords check meta-information about variables.
 
         keyword     type    description
         -------     ----    -----------
         typeof      [str]   A list of the immediate parents of a variable
+        attribs     [str]   A list of type attributes (e.g. abstract, const)
         whatis      str     The best known name of the variable's current value
         is          bool    Check if a variable has an object in its parent tree
         isvar       bool    Check if a variable is defined in the current scope
+
+They cannot be used in expressions with boolean logic (and/or/not), so that the
+interpreter can follow through expressions like:
+
+        each file|dir f in ~/music/ {     # each file or directory in my music folder
+            if f is dir {
+                f.rmdir()   # Only 'dir' has this method.  The interpreter knows that
+                            # this block can only execute if f is really a dir.
+            }
+            f.rmdir()       # Static error! The interpreter won't even execute a script
+                            # with this broken code in it.
+        }
 
 Standard types
 --------------
@@ -185,11 +200,13 @@ IEEE 754-2008 binary64 floating-point numbers.  Specific details to come.
 
 Tuples
 ------
-Tuples are finite-length lists where each element has a specific type.  They are enclosed in `<...>`'s.
+Tuples are finite-length lists where each element has a specific type.  They
+are enclosed in `<...>`'s.
 
 Lists
 -----
-Lists are arbitrary-length lists where the elements all have the same parent, which is fixed in advance.  They are enclosed in `[...]`'s.
+Lists are arbitrary-length lists where the elements all have the same parent,
+which is fixed in advance.  They are enclosed in `[...]`'s.
 
 Slicing/splitting/splicing...
 
@@ -628,7 +645,7 @@ provided to find the best version of the function to call.
         new fib = @(0)->0 { return 0 }
                 & @(1)->1 { return 1 }
                 & @(int n)->int {
-                  return fib(n-1) + fib(n-2)
+                    return fib(n-1) + fib(n-2)
                 }
         typeof fib        # @[(0)->0, (1)->1, int]->int
 
