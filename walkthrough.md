@@ -38,18 +38,16 @@ Variables
         del color                             # Delete variable
         isvar color                           # Check if variable exists
 
-`new` makes a copy an object and assigns it to a new variable name.  This new
-variable is a new object.  Its parent is set to the original (right-hand side)
-object; the new variable is a "child" of the original.  This is the variable's
-"type" and that may not change for the lifetime of the variable.  Its first
-value (the values of all its members) start as a copy of the original object,
-and this value may change to any other object that matches the variable's type.
-The value can change by mutation (change the value of one of the object's
-members) or by assignment (copy another object and replace all our values with
-its values -- so long as our types match).
+`new` makes a new variable (object) by making a copy of an existing object.
+The new object's "parent" is the name object that was copied; the new object is
+a "child".  This parent-assignment is called the object's "type" and it cannot
+change for the lifetime of the object.  Its first value is a copy of its
+parent, but this value may change over time: either by mutation (changing any
+of the object's members' values) or by assignment (copying in another object
+entirely -- as long as it matches our type).
 
-        new x = animal    # 'x' is a child of 'animal', and is currently a copy of 'animal'
-        x = giraffe       # 'x' is now a copy of 'giraffe', but still has type 'animal'
+        new x = animal    # x is a child of 'animal', and is currently a copy of 'animal'
+        x = giraffe       # x is now a copy of 'giraffe', but still has type 'animal'
                           # x may have members found only in 'giraffe' but not 'animal'.
         x = plum          # error: plum is not an animal
 
@@ -57,7 +55,8 @@ its values -- so long as our types match).
 variable.  This is primarily meant for interactive use, to clean up unnecessary
 objects/names and save memory.
 
-`renew` is similar to deleting a variable and then re-`new`ing it as perhaps a different type.  There are two places you can do this:
+`renew` is similar to deleting a variable and then re-`new`ing it as perhaps a
+different type.  There are two places you can do this:
 
 1. At the original scope of the variable, e.g. to re-use a variable name or fix a mistake.
 1. When making a child object, to restrict the variable's type to a subset of the parent's.
@@ -105,6 +104,7 @@ used in expressions with boolean logic (and/or/not), because the interpreter
 may allow or disallow code depending on the result.
 
         keyword     type    description
+        -------     ----    -----------
         typeof      [str]   A list of the immediate parents of a variable
         whatis      str     The best known name of the variable's current value
         is          bool    Check if a variable has an object in its parent tree
@@ -134,8 +134,8 @@ lush includes these standard types:
 These might be included but require deep thought:
 
         date        A calendar date
-        time        # A time of day, independent of date
-        datetime    # A specific date and time
+        time        A time of day, independent of date
+        datetime    A specific date and time
 
 Good programs will use lush's object-composition system to hand-craft subsets
 and combinations of these to describe the exact domain required for any
@@ -174,18 +174,23 @@ No implicit casts
 
 int
 ---
+Integers of arbitrary size.
 
 fixed
 -----
 
 float
 -----
+IEEE 754-2008 binary64 floating-point numbers.  Specific details to come.
 
 Tuples
 ------
+Tuples are finite-length lists where each element has a specific type.  They are enclosed in `<...>`'s.
 
 Lists
 -----
+Lists are arbitrary-length lists where the elements all have the same parent, which is fixed in advance.  They are enclosed in `[...]`'s.
+
 Slicing/splitting/splicing...
 
 Tables
@@ -223,12 +228,13 @@ The previous statement is equivalent to:
 In this case, we used a "path literal" -- a string directly in the sourcecode
 that gets parsed to be a path.  A path literal must either:
 
-                             example           description
-        start with a /       /vmlinuz          absolute path
-        end in a /           Desktop/          directory relative to working dir
-        start with a ./      ./recipe.txt      relative to working dir
-        start with a ../     ../recipe.txt     relative to parent dir
-        start with a ~/      ~/music/omg.mp3   relative to home dir
+        path literal        example           description
+        ------------        -------           -----------
+        start with a /      /vmlinuz          absolute path
+        end in a /          Desktop/          directory relative to working dir
+        start with a ./     ./recipe.txt      relative to working dir
+        start with a ../    ../recipe.txt     relative to parent dir
+        start with a ~/     ~/music/omg.mp3   relative to home dir
 
 A `path` object gives you easy access to all its file attributes and helps you
 build command invocations or manipulate the filesystem.
@@ -813,8 +819,104 @@ defined in a parent scope:
 The "variable path hierarchy" root is at the nearest object definition, or the
 base command-line scope that started this code block.  Its use is mainly for
 user-interactive discovery.  Within a function, the $/ and $../ forms can only
-be used with member variables that are explicitly closed over (see the next
+be used with member variables that are explicitly closed over (see the Closure
 section).
+
+Abstract objects
+----------------
+The attribute 'abstract' declares an object that has a function, perhaps with a
+specific type, but no code body.
+
+        abstract animal = {
+            new name = str
+            abstract speak = @()->str
+        }
+
+If you just use 'new' instead, it's an error.  The interpreter will be nice and
+give you an abstract and a warning, but scripts will fail.
+
+Likewise, if you use 'abstract' to declare an object that has all its functions
+filled out, it's an error (but the interpreter will be nice).
+
+        new duck = animal         # WARNING: duck is abstract
+        duck.speak()              # static error!
+        renew duck = animal & {
+            speak = @()->str {
+                return "quack"
+            }
+        }
+        print(duck.speak())       # quack
+
+Suppose we're trying to describe animals.  All animals should be able to mate,
+but only with the same species.  The sad way:
+
+        abstract animal = {
+            new name = str
+            abstract mate = @(self)->bool   # 'self' means 'animal' here
+        }
+
+        new duck = animal & {
+            mate = @(self other)->bool {
+                return random(0,1) > 0.5
+            }
+        }
+        # WARNING: duck is abstract
+
+What happened?  When 'animal' used `self`, it meant 'animal'.  So anyone who
+wants to implement 'animal' must provide a body for @mate(animal)->bool .  Then
+when 'duck' used the word 'self', it meant 'duck'.  So it only implemented part
+of the 'mate' contract, so it was still abstract.
+
+The '$' operator becomes very useful here.  Used in an abstract, it takes on
+the 'self' of any concrete implementor.
+
+        abstract animal = {
+            abstract mate = @($)->bool      # '$' means 'itself' for an implementor
+        }
+
+        new duck = animal & {
+            mate = @($ spouse)->bool {      # '$' and 'self' mean the same thing here
+                return random(0,1) > 0.5
+            }
+        }
+        duck.mate(animal)     # Error: no function duck.mate(animal)
+        duck.mate(horse)      # Error: no function duck.mate(horse)
+        duck.mate(duck)       # You might have a duckling!
+        new larry = duck
+        new suzie = duck
+        suzie.mate(larry)     # You might have a duckling!
+
+This is useful for some basic primitives.  Consider:
+
+        abstract orderable = {
+            abstract op< = @($)->bool
+            new by = @(object o)->object {
+                return {
+                    abstract op< = @(o)->bool
+                }
+            }
+        }
+
+        new date = orderable & {
+            op< = @(self rhs)->bool {
+                if year < rhs.year or
+                        (year==rhs.year and month<rhs.month) or
+                        (year==rhs.year and month==rhs.month and day<rhs.day) {
+                    return true
+                }
+                return false
+            }
+        }
+
+        renew date = orderable.by(int) & {
+            op< = @(int rhs)->bool {
+                # Some weird way to compare  (date < int)?
+                return true
+            }
+        }
+
+A sorting algorithm might take a list of orderables, for example, so it knows
+statically that it can use operator< to compare objects of the same type.
 
 Closure
 -------
