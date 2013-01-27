@@ -14,7 +14,6 @@ The "prototype" (or just "type") of an object is its name, the names and types
 of its members, and the names and types of its parents.  The type describes the
 set of all possible values for an object.
 
-
 Comments
 --------
         # this is a single-line comment
@@ -256,6 +255,10 @@ that gets parsed to be a path.  A path literal must either:
 A `path` object gives you easy access to all its file attributes and helps you
 build command invocations or manipulate the filesystem.
 
+If the path literal ends with a `/` then it is a "dir literal" and gives you
+back a dir (directory object).  dir implements "collection" so you can loop
+over its elements (nodes in a directory).
+
 Note that `/` has two meanings.  One is an overloadable operator, typically
 "division".  The other is as part of a path literal.  The two uses are
 unambiguous, but try not to get confused:
@@ -332,7 +335,7 @@ Alternatively you can provide your own comparison function
             # ...
         }
 
-Easy loops
+Easy loops: `loop`, `repeat`, `while`
 
         new x = int
         loop {
@@ -354,32 +357,38 @@ Easy loops
             print(x)
         }
 
-        # Type filters: you only get objects that match the type:
+Type filters: you only get objects that match the type:
+
         each int x in [5, "hello", -12] {
             print("Got int:" ~~ x)          # will only get 5 and -12
         }
 
-        # The where clause lets you be very picky:
+The `where` clause lets you be very picky:
+
         each int x in [5, "hello", -12] where x > 0 {
             print("I could have just used a better type filter")
             print(whatis x)   # int
         }
 
-        # You could have used a fancy type filter instead:
-        # Another use of $, the scope operator, here referring to the object being
-        # tested after the ?
+The `where` clause above could have been done with a type filter instead.
+Another use of `$`, the scope operator, here referring to the object being
+tested after the `?`.
+
         each int?($>0) in [5, "hello", -12] {
             print("This puts the positivity constraint right in the type!")
             print(whatis x)   # int?($ > 0)
         }
 
-        # If you don't specify a loop variable, the automagic variable '_' is used instead:
+If you don't specify a loop variable, the automagic variable '_' is used
+instead:
+
         each in [5, 10, 15] {
             print(typeof _)     # int
             print("My number is: ~~ _)
         }
 
-        # So useful with paths:
+The `each` loop's type filters are very useful with paths:
+
         each file|dir f in ~/music/ {
             if f is file {
                 : mp3blaster {f}
@@ -982,6 +991,7 @@ Exceptions
 
 Generators
 ----------
+Probably python-esque (`yield` vs. `return`)
 
 Locale
 ------
