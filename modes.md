@@ -1,48 +1,51 @@
 Invoking code from the command-line
 ===================================
-
 At the command-line, '`{`' will swap you into code.
 
         cd /media/usb_key/
+        ls
         {
             new song = "gravy"
             song = song.replace('a', 'oo')
         }
-        echo { song ~ ".mp3" }      # prints "groovy.mp3"
+        mp3blaster { song ~ ".mp3" }    # plays "groovy.mp3"
 
 A '`{`' from the command-line does not invoke a new scope -- it just flips you
-to wherever you last left off, like dipping into a parallel stream of
-consciousness.  Once you're inside code-mode, only then will '`{`' invoke a new
-scope, from which variables will "fall out" and expire when the block ends.
+to wherever you last left off, like a parallel world of code alongside your
+command shell.  You can access whatever variables you left there.  Once you're
+inside code-mode, only then will '`{`' invoke a new scope, from which variables
+can "fall out" and expire when the block ends.
 
         {
             new yum = "melon"
-            {
-                new yuck = "grapefruit"
-            }
-            # yuck fell out of scope, and is gone forever.
-            : echo { yum }          # prints "melon"
-            : echo { yuck }         # error
+            { new yuck = "grapefruit" }
+            print(yuck)       # error! yuck fell out of scope, gone forever.
+            print(yum)        # prints "melon"
+            : mkdir {yum}     # runs command:  mkdir 'melon'
         }
-        echo {yum}                # prints "melon"
-        { yum ~= " for lunch" }
-        echo {yum}                # prints "melon for lunch"
+        cd {yum}              # runs: cd 'melon'
 
-There are two ways to swap to code from the command-line:
+A code block can be either a single expression, or any number of statements.
+If it's a single expression, the result will drop onto the command-line and be
+run as a command:
 
-1. '`{`' is at the beginning of the line  (ignoring whitespace)
+        {   # A statement list
+            new program = /usr/bin/climateModel
+            new dataset = "waterloo.dat"
+        }
+        {program} {dataset} > output.log  # Expressions; runs the program
+        { dataset = "ottawa.dat" }        # A statement; no command is invoked
+        {program} {dataset} > output2.log
 
-        { new x = "foo" }
+        # An expression: its result becomes part of the command
+        echo "Is this the waterloo dataset? " {dataset == "waterloo.dat"}
 
-  In this form, the `{...}` denotes a block containing a list of statements to
-  execute.  It does not return a value.
+The code can also "return" a value to the command-line:
 
-2. '`{`' is part of the arguments to a program:
+        cp cat.jpg {if (~/pics/).isdir(), return ~/pics/; return /tmp/}
 
-        echo { x }
-
-  In this form, the `{...}` evalutes a single expression.  Its final value is
-  converted to a string, shell-escaped, and then placed in your command-line.
+When a value is passed from code into a command-line, it is converted to a
+string and then shell-escaped.  This is for security:
 
         echo { 7 * 3 + 2 }                  # runs:  echo '23'
         { new x = "; '{:rm -rf *; !!}'" }   # this looks evil
@@ -50,9 +53,8 @@ There are two ways to swap to code from the command-line:
         # It ran:   echo '; \'{:rm -rf *; !!}\'" }'
         # which is properly escaped to have no effect.
 
-  List types are exceptional, in that each element of the list will be converted
-  to str and shell-escaped into its own element of the command-line (a separate
-  program argument):
+When a list type goes from code to the command-line, each element is escaped as
+a separate entity so that they become different command-line arguments:
 
         { new files = ["games" "music" "videos"] }
         cp {files} /media/usb_key/
@@ -60,7 +62,6 @@ There are two ways to swap to code from the command-line:
 
 Invoking commands from code
 ===========================
-
 There are three ways to invoke commandlines from code:
 
 1. Single command-lines with '`:`'
@@ -69,7 +70,7 @@ There are three ways to invoke commandlines from code:
             :echo "hello, world!"
         }
 
-2. Multi-line command blocks with '`{:: /*commands*/ }`'
+2. Multi-line command blocks with '`{:: (*commands*) }`'
 
         {
             new pattern = "kitten"
@@ -79,7 +80,7 @@ There are three ways to invoke commandlines from code:
             }
         }
 
-3. Drop to an interactive command shell with '`::user::`'
+3. Drop to an interactive command shell with `shell`
 
         {
             new numFiles = (/media/usb_key).count
