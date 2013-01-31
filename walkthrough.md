@@ -183,8 +183,8 @@ Numeric types
 -------------
 No implicit casts
 
-        fixed x = 1.0 + 5         # error
-        fixed x = 1.0 + 5->fixed  # ok
+        x = 1.0 + 5         # error
+        x = 1.0 + 5->fixed  # ok
 
 int
 ---
@@ -192,6 +192,7 @@ Integers of arbitrary size.
 
 fixed
 -----
+Fixed-precision decimal-point number.
 
 float
 -----
@@ -490,7 +491,7 @@ an object, though these objects are sometimes made behind-the-scenes.
 Consider an enhanced 'animal':
 
         new animal = {
-            new name = str = "(none)"
+            new name = str = "(just some animal)"
             new age = int
             new op() = @(str s) {
                 name = s
@@ -499,12 +500,12 @@ Consider an enhanced 'animal':
         }
 
 'animal' has an `op()`, meaning it can be called like a function.  Its `op()`
-takes a str called 's', and has no return value.
+takes a str 's', and has no return value.
 
 Let's try using it:
 
         new lion = animal
-        print(lion.name)      # (none)
+        print(lion.name)      # (just some animal)
         lion()                # error: lion() is not defined
         lion("Simba")         # Rawr! My name is Simba
         print(lion.name)      # Simba
@@ -660,6 +661,54 @@ provided to find the best version of the function to call.
 
 TODO: can we append code to a function?  Can we replace a function?  Under what
 conditions can we remove a specific function signature from a function?
+
+Partial function application
+----------------------------
+Sometimes it's useful to talk about what would happen if a function were to be
+called with certain arguments, without actually calling it.  In this case we
+put an `@` in front, to "defer" the function call but specify some particular
+options.  This gives you back a function with restrictions on the domain of the
+parameters.
+
+        new incrementBy5 = @(num n)->num {
+            print("You gave me:" ~~ n)
+            return n + 5
+        }
+        typeof incrementBy5         # @(num)->num
+        new w = incrementBy5(num)   # Error: 'num' is abstract.
+        new x = incrementBy5(int)   # You gave me: 0.     Returns 5
+        new y = incrementBy5(42)    # You gave me: 42.    Returns 47
+        new z = incrementBy5(1.23)  # You gave me: 1.23.  Returns 6.23
+
+        new incInt = @incrementBy5(int)   # Doesn't run the function
+        typeof incInt               # @(int)->num
+        renew x = incInt(int)       # You gave me: 0.    Returns 5
+        renew y = incInt(42)        # You gave me: 42.   Returns 47
+        renew z = incInt(1.23)      # Error: incInt only accepts int
+
+Notice how incInt did not have type `@incrementBy5(int)`.  When you use `@` for
+function-argument domain-restriction, you get back a *sibling* of the original
+function, not a child of it.  An actual child of a function is allowed to
+expand the domain of its arguments, or restrict the domain of its return type.
+But it can't restrict the domain of the arguments or expand the domain of the
+return type.  That's why here, you get another function, but not a child.
+
+What if we restrict the domain of incrementBy5 to a specific integer?
+
+        new inc20by5 = @incrementBy5(20)
+        typeof inc20by5             # @(20)->num
+        renew x = inc20by5(42)      # error! inc20by5 only accepts 20
+        renew y = inc20by5(20)      # You gave me: 20.   Returns 25
+
+That's maybe a bit weird.  We probably wanted to "bind" 20 as the argument to
+incrementBy5(num), so that we get a function that takes no arguments.  We can
+do this in 'lush' with the explicit 'bind' member of @ (and thus all
+functions):
+
+        renew inc20by5 = (@incrementBy5(num)).bind(num, 20)
+
+This notation is a bit cumbersome, but I'm not sure there's a nicer syntax
+appropriate for lush.
 
 Object conversions and casts
 ----------------------------
@@ -988,6 +1037,10 @@ abstract, const
 
 Exceptions
 ----------
+Debate:
+1. Typical try/catch/throw
+1. No exceptions; use 'or'-types to include possible errors in type signature
+e.g.  int32.operator+ = @(int32)->int32|e_overflow
 
 Generators
 ----------
@@ -998,6 +1051,7 @@ Locale
 
 OS-specific functionality
 --------------------------
+Wrapped up in 'os' namespace.
 
 Full grammar
 ------------
