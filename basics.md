@@ -25,6 +25,7 @@ An object that only has an `op()` is a "function".  These are very common, so a
 special syntax exists for defining them.
 
 New variables are defined with 'new' statements:
+
   new x                   # x has type 'object' and has a copy of 'object'.
   new y = animal          # y has type 'animal' and has a copy of 'animal'.
   new z = animal = duck   # z has type 'animal' and has a copy of 'duck'.
