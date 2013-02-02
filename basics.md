@@ -26,9 +26,9 @@ special syntax exists for defining them.
 
 New variables are defined with 'new' statements:
 
-  new x                   # x has type 'object' and has a copy of 'object'.
-  new y = animal          # y has type 'animal' and has a copy of 'animal'.
-  new z = animal = duck   # z has type 'animal' and has a copy of 'duck'.
+        new x                   # x has type 'object' and has a copy of 'object'.
+        new y = animal          # y has type 'animal' and has a copy of 'animal'.
+        new z = animal = duck   # z has type 'animal' and has a copy of 'duck'.
 
 'new' defines a variable name, and if a value is provided with '=' then it sets
 both the type of the variable and its initial object.  Any future assignments
