@@ -1,0 +1,64 @@
+INFO:root:line: '1 1:NEWL'
+INFO:root: - sending token '<1:NEWL>'
+DEBUG:root:StarParser 'lush' parsing '<1:NEWL>'
+DEBUG:root:PlusParser 'lush' parsing '<1:NEWL>'
+INFO:root:Initialized SeqParser 'programinvocation' with rule: <Parser.Seq instance at 0x7fecf4946ea8>
+INFO:root:Initialized SeqParser 'cmdblock' with rule: <Parser.Seq instance at 0x7fecf4946c20>
+DEBUG:root:OrParser 'cmdline' parsing '<1:NEWL>'
+INFO:root:OrParser 'cmdline' parsing prod NEWL
+DEBUG:root:TerminalParser 'NEWL' parsing '<1:NEWL>'
+INFO:root:OrParser 'cmdline' has doneparser 'NEWL'
+INFO:root:OrParser 'cmdline' parsing prod programinvocation
+DEBUG:root:SeqParser 'programinvocation' parsing '<1:NEWL>'
+INFO:root:Making parser for ID
+INFO:root:SeqParser 'programinvocation' parsing token '<1:NEWL>'; active=0,ID
+DEBUG:root:TerminalParser 'ID' parsing '<1:NEWL>'
+DEBUG:root: * * programinvocation ELSE: 0 2 False True
+INFO:root:*** programinvocation bad=True active.done=False
+INFO:root:* SeqParser 'programinvocation' turned bad
+INFO:root:OrParser 'cmdline' went bad at 'programinvocation'
+INFO:root:OrParser 'cmdline' parsing prod cmdblock
+DEBUG:root:SeqParser 'cmdblock' parsing '<1:NEWL>'
+INFO:root:Making parser for <Parser.Action instance at 0x7fecf4946998>
+INFO:root:SeqParser 'cmdblock' parsing token '<1:NEWL>'; active=0,action(LBRACE,<function BlockStart at 0x7fecf4945410>)
+DEBUG:root:TerminalParser 'LBRACE' parsing '<1:NEWL>'
+DEBUG:root: * * cmdblock ELSE: 0 1 False True
+INFO:root:*** cmdblock bad=True active.done=False
+INFO:root:* SeqParser 'cmdblock' turned bad
+INFO:root:OrParser 'cmdline' went bad at 'cmdblock'
+INFO:root: - sending token '<0:NEWL>'
+DEBUG:root:StarParser 'lush' parsing '<0:NEWL>'
+DEBUG:root:PlusParser 'lush' parsing '<0:NEWL>'
+DEBUG:root:I'm 'cmdline' and bad: False, done: True, len: 1
+DEBUG:root:(NEWL True)
+DEBUG:root:OrParser 'cmdline' parsing '<0:NEWL>'
+INFO:root:OrParser 'cmdline' parsing prod NEWL
+DEBUG:root:TerminalParser 'NEWL' parsing '<0:NEWL>'
+INFO:root:OrParser 'cmdline' went bad at 'NEWL'
+INFO:root:OrParser 'cmdline' turned bad
+INFO:root:Initialized SeqParser 'programinvocation' with rule: <Parser.Seq instance at 0x7fecf4946ea8>
+INFO:root:Initialized SeqParser 'cmdblock' with rule: <Parser.Seq instance at 0x7fecf4946c20>
+DEBUG:root:StarParser 'lush' parsing '<0:NEWL>'
+DEBUG:root:PlusParser 'lush' parsing '<0:NEWL>'
+DEBUG:root:OrParser 'cmdline' parsing '<0:NEWL>'
+INFO:root:OrParser 'cmdline' parsing prod NEWL
+DEBUG:root:TerminalParser 'NEWL' parsing '<0:NEWL>'
+INFO:root:OrParser 'cmdline' has doneparser 'NEWL'
+INFO:root:OrParser 'cmdline' parsing prod programinvocation
+DEBUG:root:SeqParser 'programinvocation' parsing '<0:NEWL>'
+INFO:root:Making parser for ID
+INFO:root:SeqParser 'programinvocation' parsing token '<0:NEWL>'; active=0,ID
+DEBUG:root:TerminalParser 'ID' parsing '<0:NEWL>'
+DEBUG:root: * * programinvocation ELSE: 0 2 False True
+INFO:root:*** programinvocation bad=True active.done=False
+INFO:root:* SeqParser 'programinvocation' turned bad
+INFO:root:OrParser 'cmdline' went bad at 'programinvocation'
+INFO:root:OrParser 'cmdline' parsing prod cmdblock
+DEBUG:root:SeqParser 'cmdblock' parsing '<0:NEWL>'
+INFO:root:Making parser for <Parser.Action instance at 0x7fecf4946998>
+INFO:root:SeqParser 'cmdblock' parsing token '<0:NEWL>'; active=0,action(LBRACE,<function BlockStart at 0x7fecf4945410>)
+DEBUG:root:TerminalParser 'LBRACE' parsing '<0:NEWL>'
+DEBUG:root: * * cmdblock ELSE: 0 1 False True
+INFO:root:*** cmdblock bad=True active.done=False
+INFO:root:* SeqParser 'cmdblock' turned bad
+INFO:root:OrParser 'cmdline' went bad at 'cmdblock'

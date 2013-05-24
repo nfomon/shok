@@ -1,0 +1,216 @@
+// -*- C++ -*- vim: set syntax=cpp:
+define {
+  P_DOUBLEQUOTE           "\""
+  P_ESCAPE_DOUBLEQUOTE    "\\\""
+  P_ESCAPE_BACKSLASH      "\\\\"
+
+  P_INT     [0-9]+
+  //P_FIXED
+  //P_STR
+  //P_REGEXP
+  //P_PATH
+  //P_LABEL
+  //P_USEROP
+  P_ID      [A-Za-z_][A-Za-z0-9_]*
+
+  //P_REDIR
+}
+
+token {
+  // Shell control
+  FAIL; EXIT;
+
+  // Symbol table modifiers
+  NEW; RENEW; DEL; ISVAR; 
+
+  // Functions
+  VOID; RETURN; YIELD;
+
+  // Branch constructs
+  IF; ELIF; ELSE;
+  SWITCH; CASE; DEFAULT;
+
+  // Loop constructs
+  WHILE; LOOP; REPEAT; TIMES;
+  EACH; IN;
+  WHERE;
+  BREAK; CONTINUE;
+
+  // Logical operators
+  NOT; NOR; AND; OR; XOR; XNOR;
+
+  // Keyword operators
+  TYPEOF;
+
+  // Equality operators
+  LT; LE; GT; GE; EQ; NE;
+
+  // Numeric operators
+  PLUS; MINUS; MULT; DIV; MOD; POWER;
+  PIPE; AMP; TILDE; DOUBLETILDE;
+
+  // Assignment operators
+  EQUALS; PLUSEQUAL; MINUSEQUAL; MULTEQUAL; DIVEQUAL;
+  MODEQUAL; POWEREQUAL; PIPEEQUAL; AMPEQUAL; TILDEEQUAL;
+
+  // Cast: ->
+  ARROW;
+
+  // Delimeters: () [] {} , . :
+  LPAREN; RPAREN;
+  LBRACKET; RBRACKET;
+  LBRACE; RBRACE;
+  COMMA; DOT; COLON;
+
+  // End of line: ; \n
+  SEMI; NEWL;
+
+  // Literals
+  INT;
+  FIXED;
+  STR;
+  REGEXP;
+  PATH;
+  LABEL;
+  USEROP;
+  ID;
+
+  // COMMAND MODE
+  CMD;
+}
+
+mode LUSH :
+<skip: [ \n\t\r] >
+//<skip_nested_range: "(*" "*)">
+{
+  on_end_of_stream => QUEX_TKN_TERMINATION;
+  on_failure       => QUEX_TKN_FAIL(Lexeme);
+
+  // Shell control
+  "exit"  => QUEX_TKN_EXIT(LexemeNull);
+
+  // Symbol table modifiers
+  "new"   => QUEX_TKN_NEW(LexemeNull);
+  "renew" => QUEX_TKN_RENEW(LexemeNull);
+  "del"   => QUEX_TKN_DEL(LexemeNull);
+  "isvar" => QUEX_TKN_ISVAR(LexemeNull);
+
+  // Functions
+  "void"    => QUEX_TKN_VOID(LexemeNull);
+  "return"  => QUEX_TKN_RETURN(LexemeNull);
+  "yield"   => QUEX_TKN_YIELD(LexemeNull);
+
+  // Branch constructs
+  "if"      => QUEX_TKN_IF(LexemeNull);
+  "elif"    => QUEX_TKN_ELIF(LexemeNull);
+  "else"    => QUEX_TKN_ELSE(LexemeNull);
+  "switch"  => QUEX_TKN_SWITCH(LexemeNull);
+  "case"    => QUEX_TKN_CASE(LexemeNull);
+  "default" => QUEX_TKN_DEFAULT(LexemeNull);
+
+  // Loop constructs
+  "while"     => QUEX_TKN_WHILE(LexemeNull);
+  "loop"      => QUEX_TKN_LOOP(LexemeNull);
+  "repeat"    => QUEX_TKN_REPEAT(LexemeNull);
+  "times"     => QUEX_TKN_TIMES(LexemeNull);
+  "each"      => QUEX_TKN_EACH(LexemeNull);
+  "in"        => QUEX_TKN_IN(LexemeNull);
+  "where"     => QUEX_TKN_WHERE(LexemeNull);
+  "break"     => QUEX_TKN_BREAK(LexemeNull);
+  "continue"  => QUEX_TKN_CONTINUE(LexemeNull);
+
+  // Logical operators
+  "not"   => QUEX_TKN_NOT(LexemeNull);
+  "nor"   => QUEX_TKN_NOR(LexemeNull);
+  "and"   => QUEX_TKN_AND(LexemeNull);
+  "or"    => QUEX_TKN_OR(LexemeNull);
+  "xor"   => QUEX_TKN_XOR(LexemeNull);
+  "xnor"  => QUEX_TKN_XNOR(LexemeNull);
+
+  // Keyword operators
+  "typeof"  => QUEX_TKN_TYPEOF(LexemeNull);
+
+  // Equality operators
+  "<"   => QUEX_TKN_LT(LexemeNull);
+  "<="  => QUEX_TKN_LE(LexemeNull);
+  ">"   => QUEX_TKN_GT(LexemeNull);
+  ">="  => QUEX_TKN_GE(LexemeNull);
+  "=="  => QUEX_TKN_EQ(LexemeNull);
+  "!="  => QUEX_TKN_NE(LexemeNull);
+
+  // Numeric operators
+  "+"   => QUEX_TKN_PLUS(LexemeNull);
+  "-"   => QUEX_TKN_MINUS(LexemeNull);
+  "*"   => QUEX_TKN_MULT(LexemeNull);
+  "/"   => QUEX_TKN_DIV(LexemeNull);
+  "%"   => QUEX_TKN_MOD(LexemeNull);
+  "^"   => QUEX_TKN_POWER(LexemeNull);
+  "|"   => QUEX_TKN_PIPE(LexemeNull);
+  "&"   => QUEX_TKN_AMP(LexemeNull);
+  "~"   => QUEX_TKN_TILDE(LexemeNull);
+  "~~"  => QUEX_TKN_DOUBLETILDE(LexemeNull);
+
+  // Assignment operators
+  "="  => QUEX_TKN_EQUALS(LexemeNull);
+  "+=" => QUEX_TKN_PLUSEQUAL(LexemeNull);
+  "-=" => QUEX_TKN_MINUSEQUAL(LexemeNull);
+  "*=" => QUEX_TKN_MULTEQUAL(LexemeNull);
+  "/=" => QUEX_TKN_DIVEQUAL(LexemeNull);
+  "%=" => QUEX_TKN_MODEQUAL(LexemeNull);
+  "^=" => QUEX_TKN_POWEREQUAL(LexemeNull);
+  "|=" => QUEX_TKN_PIPEEQUAL(LexemeNull);
+  "&=" => QUEX_TKN_AMPEQUAL(LexemeNull);
+  "~=" => QUEX_TKN_TILDEEQUAL(LexemeNull);
+
+  // Cast: ->
+  "->" => QUEX_TKN_ARROW(LexemeNull);
+
+  // Delimeters: () [] {} , . :
+  "(" => QUEX_TKN_LPAREN(LexemeNull);
+  ")" => QUEX_TKN_RPAREN(LexemeNull);
+  "[" => QUEX_TKN_LBRACKET(LexemeNull);
+  "]" => QUEX_TKN_RBRACKET(LexemeNull);
+  "{" => QUEX_TKN_LBRACE(LexemeNull);
+  "}" => QUEX_TKN_RBRACE(LexemeNull);
+  "," => QUEX_TKN_COMMA(LexemeNull);
+  "." => QUEX_TKN_DOT(LexemeNull);
+  ":" => QUEX_TKN_COLON(LexemeNull);
+
+  // End of line: ; \n
+  ";" => QUEX_TKN_SEMI(LexemeNull);
+  // \n is handled by line-buffering
+  //"\n" => QUEX_TKN_NEWL(LexemeNull);
+
+  // Literals
+  {P_INT}         => QUEX_TKN_INT(Lexeme);
+  {P_INT}.{P_INT} => QUEX_TKN_FIXED(Lexeme);
+  //STR
+  //REGEXP
+  //PATH
+  //LABEL
+  //USEROP
+  {P_ID}          => QUEX_TKN_ID(Lexeme);
+}
+
+/*
+mode STRING_READER :
+     END_OF_FILE
+<entry: PROGRAM>
+<exit:  PROGRAM>
+{   
+    on_entry { self_accumulator_clear(); }
+    on_exit  {
+        self_accumulator_flush(QUEX_TKN_STRING);
+        self_send(QUEX_TKN_QUOTE);
+    }
+
+    {P_BACKSLASHED_STRING_DELIMITER} { self_accumulator_add(Lexeme, LexemeEnd); }
+    {P_BACKSLASHED_BACKSLASH}        { self_accumulator_add(Lexeme, LexemeEnd); }
+
+    {P_STRING_DELIMITER}             { self << PROGRAM; RETURN; }
+
+    <<FAIL>> {
+        self_accumulator_add(Lexeme, LexemeEnd);
+    }
+}
+*/
