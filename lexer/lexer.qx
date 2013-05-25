@@ -50,8 +50,8 @@ token {
   PIPE; AMP; TILDE; DOUBLETILDE;
 
   // Assignment operators
-  EQUALS; PLUSEQUAL; MINUSEQUAL; MULTEQUAL; DIVEQUAL;
-  MODEQUAL; POWEREQUAL; PIPEEQUAL; AMPEQUAL; TILDEEQUAL;
+  ASSIGN; PLUSEQUALS; MINUSEQUALS; MULTEQUALS; DIVEQUALS;
+  MODEQUALS; POWEREQUALS; PIPEEQUALS; AMPEQUALS; TILDEEQUALS;
 
   // Cast: ->
   ARROW;
@@ -151,16 +151,16 @@ mode LUSH :
   "~~"  => QUEX_TKN_DOUBLETILDE(LexemeNull);
 
   // Assignment operators
-  "="  => QUEX_TKN_EQUALS(LexemeNull);
-  "+=" => QUEX_TKN_PLUSEQUAL(LexemeNull);
-  "-=" => QUEX_TKN_MINUSEQUAL(LexemeNull);
-  "*=" => QUEX_TKN_MULTEQUAL(LexemeNull);
-  "/=" => QUEX_TKN_DIVEQUAL(LexemeNull);
-  "%=" => QUEX_TKN_MODEQUAL(LexemeNull);
-  "^=" => QUEX_TKN_POWEREQUAL(LexemeNull);
-  "|=" => QUEX_TKN_PIPEEQUAL(LexemeNull);
-  "&=" => QUEX_TKN_AMPEQUAL(LexemeNull);
-  "~=" => QUEX_TKN_TILDEEQUAL(LexemeNull);
+  "="  => QUEX_TKN_ASSIGN(LexemeNull);
+  "+=" => QUEX_TKN_PLUSEQUALS(LexemeNull);
+  "-=" => QUEX_TKN_MINUSEQUALS(LexemeNull);
+  "*=" => QUEX_TKN_MULTEQUALS(LexemeNull);
+  "/=" => QUEX_TKN_DIVEQUALS(LexemeNull);
+  "%=" => QUEX_TKN_MODEQUALS(LexemeNull);
+  "^=" => QUEX_TKN_POWEREQUALS(LexemeNull);
+  "|=" => QUEX_TKN_PIPEEQUALS(LexemeNull);
+  "&=" => QUEX_TKN_AMPEQUALS(LexemeNull);
+  "~=" => QUEX_TKN_TILDEEQUALS(LexemeNull);
 
   // Cast: ->
   "->" => QUEX_TKN_ARROW(LexemeNull);
