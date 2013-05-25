@@ -32,7 +32,7 @@ LD = $(COMPILER)
 all: lush
 #all: tidy
 
-lush: lush_lexer shell
+lush: lush_lexer lush_parser shell
 
 lush_lexer: lexer/lexer.cpp lexer/tiny_lexer_st.cpp
 	$(CC) -o $@ $^
@@ -43,11 +43,14 @@ lexer/tiny_lexer_st.cpp: lexer/lexer.qx $(QUEX_CORE)
     --token-policy single
 	mv tiny_lexer_st* lexer/
 
+lush_parser: parser/lush_parser.py
+	ln -s parser/lush_parser.py lush_parser
+
 shell: shell/file_descriptor.o shell/shell.o
 	g++ shell/file_descriptor.cpp shell/shell.cpp -o lush
 
 tidy: lexer lush
-	rm -f lexer/tiny_lexer_st* shell/file_descriptor.o shell/shell.o
+	rm -f lexer/tiny_lexer_st* parser/*.pyc shell/file_descriptor.o shell/shell.o
 
 clean:
-	rm -f lexer/tiny_lexer_st* shell/file_descriptor.o shell/shell.o lush_lexer lush
+	rm -f lexer/tiny_lexer_st* parser/*.pyc shell/file_descriptor.o shell/shell.o lush_lexer lush_parser lush Parser.log

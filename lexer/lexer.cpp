@@ -35,14 +35,10 @@ int main(int argc, char* argv[]) {
     qlex.buffer_fill_region_finish(cin.gcount() - 1);
 
     // Loop until the 'termination' token arrives
-    bool first = true;
     (void)qlex.receive();
+    cout << line_number;
     while (token.type_id() != QUEX_TKN_TERMINATION && token.type_id() != QUEX_TKN_EXIT) {
       // serialize token
-      if (first) {
-        first = false;
-        cout << line_number;
-      }
       cout << " " << token.column_number() << ":" << token.type_id_name();
       if (token.get_text().length() > 0) {
         cout << ":'" << token.get_text().c_str() << "'";
@@ -51,9 +47,7 @@ int main(int argc, char* argv[]) {
       ++number_of_tokens;
       (void)qlex.receive();
     }
-    if (!first) {
-      cout << endl;
-    }
+    cout << endl;
 
     if(token.type_id() == QUEX_TKN_EXIT) break;
   }

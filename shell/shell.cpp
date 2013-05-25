@@ -21,7 +21,6 @@ void setlinebuf(FILE* stream) {
 class Proc {
 public:
   Proc(const string& name)
-//    : name(name), in(&inbuf), out(&outbuf) {
     : name(name) {
   }
   ~Proc() {}
@@ -75,7 +74,7 @@ public:
           _exit(1);
         }
       }
-      // set stdin and stdout line-buffered (?)
+      // set stdin and stdout line-buffered
       setlinebuf(stdout);
       setlinebuf(stdin);
       f();
@@ -88,6 +87,16 @@ public:
     out.open(toproc_write, io::close_handle);
     close(toshell_write);
     in.open(toshell_read, io::close_handle);
+  }
+
+  // This is pretty useless...
+  bool isRunning() {
+    int status;
+    pid_t result = waitpid(pid, &status, WNOHANG);
+    if (result == -1) {
+      perror((name + " failed querying child process status").c_str());
+    }
+    return result == 0;
   }
 
   const string name;
@@ -108,6 +117,15 @@ protected:
   }
 };
 
+class Parser : public Proc {
+public:
+  Parser() : Proc("parser") {}
+protected:
+  virtual void f() {
+    execlp("./lush_parser", "lush_parser", (char*)NULL);
+  }
+};
+
 int main(int argc, char *argv[]) {
   if (1 != argc) {
     cout << "usage: " << PROGRAM_NAME << endl;
@@ -116,6 +134,9 @@ int main(int argc, char *argv[]) {
 
   Lexer lexer;
   lexer.run();
+
+  Parser parser;
+  parser.run();
 
   cout << PROMPT;
   string line;
@@ -126,10 +147,27 @@ int main(int argc, char *argv[]) {
     // get tokens
     string tokens;
     std::getline(lexer.in, tokens);
-    cout << "[shell] tokens: '" << tokens << "'" << endl;
+    //cout << "[shell] tokens: '" << tokens << "'" << endl;
+    if (!lexer.isRunning()) {
+      cout << "[shell] Lexer error; aborting" << endl;
+      break;
+    }
 
     // send tokens to parser
+    parser.out << tokens << endl;
+    //cout << "sent '" << tokens << "' to parser" << endl;
+    if (!parser.isRunning()) {
+      cout << "[shell] Parser error; aborting" << endl;
+      break;
+    }
+
     // get AST
+    string ast;
+    std::getline(parser.in, ast);
+    if ("" != ast) {
+      cout << "[shell] ast: '" << ast << "'" << endl;
+    }
+
     // send AST to eval
     // get commands
     // run commands
@@ -139,9 +177,12 @@ int main(int argc, char *argv[]) {
     // redisplay prompt
     cout << PROMPT;
   }
+  cout << "Done" << endl;
   cout << endl;
   lexer.out.close();
   lexer.in.close();
+  parser.out.close();
+  parser.in.close();
 
   if (-1 == wait(NULL)) {
     perror("waiting for child");

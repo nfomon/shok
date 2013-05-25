@@ -5,6 +5,10 @@ from LexToken import LexToken, NewlineToken
 from LushParser import LushParser
 logging.basicConfig(filename="parse.log", level=logging.DEBUG)
 
+# We may be writing to a pipe, so be careful not to print anything unless we're
+# pretty sure it should be delivered.  Each line of input from stdin should
+# produce 1 line on stdout.
+
 def main():
   if len(sys.argv) > 1 and sys.argv[1].lower() == "debug":
     parse(debug=1)
@@ -19,15 +23,24 @@ def Restart():
 def parse(debug=0):
   parser = Restart()
   while 1:
-    line = sys.stdin.readline()
-    if not line:
+    try:
+      line = sys.stdin.readline()
+    except KeyboardInterrupt:
+      logging.info("Keyboard interrupt; done")
       break
-    ast = ''    # AST snippet for this line
-    line = line.strip()
-    logging.info("line: '%s'" % line)
+    except:
+      e = sys.exc_info()
+      logging.error("Error reading from stdin: (%s,%s,%s)" % e)
+      return
+    if not line:
+      logging.info("End of input; done")
+      return
+    try:
+      ast = ''    # AST snippet for this line
+      line = line.strip()
+      logging.info("line: '%s'" % line)
 
-    if "" != line:
-      try:
+      if "" != line:
         tokens = line.split(' ')
         lineno = int(tokens[0])
         tokens = tokens[1:]
@@ -39,23 +52,29 @@ def parse(debug=0):
             ast += parser.ast
             parser.ast = ''
 
-      except:
-        sys.stderr.write("Invalid token found in line '%s'\n" % line)
-        raise
-
-    if parser.bad:
-      print "bad parser: '%s'" % parser
-      parser = Restart()
-    else:
-      logging.info(" - sending token '%s'" % NewlineToken())
-      parser.parse(NewlineToken())
-      if parser.ast:
-        ast += parser.ast
-        parser.ast = ''
-      if ast:
-        print "AST:" + ast
+      if parser.bad:
+        raise Exception("Top parser went bad: %s" % parser)
       else:
-        print "..."
+        logging.info(" - sending token '%s'" % NewlineToken())
+        parser.parse(NewlineToken())
+        if parser.ast:
+          ast += parser.ast
+          parser.ast = ''
+        try:
+          print ast
+          sys.stdout.flush()
+        except:
+          e = sys.exc_info()
+          logging.error("Error writing output: (%s,%s,%s)" % e)
+          print "Error writing output: (%s,%s,%s)" % e
+          sys.stdout.flush()
+          return
+    except:
+      e = sys.exc_info()
+      logging.error("Parse error: (%s,%s,%s)" % e)
+      print "Parse error: (%s,%s,%s)" % e
+      sys.stdout.flush()
+      parser = Restart()
 
 if __name__ == "__main__":
   main()
