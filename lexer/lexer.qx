@@ -5,7 +5,7 @@ define {
   P_ESCAPE_BACKSLASH      "\\\\"
 
   P_INT     [0-9]+
-  //P_FIXED
+  P_FIXED   [0-9]+"\."[0-9]+
   //P_STR
   //P_REGEXP
   //P_PATH
@@ -183,7 +183,7 @@ mode LUSH :
 
   // Literals
   {P_INT}         => QUEX_TKN_INT(Lexeme);
-  {P_INT}.{P_INT} => QUEX_TKN_FIXED(Lexeme);
+  {P_FIXED}       => QUEX_TKN_FIXED(Lexeme);
   //STR
   //REGEXP
   //PATH
