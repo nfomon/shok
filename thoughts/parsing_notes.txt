@@ -1,0 +1,26 @@
+We shouldn't need to perform an action based on a rule starting out
+Done.  If a rule starts done, presumably it's inside a Seq but not at
+the end.  It could be at the beginning just fine, the Seq isn't done
+until its last state is done.
+
+
+YIPES.  THAT is what was wrong. We want to put "starting out Done" states at the end of a Seq ALL THE TIME.  It's a Star at the end.
+
+Likely, Stars are the ONLY rules that we'll need to start out 'done'.  So we can special-case them.  When we parse a token in a Seq, and it turns done, we can walk forward asking if we *would* be creating Stars all the way to the end of the seq, were we to advance (we only create parsers when we advance to them).  If we have Stars the whole way through, then we can label the whole Seq done early, but stay at the mid-way state for now.
+
+-----
+
+For one thing, this means we can afford to be laid-back in the SeqParser.  When we parse a token in a non-last state:
+
+if it turns bad and wasdone: ok, move pos forward and active=None, await next token.
+if it turns bad and wasn't done: we're bad now.
+if it turns done:
+ - we could "test" both branches    * try this next...
+
+logic for this:
+  if turns done and wasdone: that's nice but maybe we should have split before as well.  this is kind of awkward....
+
+
+ - or we could split right now in prep for next token  * try this now
+neither bad nor done: ok, stay put and await another token.
+
