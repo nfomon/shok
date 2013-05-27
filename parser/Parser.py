@@ -1,5 +1,6 @@
-import sys
 import logging
+import sys
+from copy import copy
 logging.basicConfig(filename="Parser.log", level=logging.DEBUG)
 #sys.setrecursionlimit(100)
 
@@ -15,6 +16,8 @@ class Parser(object):
     else:
       self.parent = None
       self.top = self
+  def __repr__(self):
+    return '%s (%s)' % (self.name, self.rule.name)
 
 class TerminalParser(Parser):
   def __init__(self,rule,parent):
@@ -25,9 +28,9 @@ class TerminalParser(Parser):
     self.value = None
 
   def parse(self,token):
-    logging.debug("TerminalParser '%s' parsing '%s'" % (self.name, token))
+    logging.debug("%s TerminalParser parsing '%s'" % (self.name, token))
     if self.bad:
-      raise Exception("Terminal '%s' already bad" % self.name)
+      raise Exception("%s TerminalParser already bad" % self.name)
     if self.done:
       self.done = False
       self.bad = True
@@ -51,78 +54,93 @@ class TerminalParser(Parser):
 # sequence; advancing only when an individual rule is done and turns
 # bad if given another token.  The SeqParser is done anytime that its
 # last rule is done.
-#
-# If a not-the-last-rule's sub-parser moves into a Done state, we have two
-# options: try feeding it another token to see if it turns bad before
-# advancing, or move ahead immediately (which we might need to discover that we
-# can complete the whole sequence).
-#
-# We used to go with plan b, but that was bad.  Now let's try plan a.
-# Eventually we'll probably need to split into an OrParser.
-#
-# Bug: we move sub-parsers into "bad" state before we keep going.  When
-# wasdone==True, store its display() in a list, so that we never ask something
-# in bad state to display itself.
 class SeqParser(Parser):
   def __init__(self,rule,parent):
     Parser.__init__(self, rule, parent)
     self.parsers = []   # parsers constructed for each of rule.items
     self.active = None  # active parser (top of self.parsers)
     self.pos = 0        # position in self.rule.items
-    self.tokens = []    # the tokens we've observed
     self.displays = []  # display() of any completed sub-parsers
-    logging.info("Initialized SeqParser '%s' with rule: %s" % (self.name, self.rule))
+    logging.info("%s SeqParser initialized with rule: %s" % (self.name, self.rule))
+    while len(self.displays) != len(self.rule.items):
+      self.displays.append('')
 
   def parse(self,token):
-    logging.debug("SeqParser '%s' parsing '%s'" % (self.name, token))
-    self.tokens.append(token)
+    logging.debug("%s SeqParser attempting to parse token '%s'" % (self.name, token))
+
     if self.pos >= len(self.rule.items):
+      logging.debug("%s SeqParser moved beyond rule items; now bad" % self.name)
       self.bad = True
       self.done = False
     elif not self.active:
-      logging.info("Making parser for %s" % self.rule.items[self.pos])
+      logging.info("%s SeqParser making parser for %s at pos=%s" % (self.name, self.rule.items[self.pos], self.pos))
       self.parsers.append(MakeParser(self.rule.items[self.pos], self))
+      logging.info("%s SeqParser now parsers=%s, len=%s" % (self.name, self.parsers, len(self.parsers)))
       self.active = self.parsers[-1]
       self.bad = self.active.bad
-    if len(self.parsers) != self.pos+1:
-      raise Exception("Bad SeqParser '%s': Parser vs. rule.items mismatch" % self.name)
+    if self.pos != len(self.parsers)-1:
+      raise Exception("%s SeqParser: parsers (%s) vs. self.pos=%s mismatch; len=%s, lenrule=%s" % (self.name, self.parsers, self.pos, len(self.parsers), len(self.rule.items)))
     if self.bad:
-      raise Exception("Bad SeqParser '%s' can't accept token" % self.name)
-    logging.info("SeqParser '%s' parsing token '%s'; active=%s,%s" % (self.name, token, self.pos, self.active.name))
+      raise Exception("%s SeqParser is bad; can't accept token '%s'" % (self.name, token))
+    logging.info("%s SeqParser parsing token '%s'; active=%s,%s" % (self.name, token, self.pos, self.active.name))
 
     tempdisp = ''
     wasdone = self.active.done    # was the current active parser already done
     if wasdone:
-      logging.debug("- - - - %s wasdone; now displaying %s" % (self.name, self.active.name))
+      logging.debug("%s SeqParser was done; get tempdisp '%s'" % (self.name, self.active.name))
       tempdisp = self.active.display()
-    self.active.parse(token)
-    if self.pos < len(self.rule.items)-1 and wasdone and self.active.bad:
-      logging.info("* SeqParser '%s' is force-advancing pos %s" % (self.name,self.pos))
-      self.pos += 1
-      self.active = None
-      self.displays.append(tempdisp)
-      return self.parse(token)
-    else:
-      logging.debug(" * * %s ELSE: %s %s %s %s" % (self.name, self.pos, len(self.rule.items)-1, wasdone, self.active.bad))
-    self.bad = self.bad or self.active.bad
 
-    logging.info("*** %s bad=%s active.done=%s" % (self.name, self.bad, self.active.done))
-    if self.bad:
-      logging.info("* SeqParser '%s' turned bad" % self.name)
-      self.done = False
-    elif self.pos < len(self.rule.items)-1 and self.active.done:
-#      logging.info("* SeqParser '%s' advances (could be too eager!)" % self.name)
-#      self.pos += 1
-#      self.active = None
-      logging.info("* SeqParser '%s' could advance but will stay in place (could be too lazy!)" % self.name)
-    elif self.active.done:
-      logging.info("* SeqParser '%s' is eagerdone" % self.name)
-      self.done = True
-      self.displays.append(self.active.display())
+    # Parse!
+    self.active.parse(token)
+    logging.debug("%s SeqParser parsed token '%s'; now evaluating" % (self.name, token))
+
+    # if last
+    if self.pos == len(self.rule.items)-1:
+      self.bad = self.bad or self.active.bad
+      if not self.bad:
+        self.done = self.active.done
+        if self.done:
+          self.displays[self.pos] = self.active.display()
+      logging.debug("%s SeqParser in last state; now bad=%s, done=%s" % (self.name, self.bad, self.done))
+      return
+
+    if self.active.bad:
+      if wasdone:
+        # accept that state as having never parsed this token yet, and go
+        # forward
+        logging.info("%s SeqParser at token '%s' is force-advancing pos %s to %s" % (self.name, token, self.pos, self.pos+1))
+        self.displays[self.pos] = tempdisp
+        self.pos += 1
+        self.active = None
+        self.parse(token)
+      else:
+        self.bad = True
+        self.done = False
+        logging.debug("%s SeqParser wasn't done, now bad" % self.name)
+      return
+
+    if self.active.done:
+      # stay here until we turn bad
+      # if all upcoming rule items are Stars, then mark the whole Seq as done.
+      logging.info("%s SeqParser active pos=%s went done; waiting until it turns bad before advancing" % (self.name, self.pos))
+      nonstars = False
+      for item in self.rule.items[self.pos+1:]:
+        if not isinstance(item, Star):
+          nonstars = True
+      if not nonstars:
+        self.done = True
+        self.displays[self.pos] = self.active.display()
+        logging.debug("%s SeqParser is earlydone with displays %s" % (self.name, self.displays))
+      return
+
+    # we're ok, stay put for now
+    logging.debug("%s SeqParser is staying put after '%s'" % (self.name, token))
 
   def display(self):
     if self.bad or not self.done:
-      raise Exception("SeqParser '%s' is unfinished" % self.name)
+      raise Exception("%s SeqParser is unfinished" % self.name)
+    logging.debug("%s SeqParser is displaying; bad=%s done=%s displays=%s" % (self.name, self.bad, self.done, self.displays))
+    logging.debug(" - will become: %s" %  self.rule.display(self.displays))
     return self.rule.display(self.displays)
 
 # The OrParser's rule is a list of Rules that will be matched in
@@ -136,31 +154,31 @@ class OrParser(Parser):
       self.parsers.append(MakeParser(item, self))
 
   def parse(self,token):
-    logging.debug("OrParser '%s' parsing '%s'" % (self.name, token))
+    logging.debug("%s OrParser parsing '%s'" % (self.name, token))
     if len(self.parsers) == 0:
-      logging.warning("can't parse; no productions")
+      logging.warning("%s OrParser can't parse; no productions" % self.name)
       self.bad = True
     if self.bad:
       raise Exception("State '%s' is bad" % self.name)
     bad = []
     self.doneparsers = []
     for prod in self.parsers:
-      logging.info("OrParser '%s' parsing prod %s" % (self.name, prod.name))
+      logging.info("%s OrParser parsing prod %s" % (self.name, prod.name))
       if prod.bad:
-        raise Exception("already bad prod '%s' in '%s'" % (prod.name, self.name))
+        raise Exception("%s OrParser already has bad prod '%s'" % (self.name, prod.name))
       prod.parse(token)
       if prod.bad:
-        logging.info("OrParser '%s' went bad at '%s'" % (self.name, prod.name))
+        logging.info("%s OrParser went bad at '%s'" % (self.name, prod.name))
         bad.append(prod)
       elif prod.done:
-        logging.info("OrParser '%s' has doneparser '%s'" % (self.name, prod.name))
+        logging.info("%s OrParser has doneparser '%s'" % (self.name, prod.name))
         self.doneparsers.append(prod)
 
     for prod in bad:
       self.parsers.remove(prod)
 
     if len(self.parsers) == 0:
-      logging.info("OrParser '%s' turned bad" % self.name)
+      logging.info("%s OrParser turned bad" % self.name)
       self.bad = True
       self.done = False
     elif len(self.doneparsers) > 0:
@@ -169,14 +187,12 @@ class OrParser(Parser):
       self.done = False
 
   def display(self):
-    logging.debug("I'm '%s' and bad: %s, done: %s, len: %s" % (self.name, self.bad, self.done, len(self.doneparsers)))
     # We used to check if len(self.parsers) == 1.  Now we allow display() to be
     # called early (just in case) so we must remove this check...
     # We also used to check if self.done.  But now we might call display() early and store it just in case...
     if self.bad or not self.done or len(self.doneparsers) == 0:
-      logging.debug("MWA %s %s %s" % (self.bad, self.done, self.doneparsers))
-      raise Exception("OrParser '%s' is unfinished" % self.name)
-    logging.debug("(%s %s)" % (self.doneparsers[0].name, self.doneparsers[0].done))
+      raise Exception("%s OrParser is unfinished" % self.name)
+    logging.debug("%s OrParser is displaying; bad=%s done=%s disp=%s" % (self.name, self.bad, self.done, self.doneparsers[0].display()))
     return self.doneparsers[0].display()
 
 # PlusParser repeats its single parser at least once.  It's done anytime its
@@ -189,15 +205,15 @@ class PlusParser(Parser):
     Parser.__init__(self, rule, parent)
     self.active = None
     self.disps = []
+    self.reps = 0
 
   def parse(self,token):
-    logging.debug("PlusParser '%s' parsing '%s'" % (self.name, token))
+    logging.debug("%s PlusParser parsing token '%s'" % (self.name, token))
     if not self.active:
       self.active = MakeParser(self.rule.items, self)
-    if self.active.bad:
-      self.bad = self.active.bad
+    self.bad = self.bad or self.active.bad
     if self.bad:
-      raise Exception("State '%s' is bad" % self.name)
+      raise Exception("%s PlusParser is bad" % self.name)
     wasdone = False
     tempdisp = ''
     if self.active.done:
@@ -206,30 +222,32 @@ class PlusParser(Parser):
     self.active.parse(token)
     if wasdone and self.active.bad:
       # re-establish
-      self.disps.append(tempdisp)
       self.active = MakeParser(self.rule.items, self)
+      self.disps.append(tempdisp)
+      self.reps += 1
       self.parse(token)   # this is not recursive in the way that would hurt
     self.bad = self.active.bad
     self.done = self.active.done
 
   def display(self):
     if self.bad or not self.done:
-      raise Exception("PlusParser '%s' is unfinished" % self.name)
-    disps = self.disps
+      raise Exception("%s PlusParser is unfinished" % self.name)
+    disps = copy(self.disps)
     disps.append(self.active.display())
     s = ''
     for d in disps:
       s += d
     return s
 
-# StarParser repeats its single rule 0 or more times.
+# StarParser repeats its single rule 0 or more times.  That is, it always
+# starts off 'done'.
 class StarParser(PlusParser):
   def __init__(self,rule,parent):
     PlusParser.__init__(self, rule, parent)
     self.done = True
     self.anyparse = False
   def parse(self,token):
-    logging.debug("StarParser '%s' parsing '%s'" % (self.name, token))
+    logging.debug("%s StarParser parsing token '%s'" % (self.name, token))
     PlusParser.parse(self, token)
     if not self.bad:
       self.anyparse = True
@@ -244,6 +262,8 @@ class StarParser(PlusParser):
 # Why not do it every time?  Well, probably because of the way SeqParser works
 # now (tries to repeat any rule until it fails)....  Not sure about that tho.
 # We were getting many many repeats of the action...
+#
+# You should be careful about where you place Actions in your grammar :)
 class ActionParser(Parser):
   def __init__(self,rule,parent):
     if not isinstance(rule, Action):

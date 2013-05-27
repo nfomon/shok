@@ -96,72 +96,64 @@ Exp = Or('exp', [
 
 
 # New statement
-New = Or('new', [
-  Seq('new1',
-    ['NEW', n, 'ID'],
-    'new(%s);', [2]),
-  Seq('new2',
-    ['NEW', n, 'ID', 'ASSIGN', n, Exp],
-    'new(=(%s,%s));', [2, 5]),
-  Seq('new3',
-    ['NEW', n, 'ID', 'ASSIGN', n, Exp, 'ASSIGN', n, Exp],
-    'new(=(%s,%s,%s));', [2, 5, 8]),
+Assign1 = Seq('assign1',
+  ['ID', 'ASSIGN', n, Exp],
+  '=(%s,%s)', [0, 3]
+)
+
+Assign2 = Seq('assign2',
+  ['ID', 'ASSIGN', n, Exp, 'ASSIGN', n, Exp],
+  '=(%s,%s,%s)', [0, 3, 6]
+)
+
+NewAssign = Or('newassign', [
+  'ID',
+  Assign1,
+  Assign2,
 ])
 
-Renew = Or('renew', [
-  Seq('renew1',
-    ['RENEW', n, 'ID', 'ASSIGN', n, Exp],
-    'renew(=(%s,%s));', [2, 5]),
-])
+New = Seq('new',
+  ['NEW', n, NewAssign,
+    Star('news', Seq('newcomma', ['COMMA', n, NewAssign], ',%s', [2]))],
+  'new(%s%s);', [2, 3]
+)
 
-Del = Or('del', [
-  Seq('del1',
-    ['DEL', n, 'ID',
-      Star('delstar', Seq('delpred', ['COMMA', n, 'ID'], ',%s', [2])),
-    ],
-    'del(%s);', [2]),
-])
+Renew = Seq('renew',
+  ['RENEW', n, Assign1,
+    Star('renews', Seq('renewcomma', ['COMMA', n, Assign1], ',%s', [2]))],
+  'renew(%s%s);', [2, 3]
+)
+
+Del = Seq('del',
+  ['DEL', n, 'ID',
+    Star('dels', Seq('delcomma', ['COMMA', n, 'ID'], ',%s', [2]))],
+  'del(%s%s);', [2, 3]
+)
+
 
 StmtNew = Or('stmtnew', [
   New,
-#  Renew,
-#  Del,
+  Renew,
+  Del,
 ])
 
 
 # Assignment statement
-StmtAssign = Or('stmtassign', [
-  Seq('=',
-    [IdProp, 'EQUALS', n, Exp],
-    '%s(%s,%s);', [1, 0, 3]),
-  Seq('+=',
-    [IdProp, 'PLUSEQUALS', n, Exp],
-    '%s(%s,%s);', [1, 0, 3]),
-  Seq('-=',
-    [IdProp, 'MINUSEQUALS', n, Exp],
-    '%s(%s,%s);', [1, 0, 3]),
-  Seq('*=',
-    [IdProp, 'MULTEQUALS', n, Exp],
-    '%s(%s,%s);', [1, 0, 3]),
-  Seq('/=',
-    [IdProp, 'DIVEQUALS', n, Exp],
-    '%s(%s,%s);', [1, 0, 3]),
-  Seq('%=',
-    [IdProp, 'MODEQUALS', n, Exp],
-    '%s(%s,%s);', [1, 0, 3]),
-  Seq('^=',
-    [IdProp, 'POWEREQUALS', n, Exp],
-    '%s(%s,%s);', [1, 0, 3]),
-  Seq('|=',
-    [IdProp, 'PIPEEQUALS', n, Exp],
-    '%s(%s,%s);', [1, 0, 3]),
-  Seq('&=',
-    [IdProp, 'AMPEQUALS', n, Exp],
-    '%s(%s,%s);', [1, 0, 3]),
-  Seq('~=',
-    [IdProp, 'TILDEEQUALS', n, Exp],
-    '%s(%s,%s);', [1, 0, 3]),
-])
+StmtAssign = Seq('stmtassign',
+  [IdProp, Or('assignop', [
+    'EQUALS',
+    'PLUSEQUALS',
+    'MINUSEQUALS',
+    'MULTEQUALS',
+    'DIVEQUALS',
+    'MODEQUALS',
+    'POWEREQUALS',
+    'PIPEEQUALS',
+    'AMPEQUALS',
+    'TILDEEEQUALS',
+  ]), n, Exp],
+  '%s(%s,%s);', [1, 0, 3]
+)
 
 
 # Procedure call statement
@@ -182,16 +174,18 @@ StmtProcCall = Seq('stmtproccall',
 #If = Or('if', [
 #  Seq('if1',
 #    ['IF', n, Exp, 'COMMA', Stmt],
-#    '%s(%s,%s);', 
+#    'if(%s,%s);', [2, 4]),
+#  Seq('if2',
+#    ['IF', n, Exp, 'COMMA', Stmt, Endl, n, Elif],
+#    'if(%s,%s,elif(%s));', [2, 4, 7]),
+#  Seq('if3',
+#    ['IF', n, Exp, n, CodeBlock
 #])
-
-If = ''
-Switch = ''
-
-StmtBranch = Or('stmtbranch', [
-  If,
-  Switch
-])
+#
+#StmtBranch = Or('stmtbranch', [
+#  If,
+#  Switch,
+#])
 
 
 # Loop construct
@@ -231,15 +225,15 @@ StmtBreak = Or('stmtbreak', [
 
 
 # Statement
-#Stmt = Or('stmt', [
-#  Seq('stmtstmtnew', [StmtNew, Endl]),
-#  StmtAssign,
-#  StmtProcCall,
-#  StmtBranch,
-#  StmtLoop,
-#  StmtBreak,
-#])
-Stmt = Seq('stmtstmtnew', [StmtNew, Endl])
+Stmt = Or('stmt', [
+  Seq('stmtstmtnew', [StmtNew, Endl]),
+  Seq('stmtstmtassign', [StmtAssign, Endl]),
+  Seq('stmtstmtproccall', [StmtProcCall, Endl]),
+  #Seq('stmtstmtbranch', [StmtBranch, Endl]),
+  #StmtLoop,
+  #StmtBreak,
+])
+#Stmt = Seq('stmtstmtnew', [StmtNew, Endl])
 
 
 # Blocks
@@ -255,6 +249,11 @@ CodeBlockStmtOrEnd = Or('codeblockstmtorend', [
 # Endl -- in this case, call StmtEnd which will pop the stack and emit a }.
 CodeBlockBody = Seq('codeblockbody',
   [n, Action(Stmt, StmtEnd), Star('codeblockstmts', CodeBlockStmtOrEnd)],
+  '', []
+)
+
+CodeBlock = Seq('codeblock',
+  [Action('LBRACE', BlockStart), n, CodeBlockBody],
   '', []
 )
 

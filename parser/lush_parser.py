@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-import sys
 import logging
+import sys
+import traceback as tb
 from LexToken import LexToken, NewlineToken
 from LushParser import LushParser
 logging.basicConfig(filename="parse.log", level=logging.DEBUG)
@@ -29,8 +30,7 @@ def parse(debug=0):
       logging.info("Keyboard interrupt; done")
       break
     except:
-      e = sys.exc_info()
-      logging.error("Error reading from stdin: (%s,%s,%s)" % e)
+      logging.error("Error reading from stdin: %s" % tb.format_exc())
       return
     if not line:
       logging.info("End of input; done")
@@ -63,16 +63,14 @@ def parse(debug=0):
         try:
           print ast
           sys.stdout.flush()
-        except:
-          e = sys.exc_info()
-          logging.error("Error writing output: (%s,%s,%s)" % e)
-          print "Error writing output: (%s,%s,%s)" % e
+        except Exception as e:
+          logging.error("Error writing output: %s" % tb.format_exc())
+          print "Error writing output: %s" % e
           sys.stdout.flush()
           return
-    except:
-      e = sys.exc_info()
-      logging.error("Parse error: (%s,%s,%s)" % e)
-      print "Parse error: (%s,%s,%s)" % e
+    except Exception as e:
+      logging.error("Parse error: %s" % tb.format_exc())
+      print "Parse error: %s" % e
       sys.stdout.flush()
       parser = Restart()
 
