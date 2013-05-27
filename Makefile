@@ -25,14 +25,11 @@ CC = $(COMPILER) -I./ -I$(QUEX_PATH) $(CCFLAG_ASSERTS) \
 
 LD = $(COMPILER)
 
-#  %.o: %.cpp $(SOURCES)
-#  	$(CC) -c $< -o $@
-
 # Rules
 all: lush
 #all: tidy
 
-lush: lush_lexer lush_parser shell
+lush: lush_lexer lush_parser lush_eval shell
 
 lush_lexer: lexer/lexer.cpp lexer/tiny_lexer_st.cpp
 	$(CC) -o $@ $^
@@ -46,11 +43,20 @@ lexer/tiny_lexer_st.cpp: lexer/lexer.qx $(QUEX_CORE)
 lush_parser: parser/lush_parser.py
 	ln -s parser/lush_parser.py lush_parser
 
+eval/eval.o: eval/eval.cpp
+	g++ -Iutil $(CFLAGS) -c $< -o $@
+
+lush_eval: eval/eval.o
+	g++ -Iutil eval/eval.cpp -o lush_eval
+
+shell/shell.o: shell/shell.cpp
+	g++ -Iutil $(CFLAGS) -c $< -o $@
+
 shell: shell/file_descriptor.o shell/shell.o
-	g++ shell/file_descriptor.cpp shell/shell.cpp -o lush
+	g++ -Iutil shell/file_descriptor.cpp shell/shell.cpp -o lush
 
 tidy: lexer lush
 	rm -f lexer/tiny_lexer_st* parser/*.pyc shell/file_descriptor.o shell/shell.o
 
 clean:
-	rm -f lexer/tiny_lexer_st* parser/*.pyc shell/file_descriptor.o shell/shell.o lush_lexer lush_parser lush Parser.log
+	rm -f lexer/tiny_lexer_st* parser/*.pyc eval/eval.o shell/file_descriptor.o shell/shell.o lush_lexer lush_parser lush_eval lush Parser.log
