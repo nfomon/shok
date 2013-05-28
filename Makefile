@@ -56,7 +56,7 @@ shell: shell/file_descriptor.o shell/shell.o
 	g++ -Iutil shell/file_descriptor.cpp shell/shell.cpp -o lush
 
 tidy: lexer lush
-	rm -f lexer/tiny_lexer_st* parser/*.pyc shell/file_descriptor.o shell/shell.o
+	rm -f lexer/tiny_lexer_st* parser/*.pyc eval/eval.o shell/file_descriptor.o shell/shell.o Parser.log
 
 clean:
 	rm -f lexer/tiny_lexer_st* parser/*.pyc eval/eval.o shell/file_descriptor.o shell/shell.o lush_lexer lush_parser lush_eval lush Parser.log
