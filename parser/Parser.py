@@ -10,6 +10,7 @@ class Parser(object):
     self.name = rule.name
     self.bad = self.rule.bad
     self.done = self.rule.done
+    self.signalRestart = False
     if parent:
       self.parent = parent
       self.top = parent.top
@@ -18,6 +19,10 @@ class Parser(object):
       self.top = self
   def __repr__(self):
     return '%s (%s)' % (self.name, self.rule.name)
+  def restart(self):
+    logging.info("Restarting Parser %s" % self.name)
+    self.bad = self.rule.bad
+    self.done = self.rule.done
 
 class TerminalParser(Parser):
   def __init__(self,rule,parent):
@@ -27,7 +32,15 @@ class TerminalParser(Parser):
     self.tname = self.rule.items[0]
     self.value = None
 
+  def restart(self):
+    Parser.restart(self)
+    self.tname = self.rule.items[0]
+    self.value = None
+
   def parse(self,token):
+    if self.signalRestart:
+      self.restart()
+      self.signalRestart = False
     logging.debug("%s TerminalParser parsing '%s'" % (self.name, token))
     if self.bad:
       raise Exception("%s TerminalParser already bad" % self.name)
@@ -65,7 +78,19 @@ class SeqParser(Parser):
     while len(self.displays) != len(self.rule.items):
       self.displays.append('')
 
+  def restart(self):
+    Parser.restart(self)
+    self.parsers = []
+    self.active = None
+    self.pos = 0
+    self.displays = []
+    while len(self.displays) != len(self.rule.items):
+      self.displays.append('')
+
   def parse(self,token):
+    if self.signalRestart:
+      self.restart()
+      self.signalRestart = False
     logging.debug("%s SeqParser attempting to parse token '%s'" % (self.name, token))
 
     if self.pos >= len(self.rule.items):
@@ -153,7 +178,16 @@ class OrParser(Parser):
     for item in rule.items:
       self.parsers.append(MakeParser(item, self))
 
+  def restart(self):
+    Parser.restart(self)
+    self.parsers = []
+    for item in rule.items:
+      self.parsers.append(MakeParser(item, self))
+
   def parse(self,token):
+    if self.signalRestart:
+      self.restart()
+      self.signalRestart = False
     logging.debug("%s OrParser parsing '%s'" % (self.name, token))
     if len(self.parsers) == 0:
       logging.warning("%s OrParser can't parse; no productions" % self.name)
@@ -207,7 +241,15 @@ class PlusParser(Parser):
     self.disps = []
     self.reps = 0
 
+  def restart(self):
+    Parser.restart(self)
+    self.active = None
+    self.disps = []
+
   def parse(self,token):
+    if self.signalRestart:
+      self.restart()
+      self.signalRestart = False
     logging.debug("%s PlusParser parsing token '%s'" % (self.name, token))
     if not self.active:
       self.active = MakeParser(self.rule.items, self)
@@ -225,6 +267,7 @@ class PlusParser(Parser):
       self.active = MakeParser(self.rule.items, self)
       self.disps.append(tempdisp)
       self.reps += 1
+      logging.debug("Re-establishing %s; reps=%s, disps=%s" % (self.name, self.reps, self.disps))
       self.parse(token)   # this is not recursive in the way that would hurt
     self.bad = self.active.bad
     self.done = self.active.done
@@ -236,7 +279,7 @@ class PlusParser(Parser):
     disps.append(self.active.display())
     s = ''
     for d in disps:
-      s += d
+      s += self.rule.display([d])
     return s
 
 # StarParser repeats its single rule 0 or more times.  That is, it always
@@ -244,6 +287,10 @@ class PlusParser(Parser):
 class StarParser(PlusParser):
   def __init__(self,rule,parent):
     PlusParser.__init__(self, rule, parent)
+    self.done = True
+    self.anyparse = False
+  def restart(self):
+    PlusParser.restart(self)
     self.done = True
     self.anyparse = False
   def parse(self,token):

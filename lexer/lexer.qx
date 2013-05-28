@@ -50,7 +50,7 @@ token {
   PIPE; AMP; TILDE; DOUBLETILDE;
 
   // Assignment operators
-  ASSIGN; PLUSEQUALS; MINUSEQUALS; MULTEQUALS; DIVEQUALS;
+  EQUALS; PLUSEQUALS; MINUSEQUALS; MULTEQUALS; DIVEQUALS;
   MODEQUALS; POWEREQUALS; PIPEEQUALS; AMPEQUALS; TILDEEQUALS;
 
   // Cast: ->
@@ -151,7 +151,7 @@ mode LUSH :
   "~~"  => QUEX_TKN_DOUBLETILDE(LexemeNull);
 
   // Assignment operators
-  "="  => QUEX_TKN_ASSIGN(LexemeNull);
+  "="  => QUEX_TKN_EQUALS(LexemeNull);
   "+=" => QUEX_TKN_PLUSEQUALS(LexemeNull);
   "-=" => QUEX_TKN_MINUSEQUALS(LexemeNull);
   "*=" => QUEX_TKN_MULTEQUALS(LexemeNull);

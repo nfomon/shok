@@ -10,7 +10,7 @@ def BlockStart(parser):
 
 def ExpBlockEnd(parser):
   logging.debug("- - EXP BLOCK END")
-  parser.top.ast += "exp(" + parser.active.display() + ')}'
+  parser.top.ast += "exp(" + parser.parent.displays[0] + ')}'
   parser.top.stack.pop()
 
 def BlockLazyEnd(parser):
@@ -23,6 +23,7 @@ def CodeBlockEnd(parser):
   block = parser.top.stack.pop()
   logging.debug("- - - TOP WAS '%s'" % block)
   block.done = True
+  parser.top.signalRestart = True
 
 # Print out the statement
 # If we were signalled by BlockLazyEnd, output the }
@@ -35,7 +36,16 @@ def StmtEnd(parser):
     block = parser.top.stack.pop()
     logging.debug("- - - TOP WAS '%s'" % block)
     block.done = True
+    parser.top.signalRestart = True
 
+def CmdEnd(parser):
+  parser.top.ast += parser.display()
+
+def ElifAction(parser):
+  pass
+
+def ElseAction(parser):
+  pass
 
 # Basic parsing constructs
 n = Star('n',
@@ -97,12 +107,12 @@ Exp = Or('exp', [
 
 # New statement
 Assign1 = Seq('assign1',
-  ['ID', 'ASSIGN', n, Exp],
+  ['ID', 'EQUALS', n, Exp],
   '=(%s,%s)', [0, 3]
 )
 
 Assign2 = Seq('assign2',
-  ['ID', 'ASSIGN', n, Exp, 'ASSIGN', n, Exp],
+  ['ID', 'EQUALS', n, Exp, 'EQUALS', n, Exp],
   '=(%s,%s,%s)', [0, 3, 6]
 )
 
@@ -168,24 +178,38 @@ StmtProcCall = Seq('stmtproccall',
 
 
 # Branch construct
-#Stmt = []
+Stmt = []
+CodeBlock = []
 
-# Care is needed to get this right re: newlines and display()
-#If = Or('if', [
-#  Seq('if1',
-#    ['IF', n, Exp, 'COMMA', Stmt],
-#    'if(%s,%s);', [2, 4]),
-#  Seq('if2',
-#    ['IF', n, Exp, 'COMMA', Stmt, Endl, n, Elif],
-#    'if(%s,%s,elif(%s));', [2, 4, 7]),
-#  Seq('if3',
-#    ['IF', n, Exp, n, CodeBlock
-#])
-#
-#StmtBranch = Or('stmtbranch', [
-#  If,
-#  Switch,
-#])
+IfPred = Or('ifpred', [
+  Stmt,
+  Seq('ifblock', [n, CodeBlock], '%s', [1]),
+])
+
+If = Seq('if',
+  ['IF', n, Exp, IfPred],
+  'if(%s,%s);', [2, 3]
+)
+
+
+ElifPred = []
+# on 'ELIF' or 'ELSE', check if 'IF' just happened.
+Elif = Seq('elif',
+  [Action('ELIF', ElifAction), Exp, ElifPred],
+  'elif(%s,%s);', [2, 3]
+)
+
+ElsePred = []
+Else = Seq('else',
+  [Action('ELSE', ElseAction), ElsePred],
+  'else(%s);', [1]
+)
+
+Switch = []
+StmtBranch = Or('stmtbranch', [
+  If,
+  Switch,
+])
 
 
 # Loop construct
@@ -226,9 +250,9 @@ StmtBreak = Or('stmtbreak', [
 
 # Statement
 Stmt = Or('stmt', [
-  Seq('stmtstmtnew', [StmtNew, Endl]),
-  Seq('stmtstmtassign', [StmtAssign, Endl]),
-  Seq('stmtstmtproccall', [StmtProcCall, Endl]),
+  StmtNew,
+  StmtAssign,
+  StmtProcCall,
   #Seq('stmtstmtbranch', [StmtBranch, Endl]),
   #StmtLoop,
   #StmtBreak,
@@ -240,7 +264,7 @@ Stmt = Or('stmt', [
 CodeBlockStmtOrEnd = Or('codeblockstmtorend', [
   'NEWL',
   Action('RBRACE', CodeBlockEnd),
-  Action(Stmt, StmtEnd),
+  Action(Seq('codeblockstmt', [Stmt, Endl]), StmtEnd),
 ])
 
 # The command-line, which can invoke code-blocks or expression-blocks
@@ -248,22 +272,13 @@ CodeBlockStmtOrEnd = Or('codeblockstmtorend', [
 # Require at least one stmt.  Each stmt could end with an RBRACE as part of its
 # Endl -- in this case, call StmtEnd which will pop the stack and emit a }.
 CodeBlockBody = Seq('codeblockbody',
-  [n, Action(Stmt, StmtEnd), Star('codeblockstmts', CodeBlockStmtOrEnd)],
+  [n, Action(Seq('codeblockbodystmt', [Stmt, Endl]), StmtEnd), Star('codeblockstmts', CodeBlockStmtOrEnd)],
   '', []
 )
 
 CodeBlock = Seq('codeblock',
   [Action('LBRACE', BlockStart), n, CodeBlockBody],
   '', []
-)
-
-CmdBlock = Seq('cmdblock',
-  [Action('LBRACE', BlockStart),    # Emit { and push CmdBlock on stack
-  Or('cmdblockbody', [
-    Action(Seq('expblockbody', [Exp, 'RBRACE'], '%s', [0]), ExpBlockEnd),
-    CodeBlockBody,
-  ])],
-  '%s', [1]   # Only used by ExpBlock
 )
 
 
@@ -279,14 +294,33 @@ ProgramArg = Or('programarg', [
     'exp{%s};', [1]),
 ])
 
+ProgramArgs = Star('programargs',
+  ProgramArg,
+  ',%s'
+)
+
+ExpBlockProgram = Seq('expblockprogram',
+  [Exp, Action('RBRACE', ExpBlockEnd), ProgramArgs, Endl],
+  '%s', [2]
+)
+
+CmdBlock = Seq('cmdblock',
+  [Action('LBRACE', BlockStart),    # Emit { and push CmdBlock on stack
+  Or('cmdblockbody', [
+    Action(ExpBlockProgram, CmdEnd),
+    CodeBlockBody,
+  ])],
+  '', []
+)
+
 ProgramInvocation = Seq('programinvocation',
-  [Program, Star('programargs', ProgramArg, ',%s'), Endl],
+  [Program, ProgramArgs, Endl],
   'cmd(%s%s);', [0, 1]
 )
 
 CmdLine = Or('cmdline', [
   'NEWL',
-  ProgramInvocation,
+  Action(ProgramInvocation, CmdEnd),
   CmdBlock,   # Note: may be an ExpBlock as part of a program invocation
 ])
 
