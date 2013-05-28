@@ -23,7 +23,7 @@ def CodeBlockEnd(parser):
   block = parser.top.stack.pop()
   logging.debug("- - - TOP WAS '%s'" % block)
   block.done = True
-  parser.top.signalRestart = True
+  #parser.top.signalRestart = True
 
 # Print out the statement
 # If we were signalled by BlockLazyEnd, output the }
@@ -36,7 +36,7 @@ def StmtEnd(parser):
     block = parser.top.stack.pop()
     logging.debug("- - - TOP WAS '%s'" % block)
     block.done = True
-    parser.top.signalRestart = True
+    #parser.top.signalRestart = True
 
 def CmdEnd(parser):
   parser.top.ast += parser.display()
@@ -253,6 +253,7 @@ Stmt = Or('stmt', [
   StmtNew,
   StmtAssign,
   StmtProcCall,
+  CodeBlock,
   #Seq('stmtstmtbranch', [StmtBranch, Endl]),
   #StmtLoop,
   #StmtBreak,
@@ -280,6 +281,8 @@ CodeBlock = Seq('codeblock',
   [Action('LBRACE', BlockStart), n, CodeBlockBody],
   '', []
 )
+IfPred.items[1].items[1] = CodeBlock
+Stmt.items[3] = CodeBlock
 
 
 # Program invocation
