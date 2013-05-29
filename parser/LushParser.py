@@ -1,6 +1,17 @@
 from Parser import Seq, Or, Plus, Star, Action, MakeParser
 import logging
-logging.basicConfig(filename="LushParser.log", level=logging.DEBUG)
+logging.basicConfig(filename="LushParser.log", level=logging.DEBUG)   # FAIL
+
+class Future(object):
+  def __init__(self,name):
+    self.name = name
+
+def Replace(rule,name,new):
+  logging.debug("REPLACE r=%s i=%s n=%s new=%s" % (rule.name, rule.items, name, new))
+  for i, item in enumerate(rule.items):
+    if isinstance(item, Future):
+      if item.name == name:
+        rule.items[i] = new
 
 # Actions
 def BlockStart(parser):
@@ -21,9 +32,8 @@ def CodeBlockEnd(parser):
   logging.debug("- - BLOCK END")
   parser.top.ast += '}'
   block = parser.top.stack.pop()
-  logging.debug("- - - TOP WAS '%s'" % block)
-  block.done = True
-  #parser.top.signalRestart = True
+  logging.debug("- - - signalling restart of block '%s'" % block)
+  block.signalRestart = True
 
 # Print out the statement
 # If we were signalled by BlockLazyEnd, output the }
@@ -34,9 +44,8 @@ def StmtEnd(parser):
     parser.top.codeblocklazyends -= 1
     parser.top.ast += '}'
     block = parser.top.stack.pop()
-    logging.debug("- - - TOP WAS '%s'" % block)
-    block.done = True
-    #parser.top.signalRestart = True
+    logging.debug("- - - signalling restart of block '%s'" % block)
+    block.signalRestart = True
 
 def CmdEnd(parser):
   parser.top.ast += parser.display()
@@ -88,20 +97,34 @@ BinOp = Or('binop', [
   'USEROP',
 ])
 
-Exp = []
+List = Seq('list',
+  ['LBRACKET', Future('Exp'), 'RBRACKET'],
+  'list(%s)', [1]
+)
+
+Parens = Seq('parens',
+  ['LPAREN', Future('Exp'), 'RPAREN'],
+  '(%s)', [1]
+)
+
+Object = Seq('object',
+  ['LBRACE', Future('Exp'), 'RBRACE'],
+  'obj{%s}', [1]
+)
+
 Atom = Or('atom', [
   Literal,
   'ID',
-  Seq('list', ['LBRACKET', Exp, 'RBRACKET'], 'list(%s)', [1]),
-  Seq('parens', ['LPAREN', Exp, 'RPAREN'], '(%s)', [1]),
-  Seq('object', ['LBRACE', Exp, 'RBRACE'], 'obj{%s}', [1]),
+  List,
+  Parens,
+  Object,
 ])
 
 Exp = Or('exp', [
   Atom,
   Seq('prefix', [PrefixOp, n, Atom], '%s(%s)', [0,2]),
-  Seq('binop', [Atom, BinOp, n, Exp], '%s(%s,%s)', [1,0,3]),
-  Seq('prefixbinop', [PrefixOp, n, Atom, BinOp, n, Exp], '%s(%s(%s),%s)', [3,0,2,5])
+  Seq('binop', [Atom, BinOp, n, Future('Exp')], '%s(%s,%s)', [1,0,3]),
+  Seq('prefixbinop', [PrefixOp, n, Atom, BinOp, n, Future('Exp')], '%s(%s(%s),%s)', [3,0,2,5])
 ])
 
 
@@ -124,19 +147,19 @@ NewAssign = Or('newassign', [
 
 New = Seq('new',
   ['NEW', n, NewAssign,
-    Star('news', Seq('newcomma', ['COMMA', n, NewAssign], ',%s', [2]))],
+    Star('news', ['COMMA', n, NewAssign], ',%s', [2])],
   'new(%s%s);', [2, 3]
 )
 
 Renew = Seq('renew',
   ['RENEW', n, Assign1,
-    Star('renews', Seq('renewcomma', ['COMMA', n, Assign1], ',%s', [2]))],
+    Star('renews', ['COMMA', n, Assign1], ',%s', [2])],
   'renew(%s%s);', [2, 3]
 )
 
 Del = Seq('del',
   ['DEL', n, 'ID',
-    Star('dels', Seq('delcomma', ['COMMA', n, 'ID'], ',%s', [2]))],
+    Star('dels', ['COMMA', n, 'ID'], ',%s', [2])],
   'del(%s%s);', [2, 3]
 )
 
@@ -168,8 +191,8 @@ StmtAssign = Seq('stmtassign',
 
 # Procedure call statement
 ExpList = Seq('explist',
-  [Exp, Star('expliststar', Seq('explistpred', ['COMMA', n, Exp], ',%s', [2]))
-])
+  [Exp, Star('explists', ['COMMA', n, Exp], ',%s', [2])]
+)
 
 StmtProcCall = Seq('stmtproccall',
   [IdProp, 'LPAREN', n, ExpList, n, 'RPAREN'],
@@ -178,12 +201,9 @@ StmtProcCall = Seq('stmtproccall',
 
 
 # Branch construct
-Stmt = []
-CodeBlock = []
-
 IfPred = Or('ifpred', [
-  Stmt,
-  Seq('ifblock', [n, CodeBlock], '%s', [1]),
+  Future('Stmt'),
+  Seq('ifblock', [n, Future('CodeBlock')], '%s', [1]),
 ])
 
 If = Seq('if',
@@ -205,10 +225,9 @@ Else = Seq('else',
   'else(%s);', [1]
 )
 
-Switch = []
 StmtBranch = Or('stmtbranch', [
   If,
-  Switch,
+#  Future('Switch'),
 ])
 
 
@@ -253,7 +272,8 @@ Stmt = Or('stmt', [
   StmtNew,
   StmtAssign,
   StmtProcCall,
-  CodeBlock,
+  Future('CodeBlock'),
+  StmtBranch,
   #Seq('stmtstmtbranch', [StmtBranch, Endl]),
   #StmtLoop,
   #StmtBreak,
@@ -281,8 +301,6 @@ CodeBlock = Seq('codeblock',
   [Action('LBRACE', BlockStart), n, CodeBlockBody],
   '', []
 )
-IfPred.items[1].items[1] = CodeBlock
-Stmt.items[3] = CodeBlock
 
 
 # Program invocation
@@ -326,6 +344,16 @@ CmdLine = Or('cmdline', [
   Action(ProgramInvocation, CmdEnd),
   CmdBlock,   # Note: may be an ExpBlock as part of a program invocation
 ])
+
+
+# Refresh missed rule dependencies
+Replace(Exp, 'Exp', Exp)
+Replace(List, 'Exp', Exp)
+Replace(Parens, 'Exp', Exp)
+Replace(Object, 'Exp', Exp)
+Replace(IfPred, 'Stmt', Stmt)
+Replace(IfPred, 'CodeBlock', CodeBlock)
+Replace(Stmt, 'CodeBlock', CodeBlock)
 
 
 # Lush
