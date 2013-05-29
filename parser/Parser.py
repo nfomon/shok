@@ -91,7 +91,7 @@ class SeqParser(Parser):
     if self.signalRestart:
       self.restart()
       self.signalRestart = False
-    logging.debug("%s SeqParser attempting to parse token '%s'" % (self.name, token))
+    logging.debug("%s SeqParser at pos=%s attempting to parse token '%s'" % (self.name, self.pos, token))
 
     if self.pos >= len(self.rule.items):
       logging.debug("%s SeqParser moved beyond rule items; now bad" % self.name)
@@ -106,6 +106,7 @@ class SeqParser(Parser):
     if self.pos != len(self.parsers)-1:
       raise Exception("%s SeqParser: parsers (%s) vs. self.pos=%s mismatch; len=%s, lenrule=%s" % (self.name, self.parsers, self.pos, len(self.parsers), len(self.rule.items)))
     if self.bad:
+      self.done = False
       raise Exception("%s SeqParser is bad; can't accept token '%s'" % (self.name, token))
     logging.info("%s SeqParser parsing token '%s'; active=%s,%s" % (self.name, token, self.pos, self.active.name))
 
@@ -122,7 +123,9 @@ class SeqParser(Parser):
     # if last
     if self.pos == len(self.rule.items)-1:
       self.bad = self.bad or self.active.bad
-      if not self.bad:
+      if self.bad:
+        self.done = False
+      else:
         self.done = self.active.done
         if self.done:
           self.displays[self.pos] = self.active.display()
@@ -165,7 +168,7 @@ class SeqParser(Parser):
     if self.bad or not self.done:
       raise Exception("%s SeqParser is unfinished" % self.name)
     logging.debug("%s SeqParser is displaying; bad=%s done=%s displays=%s" % (self.name, self.bad, self.done, self.displays))
-    logging.debug(" - will become: %s" %  self.rule.display(self.displays))
+    logging.debug(" - will become: '%s'" % self.rule.display(self.displays))
     return self.rule.display(self.displays)
 
 # The OrParser's rule is a list of Rules that will be matched in
