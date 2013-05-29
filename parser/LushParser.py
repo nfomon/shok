@@ -71,7 +71,7 @@ Endl = Or('endl', [
 # Object property access
 # Currently only goes through an identifier
 IdProp = Seq('idprop',
-  ['ID', Star('prop', ['DOT', 'ID'], '.%s', [1])],
+  ['ID', Star('props', Seq('prop', ['DOT', 'ID'], '.%s', [1]))],
   '%s%s', [0, 1]
 )
 
@@ -147,19 +147,19 @@ NewAssign = Or('newassign', [
 
 New = Seq('new',
   ['NEW', n, NewAssign,
-    Star('news', ['COMMA', n, NewAssign], ',%s', [2])],
+    Star('news', Seq('commanew', ['COMMA', n, NewAssign], ',%s', [2]))],
   'new(%s%s);', [2, 3]
 )
 
 Renew = Seq('renew',
   ['RENEW', n, Assign1,
-    Star('renews', ['COMMA', n, Assign1], ',%s', [2])],
+    Star('renews', Seq('commarenew', ['COMMA', n, Assign1], ',%s', [2]))],
   'renew(%s%s);', [2, 3]
 )
 
 Del = Seq('del',
   ['DEL', n, 'ID',
-    Star('dels', ['COMMA', n, 'ID'], ',%s', [2])],
+    Star('dels', Seq('commadel', ['COMMA', n, 'ID'], ',%s', [2]))],
   'del(%s%s);', [2, 3]
 )
 
@@ -191,7 +191,8 @@ StmtAssign = Seq('stmtassign',
 
 # Procedure call statement
 ExpList = Seq('explist',
-  [Exp, Star('explists', ['COMMA', n, Exp], ',%s', [2])]
+  [Exp, Star('explists', Seq('commaexp', ['COMMA', n, Exp], ',%s', [2]))],
+  '%s%s', [0, 1]
 )
 
 StmtProcCall = Seq('stmtproccall',

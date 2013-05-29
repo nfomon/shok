@@ -281,9 +281,9 @@ class PlusParser(Parser):
     disps = copy(self.disps)
     disps.append(self.active.display())
     s = ''
-    for d in disps:
-      s += self.rule.display([d])
-    return s
+    for m in range(0,len(disps)):
+      s += self.rule.msg
+    return s % tuple(disps)
 
 # StarParser repeats its single rule 0 or more times.  That is, it always
 # starts off 'done'.
@@ -345,10 +345,10 @@ class Rule:
     self.done = False
 
   def display(self,displays):
-    if self.msg:
-      t = [displays[x] for x in self.inds]
-      return self.msg % tuple(t)
-    return ''
+    if not self.msg:
+      return ''
+    t = [displays[x] for x in self.inds]
+    return self.msg % tuple(t)
 
 class Terminal(Rule):
   def __init__(self,name,items=None,msg='%s',inds=[0]):
