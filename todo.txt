@@ -1,0 +1,41 @@
+1. LISP-style ASTs
+
+2. Evaluator
+
+3. Tests
+
+4. Replace exp-block-program with exp-display
+
+
+Checklist:
+----------
+Lists in expressions
+Parens in expressions
+Objects in expressions
+Tuples in expressions
+Binary operators
+Prefix unary operators
+Operator precedence
+Object property access (in lvalues and expressions)
+Int literals
+Fixed literals
+Str literals
+Regexp literals
+Path literals
+Label literals
+User-defined operators
+Procedure call
+Method call
+Function definitions
+Switch construct
+Loop
+Labelled Loop
+Repeat loop
+While loop
+Each loop
+Break
+Labelled break
+Continue
+Labelled continue
+Return
+Yield
