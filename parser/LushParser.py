@@ -355,6 +355,8 @@ Program = 'ID'
 
 ProgramArg = Or('programarg', [
   'ID',
+  'PLUS',
+  'MINUS',
   Seq('programargexpblock',
     ['LBRACE', Exp, 'RBRACE'],
     '{(exp %s)};', [1]),
