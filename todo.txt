@@ -1,10 +1,8 @@
-1. LISP-style ASTs
+1. Evaluator
 
-2. Evaluator
+2. Tests
 
-3. Tests
-
-4. Replace exp-block-program with exp-display
+3. Replace exp-block-program with exp-display
 
 
 Checklist:
@@ -39,3 +37,4 @@ Continue
 Labelled continue
 Return
 Yield
+Non-horrible error handling
