@@ -332,8 +332,12 @@ class ActionParser(Parser):
       self.rule.func(self)
       self.actioned = True
 
+  # The Action's msg should contain at most a single %s, which will be filled
+  # by the display of its sub-parser.  It may have other text in its msg which
+  # we'll want to display too.  So we let the Rule do the work.
   def display(self):
-    return self.active.display()
+    d = self.active.display()
+    return self.rule.display([d])
 
 class Rule:
   def __init__(self,name,items,msg='%s',inds=[0]):
@@ -369,8 +373,8 @@ class Star(Rule):
   pass
 
 class Action(Rule):
-  def __init__(self,items,func):
-    Rule.__init__(self, "action(%s,%s)" % (items, func), items)
+  def __init__(self,items,func,msg='%s',inds=[0]):
+    Rule.__init__(self, "action(%s,%s)" % (items, func), items, msg, inds)
     self.func = func
 
 def MakeRule(x):

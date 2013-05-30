@@ -16,6 +16,9 @@ def Replace(rule,name,new):
 # Actions
 def BlockStart(parser):
   logging.debug("- - BLOCK START")
+  if len(parser.top.stack) > 0 and hasattr(parser.top.stack[-1], 'preblock') and parser.top.stack[-1].preblock:
+    parser.top.ast += parser.top.stack[-1].preblock
+    parser.top.stack[-1].preblock = ''
   parser.top.stack.append(parser.parent)
   parser.top.ast += '{'
 
@@ -39,11 +42,11 @@ def CodeBlockEnd(parser):
 # If we were signalled by BlockLazyEnd, output the }
 def StmtEnd(parser):
   logging.debug("- - STMT END: %s" % parser.name)
-  if parser.active.parsers[0].name != "stmt":
-    raise Exception("Cannot find Stmt through StmtEnd's parser %s" % parser.name)
-  parser.top.laststatement = parser.active.parsers[0]
+      #if parser.active.parsers[0].name != "stmt":
+  if len(parser.top.stack) > 0 and hasattr(parser.top.stack[-1], 'preblock') and parser.top.stack[-1].preblock:
+    parser.top.ast += parser.top.stack[-1].preblock
+    parser.top.stack[-1].preblock = ''
   parser.top.ast += parser.display()
-  parser.laststatement = parser
   if parser.top.codeblocklazyends > 0:
     parser.top.codeblocklazyends -= 1
     parser.top.ast += '}'
@@ -51,25 +54,37 @@ def StmtEnd(parser):
     logging.debug("- - - signalling restart of block '%s'" % block)
     block.signalRestart = True
 
+def StmtIfCheck(parser):
+  logging.debug("- - STMT IF CHECK")
+  stmt = parser.active.doneparsers[0].name
+  if stmt == "if" or stmt == "elif":
+    parser.top.stack[-1].ifstatement = True
+  else:
+    parser.top.stack[-1].ifstatement = False
+
 def CmdEnd(parser):
+  logging.debug("- - CMD END")
   parser.top.ast += parser.display()
 
 def PreBlock(parser):
-  parser.top.ast += parser.display()
+  logging.debug("- - PRE BLOCK")
+  parser.top.stack[-1].preblock = parser.display()
 
-def ElifAction(parser):
-  last = parser.laststatement;
-  if not last:
-    raise Exception("Cannot elif without a preceding statement")
-  if last.name != "if" and last.name != "elif":
-    raise Exception("elif must follow an if or elif statement")
+def ElifCheck(parser):
+  logging.debug("- - ELIF ACTION")
+  if not hasattr(parser.top.stack[-1], 'ifstatement'):
+    raise Exception("Cannot elif without a preceding if or elif statement")
+  ifstmt = parser.top.stack[-1].ifstatement
+  if not ifstmt:
+    raise Exception("Cannot elif without a preceding if or elif statement")
 
-def ElseAction(parser):
-  last = parser.laststatement;
-  if not last:
-    raise Exception("Cannot else without a preceding statement")
-  if last.name != "if" and last.name != "elif":
-    raise Exception("else must follow an if or elif statement")
+def ElseCheck(parser):
+  logging.debug("- - ELSE ACTION")
+  if not hasattr(parser.top.stack[-1], 'ifstatement'):
+    raise Exception("Cannot else without a preceding if or elif statement")
+  ifstmt = parser.top.stack[-1].ifstatement
+  if not ifstmt:
+    raise Exception("Cannot else without a preceding if or elif statement")
 
 # Basic parsing constructs
 n = Star('n',
@@ -143,7 +158,7 @@ Exp = Or('exp', [
 ])
 
 
-# New statement
+# New statements
 Assign1 = Seq('assign1',
   ['ID', 'EQUALS', n, Exp],
   '=(%s,%s)', [0, 3]
@@ -154,6 +169,7 @@ Assign2 = Seq('assign2',
   '=(%s,%s,%s)', [0, 3, 6]
 )
 
+# New
 NewAssign = Or('newassign', [
   'ID',
   Assign1,
@@ -166,12 +182,14 @@ New = Seq('new',
   'new(%s%s);', [2, 3]
 )
 
+# Renew
 Renew = Seq('renew',
   ['RENEW', n, Assign1,
     Star('renews', Seq('commarenew', ['COMMA', n, Assign1], ',%s', [2]))],
   'renew(%s%s);', [2, 3]
 )
 
+# Del
 Del = Seq('del',
   ['DEL', n, 'ID',
     Star('dels', Seq('commadel', ['COMMA', n, 'ID'], ',%s', [2]))],
@@ -186,7 +204,7 @@ StmtNew = Or('stmtnew', [
 ])
 
 
-# Assignment statement
+# Assignment statements
 StmtAssign = Seq('stmtassign',
   [IdProp, Or('assignop', [
     'EQUALS',
@@ -204,7 +222,7 @@ StmtAssign = Seq('stmtassign',
 )
 
 
-# Procedure call statement
+# Procedure call statements
 ExpList = Seq('explist',
   [Exp, Star('explists', Seq('commaexp', ['COMMA', n, Exp], ',%s', [2]))],
   '%s%s', [0, 1]
@@ -216,7 +234,8 @@ StmtProcCall = Seq('stmtproccall',
 )
 
 
-# Branch construct
+# Branch constructs
+# If
 IfPred = Or('ifpred', [
   Seq('ifline', ['COMMA', Future('Stmt')], '%s', [1]),
   Seq('ifblock', [n, Future('CodeBlock')], '%s', [1]),
@@ -227,22 +246,30 @@ If = Seq('if',
   '%s);', [1]
 )
 
+# Elif
+ElifPred = Or('elifpred', [
+  Seq('elifline', ['COMMA', Future('Stmt')], '%s', [1]),
+  Seq('elifblock', [n, Future('CodeBlock')], '%s', [1]),
+])
 
-ElifPred = []
-# on 'ELIF' or 'ELSE', check if 'IF' just happened.
 Elif = Seq('elif',
-  [Action('ELIF', ElifAction), Exp, ElifPred],
-  'elif(%s,%s);', [2, 3]
+  [Action(Seq('elifstart', [Action('ELIF', ElifCheck), n, Exp], 'elif(%s,', [2]), PreBlock), ElifPred],
+  '%s);', [1]
 )
 
-ElsePred = []
+# Else
+ElsePred = Or('elsepred', [
+  Future('Stmt'),
+  Seq('elseblock', [n, Future('CodeBlock')], '%s', [1]),
+])
+
 Else = Seq('else',
-  [Action('ELSE', ElseAction), ElsePred],
-  'else(%s);', [1]
+  [Action(Action('ELSE', ElseCheck, 'else(', []), PreBlock), ElsePred],
+  '%s);', [1]
 )
 
 
-# Loop construct
+# Loop constructs
 Loop = ''
 LabelLoop = ''
 Repeat = ''
@@ -258,7 +285,7 @@ StmtLoop = Or('stmtloop', [
 ])
 
 
-# Break construct
+# Break constructs
 StmtBreak = Or('stmtbreak', [
   'BREAK',
   Seq('breaklabel',
@@ -278,21 +305,21 @@ StmtBreak = Or('stmtbreak', [
 ])
 
 
-# Statement
-Stmt = Or('stmt', [
+# Statements
+Stmt1 = Or('stmt1', [
   StmtNew,
   StmtAssign,
   StmtProcCall,
   Future('CodeBlock'),
   If,
-  #Elif,
-  #Else,
+  Elif,
+  Else,
   #Future('Switch'),
   #Seq('stmtstmtbranch', [StmtBranch, Endl]),
   #StmtLoop,
   #StmtBreak,
 ])
-#Stmt = Seq('stmtstmtnew', [StmtNew, Endl])
+Stmt = Action(Stmt1, StmtIfCheck)
 
 
 # Blocks
@@ -339,6 +366,9 @@ ExpBlockProgram = Seq('expblockprogram',
   '%s', [2]
 )
 
+# A CmdBlock is when a { occurs at the start of a commandline.  We don't yet
+# know if it's a codeblock (list of statements) or an expression block (single
+# expression which will become the name of a program to invoke).
 CmdBlock = Seq('cmdblock',
   [Action('LBRACE', BlockStart),    # Emit { and push CmdBlock on stack
   Or('cmdblockbody', [
@@ -368,7 +398,11 @@ Replace(Parens, 'Exp', Exp)
 Replace(Object, 'Exp', Exp)
 Replace(IfPred.items[0], 'Stmt', Stmt)
 Replace(IfPred.items[1], 'CodeBlock', CodeBlock)
-Replace(Stmt, 'CodeBlock', CodeBlock)
+Replace(ElifPred.items[0], 'Stmt', Stmt)
+Replace(ElifPred.items[1], 'CodeBlock', CodeBlock)
+Replace(ElsePred, 'Stmt', Stmt)
+Replace(ElsePred.items[1], 'CodeBlock', CodeBlock)
+Replace(Stmt1, 'CodeBlock', CodeBlock)
 
 
 # Lush
@@ -380,6 +414,5 @@ def LushParser():
   parser.stack = []
   parser.ast = ''
   parser.codeblocklazyends = 0
-  parser.laststatement = None
   return parser
 
