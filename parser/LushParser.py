@@ -116,14 +116,14 @@ Literal = Or('literal', [
 ])
 
 PrefixOp = Or('prefixop', [
-  '-',
+  'MINUS',
 ])
 
 BinOp = Or('binop', [
-  '+',
-  '-',
-  '*',
-  '/',
+  'PLUS',
+  'MINUS',
+  'MULT',
+  'DIV',
   'USEROP',
 ])
 
