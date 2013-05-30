@@ -24,7 +24,7 @@ def BlockStart(parser):
 
 def ExpBlockEnd(parser):
   logging.debug("- - EXP BLOCK END")
-  parser.top.ast += "exp(" + parser.parent.displays[0] + ')}'
+  parser.top.ast += "(exp " + parser.parent.displays[0] + ')}'
   parser.top.stack.pop()
 
 def BlockLazyEnd(parser):
@@ -129,17 +129,17 @@ BinOp = Or('binop', [
 
 List = Seq('list',
   ['LBRACKET', Future('Exp'), 'RBRACKET'],
-  'list(%s)', [1]
+  '(list %s)', [1]
 )
 
 Parens = Seq('parens',
   ['LPAREN', Future('Exp'), 'RPAREN'],
-  '(%s)', [1]
+  '(paren %s)', [1]
 )
 
 Object = Seq('object',
   ['LBRACE', Future('Exp'), 'RBRACE'],
-  'obj{%s}', [1]
+  '{obj %s}', [1]
 )
 
 Atom = Or('atom', [
@@ -152,21 +152,21 @@ Atom = Or('atom', [
 
 Exp = Or('exp', [
   Atom,
-  Seq('prefix', [PrefixOp, n, Atom], '%s(%s)', [0,2]),
-  Seq('binop', [Atom, BinOp, n, Future('Exp')], '%s(%s,%s)', [1,0,3]),
-  Seq('prefixbinop', [PrefixOp, n, Atom, BinOp, n, Future('Exp')], '%s(%s(%s),%s)', [3,0,2,5])
+  Seq('prefix', [PrefixOp, n, Atom], '(%s %s)', [0,2]),
+  Seq('binop', [Atom, BinOp, n, Future('Exp')], '(%s %s %s)', [1,0,3]),
+  Seq('prefixbinop', [PrefixOp, n, Atom, BinOp, n, Future('Exp')], '(%s (%s %s) %s)', [3,0,2,5])
 ])
 
 
 # New statements
 Assign1 = Seq('assign1',
   ['ID', 'EQUALS', n, Exp],
-  '=(%s,%s)', [0, 3]
+  '(= %s %s)', [0, 3]
 )
 
 Assign2 = Seq('assign2',
   ['ID', 'EQUALS', n, Exp, 'EQUALS', n, Exp],
-  '=(%s,%s,%s)', [0, 3, 6]
+  '(= %s %s %s)', [0, 3, 6]
 )
 
 # New
@@ -178,22 +178,22 @@ NewAssign = Or('newassign', [
 
 New = Seq('new',
   ['NEW', n, NewAssign,
-    Star('news', Seq('commanew', ['COMMA', n, NewAssign], ',%s', [2]))],
-  'new(%s%s);', [2, 3]
+    Star('news', Seq('commanew', ['COMMA', n, NewAssign], ' %s', [2]))],
+  '(new %s%s);', [2, 3]
 )
 
 # Renew
 Renew = Seq('renew',
   ['RENEW', n, Assign1,
-    Star('renews', Seq('commarenew', ['COMMA', n, Assign1], ',%s', [2]))],
-  'renew(%s%s);', [2, 3]
+    Star('renews', Seq('commarenew', ['COMMA', n, Assign1], ' %s', [2]))],
+  '(renew %s%s);', [2, 3]
 )
 
 # Del
 Del = Seq('del',
   ['DEL', n, 'ID',
-    Star('dels', Seq('commadel', ['COMMA', n, 'ID'], ',%s', [2]))],
-  'del(%s%s);', [2, 3]
+    Star('dels', Seq('commadel', ['COMMA', n, 'ID'], ' %s', [2]))],
+  '(del %s%s);', [2, 3]
 )
 
 
@@ -218,19 +218,19 @@ StmtAssign = Seq('stmtassign',
     'AMPEQUALS',
     'TILDEEEQUALS',
   ]), n, Exp],
-  '%s(%s,%s);', [1, 0, 3]
+  '(%s %s %s);', [1, 0, 3]
 )
 
 
 # Procedure call statements
 ExpList = Seq('explist',
-  [Exp, Star('explists', Seq('commaexp', ['COMMA', n, Exp], ',%s', [2]))],
+  [Exp, Star('explists', Seq('commaexp', ['COMMA', n, Exp], ' %s', [2]))],
   '%s%s', [0, 1]
 )
 
 StmtProcCall = Seq('stmtproccall',
   [IdProp, 'LPAREN', n, ExpList, n, 'RPAREN'],
-  'call(%s,%s);', [0, 3]
+  '(call %s %s);', [0, 3]
 )
 
 
@@ -242,7 +242,7 @@ IfPred = Or('ifpred', [
 ])
 
 If = Seq('if',
-  [Action(Seq('ifstart', ['IF', n, Exp], 'if(%s,', [2]), PreBlock), IfPred],
+  [Action(Seq('ifstart', ['IF', n, Exp], '(if %s ', [2]), PreBlock), IfPred],
   '%s);', [1]
 )
 
@@ -253,7 +253,7 @@ ElifPred = Or('elifpred', [
 ])
 
 Elif = Seq('elif',
-  [Action(Seq('elifstart', [Action('ELIF', ElifCheck), n, Exp], 'elif(%s,', [2]), PreBlock), ElifPred],
+  [Action(Seq('elifstart', [Action('ELIF', ElifCheck), n, Exp], '(elif %s ', [2]), PreBlock), ElifPred],
   '%s);', [1]
 )
 
@@ -264,7 +264,7 @@ ElsePred = Or('elsepred', [
 ])
 
 Else = Seq('else',
-  [Action(Action('ELSE', ElseCheck, 'else(', []), PreBlock), ElsePred],
+  [Action(Action('ELSE', ElseCheck, '(else ', []), PreBlock), ElsePred],
   '%s);', [1]
 )
 
@@ -290,18 +290,18 @@ StmtBreak = Or('stmtbreak', [
   'BREAK',
   Seq('breaklabel',
     ['BREAK', 'LABEL'],
-    '%s(%s);', [0, 1]),
+    '(%s %s);', [0, 1]),
   'CONTINUE',
   Seq('continuelabel',
     ['CONTINUE', 'LABEL'],
-    '%s(%s);', [0, 1]),
+    '(%s %s);', [0, 1]),
   'RETURN',
   Seq('returnexp',
     ['RETURN', Exp],
-    '%s(%s);', [0, 1]),
+    '(%s %s);', [0, 1]),
   Seq('yield',
     ['YIELD', Exp],
-    '%s(%s);', [0, 1]),
+    '(%s %s);', [0, 1]),
 ])
 
 
@@ -353,12 +353,12 @@ ProgramArg = Or('programarg', [
   'ID',
   Seq('programargexpblock',
     ['LBRACE', Exp, 'RBRACE'],
-    'exp{%s};', [1]),
+    '{(exp %s)};', [1]),
 ])
 
 ProgramArgs = Star('programargs',
   ProgramArg,
-  ',%s'
+  ' %s'
 )
 
 ExpBlockProgram = Seq('expblockprogram',
@@ -380,7 +380,7 @@ CmdBlock = Seq('cmdblock',
 
 ProgramInvocation = Seq('programinvocation',
   [Program, ProgramArgs, Endl],
-  'cmd(%s%s);', [0, 1]
+  '(cmd %s%s);', [0, 1]
 )
 
 CmdLine = Or('cmdline', [
