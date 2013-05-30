@@ -228,10 +228,14 @@ ExpList = Seq('explist',
   '%s%s', [0, 1]
 )
 
-StmtProcCall = Seq('stmtproccall',
-  [IdProp, 'LPAREN', n, ExpList, n, 'RPAREN'],
-  '(call %s %s);', [0, 3]
-)
+StmtProcCall = Or('stmtproccall', [
+  Seq('proccallargs',
+    [IdProp, 'LPAREN', n, ExpList, n, 'RPAREN'],
+    '(call %s %s);', [0, 3]),
+  Seq('proccallvoid',
+    [IdProp, 'LPAREN', n, 'RPAREN'],
+    '(call %s);', [0]),
+])
 
 
 # Branch constructs
