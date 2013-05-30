@@ -124,6 +124,18 @@ BinOp = Or('binop', [
   'MINUS',
   'MULT',
   'DIV',
+  'MOD',
+  'POWER',
+  'PIPE',
+  'AMP',
+  'TILDE',
+  'DOUBLETILDE',
+  'LT',
+  'LE',
+  'GT',
+  'GE',
+  'EQ',
+  'NE',
   'USEROP',
 ])
 
