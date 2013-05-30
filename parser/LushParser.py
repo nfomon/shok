@@ -38,8 +38,12 @@ def CodeBlockEnd(parser):
 # Print out the statement
 # If we were signalled by BlockLazyEnd, output the }
 def StmtEnd(parser):
-  logging.debug("- - STMT END")
+  logging.debug("- - STMT END: %s" % parser.name)
+  if parser.active.parsers[0].name != "stmt":
+    raise Exception("Cannot find Stmt through StmtEnd's parser %s" % parser.name)
+  parser.top.laststatement = parser.active.parsers[0]
   parser.top.ast += parser.display()
+  parser.laststatement = parser
   if parser.top.codeblocklazyends > 0:
     parser.top.codeblocklazyends -= 1
     parser.top.ast += '}'
@@ -50,11 +54,22 @@ def StmtEnd(parser):
 def CmdEnd(parser):
   parser.top.ast += parser.display()
 
+def PreBlock(parser):
+  parser.top.ast += parser.display()
+
 def ElifAction(parser):
-  pass
+  last = parser.laststatement;
+  if not last:
+    raise Exception("Cannot elif without a preceding statement")
+  if last.name != "if" and last.name != "elif":
+    raise Exception("elif must follow an if or elif statement")
 
 def ElseAction(parser):
-  pass
+  last = parser.laststatement;
+  if not last:
+    raise Exception("Cannot else without a preceding statement")
+  if last.name != "if" and last.name != "elif":
+    raise Exception("else must follow an if or elif statement")
 
 # Basic parsing constructs
 n = Star('n',
@@ -203,13 +218,13 @@ StmtProcCall = Seq('stmtproccall',
 
 # Branch construct
 IfPred = Or('ifpred', [
-  Future('Stmt'),
+  Seq('ifline', ['COMMA', Future('Stmt')], '%s', [1]),
   Seq('ifblock', [n, Future('CodeBlock')], '%s', [1]),
 ])
 
 If = Seq('if',
-  ['IF', n, Exp, IfPred],
-  'if(%s,%s);', [2, 3]
+  [Action(Seq('ifstart', ['IF', n, Exp], 'if(%s,', [2]), PreBlock), IfPred],
+  '%s);', [1]
 )
 
 
@@ -225,11 +240,6 @@ Else = Seq('else',
   [Action('ELSE', ElseAction), ElsePred],
   'else(%s);', [1]
 )
-
-StmtBranch = Or('stmtbranch', [
-  If,
-#  Future('Switch'),
-])
 
 
 # Loop construct
@@ -274,7 +284,10 @@ Stmt = Or('stmt', [
   StmtAssign,
   StmtProcCall,
   Future('CodeBlock'),
-  StmtBranch,
+  If,
+  #Elif,
+  #Else,
+  #Future('Switch'),
   #Seq('stmtstmtbranch', [StmtBranch, Endl]),
   #StmtLoop,
   #StmtBreak,
@@ -348,12 +361,13 @@ CmdLine = Or('cmdline', [
 
 
 # Refresh missed rule dependencies
-Replace(Exp, 'Exp', Exp)
+Replace(Exp.items[2], 'Exp', Exp)
+Replace(Exp.items[3], 'Exp', Exp)
 Replace(List, 'Exp', Exp)
 Replace(Parens, 'Exp', Exp)
 Replace(Object, 'Exp', Exp)
-Replace(IfPred, 'Stmt', Stmt)
-Replace(IfPred, 'CodeBlock', CodeBlock)
+Replace(IfPred.items[0], 'Stmt', Stmt)
+Replace(IfPred.items[1], 'CodeBlock', CodeBlock)
 Replace(Stmt, 'CodeBlock', CodeBlock)
 
 
@@ -366,5 +380,6 @@ def LushParser():
   parser.stack = []
   parser.ast = ''
   parser.codeblocklazyends = 0
+  parser.laststatement = None
   return parser
 
