@@ -6,4 +6,4 @@ The lush command shell is a non-POSIX interactive command language interpreter w
 status
 ======
 
-lush is in the early stages of initial development.  Many core features have been theorized but all are suitable for discussion and replacement.
+lush is in the early stages of initial development.  It has the framework for a shell, a lexer, and a parser; it is still missing an "evaluator" (type-checking, AST execution, program invocation).  Many core features have yet to be implemented.  All language attributes are suitable for discussion and replacement.

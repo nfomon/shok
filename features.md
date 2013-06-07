@@ -10,7 +10,7 @@ that it does not interfere with the user's ability to write commands.
 General-purpose scripting languages, conversely, tend to be very poor
 environments for running programs interactively.
 
-lush takes a different approach in order to minimize the trade-off.  The key is
+lush takes a different approach in order to minimize this trade-off.  The key is
 to provide a simple syntax with which to switch between the command invocation
 shell and the embedded scripting language.  When the two modes are
 complementary, an elegant user experience emerges.
@@ -77,16 +77,12 @@ lush inherits many useful features from bash and other interactive shells:
 code-mode
 =========
 The lush scripting language is a statically-typed, prototype-based
-object-oriented programming language.  It tries to be simple and idiomatic, but
-with small amounts of magic to assist in its role as an interactive shell
-language.  Some features:
+object-oriented programming language.  It is specifically designed for its role as an interactive shell; a secure and friendly user-facing portal to the underlying operating system in a platform-independent manner.  Some features:
 
  - Native path literals and other filesystem types
  - Native job control types
  - Static type safety
  - Familiar declarative style
- - Typist-friendly syntax
- - Concurrency (coming soon)
  - Shell security-aware string escapes
  - Composable prototypes with multiple inheritance
 
