@@ -5,8 +5,10 @@ import logging
 class TerminalParser(Parser):
   def __init__(self,rule,parent):
     Parser.__init__(self, rule, parent)
+    if isinstance(self.rule.items, str):
+      self.rule.items = [self.rule.items]
     if len(self.rule.items) != 1:
-      raise Exception("TerminalParser's Terminal must have one rule.item")
+      raise Exception("TerminalParser's Terminal must have one rule.item; instead got '%s'" % self.rule.items)
     self.tname = self.rule.items[0]
     self.value = None
 
