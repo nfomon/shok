@@ -62,7 +62,7 @@ class OrParser(Parser):
     if self.bad or not self.done or len(self.doneparsers) == 0:
       raise Exception("%s OrParser is unfinished" % self.name)
     logging.debug("%s OrParser is displaying; bad=%s done=%s disp=%s" % (self.name, self.bad, self.done, self.doneparsers[0].display()))
-    return self.doneparsers[0].display()
+    return self.rule.msg % self.doneparsers[0].display()
 
 class Or(Rule):
   def MakeParser(self,parent):
