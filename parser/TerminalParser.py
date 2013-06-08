@@ -40,8 +40,10 @@ class TerminalParser(Parser):
     if self.bad or not self.done:
       raise Exception("Terminal '%s' is unmatched" % self.name)
     if self.value == None:
-      return self.tname
-    return "%s(%s)" % (self.tname, self.value)
+      if self.rule.msg.find('%s') == -1:
+        return self.rule.msg
+      return self.rule.msg % self.tname
+    return self.rule.msg % ("%s(%s)" % (self.tname, self.value))
 
 class Terminal(Rule):
   def __init__(self,name,items=None,msg='%s',inds=[0]):
