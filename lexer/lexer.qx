@@ -14,6 +14,8 @@ define {
   P_ID      [A-Za-z_][A-Za-z0-9_]*
 
   //P_REDIR
+
+  P_WS      [ \t\r\n]+
 }
 
 token {
@@ -77,10 +79,13 @@ token {
 
   // COMMAND MODE
   CMD;
+
+  // Whitespace
+  WS;
 }
 
 mode LUSH :
-<skip: [ \n\t\r] >
+//<skip: [ \n\t\r] >
 //<skip_nested_range: "(*" "*)">
 {
   on_end_of_stream => QUEX_TKN_TERMINATION;
@@ -171,6 +176,15 @@ mode LUSH :
   "[" => QUEX_TKN_LBRACKET(LexemeNull);
   "]" => QUEX_TKN_RBRACKET(LexemeNull);
   "{" => QUEX_TKN_LBRACE(LexemeNull);
+
+/*
+ * Lexer-based code-mode vs. command-mode.  Questionable...
+  "{" => {
+          QUEX_TKN_LBRACE(LexemeNull);
+          self >> CODE;
+         }
+*/
+
   "}" => QUEX_TKN_RBRACE(LexemeNull);
   "," => QUEX_TKN_COMMA(LexemeNull);
   "." => QUEX_TKN_DOT(LexemeNull);
@@ -190,6 +204,8 @@ mode LUSH :
   //LABEL
   //USEROP
   {P_ID}          => QUEX_TKN_ID(Lexeme);
+
+  {P_WS}          => QUEX_TKN_WS(LexemeNull);
 }
 
 /*

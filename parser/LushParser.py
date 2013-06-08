@@ -1,4 +1,11 @@
-from Parser import Seq, Or, Plus, Star, Action, MakeParser
+import MakeRule
+from Parser import MakeParser
+from ActionParser import Action
+from OrParser import Or
+from PlusParser import Plus
+from SeqParser import Seq
+from StarParser import Star
+from TerminalParser import Terminal
 import logging
 logging.basicConfig(filename="LushParser.log", level=logging.DEBUG)   # FAIL
 
@@ -24,7 +31,7 @@ def BlockStart(parser):
 
 def ExpBlockEnd(parser):
   logging.debug("- - EXP BLOCK END")
-  parser.top.ast += "(exp " + parser.parent.displays[0] + ')}'
+  parser.top.ast += "(exp " + parser.parent.displays[1] + ')}'
   parser.top.stack.pop()
 
 def BlockLazyEnd(parser):
@@ -86,14 +93,41 @@ def ElseCheck(parser):
   if not ifstmt:
     raise Exception("Cannot else without a preceding if or elif statement")
 
-# Basic parsing constructs
-n = Star('n',
-  'NEWL',
+# Whitespace
+# w: optional whitespace (non-newline)
+w = Star('w',
+  'WS',
+  '', []
 )
 
+# ws: mandatory whitespace (non-newline)
+ws = Plus('ws',
+  'WS',
+  '', []
+)
+
+# wn: optional whitespace preceding a single newline
+wn = Seq('wn',
+  [w, 'NEWL'],
+  '', []
+)
+
+# nw: a single newline optionally followed by whitespace
+nw = Seq('nw',
+  ['NEWL', w],
+  '', []
+)
+
+# n: any amount of optional whitespace and newlines.  Greedy!
+n = Star('n',
+  [w, Star('nn', 'NEWL', '', [])],
+  '', []
+)
+
+# Basic parsing constructs
 Endl = Or('endl', [
   'SEMI',
-  'NEWL',
+  wn,
   Action('RBRACE', BlockLazyEnd),
 ])
 
@@ -365,30 +399,34 @@ CodeBlock = Seq('codeblock',
 # CmdBlock).  ProgramArgs are allowed to be ExpBlocks.
 Program = 'ID'
 
+# We should be getting the raw text from the user instead of
+# back-tracking from these tokens.  Eventually...
 ProgramArg = Or('programarg', [
   'ID',
   'PLUS',
   'MINUS',
+  'INT',
   Seq('programargexpblock',
-    ['LBRACE', Exp, 'RBRACE'],
-    '{(exp %s)};', [1]),
+    ['LBRACE', w, Exp, w, 'RBRACE'],
+    '{(exp %s)};', [2]),
 ])
 
 ProgramArgs = Star('programargs',
-  ProgramArg,
-  ' %s'
+  Seq('wsarg', [ws, Plus('arg', ProgramArg, ' %s')], '%s', [1]),
+  ',%s'
 )
 
 ExpBlockProgram = Seq('expblockprogram',
-  [Exp, Action('RBRACE', ExpBlockEnd), ProgramArgs, Endl],
-  '%s', [2]
+  [w, Exp, w, Action('RBRACE', ExpBlockEnd), ProgramArgs, Endl],
+  '%s', [4]
 )
 
 # A CmdBlock is when a { occurs at the start of a commandline.  We don't yet
 # know if it's a codeblock (list of statements) or an expression block (single
 # expression which will become the name of a program to invoke).
 CmdBlock = Seq('cmdblock',
-  [Action('LBRACE', BlockStart),    # Emit { and push CmdBlock on stack
+  [w,
+  Action('LBRACE', BlockStart),    # Emit { and push CmdBlock on stack
   Or('cmdblockbody', [
     Action(ExpBlockProgram, CmdEnd),
     CodeBlockBody,
@@ -397,12 +435,12 @@ CmdBlock = Seq('cmdblock',
 )
 
 ProgramInvocation = Seq('programinvocation',
-  [Program, ProgramArgs, Endl],
-  '(cmd %s%s);', [0, 1]
+  [w, Program, ProgramArgs, Endl],
+  '(cmd %s%s);', [1, 2]
 )
 
 CmdLine = Or('cmdline', [
-  'NEWL',
+  wn,
   Action(ProgramInvocation, CmdEnd),
   CmdBlock,   # Note: may be an ExpBlock as part of a program invocation
 ])
