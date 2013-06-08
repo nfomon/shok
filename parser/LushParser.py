@@ -138,7 +138,7 @@ CmdCodeBlockEndl = Or('cmdcodeblockendl', [
 # Object property access
 # Currently only goes through an identifier
 IdProp = Seq('idprop',
-  ['ID', Star('props', Seq('prop', ['DOT', 'ID'], '.%s', [1]))],
+  ['ID', Star('props', Seq('prop', [w, 'DOT', n, 'ID'], '.%s', [3]))],
   '%s%s', [0, 1]
 )
 
@@ -177,26 +177,33 @@ BinOp = Or('binop', [
 ])
 
 List = Seq('list',
-  ['LBRACKET', Future('Exp'), 'RBRACKET'],
-  '(list %s)', [1]
+  ['LBRACKET', n, Future('ExpList'), n, 'RBRACKET'],
+  '(list %s)', [2]
 )
 
 Parens = Seq('parens',
-  ['LPAREN', Future('Exp'), 'RPAREN'],
-  '(paren %s)', [1]
+  ['LPAREN', n, Future('Exp'), n, 'RPAREN'],
+  '(paren %s)', [2]
 )
 
-Object = Seq('object',
-  ['LBRACE', Future('Exp'), 'RBRACE'],
-  '{obj %s}', [1]
-)
+# Object literals don't need to push themselves on a stack or anything,
+# since their AST will not come out until at least the whole expression
+# is done.
+# Care is required because there may be an ambiguity between object
+# literals and expblocks.  What do we allow in an object literal?  Just
+# new statements?
+
+#Object = Seq('object',
+#  ['LBRACE', n, ObjectBody, n, 'RBRACE'],
+#  '{obj %s}', [2]
+#)
 
 Atom = Or('atom', [
   Literal,
   'ID',
   List,
   Parens,
-  Object,
+  #Object,
 ])
 
 PrefixExp = Seq('prefix',
@@ -205,13 +212,13 @@ PrefixExp = Seq('prefix',
 )
 
 BinopExp = Seq('binop',
-  [Atom, BinOp, n, Future('Exp')],
-  '(%s %s %s)', [1,0,3]
+  [Atom, w, BinOp, n, Future('Exp')],
+  '(%s %s %s)', [2,0,4]
 )
 
 PrefixBinopExp = Seq('prefixbinop',
-  [PrefixOp, n, Atom, BinOp, n, Future('Exp')],
-  '(%s (%s %s) %s)', [3,0,2,5]
+  [PrefixOp, n, Atom, w, BinOp, n, Future('Exp')],
+  '(%s (%s %s) %s)', [4,0,2,6]
 )
 
 Exp = Or('exp', [
@@ -224,13 +231,13 @@ Exp = Or('exp', [
 
 # New statements
 Assign1 = Seq('assign1',
-  ['ID', 'EQUALS', n, Exp],
-  '(= %s %s)', [0, 3]
+  ['ID', w, 'EQUALS', n, Exp],
+  '(= %s %s)', [0, 4]
 )
 
 Assign2 = Seq('assign2',
-  ['ID', 'EQUALS', n, Exp, 'EQUALS', n, Exp],
-  '(= %s %s %s)', [0, 3, 6]
+  ['ID', w, 'EQUALS', n, Exp, w, 'EQUALS', n, Exp],
+  '(= %s %s %s)', [0, 4, 8]
 )
 
 # New
@@ -242,21 +249,21 @@ NewAssign = Or('newassign', [
 
 New = Seq('new',
   ['NEW', n, NewAssign,
-    Star('news', Seq('commanew', ['COMMA', n, NewAssign], ' %s', [2]))],
+    Star('news', Seq('commanew', [w, 'COMMA', n, NewAssign], ' %s', [3]))],
   '(new %s%s);', [2, 3]
 )
 
 # Renew
 Renew = Seq('renew',
   ['RENEW', n, Assign1,
-    Star('renews', Seq('commarenew', ['COMMA', n, Assign1], ' %s', [2]))],
+    Star('renews', Seq('commarenew', [w, 'COMMA', n, Assign1], ' %s', [3]))],
   '(renew %s%s);', [2, 3]
 )
 
 # Del
 Del = Seq('del',
   ['DEL', n, 'ID',
-    Star('dels', Seq('commadel', ['COMMA', n, 'ID'], ' %s', [2]))],
+    Star('dels', Seq('commadel', [w, 'COMMA', n, 'ID'], ' %s', [3]))],
   '(del %s%s);', [2, 3]
 )
 
@@ -270,7 +277,7 @@ StmtNew = Or('stmtnew', [
 
 # Assignment statements
 StmtAssign = Seq('stmtassign',
-  [IdProp, Or('assignop', [
+  [IdProp, w, Or('assignop', [
     'EQUALS',
     'PLUSEQUALS',
     'MINUSEQUALS',
@@ -282,22 +289,24 @@ StmtAssign = Seq('stmtassign',
     'AMPEQUALS',
     'TILDEEEQUALS',
   ]), n, Exp],
-  '(%s %s %s);', [1, 0, 3]
+  '(%s %s %s);', [2, 0, 4]
 )
 
 
 # Procedure call statements
 ExpList = Seq('explist',
-  [Exp, Star('explists', Seq('commaexp', ['COMMA', n, Exp], ' %s', [2]))],
+  [Exp, Star('explists', Seq('commaexp', [w, 'COMMA', n, Exp], ' %s', [3]))],
   '%s%s', [0, 1]
 )
 
+# Debate: Allow whitespace after the function name (IdProp) but before
+# the first paren?
 StmtProcCall = Or('stmtproccall', [
   Seq('proccallargs',
-    [IdProp, 'LPAREN', n, ExpList, n, 'RPAREN'],
-    '(call %s %s);', [0, 3]),
+    [IdProp, w, 'LPAREN', n, ExpList, n, 'RPAREN'],
+    '(call %s %s);', [0, 4]),
   Seq('proccallvoid',
-    [IdProp, 'LPAREN', n, 'RPAREN'],
+    [IdProp, w, 'LPAREN', n, 'RPAREN'],
     '(call %s);', [0]),
 ])
 
@@ -305,7 +314,7 @@ StmtProcCall = Or('stmtproccall', [
 # Branch constructs
 # If
 IfPred = Or('ifpred', [
-  Seq('ifline', ['COMMA', Future('Stmt')], '%s', [1]),
+  Seq('ifline', ['COMMA', w, Future('Stmt')], '%s', [2]),
   Seq('ifblock', [n, Future('CodeBlock')], '%s', [1]),
 ])
 
@@ -316,7 +325,7 @@ If = Seq('if',
 
 # Elif
 ElifPred = Or('elifpred', [
-  Seq('elifline', ['COMMA', Future('Stmt')], '%s', [1]),
+  Seq('elifline', ['COMMA', w, Future('Stmt')], '%s', [2]),
   Seq('elifblock', [n, Future('CodeBlock')], '%s', [1]),
 ])
 
@@ -357,19 +366,19 @@ StmtLoop = Or('stmtloop', [
 StmtBreak = Or('stmtbreak', [
   'BREAK',
   Seq('breaklabel',
-    ['BREAK', 'LABEL'],
-    '(%s %s);', [0, 1]),
+    ['BREAK', ws, 'LABEL'],
+    '(%s %s);', [0, 2]),
   'CONTINUE',
   Seq('continuelabel',
-    ['CONTINUE', 'LABEL'],
-    '(%s %s);', [0, 1]),
+    ['CONTINUE', ws, 'LABEL'],
+    '(%s %s);', [0, 2]),
   'RETURN',
   Seq('returnexp',
-    ['RETURN', Exp],
-    '(%s %s);', [0, 1]),
+    ['RETURN', ws, Exp],
+    '(%s %s);', [0, 2]),
   Seq('yield',
-    ['YIELD', Exp],
-    '(%s %s);', [0, 1]),
+    ['YIELD', ws, Exp],
+    '(%s %s);', [0, 2]),
 ])
 
 
@@ -385,14 +394,9 @@ Stmt1 = Or('stmt1', [
   #Future('Switch'),
   #Seq('stmtstmtbranch', [StmtBranch, Endl]),
   #StmtLoop,
-  #StmtBreak,
+  StmtBreak,
 ])
 Stmt = Action(Stmt1, StmtIfCheck)
-
-MaybeStmt = Or('maybestmt', [
-  'Stmt',
-  wn,
-])
 
 
 # Blocks
@@ -479,9 +483,9 @@ CmdLine = Or('cmdline', [
 # Refresh missed rule dependencies
 Replace(BinopExp, 'Exp', Exp)
 Replace(PrefixBinopExp.items[3], 'Exp', Exp)
-Replace(List, 'Exp', Exp)
+Replace(List, 'ExpList', ExpList)
 Replace(Parens, 'Exp', Exp)
-Replace(Object, 'Exp', Exp)
+#Replace(Object, 'Exp', Exp)
 Replace(IfPred.items[0], 'Stmt', Stmt)
 Replace(IfPred.items[1], 'CodeBlock', CodeBlock)
 Replace(ElifPred.items[0], 'Stmt', Stmt)

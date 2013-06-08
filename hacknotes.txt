@@ -1,6 +1,3 @@
-MaybeStmt
-
-
 Program and ProgramArgs are pretty sad
  - we shouldn't need to tokenize then un-tokenize the user's commandlines; dangerous that we could screw it up
   -- well, it's not /that/ bad...
@@ -14,31 +11,3 @@ Program and ProgramArgs are pretty sad
 
  - so basically, anywhere.........
 
-
-CmdBlock, CodeBlock: LBRACE CodeBlockBody
-
-CodeBlockBody: n, Stmt, Endl, CodeBlockStmtOrEnd*
-
-CodeBlockStmtOrEnd: NEWL | RBRACE | Stmt, Endl
-
---
-
-CmdBlock, CodeBlock: (LBRACE:BlockStart), CodeBlockBody
-
-CodeBlockBody: n, ((Stmt, Endl):StmtEnd), CodeBlockStmtOrEnd*
-
-CodeBlockStmtOrEnd: NEWL | (RBRACE:CodeBlockEnd) | ((Stmt, Endl):StmtEnd)
-
---
-INSTEAD:  allow empty {}'s
-
-CmdBlock, CodeBlock: (LBRACE:BlockStart), CodeBlockBody
-
-CodeBlockBody: Star(n | (RBRACE:CodeBlockEnd) | ((Stmt, Endl):StmtEnd))
-
-
------
-
-A CodeBlock, after its }, should return to the previous scope immediately and allow statements, even without whitespace.
-
-A CmdBlock's CodeBlock, alternatively, should require a wn after the }.
