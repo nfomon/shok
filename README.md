@@ -11,7 +11,4 @@ lush is in the early stages of initial development.  It has the framework for a 
 todo
 ====
 
-1. More tests for Parser framework
-1. Tests for LushParser -- specifically, blocks, commands, and statement terminators (by newline, semicolon, or end of block)
-1. Whitespace tokens -- add to lexer and parser
 1. Evaluator: run basic commands
