@@ -15,12 +15,24 @@ class Parser(object):
     else:
       self.parent = None
       self.top = self
+
   def __repr__(self):
     return '%s (%s)' % (self.name, self.rule.name)
+
   def restart(self):
     logging.info("Restarting Parser %s" % self.name)
     self.bad = self.rule.bad
     self.done = self.rule.done
+
+  def goDone(self):
+    self.done = True
+    self.parse = self.goBad
+
+  def goBad(self,token):
+    if self.bad:
+      raise Exception("%s Parser is already bad" % self.name)
+    self.bad = True
+    self.done = False
 
 def MakeParser(x, parent=None):
   if isinstance(x, Parser):
@@ -28,4 +40,3 @@ def MakeParser(x, parent=None):
   elif isinstance(x, Rule.Rule):
     return x.MakeParser(parent)
   return MakeParser(MakeRule.MakeRule(x), parent)
-

@@ -7,7 +7,7 @@ from SeqParser import Seq
 from StarParser import Star
 from TerminalParser import Terminal
 import logging
-logging.basicConfig(filename="LushParser.log", level=logging.DEBUG)   # FAIL
+logging.basicConfig(filename="LushParser.log", level=logging.DEBUG)
 
 class Future(object):
   def __init__(self,name):
@@ -43,7 +43,7 @@ def CodeBlockEnd(parser):
   parser.top.ast += '}'
   block = parser.top.stack.pop()
   logging.debug("- - - signalling restart of block '%s'" % block)
-  block.signalRestart = True
+  block.goDone()
 
 # Print out the statement
 # If we were signalled by BlockLazyEnd, output the }
@@ -196,11 +196,26 @@ Atom = Or('atom', [
   Object,
 ])
 
+PrefixExp = Seq('prefix',
+  [PrefixOp, n, Atom],
+  '(%s %s)', [0,2]
+)
+
+BinopExp = Seq('binop',
+  [Atom, BinOp, n, Future('Exp')],
+  '(%s %s %s)', [1,0,3]
+)
+
+PrefixBinopExp = Seq('prefixbinop',
+  [PrefixOp, n, Atom, BinOp, n, Future('Exp')],
+  '(%s (%s %s) %s)', [3,0,2,5]
+)
+
 Exp = Or('exp', [
   Atom,
-  Seq('prefix', [PrefixOp, n, Atom], '(%s %s)', [0,2]),
-  Seq('binop', [Atom, BinOp, n, Future('Exp')], '(%s %s %s)', [1,0,3]),
-  Seq('prefixbinop', [PrefixOp, n, Atom, BinOp, n, Future('Exp')], '(%s (%s %s) %s)', [3,0,2,5])
+  PrefixExp,
+  BinopExp,
+  PrefixBinopExp,
 ])
 
 
@@ -371,25 +386,26 @@ Stmt1 = Or('stmt1', [
 ])
 Stmt = Action(Stmt1, StmtIfCheck)
 
-
-# Blocks
-CodeBlockStmtOrEnd = Or('codeblockstmtorend', [
-  'NEWL',
-  Action('RBRACE', CodeBlockEnd),
-  Action(Seq('codeblockstmt', [Stmt, Endl]), StmtEnd),
+MaybeStmt = Or('maybestmt', [
+  'Stmt',
+  wn,
 ])
 
-# The command-line, which can invoke code-blocks or expression-blocks
 
-# Require at least one stmt.  Each stmt could end with an RBRACE as part of its
+# Blocks
+# A code block may have 0 or more statements.  Each stmt could end with an RBRACE as part of its
 # Endl -- in this case, call StmtEnd which will pop the stack and emit a }.
-CodeBlockBody = Seq('codeblockbody',
-  [n, Action(Seq('codeblockbodystmt', [Stmt, Endl]), StmtEnd), Star('codeblockstmts', CodeBlockStmtOrEnd)],
+CodeBlockBody = Star('codeblockbody',
+  Or('codeblockbodystmts', [
+    n,
+    Action('RBRACE', CodeBlockEnd),
+    Action(Seq('codeblockbodystmt', [Stmt, Endl]), StmtEnd),
+  ]),
   '', []
 )
 
 CodeBlock = Seq('codeblock',
-  [Action('LBRACE', BlockStart), n, CodeBlockBody],
+  [Action('LBRACE', BlockStart), CodeBlockBody],
   '', []
 )
 
@@ -408,7 +424,7 @@ ProgramArg = Or('programarg', [
   'INT',
   Seq('programargexpblock',
     ['LBRACE', w, Exp, w, 'RBRACE'],
-    '{(exp %s)};', [2]),
+    '{(exp %s)}', [2]),
 ])
 
 ProgramArgs = Star('programargs',
@@ -418,7 +434,7 @@ ProgramArgs = Star('programargs',
 
 ExpBlockProgram = Seq('expblockprogram',
   [w, Exp, w, Action('RBRACE', ExpBlockEnd), ProgramArgs, Endl],
-  '%s', [4]
+  '%s;', [4]
 )
 
 # A CmdBlock is when a { occurs at the start of a commandline.  We don't yet
@@ -447,8 +463,8 @@ CmdLine = Or('cmdline', [
 
 
 # Refresh missed rule dependencies
-Replace(Exp.items[2], 'Exp', Exp)
-Replace(Exp.items[3], 'Exp', Exp)
+Replace(BinopExp, 'Exp', Exp)
+Replace(PrefixBinopExp.items[3], 'Exp', Exp)
 Replace(List, 'Exp', Exp)
 Replace(Parens, 'Exp', Exp)
 Replace(Object, 'Exp', Exp)
