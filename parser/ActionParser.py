@@ -26,6 +26,7 @@ class ActionParser(Parser):
     if not self.actioned and not self.bad and self.done:
       self.rule.func(self)
       self.actioned = True
+    self.neverGoBadCheck(token)
 
   # The Action's msg should contain at most a single %s, which will be filled
   # by the display of its sub-parser.  It may have other text in its msg which

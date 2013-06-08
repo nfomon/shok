@@ -27,6 +27,7 @@ class TerminalParser(Parser):
     if self.done:
       self.done = False
       self.bad = True
+      self.neverGoBadCheck(token)
       return
     if token.ttype == self.tname:
       self.done = True
@@ -35,6 +36,7 @@ class TerminalParser(Parser):
     else:
       self.done = False
       self.bad = True
+    self.neverGoBadCheck(token)
 
   def display(self):
     if self.bad or not self.done:

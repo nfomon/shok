@@ -53,6 +53,7 @@ class OrParser(Parser):
       self.done = True
     else:
       self.done = False
+    self.neverGoBadCheck(token)
 
   def display(self):
     # We used to check if len(self.parsers) == 1.  Now we allow display() to be

@@ -77,6 +77,7 @@ class SeqParser(Parser):
         if self.done:
           self.displays[self.pos] = self.active.display()
       logging.debug("%s SeqParser in last state; now bad=%s, done=%s" % (self.name, self.bad, self.done))
+      self.neverGoBadCheck(token)
       return
 
     if self.active.bad:
@@ -104,6 +105,7 @@ class SeqParser(Parser):
         self.bad = True
         self.done = False
         logging.debug("%s SeqParser wasn't done, now bad" % self.name)
+      self.neverGoBadCheck(token)
       return
 
     if self.active.done:
@@ -119,11 +121,13 @@ class SeqParser(Parser):
       if not nonstars:
         self.done = True
         logging.debug("%s SeqParser is earlydone with displays %s" % (self.name, self.displays))
+      #self.neverGoBadCheck(token)   # paranoid
       return
 
     # we're ok, stay put for now
     logging.debug("%s SeqParser is staying put after '%s'" % (self.name, token))
     self.accum.append(token)
+    #self.neverGoBadCheck(token)   # paranoid
 
   def display(self):
     if self.bad or not self.done:

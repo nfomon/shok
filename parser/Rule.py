@@ -1,13 +1,14 @@
 import Parser
 
 class Rule:
-  def __init__(self,name,items,msg='%s',inds=[0]):
+  def __init__(self,name,items,msg='%s',inds=[0],neverGoBad=False):
     self.name = name
     self.items = items
     self.msg = msg
     self.inds = inds
     self.bad = False
     self.done = False
+    self.neverGoBad = neverGoBad
 
   def display(self,displays):
     if not self.msg:

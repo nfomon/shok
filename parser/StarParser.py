@@ -10,15 +10,19 @@ class StarParser(PlusParser):
     PlusParser.__init__(self, rule, parent)
     self.done = True
     self.anyparse = False
+
   def restart(self):
     PlusParser.restart(self)
     self.done = True
     self.anyparse = False
+
   def parse(self,token):
     logging.debug("%s StarParser parsing token '%s'" % (self.name, token))
     PlusParser.parse(self, token)
     if not self.bad:
       self.anyparse = True
+    #self.neverGoBadCheck(token)    # paranoid
+
   def display(self):
     if not self.anyparse:
       return ''

@@ -42,7 +42,7 @@ def CodeBlockEnd(parser):
   logging.debug("- - BLOCK END")
   parser.top.ast += '}'
   block = parser.top.stack.pop()
-  logging.debug("- - - signalling restart of block '%s'" % block)
+  logging.debug("- - - signalling block '%s' to go done" % block)
   block.goDone()
 
 # Print out the statement
@@ -56,10 +56,7 @@ def StmtEnd(parser):
   parser.top.ast += parser.display()
   if parser.top.codeblocklazyends > 0:
     parser.top.codeblocklazyends -= 1
-    parser.top.ast += '}'
-    block = parser.top.stack.pop()
-    logging.debug("- - - signalling restart of block '%s'" % block)
-    block.signalRestart = True
+    CodeBlockEnd(parser)
 
 def StmtIfCheck(parser):
   logging.debug("- - STMT IF CHECK")
@@ -480,7 +477,7 @@ Replace(Stmt1, 'CodeBlock', CodeBlock)
 # Lush
 # The LushParser holds some "global" state.  It should also probably do
 # something smart the moment it turns bad.
-Lush = Star('lush', CmdLine)
+Lush = Star('lush', CmdLine, neverGoBad=True)
 def LushParser():
   parser = MakeParser(Lush)
   parser.stack = []

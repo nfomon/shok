@@ -45,6 +45,7 @@ class PlusParser(Parser):
       self.parse(token)   # this is not recursive in the way that would hurt
     self.bad = self.active.bad
     self.done = self.active.done
+    self.neverGoBadCheck(token)
 
   def display(self):
     if self.bad or not self.done:
