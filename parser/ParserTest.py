@@ -130,11 +130,11 @@ class TestSeq(RuleTester):
     self.ruleTest(rule, series)
 
   def test_PlusLimited(self):
-    # Known limitation of SeqParser: if one stage is done, but then accepts a
-    # token (does not become bad), the SeqParser does not advance even if it
+    # Old limitation of SeqParser: if one stage is done, but then accepts a
+    # token (does not become bad), the SeqParser would not advance even if it
     # would have needed to do so to ultimately parse the whole sequence.
     #
-    # This rule can't possibly parse.
+    # This rule used to be impossible to parse.
     rule = Seq('seq', [
         Plus('+1',
           Seq('p1', ['A', 'B', 'C'], 'p1 %s%s%s', [0, 1, 2]),
@@ -151,7 +151,21 @@ class TestSeq(RuleTester):
              tok('1:B', False, False),
              tok('1:C', False, False),
              tok('1:A', False, False),
-             tok('1:D', True, False)],   # Limitation!
+#             tok('1:D', True, False)],   # Old limitation!
+             tok('1:D', False, False),
+             tok('1:E', False, True, '(seq +1 p1 ABC +2 p2 ADE)')],
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False),
+             tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False),
+             tok('1:A', False, False),
+             tok('1:D', False, False),
+             tok('1:E', False, True, '(seq +1 p1 ABC+1 p1 ABC +2 p2 ADE)'),
+             tok('1:A', False, False),
+             tok('1:D', False, False),
+             tok('1:E', False, True, '(seq +1 p1 ABC+1 p1 ABC +2 p2 ADE+2 p2 ADE)')],
       [init, tok('1:A', False, False),
              tok('1:B', False, False),
              tok('1:C', False, False),

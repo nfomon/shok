@@ -1,12 +1,19 @@
 from Parser import Parser, MakeParser
 from Rule import Rule
 from StarParser import Star
+from copy import copy
 import logging
 
 # The SeqParser's rule is a list of Rules that will be matched in
 # sequence; advancing only when an individual rule is done and turns
 # bad if given another token.  The SeqParser is done anytime that its
 # last rule is done.
+#
+# If a not-the-last rule is fed a token and it moves from done to
+# not-bad, not-done: we start accumulating all the tokens we feed it.
+# If finally it turns bad instead of turning done again, we advance not
+# only with the current token, but first with all the history of tokens
+# that we tried to feed to this intermediary step but were rejected.
 class SeqParser(Parser):
   def __init__(self,rule,parent):
     Parser.__init__(self, rule, parent)
@@ -14,6 +21,7 @@ class SeqParser(Parser):
     self.active = None  # active parser (top of self.parsers)
     self.pos = 0        # position in self.rule.items
     self.displays = []  # display() of any completed sub-parsers
+    self.accum = []     # tokens we've consumed since last rule-done-time
     logging.info("%s SeqParser initialized with rule: %s" % (self.name, self.rule))
     while len(self.displays) != len(self.rule.items):
       self.displays.append('')
@@ -60,7 +68,6 @@ class SeqParser(Parser):
     self.active.parse(token)
     logging.debug("%s SeqParser parsed token '%s'; now evaluating" % (self.name, token))
 
-    # if last
     if self.pos == len(self.rule.items)-1:
       self.bad = self.bad or self.active.bad
       if self.bad:
@@ -80,7 +87,19 @@ class SeqParser(Parser):
         self.displays[self.pos] = tempdisp
         self.pos += 1
         self.active = None
+        self.accum = []
         self.parse(token)
+      elif self.accum:
+        # Skip ahead to the next rule and run out our accum backlog
+        self.pos += 1
+        self.active = None
+        self.accum.append(token)
+        accum = copy(self.accum)
+        self.accum = []
+        for a in accum:
+          logging.info("%s SeqParser is force-advancing pos %s to %s with accumulated token '%s'" % (self.name, self.pos, self.pos+1, a))
+          if not self.bad:
+            self.parse(a)
       else:
         self.bad = True
         self.done = False
@@ -91,18 +110,20 @@ class SeqParser(Parser):
       # stay here until we turn bad
       # if all upcoming rule items are Stars, then mark the whole Seq as done.
       logging.info("%s SeqParser active pos=%s went done; waiting until it turns bad before advancing" % (self.name, self.pos))
+      self.accum = []
+      self.displays[self.pos] = self.active.display()
       nonstars = False
       for item in self.rule.items[self.pos+1:]:
         if not isinstance(item, Star):
           nonstars = True
       if not nonstars:
         self.done = True
-        self.displays[self.pos] = self.active.display()
         logging.debug("%s SeqParser is earlydone with displays %s" % (self.name, self.displays))
       return
 
     # we're ok, stay put for now
     logging.debug("%s SeqParser is staying put after '%s'" % (self.name, token))
+    self.accum.append(token)
 
   def display(self):
     if self.bad or not self.done:
