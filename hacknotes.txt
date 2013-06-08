@@ -1,0 +1,38 @@
+MaybeStmt
+
+
+Program and ProgramArgs are pretty sad
+ - we shouldn't need to tokenize then un-tokenize the user's commandlines; dangerous that we could screw it up
+  -- well, it's not /that/ bad...
+ - intermingling expblocks amongst program/programargs -- where should this be allowed?
+
+        {ls}-al
+
+        {ls} -al {y}
+
+        {python}2.7 {foo}.py
+
+ - so basically, anywhere.........
+
+
+CmdBlock, CodeBlock: LBRACE CodeBlockBody
+
+CodeBlockBody: n, Stmt, Endl, CodeBlockStmtOrEnd*
+
+CodeBlockStmtOrEnd: NEWL | RBRACE | Stmt, Endl
+
+--
+
+CmdBlock, CodeBlock: (LBRACE:BlockStart), CodeBlockBody
+
+CodeBlockBody: n, ((Stmt, Endl):StmtEnd), CodeBlockStmtOrEnd*
+
+CodeBlockStmtOrEnd: NEWL | (RBRACE:CodeBlockEnd) | ((Stmt, Endl):StmtEnd)
+
+--
+INSTEAD:  allow empty {}'s
+
+CmdBlock, CodeBlock: (LBRACE:BlockStart), CodeBlockBody
+
+CodeBlockBody: Star(n | (RBRACE:CodeBlockEnd) | ((Stmt, Endl):StmtEnd))
+
