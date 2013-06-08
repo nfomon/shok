@@ -10,10 +10,11 @@ from StarParser import Star
 from TerminalParser import Terminal
 
 # Initial state for a parser
-def ini(bad,done):
+def ini(bad,done,display=None):
   return {
     'bad': bad,
     'done': done,
+    'display': display,
   }
 init = ini(False, False)
 initDone = ini(False, True)
@@ -30,20 +31,21 @@ def tok(tokstr,bad,done,display=None):
 # TestCase that will validate a parser's state as it advances through a
 # series of token sequences (each starting from scratch)
 class RuleTester(unittest.TestCase):
-  def RuleTest(self,rule,series):
+  def stateTest(self,parser,t):
+    self.assertEqual(parser.bad, t['bad'])
+    self.assertEqual(parser.done, t['done'])
+    if parser.done and t['done'] and t['display'] != None:
+      self.assertEqual(parser.display(), t['display'])
+
+  def ruleTest(self,rule,series):
     for s in series:
       #print "s: %s" % s
       parser = MakeParser(rule)
-      self.assertEqual(parser.bad, s[0]['bad'])
-      self.assertEqual(parser.done, s[0]['done'])
+      self.stateTest(parser, s[0])
       for i, t in enumerate(s[1:]):
         #print "sending token: %s,%s" % (i, t)
-        st = s[i+1]
         parser.parse(t['tok'])
-        self.assertEqual(parser.bad, st['bad'])
-        self.assertEqual(parser.done, st['done'])
-        if parser.done and st['done'] and st['display'] != None:
-          self.assertEqual(parser.display(), st['display'])
+        self.stateTest(parser, t)
 
 
 class TestTerminals(RuleTester):
@@ -58,17 +60,17 @@ class TestTerminals(RuleTester):
   def test_Str(self):
     token = 'A'
     rule = MakeRule(token)
-    self.RuleTest(rule, self.series)
+    self.ruleTest(rule, self.series)
 
   # Terminal rules made directly as Terminal rule instances
   def test_Term(self):
     rule = Terminal('a', ['A'])
-    self.RuleTest(rule, self.series)
+    self.ruleTest(rule, self.series)
 
   # Terminal rule that has its own display representation
   def test_TermDisp(self):
     rule = Terminal('a', ['A'], 'foo:%s')
-    self.RuleTest(rule, self.series)
+    self.ruleTest(rule, self.series)
 
 
 class TestSeq(RuleTester):
@@ -79,7 +81,7 @@ class TestSeq(RuleTester):
              tok('1:A', True, False)],
       [init, tok('1:X', True, False)],
     ]
-    self.RuleTest(rule, series)
+    self.ruleTest(rule, series)
 
   def test_Two(self):
     rule = Seq('two', ['A', 'B'], ':%s:%s:foo', [1, 0])
@@ -91,7 +93,7 @@ class TestSeq(RuleTester):
              tok('1:A', True, False)],
       [init, tok('1:X', True, False)],
     ]
-    self.RuleTest(rule, series)
+    self.ruleTest(rule, series)
 
   def test_Plus(self):
     rule = Seq('seq', [
@@ -125,7 +127,7 @@ class TestSeq(RuleTester):
              tok('1:D', False, False),
              tok('1:E', False, True, '(seq +1 p1 ABC+1 p1 ABC +2 p2 CDE+2 p2 CDE)')],
     ]
-    self.RuleTest(rule, series)
+    self.ruleTest(rule, series)
 
   def test_PlusLimited(self):
     # Known limitation of SeqParser: if one stage is done, but then accepts a
@@ -155,7 +157,7 @@ class TestSeq(RuleTester):
              tok('1:C', False, False),
              tok('1:C', True, False)],
     ]
-    self.RuleTest(rule, series)
+    self.ruleTest(rule, series)
 
   def test_StarStartEnd(self):
     rule = Seq('seq', [
@@ -199,7 +201,7 @@ class TestSeq(RuleTester):
              tok('1:G', False, False),
              tok('1:H', False, True, '(seq *1 p1 ABC*1 p1 ABC <DE> *2 p2 FGH*2 p2 FGH)')],
     ]
-    self.RuleTest(rule, series)
+    self.ruleTest(rule, series)
 
  
 class TestOr(RuleTester):
@@ -210,7 +212,7 @@ class TestOr(RuleTester):
              tok('1:A', True, False)],
       [init, tok('1:X', True, False)],
     ]
-    self.RuleTest(rule, series)
+    self.ruleTest(rule, series)
 
   def test_Two(self):
     rule = Or('two', ['A', 'B'], 'foo:%s')
@@ -221,7 +223,7 @@ class TestOr(RuleTester):
              tok('1:A', True, False)],
       [init, tok('1:X', True, False)],
     ]
-    self.RuleTest(rule, series)
+    self.ruleTest(rule, series)
 
   def test_Many(self):
     rule = Or('many', [
@@ -255,7 +257,7 @@ class TestOr(RuleTester):
              tok('1:F', False, True, '! (seq5:B..F)'),
              tok('1:E', True, False)],
     ]
-    self.RuleTest(rule, series)
+    self.ruleTest(rule, series)
 
 
 class TestPlus(RuleTester):
@@ -269,7 +271,7 @@ class TestPlus(RuleTester):
              tok('1:X', True, False)],
       [init, tok('1:X', True, False)],
     ]
-    self.RuleTest(rule, series)
+    self.ruleTest(rule, series)
 
   def test_Seq(self):
     rule = Plus('plus',
@@ -301,53 +303,76 @@ class TestPlus(RuleTester):
              tok('1:C', False, True, '(plus (seq A,B,C))(plus (seq A,B,C))'),
              tok('1:C', True, False)],
     ]
-    self.RuleTest(rule, series)
+    self.ruleTest(rule, series)
 
 
 class TestStar(RuleTester):
   # Plus with a terminal
   def test_Term(self):
+    start = ini(False, True, '')
     rule = Star('term', 'A', 'foo:%s')
     series = [
-      [initDone, tok('1:A', False, True, 'foo:A'),
-                 tok('1:A', False, True, 'foo:Afoo:A'),
-                 tok('1:A', False, True, 'foo:Afoo:Afoo:A'),
-                 tok('1:X', True, False)],
-      [initDone, tok('1:X', True, False)],
+      [start, tok('1:A', False, True, 'foo:A'),
+              tok('1:A', False, True, 'foo:Afoo:A'),
+              tok('1:A', False, True, 'foo:Afoo:Afoo:A'),
+              tok('1:X', True, False)],
+      [start, tok('1:X', True, False)],
     ]
-    self.RuleTest(rule, series)
+    self.ruleTest(rule, series)
 
   def test_Seq(self):
+    start = ini(False, True, '')
     rule = Star('star',
       Seq('seq',
         ['A', 'B', 'C'],
         '(seq %s,%s,%s)', [0, 1, 2]),
       '(* %s)')
     series = [
-      [initDone, tok('1:X', True, False)],
-      [initDone, tok('1:A', False, False),
-                 tok('1:X', True, False)],
-      [initDone, tok('1:A', False, False),
-                 tok('1:B', False, False),
-                 tok('1:X', True, False)],
-      [initDone, tok('1:A', False, False),
-                 tok('1:B', False, False),
-                 tok('1:C', False, True, '(* (seq A,B,C))'),
-                 tok('1:C', True, False)],
-      [initDone, tok('1:A', False, False),
-                 tok('1:B', False, False),
-                 tok('1:C', False, True, '(* (seq A,B,C))'),
-                 tok('1:A', False, False),
-                 tok('1:X', True, False)],
-      [initDone, tok('1:A', False, False),
-                 tok('1:B', False, False),
-                 tok('1:C', False, True, '(* (seq A,B,C))'),
-                 tok('1:A', False, False),
-                 tok('1:B', False, False),
-                 tok('1:C', False, True, '(* (seq A,B,C))(* (seq A,B,C))'),
-                 tok('1:C', True, False)],
+      [start, tok('1:X', True, False)],
+      [start, tok('1:A', False, False),
+              tok('1:X', True, False)],
+      [start, tok('1:A', False, False),
+              tok('1:B', False, False),
+              tok('1:X', True, False)],
+      [start, tok('1:A', False, False),
+              tok('1:B', False, False),
+              tok('1:C', False, True, '(* (seq A,B,C))'),
+              tok('1:C', True, False)],
+      [start, tok('1:A', False, False),
+              tok('1:B', False, False),
+              tok('1:C', False, True, '(* (seq A,B,C))'),
+              tok('1:A', False, False),
+              tok('1:X', True, False)],
+      [start, tok('1:A', False, False),
+              tok('1:B', False, False),
+              tok('1:C', False, True, '(* (seq A,B,C))'),
+              tok('1:A', False, False),
+              tok('1:B', False, False),
+              tok('1:C', False, True, '(* (seq A,B,C))(* (seq A,B,C))'),
+              tok('1:C', True, False)],
     ]
-    self.RuleTest(rule, series)
+    self.ruleTest(rule, series)
+
+  def test_Double(self):
+    start = ini(False, True, '')
+    rule = Star('star',
+      Seq('seq',
+        [Star('*1', 'A', '(*1%s)'),
+        Star('*2', 'B', '(*2%s)')],
+        '(seq %s %s)', [0, 1]
+      ), '(star %s)')
+    series = [
+      [start, tok('1:X', True, False)],
+      [start, tok('1:A', False, True, '(star (seq (*1A) ))'),
+              tok('1:A', False, True, '(star (seq (*1A)(*1A) ))'),
+              tok('1:B', False, True, '(star (seq (*1A)(*1A) (*2B)))'),
+              tok('1:B', False, True, '(star (seq (*1A)(*1A) (*2B)(*2B)))'),
+              tok('1:X', True, False)],
+      [start, tok('1:B', False, True, '(star (seq  (*2B)))'),
+              tok('1:A', False, True, '(star (seq  (*2B)))(star (seq (*1A) ))'),
+              tok('1:B', False, True, '(star (seq  (*2B)))(star (seq (*1A) (*2B)))')],
+    ]
+    self.ruleTest(rule, series)
 
 
 def suite():
