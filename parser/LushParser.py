@@ -429,10 +429,6 @@ CodeBlock = Seq('codeblock',
 
 
 # Program invocation
-# Necessarily starts with a program name (not an ExpBlock; those are handled by
-# CmdBlock).  ProgramArgs are allowed to be ExpBlocks.
-Program = 'ID'
-
 # We should be getting the raw text from the user instead of
 # back-tracking from these tokens.  Eventually...
 ProgramArg = Or('programarg', [
@@ -450,9 +446,21 @@ ProgramArgs = Star('programargs',
   ',%s'
 )
 
+ProgramMore = Star('programmore',
+  ProgramArg,
+  ' %s'
+)
+
+# Necessarily starts with a program name (not an ExpBlock; those are handled by
+# CmdBlock).  ProgramArgs are allowed to be ExpBlocks.
+Program = Seq('program',
+  ['ID', ProgramMore],
+  '%s%s', [0, 1]
+)
+
 ExpBlockProgram = Seq('expblockprogram',
-  [w, Exp, w, Action('RBRACE', ExpBlockEnd), ProgramArgs, Endl],
-  '%s;', [4]
+  [w, Exp, w, Action('RBRACE', ExpBlockEnd), ProgramMore, ProgramArgs, Endl],
+  '%s%s;', [4, 5]
 )
 
 # A CmdBlock is when a { occurs at the start of a commandline.  We don't yet
