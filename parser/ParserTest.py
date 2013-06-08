@@ -93,7 +93,115 @@ class TestSeq(RuleTester):
     ]
     self.RuleTest(rule, series)
 
+  def test_Plus(self):
+    rule = Seq('seq', [
+        Plus('+1', Seq('p1', ['A', 'B', 'C'], 'p1 %s%s%s', [0, 1, 2]), '+1 %s'),
+        Plus('+2', Seq('p2', ['C', 'D', 'E'], 'p2 %s%s%s', [0, 1, 2]), '+2 %s'),
+      ], '(seq %s %s)', [0, 1])
+    series = [
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:X', True, False)],
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False),
+             tok('1:Q', True, False)],
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False),
+             tok('1:C', False, False),
+             tok('1:D', False, False),
+             tok('1:E', False, True, '(seq +1 p1 ABC +2 p2 CDE)')],
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False),
+             tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False),
+             tok('1:C', False, False),
+             tok('1:D', False, False),
+             tok('1:E', False, True, '(seq +1 p1 ABC+1 p1 ABC +2 p2 CDE)'),
+             tok('1:C', False, False),
+             tok('1:D', False, False),
+             tok('1:E', False, True, '(seq +1 p1 ABC+1 p1 ABC +2 p2 CDE+2 p2 CDE)')],
+    ]
+    self.RuleTest(rule, series)
 
+  def test_PlusLimited(self):
+    # Known limitation of SeqParser: if one stage is done, but then accepts a
+    # token (does not become bad), the SeqParser does not advance even if it
+    # would have needed to do so to ultimately parse the whole sequence.
+    #
+    # This rule can't possibly parse.
+    rule = Seq('seq', [
+        Plus('+1',
+          Seq('p1', ['A', 'B', 'C'], 'p1 %s%s%s', [0, 1, 2]),
+          '+1 %s'),
+        Plus('+2',
+          Seq('p2', ['A', 'D', 'E'], 'p2 %s%s%s', [0, 1, 2]),
+          '+2 %s'),
+      ], '(seq %s %s)', [0, 1])
+    series = [
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:X', True, False)],
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False),
+             tok('1:A', False, False),
+             tok('1:D', True, False)],   # Limitation!
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False),
+             tok('1:C', True, False)],
+    ]
+    self.RuleTest(rule, series)
+
+  def test_StarStartEnd(self):
+    rule = Seq('seq', [
+        Star('*1',
+          Seq('p1', ['A', 'B', 'C'], 'p1 %s%s%s', [0, 1, 2]),
+          '*1 %s'),
+        'D',
+        'E',
+        Star('*2',
+          Seq('p2', ['F', 'G', 'H'], 'p2 %s%s%s', [0, 1, 2]),
+          '*2 %s'),
+      ], '(seq %s <%s%s> %s)', [0, 1, 2, 3])
+    series = [
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:X', True, False)],
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False),
+             tok('1:X', True, False)],
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False),
+             tok('1:D', False, False),
+             tok('1:E', False, True, '(seq *1 p1 ABC <DE> )'),
+             tok('1:F', False, False),
+             tok('1:G', False, False),
+             tok('1:H', False, True, '(seq *1 p1 ABC <DE> *2 p2 FGH)')],
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False),
+             tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False),
+             tok('1:D', False, False),
+             tok('1:E', False, True, '(seq *1 p1 ABC*1 p1 ABC <DE> )'),
+             tok('1:F', False, False),
+             tok('1:G', False, False),
+             tok('1:H', False, True, '(seq *1 p1 ABC*1 p1 ABC <DE> *2 p2 FGH)'),
+             tok('1:F', False, False),
+             tok('1:G', False, False),
+             tok('1:H', False, True, '(seq *1 p1 ABC*1 p1 ABC <DE> *2 p2 FGH*2 p2 FGH)')],
+    ]
+    self.RuleTest(rule, series)
+
+ 
 class TestOr(RuleTester):
   def test_One(self):
     rule = Or('one', ['A'], 'foo:%s')
