@@ -128,6 +128,12 @@ Endl = Or('endl', [
   Action('RBRACE', BlockLazyEnd),
 ])
 
+CmdCodeBlockEndl = Or('cmdcodeblockendl', [
+  'SEMI',
+  wn,
+  Action(Seq('cmdcodeblockendbrace', ['RBRACE', wn], '', []), BlockLazyEnd),
+])
+
 
 # Object property access
 # Currently only goes through an identifier
@@ -401,6 +407,17 @@ CodeBlockBody = Star('codeblockbody',
   '', []
 )
 
+# A codeblock issued from a commandline requires a newline after the end
+# of the block.
+CmdCodeBlockBody = Star('cmdcodeblockbody',
+  Or('cmdcodeblockbodystmts', [
+    n,
+    Action(Seq('cmdcodeblockend', ['RBRACE', wn], '', []), CodeBlockEnd),
+    Action(Seq('cmdcodeblockbodystmt', [Stmt, CmdCodeBlockEndl]), StmtEnd),
+  ]),
+  '', []
+)
+
 CodeBlock = Seq('codeblock',
   [Action('LBRACE', BlockStart), CodeBlockBody],
   '', []
@@ -442,7 +459,7 @@ CmdBlock = Seq('cmdblock',
   Action('LBRACE', BlockStart),    # Emit { and push CmdBlock on stack
   Or('cmdblockbody', [
     Action(ExpBlockProgram, CmdEnd),
-    CodeBlockBody,
+    CmdCodeBlockBody,
   ])],
   '', []
 )

@@ -36,3 +36,9 @@ CmdBlock, CodeBlock: (LBRACE:BlockStart), CodeBlockBody
 
 CodeBlockBody: Star(n | (RBRACE:CodeBlockEnd) | ((Stmt, Endl):StmtEnd))
 
+
+-----
+
+A CodeBlock, after its }, should return to the previous scope immediately and allow statements, even without whitespace.
+
+A CmdBlock's CodeBlock, alternatively, should require a wn after the }.
