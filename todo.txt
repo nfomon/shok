@@ -5,8 +5,8 @@
 3. Replace exp-block-program with exp-display
 
 
-Checklist:
-----------
+Language Checklist:
+-------------------
 Lists in expressions
 Parens in expressions
 Objects in expressions
