@@ -49,27 +49,35 @@ class RuleTester(unittest.TestCase):
 
 
 class TestTerminals(RuleTester):
-  def setUp(self):
+  # Terminal rules made from strings
+  def test_Str(self):
+    token = 'A'
+    rule = MakeRule(token)
     self.series = [
       [init, tok('1:A', False, True, 'A'),
              tok('1:A', True, False)],
       [init, tok('1:X', True, False)],
     ]
-
-  # Terminal rules made from strings
-  def test_Str(self):
-    token = 'A'
-    rule = MakeRule(token)
     self.ruleTest(rule, self.series)
 
   # Terminal rules made directly as Terminal rule instances
   def test_Term(self):
     rule = Terminal('a', ['A'])
+    self.series = [
+      [init, tok('1:A', False, True, 'A'),
+             tok('1:A', True, False)],
+      [init, tok('1:X', True, False)],
+    ]
     self.ruleTest(rule, self.series)
 
   # Terminal rule that has its own display representation
   def test_TermDisp(self):
     rule = Terminal('a', ['A'], 'foo:%s')
+    self.series = [
+      [init, tok('1:A', False, True, 'foo:A'),
+             tok('1:A', True, False)],
+      [init, tok('1:X', True, False)],
+    ]
     self.ruleTest(rule, self.series)
 
 
@@ -253,7 +261,7 @@ class TestOr(RuleTester):
       [init, tok('1:X', True, False)],
       [init, tok('1:Q', False, True, '! Q'),
              tok('1:QQ', True, False)],
-      [init, tok('1:QQ', False, True, '! QQ'),
+      [init, tok('1:QQ', False, True, '! (term QQ)'),
              tok('1:Q', True, False)],
       [init, tok('1:A', False, False),
              tok('1:C', True, False)],
