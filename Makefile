@@ -60,3 +60,6 @@ tidy: lexer lush
 
 clean:
 	rm -f lexer/tiny_lexer_st* parser/*.pyc eval/eval.o shell/file_descriptor.o shell/shell.o lush_lexer lush_parser lush_eval lush LushParser.log
+
+test:
+	python parser/ParserTest.py
