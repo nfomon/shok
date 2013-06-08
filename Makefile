@@ -63,3 +63,4 @@ clean:
 
 test:
 	python parser/ParserTest.py
+	python parser/LushParserTest.py
