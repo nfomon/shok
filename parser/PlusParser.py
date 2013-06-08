@@ -54,6 +54,8 @@ class PlusParser(Parser):
     s = ''
     for m in range(0,len(disps)):
       s += self.rule.msg
+    if not s:
+      return ''
     return s % tuple(disps)
 
 class Plus(Rule):
