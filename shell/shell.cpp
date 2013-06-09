@@ -45,6 +45,9 @@ int main(int argc, char *argv[]) {
   Parser parser;
   parser.run();
 
+  Evaluator eval;
+  eval.run();
+
   cout << PROMPT;
   string line;
   while (std::getline(cin, line)) {
@@ -71,15 +74,26 @@ int main(int argc, char *argv[]) {
     // get AST
     string ast;
     std::getline(parser.in, ast);
+    /*
     if ("" != ast) {
       cout << "[shell] ast: '" << ast << "'" << endl;
     }
+    */
 
     // send AST to eval
-    // get commands
-    // run commands
-    // get output
-    // display output
+    eval.out << ast << endl;
+    //cout << "sent '" << ast << "' to evaluator" << endl;
+    if (!eval.isRunning()) {  // bad race
+      cout << "[shell] Evaluator error; aborting" << endl;
+      break;
+    }
+
+    // get results
+    string evalout;
+    std::getline(eval.in, evalout);
+    if ("" != evalout) {
+      cout << "[shell] eval: '" << evalout << "'" << endl;
+    }
 
     // redisplay prompt
     cout << PROMPT;
@@ -89,6 +103,8 @@ int main(int argc, char *argv[]) {
   lexer.in.close();
   parser.out.close();
   parser.in.close();
+  eval.out.close();
+  eval.in.close();
 
   if (-1 == wait(NULL)) {
     perror("waiting for child");
