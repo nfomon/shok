@@ -123,15 +123,15 @@ n = Star('n',
 
 # Basic parsing constructs
 Endl = Or('endl', [
-  'SEMI',
+  Seq('endsemi', [w, 'SEMI'], '', []),
   wn,
-  Action('RBRACE', BlockLazyEnd),
+  Action(Seq('endbrace', [w, 'RBRACE'], '', []), BlockLazyEnd),
 ])
 
 CmdCodeBlockEndl = Or('cmdcodeblockendl', [
-  'SEMI',
+  Seq('cmdcodeblockendsemi', [w, 'SEMI'], '', []),
   wn,
-  Action(Seq('cmdcodeblockendbrace', ['RBRACE', wn], '', []), BlockLazyEnd),
+  Action(Seq('cmdcodeblockendbrace', [w, 'RBRACE', wn], '', []), BlockLazyEnd),
 ])
 
 
