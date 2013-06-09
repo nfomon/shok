@@ -2,7 +2,8 @@
 
 2. Expand test coverage
 
-3. Replace exp-block-program with exp-display (maybe??)
+Eventually:
+- Unicode support
 
 
 Language Checklist:
