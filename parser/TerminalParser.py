@@ -45,7 +45,7 @@ class TerminalParser(Parser):
       if self.rule.msg.find('%s') == -1:
         return self.rule.msg
       return self.rule.msg % self.tname
-    return self.rule.msg % ("%s(%s)" % (self.tname, self.value))
+    return self.rule.msg % ("%s:%s" % (self.tname, self.value))
 
 class Terminal(Rule):
   def __init__(self,name,items=None,msg='%s',inds=[0]):
