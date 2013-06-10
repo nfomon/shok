@@ -43,10 +43,7 @@ lexer/tiny_lexer_st.cpp: lexer/lexer.qx $(QUEX_CORE)
 lush_parser: parser/lush_parser.py
 	ln -s parser/lush_parser.py lush_parser
 
-eval/*.o: eval/*.cpp
-	g++ -Iutil $(CFLAGS) -c $< -o $@
-
-lush_eval: eval/*.o
+lush_eval: eval/Node.cpp eval/AST.cpp eval/eval.cpp
 	g++ -Iutil eval/*.cpp -o lush_eval
 
 shell/shell.o: shell/shell.cpp
