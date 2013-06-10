@@ -7,7 +7,6 @@ from SeqParser import Seq
 from StarParser import Star
 from TerminalParser import Terminal
 import logging
-logging.basicConfig(filename="LushParser.log", level=logging.DEBUG)
 
 class Future(object):
   def __init__(self,name):

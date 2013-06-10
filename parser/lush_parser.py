@@ -1,27 +1,30 @@
 #!/usr/bin/env python
 import logging
+logging.basicConfig(filename='parser.log',filemode='w',level=logging.WARNING)
 import sys
 import traceback as tb
 from LexToken import LexToken, NewlineToken
 from LushParser import LushParser
-logging.basicConfig(filename="parse.log", level=logging.DEBUG)
+
 
 # We may be writing to a pipe, so be careful not to print anything unless we're
 # pretty sure it should be delivered.  Each line of input from stdin should
 # produce 1 line on stdout.
 
 def main():
-  if len(sys.argv) > 1 and sys.argv[1].lower() == "debug":
-    parse(debug=1)
-  elif len(sys.argv) != 1:
-    print "usage: %s [debug]" % sys.argv[0]
+  if len(sys.argv) == 2:
+    lev=sys.argv[1].upper()
+    logging.getLogger().setLevel(lev)
+    parse()
+  elif len(sys.argv) != 1 and len(sys.argv) != 2:
+    print "usage: %s [log level]" % sys.argv[0]
   else:
-    parse(debug=0)
+    parse()
 
 def Restart():
   return LushParser()
 
-def parse(debug=0):
+def parse():
   parser = Restart()
   while 1:
     try:
