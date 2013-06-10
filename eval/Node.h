@@ -3,6 +3,8 @@
 
 /* AST node */
 
+#include "Code.h"
+#include "Log.h"
 #include "Token.h"
 
 #include <string>
@@ -10,15 +12,19 @@
 
 namespace eval {
 
+class Code;
+
 struct Node {
-  Node(const Token& token);
+  Node(Log& log, const Token& token);
   virtual ~Node();
 
   std::string print() const;
   void addChild(Node* child);
   void evaluate();
 
+  Log& log;
   bool completed;
+  unsigned int depth;
   std::string name;
   std::string value;
   Node* parent;

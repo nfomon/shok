@@ -1,28 +1,37 @@
 #include "Node.h"
 
+#include "AST.h"
+#include "Code.h"
+
+#include <boost/lexical_cast.hpp>
+
 #include <iostream>
 #include <string>
 using namespace std;
 
 namespace eval {
 
-Node::Node(const Token& token)
-  : name(token.name),
+class ASTError;
+
+Node::Node(Log& log, const Token& token)
+  : log(log),
+    completed(false),
+    depth(0),
+    name(token.name),
     value(token.value),
-    parent(NULL),
-    completed(false)
+    parent(NULL)
   {
 }
 
 Node::~Node() {
-  //cout << "Destroying node " << name << endl;
+  log.debug("Destroying node " + name);
   for (child_vec_iter i = children.begin(); i != children.end(); ++i) {
     delete *i;
   }
 }
 
 string Node::print() const {
-  string r(name);
+  string r(boost::lexical_cast<string>(depth) + "_" + name);
   if (value.length() > 0) {
     r += ":" + value;
   }
@@ -38,14 +47,17 @@ void Node::addChild(Node* child) {
 }
 
 void Node::evaluate() {
-  for (child_vec_iter i = children.begin(); i != children.end(); ++i) {
-    (*i)->evaluate();
+  log.debug("Evaluating node: " + name);
+  // Don't necessarily evaluate the children immediately.  To allow for, e.g.,
+  // short-circuiting.  Let this node decide.
+  if (!completed) throw ASTError("Cannot evaluate incomplete node " + name);
+  if ("{" == name) {
+    Code::Block(log, this);
+  } else if ("cmd" == name) {
+    Code::Cmd(log, this);
+  } else if ("new" == name) {
+    Code::New(log, this);
   }
-  /*
-  if ("(" == name && children.size() > 0 && "cmd" == children[0]->name) {
-    cerr << "RUN COMMAND: " << print() << endl;
-  }
-  */
 }
 
 };

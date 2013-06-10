@@ -1,6 +1,7 @@
 #ifndef _AST_h_
 #define _AST_h_
 
+#include "Log.h"
 #include "Node.h"
 #include "Token.h"
 
@@ -11,7 +12,7 @@ namespace eval {
 
 class AST {
 public:
-  AST();
+  AST(Log& log);
   ~AST();
 
   void insert(const Token& token);
@@ -24,6 +25,7 @@ private:
   void checkTypes();
   void runCode();
 
+  Log& m_log;
   Node* m_top;
   Node* m_current;
 };

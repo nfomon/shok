@@ -1,4 +1,5 @@
 #include "AST.h"
+#include "Log.h"
 #include "Token.h"
 
 #include <ctype.h>
@@ -74,15 +75,15 @@ vector<Token> tokenize(const string& line) {
       continue;
     }
 
-    if (' ' == c) {
+    if (' ' == c ||
+        ';' == c) {   // it turns out these are useless. lol
       ++i;
     } else if ('{' == c ||
                '}' == c ||
                '(' == c ||
                ')' == c ||
                '=' == c ||
-               ',' == c ||
-               ';' == c) {
+               ',' == c) {
       v.push_back(Token(string(1, c)));
       ++i;
     } else if (isalpha((int)c)) {
@@ -111,26 +112,34 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  AST ast;
+  Log log;
+  log.info("Initialized log");
+  AST ast(log);
+  log.info("Initialized AST");
   string line;
   try {
     while (getline(cin, line)) {
+      log.debug("Received input line: '" + line + "'");
       try {
         vector<Token> tokens = tokenize(line);
         for (c_vec_iter i = tokens.begin(); i != tokens.end(); ++i) {
-          //cout << "Inserting token: '" << i->name << ":" << i->value << "'" << endl;
+          log.debug("Inserting token: '" + i->name + ":" + i->value + "'");
           ast.insert(*i);
         }
-        cout << ast.print() << endl;
+        log.info("Evaluating: '" + ast.print() + "'");
         ast.evaluate();
+        cout << "Evaluated. " << ast.print() << endl;
       } catch (ASTError& e) {
+        log.error(string("Error evaluating parse tree: ") + e.what());
         cout << "Error evaluating parse tree: " << e.what() << endl;
         ast.reset();
       }
     }
   } catch (exception& e) {
+    log.error(string("Unknown error: ") + e.what());
     cout << "Unknown error: " << e.what() << endl;
   } catch (...) {
+    log.error("Unknown error");
     cout << "Unknown error" << endl;
   }
 

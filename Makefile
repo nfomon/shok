@@ -43,7 +43,7 @@ lexer/tiny_lexer_st.cpp: lexer/lexer.qx $(QUEX_CORE)
 lush_parser: parser/lush_parser.py
 	ln -s parser/lush_parser.py lush_parser
 
-lush_eval: eval/Node.cpp eval/AST.cpp eval/eval.cpp
+lush_eval: eval/Log.cpp eval/Code.cpp eval/Node.cpp eval/AST.cpp eval/eval.cpp
 	g++ -Iutil eval/*.cpp -o lush_eval
 
 shell/shell.o: shell/shell.cpp
@@ -53,10 +53,10 @@ shell: shell/file_descriptor.o shell/shell.o
 	g++ -Iutil shell/file_descriptor.cpp shell/shell.cpp -o lush
 
 tidy: lexer lush
-	rm -f lexer/tiny_lexer_st* parser/*.pyc eval/*.o shell/file_descriptor.o shell/shell.o parser.log
+	rm -f lexer/tiny_lexer_st* parser/*.pyc eval/*.o shell/file_descriptor.o shell/shell.o parser.log eval.log
 
 clean:
-	rm -f lexer/tiny_lexer_st* parser/*.pyc eval/*.o shell/file_descriptor.o shell/shell.o lush_lexer lush_parser lush_eval lush parser.log
+	rm -f lexer/tiny_lexer_st* parser/*.pyc eval/*.o shell/file_descriptor.o shell/shell.o lush_lexer lush_parser lush_eval lush parser.log eval.log
 
 test:
 	python parser/ParserTest.py
