@@ -54,6 +54,10 @@ void AST::insert(const Token& token) {
       throw ASTError("Incorrect brace/paren match: '" + boost::lexical_cast<string>(m_current->depth) + "," + m_current->name + "' against '" + n->name + "'");
     }
     m_current->completed = true;      // the brace/paren is done
+    for (Node::child_vec_iter i = m_current->children.begin();
+         i != m_current->children.end(); ++i) {
+      (*i)->completed = true;
+    }
     // Parentheses: these are now useless.  We promote the first child (there
     // must be at least one child!) into the paren spot; it is the operator,
     // its children are its operands.  Huzzah!

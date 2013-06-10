@@ -131,16 +131,13 @@ int main(int argc, char *argv[]) {
         cout << "Evaluated. " << ast.print() << endl;
       } catch (ASTError& e) {
         log.error(string("Error evaluating parse tree: ") + e.what());
-        cout << "Error evaluating parse tree: " << e.what() << endl;
         ast.reset();
       }
     }
   } catch (exception& e) {
     log.error(string("Unknown error: ") + e.what());
-    cout << "Unknown error: " << e.what() << endl;
   } catch (...) {
     log.error("Unknown error");
-    cout << "Unknown error" << endl;
   }
 
   return 0;

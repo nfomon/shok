@@ -21,6 +21,9 @@ struct Node {
   std::string print() const;
   void addChild(Node* child);
   void evaluate();
+  bool isPrimitive();
+  bool isOperator();
+  std::string cmdText();
 
   Log& log;
   bool completed;

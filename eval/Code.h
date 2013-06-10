@@ -16,6 +16,7 @@ class Code {
 public:
   typedef std::string Result;
 
+  static Result Operator(Log&, Node*);
   static Result Block(Log&, Node*);
   static Result Cmd(Log&, Node*);
   static Result New(Log&, Node*);

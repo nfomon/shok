@@ -1,5 +1,6 @@
 #include "Log.h"
 
+#include <iostream>
 #include <fstream>
 #include <string>
 using std::string;
@@ -16,10 +17,12 @@ Log::~Log() {
 
 void Log::error(const string& msg) {
   m_log << "ERROR:   " << msg << std::endl;
+  std::cerr << "ERROR:   " << msg << std::endl;
 }
 
 void Log::warning(const string& msg) {
   m_log << "WARNING: " << msg << std::endl;
+  std::cerr << "WARNING: " << msg << std::endl;
 }
 
 void Log::info(const string& msg) {
