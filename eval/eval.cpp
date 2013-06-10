@@ -107,17 +107,21 @@ vector<Token> tokenize(const string& line) {
 typedef vector<Token>::const_iterator c_vec_iter;
 
 int main(int argc, char *argv[]) {
-  if (1 != argc) {
-    cout << "usage: " << PROGRAM_NAME << endl;
+  if (argc < 1 || argc > 2) {
+    cout << "usage: " << PROGRAM_NAME << " [log level]" << endl;
     return 1;
   }
 
   Log log;
-  log.info("Initialized log");
-  AST ast(log);
-  log.info("Initialized AST");
-  string line;
   try {
+    if (2 == argc) {
+      log.setLevel(argv[1]);
+    }
+
+    AST ast(log);
+    log.info("Initialized AST");
+
+    string line;
     while (getline(cin, line)) {
       log.debug("Received input line: '" + line + "'");
       try {

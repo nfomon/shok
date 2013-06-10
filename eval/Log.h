@@ -12,8 +12,18 @@ const std::string LOGFILE = "eval.log";
 
 class Log {
 public:
+  enum LEVEL {
+    DEBUG = 10,
+    INFO = 20,
+    WARNING = 30,
+    ERROR = 40
+  };
+
   Log();
   ~Log();
+
+  void setLevel(LEVEL level);
+  void setLevel(const std::string& level);
 
   void error(const std::string& msg);
   void warning(const std::string& msg);
@@ -22,6 +32,7 @@ public:
 
 private:
   std::ofstream m_log;
+  LEVEL m_level;
 };
 
 };
