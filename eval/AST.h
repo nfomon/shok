@@ -1,11 +1,11 @@
 #ifndef _AST_h_
 #define _AST_h_
 
+#include "EvalError.h"
 #include "Log.h"
 #include "Node.h"
 #include "Token.h"
 
-#include <stdexcept>
 #include <string>
 
 namespace eval {
@@ -28,11 +28,6 @@ private:
   Log& m_log;
   Node* m_top;
   Node* m_current;
-};
-
-class ASTError : public std::runtime_error {
-public:
-  ASTError(const std::string& what) : std::runtime_error(what) {}
 };
 
 };

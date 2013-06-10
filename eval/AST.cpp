@@ -1,5 +1,6 @@
 #include "AST.h"
 
+#include "EvalError.h"
 #include "Log.h"
 #include "Token.h"
 
@@ -33,7 +34,7 @@ AST::~AST() {
 
 void AST::insert(const Token& token) {
   if (!m_current)
-    throw ASTError("Cannot insert token " + token.name + " into evaluator AST with no current token");
+    throw EvalError("Cannot insert token " + token.name + " into evaluator AST with no current token");
   Node *n = new Node(m_log, token);
   if ("{" == n->name || "(" == n->name) {
     n->depth = m_current->depth + 1;
@@ -44,17 +45,17 @@ void AST::insert(const Token& token) {
     // m_current should be the open brace/paren to match against
     if (!m_current->parent) {
       if (m_current != m_top) {
-        throw ASTError("At token " + token.name + ", found node " + m_current->name + " with no parent but which isn't the root");
+        throw EvalError("At token " + token.name + ", found node " + m_current->name + " with no parent but which isn't the root");
       }
-      throw ASTError("Cannot move above root node " + m_current->name);
+      throw EvalError("Cannot move above root node " + m_current->name);
     }
     bool match = ("{" == m_current->name && "}" == n->name) ||
                  ("(" == m_current->name && ")" == n->name);
     if (!match) {
-      throw ASTError("Incorrect brace/paren match: '" + boost::lexical_cast<string>(m_current->depth) + "," + m_current->name + "' against '" + n->name + "'");
+      throw EvalError("Incorrect brace/paren match: '" + boost::lexical_cast<string>(m_current->depth) + "," + m_current->name + "' against '" + n->name + "'");
     }
     m_current->completed = true;      // the brace/paren is done
-    for (Node::child_vec_iter i = m_current->children.begin();
+    for (Node::child_iter i = m_current->children.begin();
          i != m_current->children.end(); ++i) {
       (*i)->completed = true;
     }
@@ -63,7 +64,7 @@ void AST::insert(const Token& token) {
     // its children are its operands.  Huzzah!
     if (m_current->name == "(") {
       if (m_current->children.size() < 1) {
-        throw ASTError("Empty parens are not allowed. " + print());
+        throw EvalError("Empty parens are not allowed. " + print());
       }
       // Steal the child's fields into its parent paren node (m_current)
       Node* op = m_current->children.front();
@@ -121,7 +122,7 @@ void AST::runCode() {
     return;
   }
   int pop = 0;
-  for (Node::child_vec_iter i = m_top->children.begin();
+  for (Node::child_iter i = m_top->children.begin();
        i != m_top->children.end(); ++i) {
     if (!(*i)->completed) break;
     (*i)->evaluate();

@@ -4,6 +4,7 @@
 /* AST node */
 
 #include <string>
+#include <vector>
 
 namespace eval {
 
@@ -12,6 +13,13 @@ struct Token {
     : name(name), value(value) {}
   std::string name;
   std::string value;
+};
+
+namespace Tokenizer {
+  typedef std::vector<Token> token_vec;
+  typedef token_vec::const_iterator token_iter;
+
+  token_vec tokenize(const std::string& ast);
 };
 
 };

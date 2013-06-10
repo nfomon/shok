@@ -1,7 +1,7 @@
 #include "Node.h"
 
-#include "AST.h"
 #include "Code.h"
+#include "EvalError.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -10,8 +10,6 @@
 using namespace std;
 
 namespace eval {
-
-class ASTError;
 
 Node::Node(Log& log, const Token& token)
   : log(log),
@@ -25,7 +23,7 @@ Node::Node(Log& log, const Token& token)
 
 Node::~Node() {
   log.debug("Destroying node " + name);
-  for (child_vec_iter i = children.begin(); i != children.end(); ++i) {
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
     delete *i;
   }
 }
@@ -35,7 +33,7 @@ string Node::print() const {
   if (value.length() > 0) {
     r += ":" + value;
   }
-  for (child_vec_iter i = children.begin(); i != children.end(); ++i) {
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
     if (r != "") r += " ";
     r += (*i)->print();
   }
@@ -50,7 +48,7 @@ void Node::evaluate() {
   log.debug("Evaluating node: " + name);
   // Don't necessarily evaluate the children immediately.  To allow for, e.g.,
   // short-circuiting.  Let this node decide.
-  if (!completed) throw ASTError("Cannot evaluate incomplete node " + name);
+  if (!completed) throw EvalError("Cannot evaluate incomplete node " + name);
   if (isPrimitive()) return;
   if (isOperator()) {
     Code::Operator(log, this);
@@ -94,7 +92,7 @@ string Node::cmdText() {
              "INT" == name ||
              "FIXED" == name) {
     if ("" == value) {
-      throw ASTError("Token " + name + " cannot have blank value");
+      throw EvalError("Token " + name + " cannot have blank value");
     }
     return value;
   }

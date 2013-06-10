@@ -32,7 +32,7 @@ struct Node {
   std::string value;
   Node* parent;
   typedef std::deque<Node*> child_vec;
-  typedef std::deque<Node*>::const_iterator child_vec_iter;
+  typedef child_vec::const_iterator child_iter;
   child_vec children;
 };
 
