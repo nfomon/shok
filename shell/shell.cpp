@@ -3,8 +3,10 @@
 #include <iostream>
 using namespace std;
 
-const string PROGRAM_NAME = "lush";
-const string PROMPT = "lush: ";
+namespace {
+  const string PROGRAM_NAME = "lush";
+  const string PROMPT = "lush: ";
+};
 
 class Lexer : public Proc {
 public:
@@ -51,17 +53,20 @@ int main(int argc, char *argv[]) {
   cout << PROMPT;
   string line;
   while (std::getline(cin, line)) {
+    // cout << "received input line: '" << line << "'" << endl;
+
     // send line to lexer
     lexer.out << line << endl;
+    //cout << "sent '" << line << "' to lexer" << endl;
+    if (!lexer.isRunning()) {   // bad race
+      cout << "[shell] Lexer error; aborting" << endl;
+      break;
+    }
 
     // get tokens
     string tokens;
     std::getline(lexer.in, tokens);
     //cout << "[shell] tokens: '" << tokens << "'" << endl;
-    if (!lexer.isRunning()) {   // bad race
-      cout << "[shell] Lexer error; aborting" << endl;
-      break;
-    }
 
     // send tokens to parser
     parser.out << tokens << endl;
@@ -74,16 +79,12 @@ int main(int argc, char *argv[]) {
     // get AST
     string ast;
     std::getline(parser.in, ast);
-    /*
-    if ("" != ast) {
-      cout << "[shell] ast: '" << ast << "'" << endl;
-    }
-    */
+    //cout << "[shell] ast: '" << ast << "'" << endl;
 
     // send AST to eval
     eval.out << ast << endl;
     //cout << "sent '" << ast << "' to evaluator" << endl;
-    if (!eval.isRunning()) {  // bad race
+    if (!eval.isRunning()) {    // bad race
       cout << "[shell] Evaluator error; aborting" << endl;
       break;
     }

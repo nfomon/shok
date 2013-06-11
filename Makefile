@@ -3,7 +3,7 @@
 
 # Quex (lexer)
 ifndef QUEX_PATH
-    $(error The environment variable QUEX_PATH must be defined)
+  $(error The environment variable QUEX_PATH must be defined)
 endif
 
 SOURCES = lexer/tiny_lexer \
@@ -26,10 +26,7 @@ CC = $(COMPILER) -I./ -I$(QUEX_PATH) $(CCFLAG_ASSERTS) \
 LD = $(COMPILER)
 
 # Rules
-all: lush
-#all: tidy
-
-lush: lush_lexer lush_parser lush_eval shell
+all: lush_lexer lush_parser lush_eval lush
 
 lush_lexer: lexer/lexer.cpp lexer/tiny_lexer_st.cpp
 	$(CC) -o $@ $^
@@ -46,10 +43,7 @@ lush_parser: parser/lush_parser.py
 lush_eval: eval/Log.cpp eval/Code.cpp eval/Node.cpp eval/AST.cpp eval/eval.cpp
 	g++ -Iutil eval/*.cpp -o lush_eval
 
-shell/shell.o: shell/shell.cpp
-	g++ -Iutil $(CFLAGS) -c $< -o $@
-
-shell: shell/file_descriptor.o shell/shell.o
+lush: shell/file_descriptor.cpp shell/shell.cpp
 	g++ -Iutil shell/file_descriptor.cpp shell/shell.cpp -o lush
 
 tidy: lexer lush
