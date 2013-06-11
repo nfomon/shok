@@ -47,13 +47,13 @@ lush: shell/file_descriptor.cpp shell/shell.cpp
 	g++ -Iutil shell/file_descriptor.cpp shell/shell.cpp -o lush
 
 tidy: lexer lush
-	rm -f lexer/tiny_lexer_st* parser/*.pyc eval/*.o shell/file_descriptor.o shell/shell.o parser.log eval.log
+	rm -f lexer/tiny_lexer_st* lexer/test_lexer parser/*.pyc eval/*.o shell/file_descriptor.o shell/shell.o parser.log eval.log
 
 clean:
-	rm -f lexer/tiny_lexer_st* parser/*.pyc eval/*.o shell/file_descriptor.o shell/shell.o lush_lexer lush_parser lush_eval lush parser.log eval.log
+	rm -f lexer/tiny_lexer_st* lexer/test_lexer parser/*.pyc eval/*.o shell/file_descriptor.o shell/shell.o lush_lexer lush_parser lush_eval lush parser.log eval.log
 
-lexer/test_lexer:
-	g++ -Iutil lexer/test_lexer.cpp -o lexer/test_lexer
+lexer/test_lexer: lush_lexer shell/file_descriptor.cpp lexer/test_lexer.cpp
+	g++ -Iutil shell/file_descriptor.cpp lexer/test_lexer.cpp -o lexer/test_lexer
 
 test: lexer/test_lexer
 	./lexer/test_lexer
