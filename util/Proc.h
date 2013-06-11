@@ -22,7 +22,9 @@ public:
   Proc(const string& name)
     : name(name) {
   }
-  ~Proc() {}
+  ~Proc() {
+    finish();
+  }
 
   void run() {
     int pipefds_toproc[2];
@@ -96,6 +98,11 @@ public:
       perror((name + " failed querying child process status").c_str());
     }
     return result == 0;
+  }
+
+  void finish() {
+    in.close();
+    out.close();
   }
 
   const string name;

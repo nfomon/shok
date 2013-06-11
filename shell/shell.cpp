@@ -100,12 +100,10 @@ int main(int argc, char *argv[]) {
     cout << PROMPT;
   }
   cout << endl;
-  lexer.out.close();
-  lexer.in.close();
-  parser.out.close();
-  parser.in.close();
-  eval.out.close();
-  eval.in.close();
+
+  lexer.finish();
+  parser.finish();
+  eval.finish();
 
   if (-1 == wait(NULL)) {
     perror("waiting for child");
