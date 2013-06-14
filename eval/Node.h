@@ -1,9 +1,17 @@
 #ifndef _Node_h_
 #define _Node_h_
 
-/* AST node */
+/* AST node
+ *
+ * Use the MakeNode factory constructor to create the appropriate
+ * subclass for a given AST token.  At construction, not all of its
+ * members will be set to their correct values.  First you must add
+ * all its child nodes via addChild(), then call complete().  This
+ * will run some validation checks on the node, complete() its
+ * children, and mark it as ready for use.  If the node represents a
+ * brace/bracket/etc. that needs to be matched
+ */
 
-#include "Code.h"
 #include "Log.h"
 #include "Token.h"
 
@@ -12,28 +20,43 @@
 
 namespace eval {
 
-class Code;
-
 struct Node {
+
+  friend class AST;
+
+  static Node* MakeNode(Log&, const Token&);
+
   Node(Log& log, const Token& token);
   virtual ~Node();
 
-  std::string print() const;
   void addChild(Node* child);
-  void evaluate();
-  bool isPrimitive();
-  bool isOperator();
-  std::string cmdText();
+  bool isComplete() const;
 
-  Log& log;
-  bool completed;
-  unsigned int depth;
-  std::string name;
-  std::string value;
-  Node* parent;
+  virtual std::string print() const;
+  virtual void complete() = 0;
+  virtual void evaluate() = 0;
+  virtual std::string cmdText() const;
+
+protected:
   typedef std::deque<Node*> child_vec;
   typedef child_vec::const_iterator child_iter;
+
+  // Set by constructor
+  Log& log;
+  std::string name;
+  std::string value;
+  bool m_isComplete;
+  // Set by AST prior to completion
+  unsigned int depth;
+  Node* parent;
   child_vec children;
+};
+
+struct RootNode : public Node {
+  RootNode(Log& log);
+
+  virtual void complete();
+  virtual void evaluate();
 };
 
 };

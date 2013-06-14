@@ -9,7 +9,7 @@ using std::string;
 namespace eval {
 
 Log::Log()
-  : m_level(INFO)
+  : m_level(DEFAULT_LEVEL)
   {
   m_log.open(LOGFILE.c_str());
   info("Initialized log");

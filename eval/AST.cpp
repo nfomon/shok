@@ -1,5 +1,6 @@
 #include "AST.h"
 
+#include "Brace.h"
 #include "EvalError.h"
 #include "Log.h"
 #include "Token.h"
@@ -15,33 +16,52 @@ namespace eval {
 
 /* public */
 
-const std::string ROOT_TOKEN = ":ROOT:";
-
 AST::AST(Log& log)
   : m_log(log),
     m_top(NULL),
-    m_current(NULL)
-  {
-  reset();
+    m_current(NULL) {
+  init();
 }
 
 AST::~AST() {
   m_log.debug("Destroying AST");
-  delete m_top;
-  m_top = NULL;
-  m_current = NULL;
+  destroy();
 }
 
 void AST::insert(const Token& token) {
-  if (!m_current)
+  if (!m_top) {
+    throw EvalError("Cannot insert token " + token.name + " into evaluator AST with no root token");
+  }
+  if (!m_current) {
     throw EvalError("Cannot insert token " + token.name + " into evaluator AST with no current token");
-  Node *n = new Node(m_log, token);
-  if ("{" == n->name || "(" == n->name) {
+  }
+  Node* n = Node::MakeNode(m_log, token);
+  if (!n) {
+    throw EvalError("Failed to make node for token " + token.name + ":" + token.value);
+  }
+  Brace* brace = dynamic_cast<Brace*>(n);
+
+  // Neither an open nor a closing brace; add as a child of m_current
+  if (!brace) {
+    n->depth = m_current->depth + 1;
+    n->parent = m_current;
+    m_current->addChild(n);
+
+  // Open brace: descend into m_current; new nodes will be its children
+  } else if (brace->isOpen()) {
     n->depth = m_current->depth + 1;
     n->parent = m_current;
     m_current->addChild(n);
     m_current = n;    // descend
-  } else if ("}" == n->name || ")" == n->name) {
+
+  // Closing brace: ensure it matches with the open brace (m_current), then
+  // ascend our focus up.
+  //
+  // When parentheses are matched, they will be eliminated from the AST since
+  // they represent nothing.  Instead, their first child (operator) will take
+  // over the "parent" spot; its children (operands) will remain as the
+  // operator's children.
+  } else if (!brace->isOpen()) {
     // m_current should be the open brace/paren to match against
     if (!m_current->parent) {
       if (m_current != m_top) {
@@ -49,91 +69,100 @@ void AST::insert(const Token& token) {
       }
       throw EvalError("Cannot move above root node " + m_current->name);
     }
-    bool match = ("{" == m_current->name && "}" == n->name) ||
-                 ("(" == m_current->name && ")" == n->name);
-    if (!match) {
-      throw EvalError("Incorrect brace/paren match: '" + boost::lexical_cast<string>(m_current->depth) + "," + m_current->name + "' against '" + n->name + "'");
+
+    Brace* open = dynamic_cast<Brace*>(m_current);
+    if (!open) {
+      throw EvalError("Found closing brace " + brace->name + " but parent " + m_current->name + " is not an open brace");
     }
-    m_current->completed = true;      // the brace/paren is done
-    for (Node::child_iter i = m_current->children.begin();
-         i != m_current->children.end(); ++i) {
-      (*i)->completed = true;
+    if (!open->matchesCloseBrace(brace)) {
+      throw EvalError("Incorrect brace/paren match: '" + boost::lexical_cast<string>(open->depth) + "," + open->name + "' against '" + n->name + "'");
     }
+    open->complete();
+
     // Parentheses: these are now useless.  We promote the first child (there
-    // must be at least one child!) into the paren spot; it is the operator,
-    // its children are its operands.  Huzzah!
-    if (m_current->name == "(") {
-      if (m_current->children.size() < 1) {
-        throw EvalError("Empty parens are not allowed. " + print());
+    // must be at least one child!) into the parent (paren) spot; it is the
+    // operator, its children are its operands.  Huzzah!
+
+    if (open->isIrrelevant()) {
+      // Extract the first child of the open brace; it is the new "operator"
+      if (open->children.size() < 1) {
+        throw EvalError("Empty parens in the AST are not allowed");
       }
-      // Steal the child's fields into its parent paren node (m_current)
-      Node* op = m_current->children.front();
-      m_current->name = op->name;
-      m_current->value = op->value;
-      delete op;
-      m_current->children.pop_front();
+      Node* op = open->children.front();
+      open->children.pop_front();
+      op->depth = open->depth;
+      op->parent = open->parent;
+      if (op->children.size() != 0) {
+        throw EvalError("Cannot escalate child " + op->name + " that has " + boost::lexical_cast<string>(op->children.size()) + " > 0 children");
+      }
+      op->children = open->children;
+      delete open;
     }
-    m_current = m_current->parent;
-    delete n;   // discard the closing brace/paren
-  } else {
-    n->depth = m_current->depth + 1;
-    m_current->addChild(n);
-    n->parent = m_current;
+    m_current = m_current->parent;    // ascend
+    delete n;   // always discard the closing brace/paren
   }
 }
 
 void AST::reset() {
   m_log.info("Resetting AST. " + print());
-  delete m_top;
-  Node *root = new Node(m_log, Token(ROOT_TOKEN));
-  m_top = root;
-  m_current = root;
+  destroy();
+  init();
 }
 
 void AST::evaluate() {
   reorderOperators();
-  checkTypes();
+  staticAnalysis();
   runCode();
 }
 
 string AST::print() const {
   if (m_top) {
-    return m_top->print();
+    return "<" + m_top->print() + ">";
   }
-  return "";
+  return "<>";
 }
 
 /* private */
+
+void AST::init() {
+  if (m_top || m_current) {
+    throw EvalError("Cannot initialize AST overtop of existing or dangling nodes");
+  }
+  m_top = new RootNode(m_log);
+  m_current = m_top;
+}
+
+void AST::destroy() {
+  if (m_top) {
+    delete m_top;
+  }
+  m_top = NULL;
+  m_current = NULL;
+}
 
 void AST::reorderOperators() {
   m_log.info("Reordering operators. " + print());
 }
 
-void AST::checkTypes() {
-  m_log.info("Checking types. " + print());
+void AST::staticAnalysis() {
+  m_log.info("Performing static analysis. " + print());
 }
 
 void AST::runCode() {
   m_log.info("Running code. " + print());
-  // We only actually run code if m_current has arrived back at the root
-  // node, m_top.
+  // We only actually run code if m_current has arrived back at the root node,
+  // m_top.  This signifies a return to the outer-most (command-line) scope.
+  if (!m_top) {
+    throw EvalError("Cannot evaluate AST -- no root node");
+  }
+  if (!m_current) {
+    throw EvalError("Cannot evaluate AST -- no current node");
+  }
   if (m_current != m_top) {
     m_log.debug(" - not at top -- not ready to run");
     return;
   }
-  int pop = 0;
-  for (Node::child_iter i = m_top->children.begin();
-       i != m_top->children.end(); ++i) {
-    if (!(*i)->completed) break;
-    (*i)->evaluate();
-    ++pop;
-  }
-  while (pop > 0) {
-    m_log.debug("Popping: " + m_top->children.front()->name);
-    delete m_top->children.front();
-    m_top->children.pop_front();
-    --pop;
-  }
+  m_top->evaluate();
 }
 
 };

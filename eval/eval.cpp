@@ -1,3 +1,20 @@
+/* Lush abstract syntax tree evaluator
+ *
+ * Reads lines of specially-formatted AST text input from stdin, performs
+ * static analysis to ensure it specifies a valid program, and executes the
+ * program.  This may involve forking off child processes to run shell
+ * commands.
+ *
+ * In the future, this may be broken into several parts; such as operator
+ * re-ordering, type-checking and static analysis, optimization, code/bytecode
+ * generation, and execution.
+ *
+ * Note that in the multiple stages of the evaluator, we perform each step
+ * through to completion before advancing to the next phase.  This is to allow
+ * any errors to be detected at the earliest possible stage before any of the
+ * logic (or worst-case, execution) of any subsequent stage can occur.
+ */
+
 #include "AST.h"
 #include "EvalError.h"
 #include "Log.h"
@@ -42,6 +59,7 @@ int main(int argc, char *argv[]) {
         cout << "Evaluated. " << ast.print() << endl;
       } catch (EvalError& e) {
         log.error(string("Error evaluating parse tree: ") + e.what());
+        cout << endl;
         ast.reset();
       }
     }

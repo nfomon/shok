@@ -11,6 +11,7 @@ namespace eval {
 struct Token {
   Token(const std::string& name, const std::string& value = "")
     : name(name), value(value) {}
+  std::string print() const;
   std::string name;
   std::string value;
 };

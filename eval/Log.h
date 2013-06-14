@@ -18,6 +18,7 @@ public:
     WARNING = 30,
     ERROR = 40
   };
+  static const LEVEL DEFAULT_LEVEL = INFO;
 
   Log();
   ~Log();

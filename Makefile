@@ -40,7 +40,7 @@ lexer/tiny_lexer_st.cpp: lexer/lexer.qx $(QUEX_CORE)
 lush_parser: parser/lush_parser.py
 	ln -s parser/lush_parser.py lush_parser
 
-lush_eval: eval/Log.cpp eval/Code.cpp eval/Node.cpp eval/AST.cpp eval/eval.cpp
+lush_eval: eval/*.h eval/*.cpp
 	g++ -Iutil eval/*.cpp -o lush_eval
 
 lush: shell/file_descriptor.cpp shell/shell.cpp

@@ -8,6 +8,13 @@ using namespace std;
 
 namespace eval {
 
+string Token::print() const {
+  if ("" == value) {
+    return name;
+  }
+  return name + ":" + value;
+}
+
 /* Horrible buggy incomplete insecure overly-restrictive locale-specific
  * tokenizer.  This is perhaps the worst code ever.  Don't even ask. */
 Tokenizer::token_vec Tokenizer::tokenize(const string& ast) {
@@ -71,7 +78,7 @@ Tokenizer::token_vec Tokenizer::tokenize(const string& ast) {
     }
 
     if (' ' == c ||
-        ';' == c) {   // it turns out these are useless. lol
+        ';' == c) {   // it turns out AST-semicolons are useless. lol
       ++i;
     } else if ('{' == c ||
                '}' == c ||

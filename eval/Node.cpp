@@ -1,6 +1,7 @@
 #include "Node.h"
 
-#include "Code.h"
+#include "Block.h"
+#include "Brace.h"
 #include "EvalError.h"
 
 #include <boost/lexical_cast.hpp>
@@ -11,14 +12,38 @@ using namespace std;
 
 namespace eval {
 
+/* Statics */
+
+Node* Node::MakeNode(Log& log, const Token& t) {
+  //if ("cmd" == t.name)
+  //  return new Command(log, t);
+  if ("{" == t.name)
+    return new Block(log, t);
+  if ("(" == t.name)
+    return new Brace(log, t, true);
+  if (")" == t.name ||
+      "}" == t.name)
+    return new Brace(log, t, false);
+/*
+  } else if ("+" == t.name ||
+             "-" == t.name ||
+             "*" == t.name ||
+             "/" == t.name) {
+    return new Operator(log, t);
+*/
+  throw EvalError("Unsupported token " + t.print());
+  return NULL;    // guard
+}
+
+/* Members */
+
 Node::Node(Log& log, const Token& token)
   : log(log),
-    completed(false),
-    depth(0),
     name(token.name),
     value(token.value),
-    parent(NULL)
-  {
+    m_isComplete(false),
+    depth(0),
+    parent(NULL) {
 }
 
 Node::~Node() {
@@ -26,6 +51,14 @@ Node::~Node() {
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     delete *i;
   }
+}
+
+void Node::addChild(Node* child) {
+  children.push_back(child);
+}
+
+bool Node::isComplete() const {
+  return m_isComplete;
 }
 
 string Node::print() const {
@@ -40,61 +73,40 @@ string Node::print() const {
   return r;
 }
 
-void Node::addChild(Node* child) {
-  children.push_back(child);
+string Node::cmdText() const {
+  throw EvalError("Node " + name + " has no command-line text");
 }
 
-void Node::evaluate() {
-  log.debug("Evaluating node: " + name);
-  // Don't necessarily evaluate the children immediately.  To allow for, e.g.,
-  // short-circuiting.  Let this node decide.
-  if (!completed) throw EvalError("Cannot evaluate incomplete node " + name);
-  if (isPrimitive()) return;
-  if (isOperator()) {
-    Code::Operator(log, this);
-  } else if ("{" == name) {
-    Code::Block(log, this);
-  } else if ("cmd" == name) {
-    Code::Cmd(log, this);
-  } else if ("new" == name) {
-    Code::New(log, this);
-  } else {
-    log.warning("Don't know how to evaluate node " + name + "; skipping");
-  }
+
+/* Root Node */
+RootNode::RootNode(Log& log)
+  : Node(log, Token(":ROOT:")) {
 }
 
-bool Node::isPrimitive() {
-  if ("," == name ||
-      "ID" == name ||
-      "INT" == name ||
-      "FIXED" == name) {
-    return true;
-  }
-  return false;
+void RootNode::complete() {
+  throw EvalError("Cannot complete the root node");
 }
 
-bool Node::isOperator() {
-  if ("PLUS" == name ||
-      "MINUS" == name ||
-      "MULT" == name ||
-      "DIV" == name) {
-    return true;
-  }
-  return false;
-}
+void RootNode::evaluate() {
+  if (children.size() < 1) return;
 
-string Node::cmdText() {
-  if ("," == name) {
-    return " ";
-  } else if ("MINUS" == name) {
-    return "-";
-  } else if ("ID" == name ||
-             "INT" == name ||
-             "FIXED" == name) {
-    if ("" == value) {
-      throw EvalError("Token " + name + " cannot have blank value");
+  // Error if anyone other than the last child is incomplete
+  for (child_iter i = children.begin(); i != children.end()-1; ++i) {
+    if (!(*i)->isComplete() && i != children.end()-1) {
+      throw EvalError("RootNode: found multiple incomplete children");
     }
-    return value;
+  }
+  int done = 0;
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
+    if ((*i)->isComplete()) {
+      (*i)->evaluate();
+      ++done;
+    }
+  }
+  while (done > 0) {
+    delete children.front();
+    children.pop_front();
+    --done;
   }
 }
 
