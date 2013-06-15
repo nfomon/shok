@@ -28,6 +28,9 @@ AST::~AST() {
   destroy();
 }
 
+// TODO: some stuff happens in here that makes me nervous.  See TODOs.
+//  - replacing parent's child with new op (paren case)
+//  - the deque assignment to change children (paren case)
 void AST::insert(const Token& token) {
   if (!m_top) {
     throw EvalError("Cannot insert token " + token.name + " into evaluator AST with no root token");
@@ -43,12 +46,14 @@ void AST::insert(const Token& token) {
 
   // Neither an open nor a closing brace; add as a child of m_current
   if (!brace) {
+    m_log.debug("Inserting non-brace");
     n->depth = m_current->depth + 1;
     n->parent = m_current;
     m_current->addChild(n);
 
   // Open brace: descend into m_current; new nodes will be its children
   } else if (brace->isOpen()) {
+    m_log.debug("Inserting open brace");
     n->depth = m_current->depth + 1;
     n->parent = m_current;
     m_current->addChild(n);
@@ -62,6 +67,7 @@ void AST::insert(const Token& token) {
   // over the "parent" spot; its children (operands) will remain as the
   // operator's children.
   } else if (!brace->isOpen()) {
+    m_log.debug("Inserting closing brace");
     // m_current should be the open brace/paren to match against
     if (!m_current->parent) {
       if (m_current != m_top) {
@@ -77,26 +83,35 @@ void AST::insert(const Token& token) {
     if (!open->matchesCloseBrace(brace)) {
       throw EvalError("Incorrect brace/paren match: '" + boost::lexical_cast<string>(open->depth) + "," + open->name + "' against '" + n->name + "'");
     }
-    open->complete();
 
     // Parentheses: these are now useless.  We promote the first child (there
     // must be at least one child!) into the parent (paren) spot; it is the
     // operator, its children are its operands.  Huzzah!
-
     if (open->isIrrelevant()) {
       // Extract the first child of the open brace; it is the new "operator"
       if (open->children.size() < 1) {
         throw EvalError("Empty parens in the AST are not allowed");
       }
-      Node* op = open->children.front();
+      Node* op = open->children.front();    // "operator" becomes the parent
       open->children.pop_front();
       op->depth = open->depth;
       op->parent = open->parent;
       if (op->children.size() != 0) {
         throw EvalError("Cannot escalate child " + op->name + " that has " + boost::lexical_cast<string>(op->children.size()) + " > 0 children");
       }
-      op->children = open->children;
+      op->children = open->children;    // TODO: is this correct
+      // Replace parent's child of 'open' with 'op'
+      for (Node::child_mod_iter i = op->parent->children.begin();
+           i != op->parent->children.end(); ++i) {
+        if ((*i) == open) {
+          *i = op;    // TODO: is this correct
+          break;    // a node must only appear once in the AST
+        }
+      }
       delete open;
+      completeNode(op);
+    } else {
+      completeNode(open);
     }
     m_current = m_current->parent;    // ascend
     delete n;   // always discard the closing brace/paren
@@ -138,6 +153,19 @@ void AST::destroy() {
   }
   m_top = NULL;
   m_current = NULL;
+}
+
+void AST::completeNode(Node* n) {
+  for (Node::child_iter i = n->children.begin(); i != n->children.end(); ++i) {
+    (*i)->complete();
+    if (!(*i)->isComplete()) {
+      throw EvalError("Node " + n->print() + " child " + (*i)->print() + " did not complete");
+    }
+  }
+  n->complete();
+  if (!n->isComplete()) {
+    throw EvalError("Node " + n->print() + " did not complete");
+  }
 }
 
 void AST::reorderOperators() {

@@ -16,7 +16,7 @@ namespace eval {
 
 Node* Node::MakeNode(Log& log, const Token& t) {
   //if ("cmd" == t.name)
-  //  return new Command(log, t);
+    //return new Command(log, t);
   if ("{" == t.name)
     return new Block(log, t);
   if ("(" == t.name)
@@ -88,6 +88,7 @@ void RootNode::complete() {
 }
 
 void RootNode::evaluate() {
+  log.debug("Evaluating root node");
   if (children.size() < 1) return;
 
   // Error if anyone other than the last child is incomplete

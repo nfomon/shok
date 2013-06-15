@@ -30,6 +30,9 @@ private:
   void init();
   void destroy();
 
+  // Complete all of a node's children, then the node itself
+  void completeNode(Node*);
+
   // Reorder operator/expression trees for correct operator precedence
   void reorderOperators();
   // Static analysis checks such as type checking and method lookups

@@ -40,6 +40,7 @@ struct Node {
 protected:
   typedef std::deque<Node*> child_vec;
   typedef child_vec::const_iterator child_iter;
+  typedef child_vec::iterator child_mod_iter;
 
   // Set by constructor
   Log& log;
