@@ -5,7 +5,7 @@
 #include <string>
 using std::string;
 
-namespace eval {
+using namespace eval;
 
 Brace::Brace(Log& log, const Token& token, bool isOpen)
   : Node(log, token),
@@ -55,5 +55,3 @@ void Brace::evaluate() {
 string Brace::cmdText() const {
   throw EvalError("Cannot get cmdText of Brace");
 }
-
-};

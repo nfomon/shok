@@ -3,7 +3,7 @@
 #include <string>
 using std::string;
 
-namespace eval {
+using namespace eval;
 
 Block::Block(Log& log, const Token& token)
   : Brace(log, token, true),
@@ -32,5 +32,3 @@ void Block::evaluate() {
 string Block::cmdText() const {
   return "";
 }
-
-};

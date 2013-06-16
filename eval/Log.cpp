@@ -1,12 +1,11 @@
 #include "Log.h"
 
 #include <iostream>
-#include <fstream>
 #include <stdexcept>
 #include <string>
 using std::string;
 
-namespace eval {
+using namespace eval;
 
 Log::Log()
   : m_level(DEFAULT_LEVEL)
@@ -59,5 +58,3 @@ void Log::debug(const string& msg) {
   if (m_level > DEBUG) return;
   m_log << "DEBUG:   " << msg << std::endl;
 }
-
-};

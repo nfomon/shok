@@ -7,7 +7,9 @@
  * text of a program name or argument.
  */
 
+#include "Log.h"
 #include "Node.h"
+#include "Token.h"
 
 #include <string>
 

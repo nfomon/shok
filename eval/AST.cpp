@@ -4,15 +4,15 @@
 #include "EvalError.h"
 #include "Log.h"
 #include "Token.h"
+#include "RootNode.h"
 
 #include <boost/lexical_cast.hpp>
 
 #include <iostream>
 #include <string>
 using std::string;
-using namespace std;
 
-namespace eval {
+using namespace eval;
 
 /* public */
 
@@ -195,5 +195,3 @@ void AST::runCode() {
   }
   m_top->evaluate();
 }
-
-};

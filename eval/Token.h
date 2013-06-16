@@ -1,7 +1,7 @@
 #ifndef _Token_h_
 #define _Token_h_
 
-/* AST node */
+/* Token of AST input read from the parser */
 
 #include <string>
 #include <vector>

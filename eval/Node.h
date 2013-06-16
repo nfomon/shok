@@ -55,13 +55,6 @@ protected:
   child_vec children;
 };
 
-struct RootNode : public Node {
-  RootNode(Log& log);
-
-  virtual void complete();
-  virtual void evaluate();
-};
-
 };
 
 #endif // _Node_h_

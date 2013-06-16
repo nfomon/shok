@@ -22,7 +22,11 @@
 
 #include <iostream>
 #include <string>
-using namespace std;
+using std::cin;
+using std::cout;
+using std::endl;
+using std::string;
+
 using namespace eval;
 
 namespace {
@@ -63,7 +67,7 @@ int main(int argc, char *argv[]) {
         ast.reset();
       }
     }
-  } catch (exception& e) {
+  } catch (std::exception& e) {
     log.error(string("Unknown error: ") + e.what());
   } catch (...) {
     log.error("Unknown error");

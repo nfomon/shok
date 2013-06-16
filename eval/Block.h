@@ -9,6 +9,8 @@
  */
 
 #include "Brace.h"
+#include "Log.h"
+#include "Token.h"
 //#include "Expression.h"
 //#include "Statement.h"
 //#include "Variable.h"

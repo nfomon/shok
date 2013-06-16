@@ -3,9 +3,9 @@
 
 /* Brace -- an AST token that requires a match */
 
+#include "Log.h"
 #include "Node.h"
-
-#include <set>
+#include "Token.h"
 
 namespace eval {
 

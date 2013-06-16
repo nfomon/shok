@@ -9,7 +9,9 @@
  * command-line.
  */
 
+#include "Log.h"
 #include "Node.h"
+#include "Token.h"
 
 namespace eval {
 

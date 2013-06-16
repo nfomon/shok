@@ -5,7 +5,7 @@
 #include <string>
 using std::string;
 
-namespace eval {
+using namespace eval;
 
 void Command::complete() {
   m_isComplete = true;
@@ -19,5 +19,3 @@ void Command::evaluate() {
   }
   log.info("RUN CMD: " + s);
 }
-
-};

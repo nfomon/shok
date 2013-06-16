@@ -4,9 +4,9 @@
 
 #include <ctype.h>
 #include <string>
-using namespace std;
+using std::string;
 
-namespace eval {
+using namespace eval;
 
 string Token::print() const {
   if ("" == value) {
@@ -36,7 +36,7 @@ Tokenizer::token_vec Tokenizer::tokenize(const string& ast) {
         current.name = "";
         ++i;
         continue;
-      } else if (isalpha((int)c)) {
+      } else if (std::isalpha((int)c)) {
         current.name += c;
         ++i;
         continue;
@@ -88,7 +88,7 @@ Tokenizer::token_vec Tokenizer::tokenize(const string& ast) {
                ',' == c) {
       v.push_back(Token(string(1, c)));
       ++i;
-    } else if (isalpha((int)c)) {
+    } else if (std::isalpha((int)c)) {
       current.name += c;
       ++i;
     } else {
@@ -105,5 +105,3 @@ Tokenizer::token_vec Tokenizer::tokenize(const string& ast) {
 
   return v;
 }
-
-};
