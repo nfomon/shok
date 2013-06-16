@@ -16,14 +16,12 @@ namespace eval {
 class Identifier : public Node {
 public:
   Identifier(Log& log, const Token& token)
-    : Node(log, token),
-      m_token(token) {}
+    : Node(log, token) {}
   virtual void complete();
   virtual void evaluate();
   virtual std::string cmdText() const;
 
 private:
-  Token m_token;
 };
 
 };

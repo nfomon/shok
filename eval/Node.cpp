@@ -2,6 +2,7 @@
 
 #include "Block.h"
 #include "Brace.h"
+#include "Comma.h"
 #include "Command.h"
 #include "EvalError.h"
 #include "Identifier.h"
@@ -19,6 +20,8 @@ namespace eval {
 Node* Node::MakeNode(Log& log, const Token& t) {
   if ("ID" == t.name)
     return new Identifier(log, t);
+  if ("," == t.name)
+    return new Comma(log, t);
   if ("cmd" == t.name)
     return new Command(log, t);
   if ("{" == t.name)

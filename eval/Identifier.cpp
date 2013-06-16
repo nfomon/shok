@@ -18,5 +18,5 @@ void Identifier::evaluate() {
 }
 
 string Identifier::cmdText() const {
-  return m_token.print();
+  return value;
 }
