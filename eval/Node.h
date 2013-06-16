@@ -20,7 +20,8 @@
 
 namespace eval {
 
-struct Node {
+class Node {
+public:
 
   friend class AST;
 
@@ -35,6 +36,7 @@ struct Node {
   virtual std::string print() const;
   virtual void complete() = 0;
   virtual void evaluate() = 0;
+  // Only available after evaluate() has been called
   virtual std::string cmdText() const;
 
 protected:

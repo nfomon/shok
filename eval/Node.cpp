@@ -2,7 +2,9 @@
 
 #include "Block.h"
 #include "Brace.h"
+#include "Command.h"
 #include "EvalError.h"
+#include "Identifier.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -15,8 +17,10 @@ namespace eval {
 /* Statics */
 
 Node* Node::MakeNode(Log& log, const Token& t) {
-  //if ("cmd" == t.name)
-    //return new Command(log, t);
+  if ("ID" == t.name)
+    return new Identifier(log, t);
+  if ("cmd" == t.name)
+    return new Command(log, t);
   if ("{" == t.name)
     return new Block(log, t);
   if ("(" == t.name)
