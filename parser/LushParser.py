@@ -489,7 +489,7 @@ CmdLine = Or('cmdline', [
 
 # Refresh missed rule dependencies
 Replace(BinopExp, 'Exp', Exp)
-Replace(PrefixBinopExp.items[3], 'Exp', Exp)
+Replace(PrefixBinopExp, 'Exp', Exp)
 Replace(List, 'ExpList', ExpList)
 Replace(Parens, 'Exp', Exp)
 #Replace(Object, 'Exp', Exp)
