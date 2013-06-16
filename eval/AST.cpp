@@ -100,6 +100,7 @@ void AST::insert(const Token& token) {
         throw EvalError("Cannot escalate child " + op->name + " that has " + boost::lexical_cast<string>(op->children.size()) + " > 0 children");
       }
       op->children = open->children;    // TODO: is this correct
+      open->children.clear();
       // Replace parent's child of 'open' with 'op'
       for (Node::child_mod_iter i = op->parent->children.begin();
            i != op->parent->children.end(); ++i) {
@@ -108,12 +109,14 @@ void AST::insert(const Token& token) {
           break;    // a node must only appear once in the AST
         }
       }
+      m_log.debug("Deleting open: " + open->print());
       delete open;
       completeNode(op);
     } else {
       completeNode(open);
     }
     m_current = m_current->parent;    // ascend
+    m_log.debug("Deleting n: " + n->print());
     delete n;   // always discard the closing brace/paren
   }
 }
