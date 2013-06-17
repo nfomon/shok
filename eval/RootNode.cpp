@@ -14,6 +14,14 @@ void RootNode::complete() {
   throw EvalError("Cannot complete the root node");
 }
 
+void RootNode::reorderOperators() {
+  //log.warning("Root node: operator reordering unimplemented");
+}
+
+void RootNode::staticAnalysis() {
+  //log.warning("Root node: static analysis unimplemented");
+}
+
 void RootNode::evaluate() {
   log.debug("Evaluating root node");
   if (children.size() < 1) return;
@@ -27,6 +35,7 @@ void RootNode::evaluate() {
   int done = 0;
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     if ((*i)->isComplete()) {
+      log.debug("Root node -- evaluating child " + (*i)->print());
       (*i)->evaluate();
       ++done;
     }

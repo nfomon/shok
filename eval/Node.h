@@ -35,9 +35,12 @@ public:
 
   virtual std::string print() const;
   virtual void complete() = 0;
+  virtual void reorderOperators() {}    // TODO
+  virtual void staticAnalysis() {}      // TODO
   virtual void evaluate() = 0;
   // Only available after evaluate() has been called
   virtual std::string cmdText() const;
+  virtual operator std::string() const;
 
 protected:
   typedef std::deque<Node*> child_vec;
@@ -50,7 +53,6 @@ protected:
   std::string value;
   bool m_isComplete;
   // Set by AST prior to completion
-  unsigned int depth;
   Node* parent;
   child_vec children;
 };

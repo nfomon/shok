@@ -6,6 +6,7 @@
 #include "EvalError.h"
 #include "Log.h"
 #include "Node.h"
+#include "RootNode.h"
 #include "Token.h"
 
 #include <string>
@@ -27,21 +28,24 @@ public:
   std::string print() const;
 
 private:
+  // Complete all of a node's children, then the node itself
+  // This should be moved to Node, as a public non-virtual complete().  Node
+  // then will have a protected _complete() that this will call.
+  static void completeNode(Node*);
+
   void init();
   void destroy();
 
-  // Complete all of a node's children, then the node itself
-  void completeNode(Node*);
-
   // Reorder operator/expression trees for correct operator precedence
   void reorderOperators();
+  void reorderOps(Node*) const;
   // Static analysis checks such as type checking and method lookups
   void staticAnalysis();
   // Actually run the code!
   void runCode();
 
   Log& m_log;
-  Node* m_top;
+  RootNode* m_top;
   Node* m_current;
 };
 

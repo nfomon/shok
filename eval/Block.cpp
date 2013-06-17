@@ -1,5 +1,8 @@
 #include "Block.h"
 
+#include "EvalError.h"
+#include "ExpressionBlock.h"
+
 #include <string>
 using std::string;
 
@@ -7,7 +10,7 @@ using namespace eval;
 
 Block::Block(Log& log, const Token& token)
   : Brace(log, token, true),
-    isCodeBlock(false) {
+    isCodeBlock(true) {
     //expression(NULL) {
 }
 
@@ -18,15 +21,22 @@ void Block::complete() {
   Brace::complete();
 
   // Determine if we're a code block or an expression block
-  //if (1 == children.size()) {
-  //  expression = dynamic_cast<Expression*>(children.front());
-  //  if (expression) {
-  //    isCodeBlock = false;
-  //  }
-  //}
+  if (1 == children.size()) {
+    ExpressionBlock* expBlock = dynamic_cast<ExpressionBlock*>(children.front());
+    if (expBlock) {
+      isCodeBlock = false;
+    }
+  }
 }
 
 void Block::evaluate() {
+  if (isCodeBlock) {
+    throw EvalError("Code block is unimplemented");
+  } else if (children.size() != 1) {
+    throw EvalError("Cannot evaluate block with deficient expblock");
+  } else {
+    children.front()->evaluate();
+  }
 }
 
 string Block::cmdText() const {

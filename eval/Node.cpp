@@ -5,6 +5,7 @@
 #include "Comma.h"
 #include "Command.h"
 #include "EvalError.h"
+#include "ExpressionBlock.h"
 #include "Identifier.h"
 #include "Log.h"
 #include "Operator.h"
@@ -37,6 +38,8 @@ Node* Node::MakeNode(Log& log, const Token& t) {
       "MULT" == t.name ||
       "DIV" == t.name)
     return new Operator(log, t);
+  if ("exp" == t.name)
+    return new ExpressionBlock(log, t);
   throw EvalError("Unsupported token " + t.print());
   return NULL;    // guard
 }
@@ -48,7 +51,6 @@ Node::Node(Log& log, const Token& token)
     name(token.name),
     value(token.value),
     m_isComplete(false),
-    depth(0),
     parent(NULL) {
 }
 
@@ -68,17 +70,25 @@ bool Node::isComplete() const {
 }
 
 string Node::print() const {
-  string r(boost::lexical_cast<string>(depth) + "_" + name);
+  string r = name;
   if (value.length() > 0) {
     r += ":" + value;
   }
-  for (child_iter i = children.begin(); i != children.end(); ++i) {
-    if (r != "") r += " ";
-    r += (*i)->print();
+  if (children.size() > 0) {
+    r += "[";
+    for (child_iter i = children.begin(); i != children.end(); ++i) {
+      if (i != children.begin()) r += " ";
+      r += (*i)->print();
+    }
+    r += "]";
   }
   return r;
 }
 
 string Node::cmdText() const {
   throw EvalError("Node " + name + " has no command-line text");
+}
+
+Node::operator std::string() const {
+  return name;
 }

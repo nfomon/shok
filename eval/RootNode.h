@@ -12,6 +12,8 @@ struct RootNode : public Node {
   RootNode(Log& log);
 
   virtual void complete();
+  virtual void reorderOperators();
+  virtual void staticAnalysis();
   virtual void evaluate();
 };
 

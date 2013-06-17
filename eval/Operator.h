@@ -22,6 +22,8 @@ public:
   virtual void evaluate();
   virtual std::string cmdText() const;
 
+  virtual int priority() const;
+
 private:
   bool isCmd;
   bool isUnary;
