@@ -28,9 +28,22 @@ def BlockStart(parser):
   parser.top.stack.append(parser.parent)
   parser.top.ast += '{'
 
+def CmdBlockStart(parser):
+  logging.debug("- - CMD BLOCK START")
+  parser.top.stack.append(parser.parent)
+  parser.top.ast += '[{'
+
+def CmdEnd(parser):
+  logging.debug("- - CMD END")
+  parser.top.ast += parser.display()
+
+# ExpBlockEnd gets called by the closing brace of an ExpBlockProgram, as soon
+# as the closing brace happens -- but not before the rule is actually done.  We
+# can pull out index [1] from the rule which is the Exp -- it will have already
+# been parsed at the time of the ExpBlockEnd call.
 def ExpBlockEnd(parser):
   logging.debug("- - EXP BLOCK END")
-  parser.top.ast += "(exp " + parser.parent.displays[1] + ')}'
+  parser.top.ast += '(exp ' + parser.parent.displays[1] + ')}'
   parser.top.stack.pop()
 
 def BlockLazyEnd(parser):
@@ -38,14 +51,16 @@ def BlockLazyEnd(parser):
   parser.top.codeblocklazyends += 1
 
 def CodeBlockEnd(parser):
-  logging.debug("- - BLOCK END")
+  logging.debug("- - CODE BLOCK END")
   parser.top.ast += '}'
   block = parser.top.stack.pop()
   logging.debug("- - - signalling block '%s' to go done" % block)
+  if block.name == 'cmdblock':
+    parser.top.ast += ']'
   block.goDone()
 
 # Print out the statement
-# If we were signalled by BlockLazyEnd, output the }
+# If we were signalled by BlockLazyEnd, output the } and maybe ]
 def StmtEnd(parser):
   logging.debug("- - STMT END: %s" % parser.name)
       #if parser.active.parsers[0].name != "stmt":
@@ -64,10 +79,6 @@ def StmtIfCheck(parser):
     parser.top.stack[-1].ifstatement = True
   else:
     parser.top.stack[-1].ifstatement = False
-
-def CmdEnd(parser):
-  logging.debug("- - CMD END")
-  parser.top.ast += parser.display()
 
 def PreBlock(parser):
   logging.debug("- - PRE BLOCK")
@@ -121,18 +132,20 @@ n = Star('n',
 )
 
 # Basic parsing constructs
-Endl = Or('endl', [
-  Seq('endsemi', [w, 'SEMI'], '', []),
+End = Or('end', [
   wn,
+  Seq('endsemi', [w, 'SEMI'], '', []),
+])
+
+Endl = Or('endl', [
+  End,
   Action(Seq('endbrace', [w, 'RBRACE'], '', []), BlockLazyEnd),
 ])
 
-CmdCodeBlockEndl = Or('cmdcodeblockendl', [
-  Seq('cmdcodeblockendsemi', [w, 'SEMI'], '', []),
-  wn,
-  Action(Seq('cmdcodeblockendbrace', [w, 'RBRACE', wn], '', []), BlockLazyEnd),
+CmdStmtEndl = Or('endl', [
+  End,
+  Action(Seq('endbrace', [w, 'RBRACE', End], '', []), BlockLazyEnd),
 ])
-
 
 # Object property access
 # Currently only goes through an identifier
@@ -386,7 +399,6 @@ Stmt1 = Or('stmt1', [
   StmtNew,
   StmtAssign,
   StmtProcCall,
-  Future('CodeBlock'),
   If,
   Elif,
   Else,
@@ -397,32 +409,43 @@ Stmt1 = Or('stmt1', [
 ])
 Stmt = Action(Stmt1, StmtIfCheck)
 
+BlockOrStmtEndl = Or('blockorstmtendl', [
+  Seq('stmtendl', [Stmt, Endl]),
+  Future('CodeBlock'),
+])
+
+BlockOrCmdStmtEndl = Or('blockorcmdstmtendl', [
+  Seq('cmdstmtendl', [Stmt, CmdStmtEndl]),
+  Future('CodeBlock'),
+])
+
 
 # Blocks
-# A code block may have 0 or more statements.  Each stmt could end with an RBRACE as part of its
-# Endl -- in this case, call StmtEnd which will pop the stack and emit a }.
+# A code block may have 0 or more statements.  Each stmt could end with an
+# RBRACE as part of its Endl -- in this case, call StmtEnd which will pop the
+# stack and emit a }.
 CodeBlockBody = Star('codeblockbody',
   Or('codeblockbodystmts', [
     n,
     Action('RBRACE', CodeBlockEnd),
-    Action(Seq('codeblockbodystmt', [Stmt, Endl]), StmtEnd),
-  ]),
-  '', []
-)
-
-# A codeblock issued from a commandline requires a newline after the end
-# of the block.
-CmdCodeBlockBody = Star('cmdcodeblockbody',
-  Or('cmdcodeblockbodystmts', [
-    n,
-    Action(Seq('cmdcodeblockend', ['RBRACE', wn], '', []), CodeBlockEnd),
-    Action(Seq('cmdcodeblockbodystmt', [Stmt, CmdCodeBlockEndl]), StmtEnd),
+    Action(BlockOrStmtEndl, StmtEnd),
   ]),
   '', []
 )
 
 CodeBlock = Seq('codeblock',
   [Action('LBRACE', BlockStart), CodeBlockBody],
+  '', []
+)
+
+# A codeblock issued from a commandline requires a newline or semicolon after
+# the end of the block.
+CmdCodeBlock = Star('cmdcodeblock',
+  Or('cmdcodeblockbody', [
+    n,
+    Action(Seq('cmdcodeblockend', ['RBRACE', End], '', []), CodeBlockEnd),
+    Action(BlockOrCmdStmtEndl, StmtEnd),
+  ]),
   '', []
 )
 
@@ -457,33 +480,44 @@ Program = Seq('program',
   '%s%s', [0, 1]
 )
 
-ExpBlockProgram = Seq('expblockprogram',
-  [w, Exp, w, Action('RBRACE', ExpBlockEnd), ProgramMore, ProgramArgs, Endl],
-  '%s%s;', [4, 5]
+ExpBlockProgram = Action(
+  Seq('expblockprogram',
+    [w, Exp, w, Action('RBRACE', ExpBlockEnd), ProgramMore, ProgramArgs, Endl],
+    '%s%s]', [4, 5]
+  ), CmdEnd
 )
 
 # A CmdBlock is when a { occurs at the start of a commandline.  We don't yet
 # know if it's a codeblock (list of statements) or an expression block (single
-# expression which will become the name of a program to invoke).
+# expression which will become (at least part of) the name of a program to
+# invoke).
+#
+# Since the CmdBlock is pushed on the stack, it may be "forcefully completed"
+# by either the ExpBlockProgram or the CmdCodeBlock.  So don't put an Action on
+# either of those guys here -- let them do it themselves, and they will set the
+# CmdBlock as complete.
+#
+# Note though that for any CmdBlock we'll want to emit '}' eventually and ']'
+# when it's done :)
 CmdBlock = Seq('cmdblock',
   [w,
-  Action('LBRACE', BlockStart),    # Emit { and push CmdBlock on stack
+  Action('LBRACE', CmdBlockStart),    # Emit [{ and push CmdBlock on stack
   Or('cmdblockbody', [
-    Action(ExpBlockProgram, CmdEnd),
-    CmdCodeBlockBody,
+    ExpBlockProgram,
+    CmdCodeBlock,
   ])],
   '', []
 )
 
 ProgramInvocation = Seq('programinvocation',
   [w, Program, ProgramArgs, Endl],
-  '(cmd %s%s);', [1, 2]
+  '[%s%s]', [1, 2]
 )
 
 CmdLine = Or('cmdline', [
   wn,
   Action(ProgramInvocation, CmdEnd),
-  CmdBlock,   # Note: may be an ExpBlock as part of a program invocation
+  CmdBlock,
 ])
 
 
@@ -499,7 +533,8 @@ Replace(ElifPred.items[0], 'Stmt', Stmt)
 Replace(ElifPred.items[1], 'CodeBlock', CodeBlock)
 Replace(ElsePred, 'Stmt', Stmt)
 Replace(ElsePred.items[1], 'CodeBlock', CodeBlock)
-Replace(Stmt1, 'CodeBlock', CodeBlock)
+Replace(BlockOrStmtEndl, 'CodeBlock', CodeBlock)
+Replace(BlockOrCmdStmtEndl, 'CodeBlock', CodeBlock)
 
 
 # Lush
