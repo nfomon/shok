@@ -13,10 +13,6 @@ using std::string;
 #include <boost/iostreams/stream.hpp>
 namespace io = boost::iostreams;
 
-void setlinebuf(FILE* stream) {
-  setvbuf(stream, (char*)NULL, _IOLBF, 0);
-}
-
 class Proc {
 public:
   Proc(const string& name)
@@ -111,6 +107,9 @@ public:
   io::stream<io::file_descriptor_sink> out;
 
 protected:
+  static void setlinebuf(FILE* stream) {
+    setvbuf(stream, (char*)NULL, _IOLBF, 0);
+  }
   virtual void f() = 0;
 };
 
