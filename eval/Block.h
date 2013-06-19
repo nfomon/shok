@@ -21,7 +21,7 @@ namespace eval {
 
 class Block : public Brace {
 public:
-  Block(Log& log, const Token& t);
+  Block(Log&, const Token&);
   virtual ~Block();
 
   virtual void complete();

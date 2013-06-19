@@ -24,13 +24,14 @@ Node* Node::MakeNode(Log& log, const Token& t) {
     return new Identifier(log, t);
   if ("," == t.name)
     return new Comma(log, t);
-  if ("cmd" == t.name)
+  if ("[" == t.name)
     return new Command(log, t);
-  if ("{" == t.name)
-    return new Block(log, t);
   if ("(" == t.name)
     return new Brace(log, t, true);
-  if (")" == t.name ||
+  if ("{" == t.name)
+    return new Block(log, t);
+  if ("]" == t.name ||
+      ")" == t.name ||
       "}" == t.name)
     return new Brace(log, t, false);
   if ("PLUS" == t.name ||
@@ -75,12 +76,12 @@ string Node::print() const {
     r += ":" + value;
   }
   if (children.size() > 0) {
-    r += "[";
+    r += "(";
     for (child_iter i = children.begin(); i != children.end(); ++i) {
       if (i != children.begin()) r += " ";
       r += (*i)->print();
     }
-    r += "]";
+    r += ")";
   }
   return r;
 }

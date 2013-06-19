@@ -9,7 +9,7 @@
 namespace eval {
 
 struct RootNode : public Node {
-  RootNode(Log& log);
+  RootNode(Log&);
 
   virtual void complete();
   virtual void reorderOperators();

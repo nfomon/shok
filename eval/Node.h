@@ -27,7 +27,7 @@ public:
 
   static Node* MakeNode(Log&, const Token&);
 
-  Node(Log& log, const Token& token);
+  Node(Log&, const Token&);
   virtual ~Node();
 
   void addChild(Node* child);

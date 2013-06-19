@@ -23,12 +23,13 @@ bool Brace::isIrrelevant() const {
   return "(" == name || ")" == name;
 }
 
-bool Brace::matchesCloseBrace(Brace* b) const {
+bool Brace::matchesCloseBrace(Brace* closeBrace) const {
   if (!m_isOpen) {
     throw EvalError("A closing brace will never match with another closing brace... :P");
   }
-  if (("(" == name && ")" == b->name) ||
-      ("{" == name && "}" == b->name)) {
+  if (("[" == name && "]" == closeBrace->name) ||
+      ("(" == name && ")" == closeBrace->name) ||
+      ("{" == name && "}" == closeBrace->name)) {
     return true;
   }
   return false;

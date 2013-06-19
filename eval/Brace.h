@@ -16,7 +16,7 @@ public:
 
   bool isOpen() const;
   bool isIrrelevant() const;
-  bool matchesCloseBrace(Brace* b) const;
+  bool matchesCloseBrace(Brace* closeBrace) const;
 
   virtual void complete();
   virtual void evaluate();

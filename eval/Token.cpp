@@ -80,7 +80,9 @@ Tokenizer::token_vec Tokenizer::tokenize(const string& ast) {
     if (' ' == c ||
         ';' == c) {   // it turns out AST-semicolons are useless. lol
       ++i;
-    } else if ('{' == c ||
+    } else if ('[' == c ||
+               ']' == c ||
+               '{' == c ||
                '}' == c ||
                '(' == c ||
                ')' == c ||
