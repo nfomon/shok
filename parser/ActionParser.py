@@ -16,8 +16,6 @@ class ActionParser(Parser):
     Parser.__init__(self, rule, parent)
     self.actioned = False
     self.active = MakeParser(rule.items, self)
-    if self.active.done:
-      raise Exception("ActionParser cannot start off with a done sub-parser")
 
   def parse(self,token):
     self.active.parse(token)
