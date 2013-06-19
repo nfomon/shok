@@ -40,5 +40,8 @@ void Block::evaluate() {
 }
 
 string Block::cmdText() const {
-  return "";
+  if (!isCodeBlock) {
+    return children.front()->cmdText();
+  }
+  throw EvalError("CmdCodeBlock does not have a cmdText");
 }

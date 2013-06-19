@@ -16,6 +16,7 @@ void Command::evaluate() {
   for (Node::child_iter i = children.begin(); i != children.end(); ++i) {
     (*i)->evaluate();
     s += (*i)->cmdText();
+    log.debug("Command += <" + (*i)->print() + "> '" + (*i)->cmdText() + "'");
   }
   log.info("RUN CMD: " + s);
 }
