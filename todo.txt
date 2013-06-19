@@ -1,20 +1,16 @@
 0. LICENSE
 
-0.5 Allow semicolon described in notes.txt (parser)
+1. Run commands synchronously with redirected I/O
 
-1. Command invocation vs. code/exp blocks (parser/evaluator)
+2. Pragmas e.g. #!VERSION
 
-2. Run commands synchronously with redirected I/O
+3. Implement objects
 
-3. Pragmas e.g. #!VERSION
+4. Implement literals (and a few hardcoded objects that support them)
 
-4. Implement objects
+5. Basic expressions should work
 
-5. Implement literals (and a few hardcoded objects that support them)
-
-6. Basic expressions should work
-
-7. New statements
+6. New statements
 
 Eventually:
 - Unicode support
