@@ -1,17 +1,5 @@
 Can we get the python logger to not produce parser.log if it didn't write any lines?
 
-Error:  The following will be rejected:
-  {{new x}; new y}
-----------^
-
-The semicolon is not allowed by the current parser.  I think it should
-be allowed.  It's a bit tricky to allow given the way the parser
-works.  The way to do it easily is to do a "CodeBlockCheck" similar to
-the "IfCheck" -- a rule like [w 'SEMI'] is allowed as a Statement only
-if it is preceded by a CodeBlock BlockOrStmtEndl.
-
-On that note, IfCheck and pals are probably broken in some places; investigate all the Action commands!
-
 
 AST:
 ----

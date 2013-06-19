@@ -20,11 +20,14 @@ def Replace(rule,name,new):
         rule.items[i] = new
 
 # Actions
-def BlockStart(parser):
-  logging.debug("- - BLOCK START")
+def PreBlockCheck(parser):
   if len(parser.top.stack) > 0 and hasattr(parser.top.stack[-1], 'preblock') and parser.top.stack[-1].preblock:
     parser.top.ast += parser.top.stack[-1].preblock
     parser.top.stack[-1].preblock = ''
+
+def BlockStart(parser):
+  logging.debug("- - BLOCK START")
+  PreBlockCheck(parser)
   parser.top.stack.append(parser.parent)
   parser.top.ast += '{'
 
@@ -57,21 +60,35 @@ def CodeBlockEnd(parser):
   logging.debug("- - - signalling block '%s' to go done" % block)
   if block.name == 'cmdblock':
     parser.top.ast += ']'
+  else:
+    parser.top.stack[-1].codeblock = True
   block.goDone()
+
+# Something happened that indicates a codeblock's end has *not* just happened,
+# so we should deny a semicolon that might have otherwise been allowed after a
+# codeblockend.
+def NoCodeBlockEndSemi(parser):
+  logging.debug("- - NO CODE BLOCK END SEMI")
+  parser.top.stack[-1].codeblock = False
 
 # Print out the statement
 # If we were signalled by BlockLazyEnd, output the } and maybe ]
 def StmtEnd(parser):
   logging.debug("- - STMT END: %s" % parser.name)
       #if parser.active.parsers[0].name != "stmt":
-  if len(parser.top.stack) > 0 and hasattr(parser.top.stack[-1], 'preblock') and parser.top.stack[-1].preblock:
-    parser.top.ast += parser.top.stack[-1].preblock
-    parser.top.stack[-1].preblock = ''
+  PreBlockCheck(parser)
   parser.top.ast += parser.display()
+  NoCodeBlockEndSemi(parser)
   if parser.top.codeblocklazyends > 0:
     parser.top.codeblocklazyends -= 1
     CodeBlockEnd(parser)
 
+def PreBlock(parser):
+  logging.debug("- - PRE BLOCK")
+  parser.top.stack[-1].preblock = parser.display()
+
+# Whether or not an If or Elif statement just happened: record this in the top
+# of stack parser
 def StmtIfCheck(parser):
   logging.debug("- - STMT IF CHECK")
   stmt = parser.active.doneparsers[0].name
@@ -80,25 +97,31 @@ def StmtIfCheck(parser):
   else:
     parser.top.stack[-1].ifstatement = False
 
-def PreBlock(parser):
-  logging.debug("- - PRE BLOCK")
-  parser.top.stack[-1].preblock = parser.display()
-
+# An Elif statement just happened: ensure it was preceded by an If or Elif
 def ElifCheck(parser):
-  logging.debug("- - ELIF ACTION")
+  logging.debug("- - ELIF CHECK")
   if not hasattr(parser.top.stack[-1], 'ifstatement'):
     raise Exception("Cannot elif without a preceding if or elif statement")
   ifstmt = parser.top.stack[-1].ifstatement
   if not ifstmt:
     raise Exception("Cannot elif without a preceding if or elif statement")
 
+# An Else statement just happened: ensure it was preceded by an If or Elif
 def ElseCheck(parser):
-  logging.debug("- - ELSE ACTION")
+  logging.debug("- - ELSE CHECK")
   if not hasattr(parser.top.stack[-1], 'ifstatement'):
     raise Exception("Cannot else without a preceding if or elif statement")
   ifstmt = parser.top.stack[-1].ifstatement
   if not ifstmt:
     raise Exception("Cannot else without a preceding if or elif statement")
+
+# A bare SEMI just happened: ensure it was preceded by the } of a CodeBlock
+def SemiCheck(parser):
+  logging.debug("- - SEMI CHECK")
+  if not hasattr(parser.top.stack[-1], 'codeblock') or not parser.top.stack[-1].codeblock:
+    parser.parse = parser.goBad
+    parser.bad = True
+    parser.done = False
 
 # Whitespace
 # w: optional whitespace (non-newline)
@@ -142,7 +165,7 @@ Endl = Or('endl', [
   Action(Seq('endbrace', [w, 'RBRACE'], '', []), BlockLazyEnd),
 ])
 
-CmdStmtEndl = Or('endl', [
+CmdStmtEndl = Or('cmdstmtendl', [
   End,
   Action(Seq('endbrace', [w, 'RBRACE', End], '', []), BlockLazyEnd),
 ])
@@ -395,7 +418,7 @@ StmtBreak = Or('stmtbreak', [
 
 
 # Statements
-Stmt1 = Or('stmt1', [
+Stmt1 = Or('stmt', [
   StmtNew,
   StmtAssign,
   StmtProcCall,
@@ -409,14 +432,18 @@ Stmt1 = Or('stmt1', [
 ])
 Stmt = Action(Stmt1, StmtIfCheck)
 
-BlockOrStmtEndl = Or('blockorstmtendl', [
+CodeBlockSemi = Action(Seq('codeblocksemi', [w, 'SEMI'], '', []), SemiCheck)
+
+BlockOrStmt = Or('blockorstmt', [
   Seq('stmtendl', [Stmt, Endl]),
   Future('CodeBlock'),
+  CodeBlockSemi,
 ])
 
-BlockOrCmdStmtEndl = Or('blockorcmdstmtendl', [
-  Seq('cmdstmtendl', [Stmt, CmdStmtEndl]),
+BlockOrCmdStmt = Or('blockorcmdstmt', [
+  Seq('stmtcmdstmtendl', [Stmt, CmdStmtEndl]),
   Future('CodeBlock'),
+  CodeBlockSemi,
 ])
 
 
@@ -426,9 +453,9 @@ BlockOrCmdStmtEndl = Or('blockorcmdstmtendl', [
 # stack and emit a }.
 CodeBlockBody = Star('codeblockbody',
   Or('codeblockbodystmts', [
-    n,
+    Action(n, NoCodeBlockEndSemi),
     Action('RBRACE', CodeBlockEnd),
-    Action(BlockOrStmtEndl, StmtEnd),
+    Action(BlockOrStmt, StmtEnd),
   ]),
   '', []
 )
@@ -442,9 +469,9 @@ CodeBlock = Seq('codeblock',
 # the end of the block.
 CmdCodeBlock = Star('cmdcodeblock',
   Or('cmdcodeblockbody', [
-    n,
+    Action(n, NoCodeBlockEndSemi),
     Action(Seq('cmdcodeblockend', ['RBRACE', End], '', []), CodeBlockEnd),
-    Action(BlockOrCmdStmtEndl, StmtEnd),
+    Action(BlockOrCmdStmt, StmtEnd),
   ]),
   '', []
 )
@@ -533,8 +560,8 @@ Replace(ElifPred.items[0], 'Stmt', Stmt)
 Replace(ElifPred.items[1], 'CodeBlock', CodeBlock)
 Replace(ElsePred, 'Stmt', Stmt)
 Replace(ElsePred.items[1], 'CodeBlock', CodeBlock)
-Replace(BlockOrStmtEndl, 'CodeBlock', CodeBlock)
-Replace(BlockOrCmdStmtEndl, 'CodeBlock', CodeBlock)
+Replace(BlockOrStmt, 'CodeBlock', CodeBlock)
+Replace(BlockOrCmdStmt, 'CodeBlock', CodeBlock)
 
 
 # Lush
