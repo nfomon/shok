@@ -98,8 +98,8 @@ public:
   }
 
   void finish() {
-    in.close();
-    out.close();
+    if (in.is_open()) in.close();
+    if (out.is_open()) out.close();
   }
 
   const string name;
