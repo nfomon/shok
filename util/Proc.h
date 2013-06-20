@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <fstream>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string>
 #include <unistd.h>
@@ -107,9 +108,6 @@ public:
   io::stream<io::file_descriptor_sink> out;
 
 protected:
-  static void setlinebuf(FILE* stream) {
-    setvbuf(stream, (char*)NULL, _IOLBF, 0);
-  }
   virtual void f() = 0;
 };
 
