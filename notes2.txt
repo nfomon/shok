@@ -1,0 +1,38 @@
+Eval on its own:
+ - reads AST from stdin
+ - writes eval-commands to stdout
+when a cmd is launched (default, no redirection etc.):
+ - cmd input comes from stdin
+ - cmd output goes to stdout
+
+This makes the eval useless (or worse) as a "stream processor".  Because a child process could fake itself as eval-commands.....
+
+INSTEAD:
+when a cmd is launched:
+ - cmd I/O are nulled
+
+But that's bad -- maybe a child process is surprised by this.  it's just kinda ugly.  what if it blocks waiting for stdin?  Now you have to kill the evaluator.  It's totally useless as a "stream processor".
+
+ALTERNATIVE?:
+the evaluator does NOT write to stdout.  It just lets commands write to stdout
+and send EOF when they're done.  It just streams in AST lines and does its
+thing.
+ - but what to do about stdin?  Eval spurns a cmd that wants stdin -- now what?
+How can this possibly work in a stream-processor setting -- you don't know
+which of the eval or its child the input will go to?
+
+DEFERRER:
+Eval spits cmdlines to run, to the shell.  It just writes "RUN THIS CMD: <ls -lh>" or some such to its stdout, which the shell reads, does it, gives the result back to the eval.
+
+GREAT.  What if the eval wants to do some things with the cmd?  It wants (at least) a "result" object, which has the exit code and other things.  In the more complicated case, it wants to have exec'd the cmd in a complete sandbox where it controls maybe just some or all of the input or output.
+
+Cool, the shell will have a "CommandRunner" component. It takes the commands, runs them, gathers whatever results were requested, and gives them back to the evaluator.
+Then we can build whatever complicated logic we like.  Let's say the eval for
+whatever reason wants to stream input on-the-fly from the command, with its
+full attention on the command.... we're sad due to lots of blocking, but maybe
+we asked for it, and if this design sucks then we'll move to
+one-process-interpreter.  But for now, go with it, let the shell do tons of
+copying and transfer data back+forth to the evaluator until the eval says it's
+actually done.
+
+It's reasonably simple and it will work.
