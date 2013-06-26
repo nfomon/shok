@@ -102,16 +102,6 @@ public:
     }
   }
 
-  // This is pretty useless...
-  bool isRunning() {
-    int status;
-    pid_t result = waitpid(pid, &status, WNOHANG);
-    if (result == -1) {
-      perror((name + " failed querying child process status").c_str());
-    }
-    return result == 0;
-  }
-
   void finish() {
     if (in.is_open()) in.close();
     if (out.is_open()) out.close();
@@ -152,7 +142,6 @@ protected:
     if (pipe(fds) == -1) {
       perror((name + " pipe " + msg).c_str()); exit(1);
     }
-    //std::cerr << name << " make [" << msg << "]: read=" << fds[0] << " write=" << fds[1] << std::endl;
   }
 
   void closePipe(int fd, const std::string& msg) {
@@ -160,11 +149,9 @@ protected:
       perror((name + " failed to close pipe " + msg).c_str());
       _exit(1);
     }
-    //std::cerr << name << " close [" << msg << "]: " << fd << std::endl;
   }
 
   void dupPipe(int oldfd, int newfd, const std::string& msg) {
-    //std::cerr << name << " dup: [" << msg << "]: oldfd=" << oldfd << " newfd=" << newfd << std::endl;
     if (-1 == dup2(oldfd, newfd)) {
       perror((name + " failed to dup " + msg).c_str());
       _exit(1);

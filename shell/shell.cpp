@@ -89,47 +89,27 @@ int main(int argc, char *argv[]) {
   cout << PROMPT;
   string line;
   while (std::getline(cin, line)) {
-    //cout << "received input line: '" << line << "'" << endl;
-
     // send line to lexer
     lexer.out << line << endl;
-    //cout << "sent '" << line << "' to lexer" << endl;
-    if (!lexer.isRunning()) {   // bad race
-      cout << "[shell] Lexer error; aborting" << endl;
-      break;
-    }
 
     // get tokens
     string tokens;
     std::getline(lexer.in, tokens);
-    //cout << "[shell] tokens: '" << tokens << "'" << endl;
 
     // send tokens to parser
     parser.out << tokens << endl;
-    //cout << "sent '" << tokens << "' to parser" << endl;
-    if (!parser.isRunning()) {  // bad race
-      cout << "[shell] Parser error; aborting" << endl;
-      break;
-    }
 
     // get AST
     string ast;
     std::getline(parser.in, ast);
-    //cout << "[shell] ast: '" << ast << "'" << endl;
 
     // send AST to eval
     eval.out << ast << endl;
-    //cout << "sent '" << ast << "' to evaluator" << endl;
-    if (!eval.isRunning()) {    // bad race
-      cout << "[shell] Evaluator error; aborting" << endl;
-      break;
-    }
 
     // get commands or result
     string eval_result;
     std::getline(eval.in, eval_result);
     while ("CMD:" == eval_result.substr(0, 4)) {
-      cout << "[shell] run cmd: " << eval_result << endl;
       string cmd = eval_result.substr(4);
       CmdResult cmd_result = runCommand(cmd);
       eval.out << cmd_result.print() << endl;
