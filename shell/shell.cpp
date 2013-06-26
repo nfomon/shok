@@ -1,6 +1,21 @@
 #include "Proc.h"
 
+/* lush command shell
+ *
+ * WARNING: This is insecure software.  There are security
+ * vulnerabilities, and this software may easily produce undesired
+ * behaviour, using full permissions of the caller.  Do NOT use this on
+ * a system where integrity matters, and do NOT run this program from
+ * an account that has permission to do anything at all dangerous.
+ *
+ * This is a work in (the early stages of) progress.
+ */
+
+#include <boost/tokenizer.hpp>
+
 #include <iostream>
+#include <string>
+#include <utility>
 using namespace std;
 
 namespace {
@@ -8,32 +23,53 @@ namespace {
   const string PROMPT = "lush: ";
 };
 
-class Lexer : public Proc {
-public:
-  Lexer() : Proc("lexer") {}
-protected:
-  virtual void f() {
-    execlp("./lush_lexer", "lush_lexer", (char*)NULL);
+struct CmdResult {
+  CmdResult(int returnCode = -1)
+    : returnCode(returnCode) {}
+  int returnCode;
+  string print() {
+    return boost::lexical_cast<string>(returnCode);
   }
 };
 
-class Parser : public Proc {
-public:
-  Parser() : Proc("parser") {}
-protected:
-  virtual void f() {
-    execlp("./lush_parser", "lush_parser", (char*)NULL);
+CmdResult runCommand(const string& cmd) {
+  cout << "RUN: " << cmd << endl;
+  // Parse the cmd into something exec-able
+  // TODO: allow escaped spaces in the program name
+  typedef boost::escaped_list_separator<char> els_t;
+  typedef boost::tokenizer<els_t> tok_t;
+  els_t els("\\", " ", "\'\"");
+  tok_t tok(cmd, els);
+  if (tok.begin() == tok.end()) {
+    perror(("Cannot run empty command \"" + cmd + "\"").c_str());
+    _exit(1);
   }
-};
-
-class Evaluator : public Proc {
-public:
-  Evaluator() : Proc("evaluator") {}
-protected:
-  virtual void f() {
-    execlp("./lush_eval", "lush_eval", (char*)NULL);
+  Proc cmdProc("cmd");
+  cmdProc.cmd = "";
+  cmdProc.pipechat = false;
+  for (tok_t::const_iterator i = tok.begin(); i != tok.end(); ++i) {
+    if ("" == cmdProc.cmd) {
+      cmdProc.cmd = *i;
+    } else {
+      cmdProc.args.push_back(*i);
+    }
   }
-};
+  if ("" == cmdProc.cmd) {
+    perror(("Cannot run curiously empty command \"" + cmd + "\"").c_str());
+    _exit(1);
+  }
+  cmdProc.run();
+  int status;
+  if (-1 == waitpid(cmdProc.pid, &status, 0)) {
+    perror(("Error waiting for child cmd " + cmdProc.cmd).c_str());
+    _exit(1);
+  }
+  if (!WIFEXITED(status)) {
+    perror(("Something strange happened to child cmd " + cmdProc.cmd).c_str());
+    _exit(1);
+  }
+  return CmdResult(WEXITSTATUS(status));
+}
 
 int main(int argc, char *argv[]) {
   if (1 != argc) {
@@ -41,19 +77,19 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  Lexer lexer;
+  Proc lexer("lush_lexer");
   lexer.run();
 
-  Parser parser;
+  Proc parser("lush_parser");
   parser.run();
 
-  Evaluator eval;
+  Proc eval("lush_eval");
   eval.run();
 
   cout << PROMPT;
   string line;
   while (std::getline(cin, line)) {
-    // cout << "received input line: '" << line << "'" << endl;
+    //cout << "received input line: '" << line << "'" << endl;
 
     // send line to lexer
     lexer.out << line << endl;
@@ -89,11 +125,18 @@ int main(int argc, char *argv[]) {
       break;
     }
 
-    // get results
-    string evalout;
-    std::getline(eval.in, evalout);
-    if ("" != evalout) {
-      cout << "[shell] eval: '" << evalout << "'" << endl;
+    // get commands or result
+    string eval_result;
+    std::getline(eval.in, eval_result);
+    while ("CMD:" == eval_result.substr(0, 4)) {
+      cout << "[shell] run cmd: " << eval_result << endl;
+      string cmd = eval_result.substr(4);
+      CmdResult cmd_result = runCommand(cmd);
+      eval.out << cmd_result.print() << endl;
+      std::getline(eval.in, eval_result);
+    }
+    if ("" != eval_result) {
+      cout << "[shell] eval: '" << eval_result << "'" << endl;
     }
 
     // redisplay prompt

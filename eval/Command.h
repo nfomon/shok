@@ -24,8 +24,6 @@ public:
     : Brace(log, token, true) {}
   virtual void complete();
   virtual void evaluate();
-
-private:
 };
 
 };

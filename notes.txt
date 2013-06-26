@@ -1,3 +1,83 @@
+Interpreter I/O
+
+shell:  stdin, stdout, sterr are to the system/terminal.
+shell <-> lexer:
+  shell makes 3/4 pipes
+  lexer closes 3/4, redirecting its stdin,stdout to them
+  shell keeps 3/4 via Lexer Proc; lexer.in/lexer.out route to them
+  shell writes to lexer.out and reads from lexer.in
+  lexer.err SHOULD still go to shell stderr
+  DONE!
+shell <-> parser:
+  shell makes 5/6 pipes
+  parser closes 5/6, redirecting its stdin,stdout to them
+  shell keeps 5/6 via Parser Proc; parser.in/parser.out route to them
+  shell writes to parser.out and reads from parser.in
+  parser.err SHOULD still go to shell stderr
+  DONE!
+shell <-> evaluator:
+  shell makes 7/8 pipes
+  eval closes 7/8, redirecting its stdin,stdout to them
+  shell keeps 7/8 via Evaluator Proc; eval.in/eval.out route to them
+  shell writes to eval.out and reads from eval.in
+  eval.err SHOULD still go to shell stderr
+  DONE!
+evaluator <-> cmd:
+  shell ALSO made 9/10 pipes
+  shell dupes these to its stdin/stdout
+  eval does NOT close 9/10
+  eval makes 3/4 pipes
+  eval dupes these to its 9/10
+  eval keeps 3/4 via Cmd Proc; cmd.in/cmd.out route to them
+  cmd closes 3/4, redirecting its stdin,stdout to them
+
+-----
+
+Kill all the "extra channel" nonsense out of Proc.  Proc just sets up stdin/stdout like before, and leaves stderr right alone always.
+
+Evaluator is a child of Proc and implements custom logic.  It may need
+an f() component equivalent for the parent (shell) to run right before
+the child (eval)'s f().
+ -- which means running right before the fork()
+
+BEFORE the eval (child) closes its ORIGINAL stdin/stdout (which are
+just the shell's stdin/stdout, going to the terminal), it dupes these
+(with a regular dup()) to free file descriptors (which we re-dup to be
+3 and 4).  THEN it (eval child) will proceed with the regular logic of
+dup'ing shell<->eval communication onto its stdin/stdout, effectively
+closing its original stdin/stdout from being real, now they direct to
+the shell's channel to us.  Then it closes its file descriptors 9/10
+which were its original parent-child channel.
+
+Now the eval has:
+  stdin/stdout: communicate to shell's 9/10
+  3/4: communicate to TERMINAL stdin/stdout
+  9/10: free file descriptors just like any others
+
+Eval has an implementation of a Cmd Proc:
+ - Its instinct would be:  pipe() fd's 5/6, cmd's stdin/stdout will communicate to eval's 5/6, eval will do what it wants with them
+ - Instead of using pipe() to make up some new fd's, we want the Cmd
+   to know to dup its stdin/stdout from some new pipe, but
+   specifically from its fds 3/4 (which it should close after).
+ - Easy way to get that (MAYBE!): get the parent (eval) to dup its
+   magical new 5/6 to its 3/4.  No special logic in the child cmd.
+   Huzzaaah!
+ - except that has to happen *before* the new Cmd is launched!  So a
+   parent_init() needs to exist.
+    -- see Proc.h at top of run()
+
+Problem: We need to stop leaking open file descriptors from the shell
+to its children (communication channels to *other* children that were
+opened first; e.g. right now, the parser can talk directly to the
+lexer -- eeeps!!)
+
+
+=====
+  cmd stdin,stdout,stderr
+  eval 3/4/5 (which go to shell stdin/stdout/stderr) are provided to
+    cmd via Cmd Proc
+  eval blocks until cmd is done
+
 Can we get the python logger to not produce parser.log if it didn't write any lines?
 
 

@@ -1,90 +1,105 @@
 #ifndef _Proc_h_
 #define _Proc_h_
 
+/* Parent-child process communication
+ *
+ * A Proc represents an interface between a parent and a child process.
+ *
+ * The parent constructs a Proc implementation and calls its .run(), which will
+ * fork off a child.
+ *
+ * Proc is virtual -- an implementor represents the child process and provides
+ * a child_exec() function, which is automatically called by the child, when
+ * the parent calls Proc.run().  child_exec() is expected to exec a new
+ * process, and thus never return.  The Proc and its members disappear to the
+ * child.  The child's stdin and stdout redirect to communication channels with
+ * the parent (unless pipechat is set false).  Its stderr remains connected to
+ * the parent's stderr stream.
+ *
+ * The parent is left with the Proc, and communicates to the child via the
+ * Proc.in and Proc.out member streams (unless pipechat is set false).
+ */
+
+#include <boost/iostreams/device/file_descriptor.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/lexical_cast.hpp>
+namespace io = boost::iostreams;
+
+#include <sys/wait.h>
 #include <cstdio>
+#include <fcntl.h>
 #include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
 #include <unistd.h>
-#include <sys/wait.h>
+#include <vector>
 using std::string;
-
-#include <boost/iostreams/device/file_descriptor.hpp>
-#include <boost/iostreams/stream.hpp>
-namespace io = boost::iostreams;
+using std::vector;
 
 class Proc {
 public:
   Proc(const string& name)
-    : name(name) {
-  }
+    : name(name), cmd(name), pipechat(true) {}
+
   ~Proc() {
     finish();
   }
 
   void run() {
-    int pipefds_toproc[2];
-    int pipefds_toshell[2];
-    if (pipe(pipefds_toproc) == -1) {
-      perror((name + " pipe to proc").c_str()); exit(1);
+    const int READ = 0;
+    const int WRITE = 1;
+
+    int tochild[2];
+    int toparent[2];
+    if (pipechat) {
+      makePipe(tochild, "to child");
+      makePipe(toparent, "to parent");
     }
-    if (pipe(pipefds_toshell) == -1) {
-      perror((name + " pipe to shell").c_str()); exit(1);
-    }
+
     pid = fork();
     if (pid == -1) {
       perror((name + " fork").c_str()); exit(1);
     }
-    const int toproc_read = pipefds_toproc[0];
-    const int toproc_write = pipefds_toproc[1];
-    const int toshell_read = pipefds_toshell[0];
-    const int toshell_write = pipefds_toshell[1];
 
     if (pid == 0) {
       // child
-      if (-1 == close(toproc_write)) {
-        perror((name + " failed to close toproc_write").c_str());
-        _exit(1);
-      }
-      if (STDIN_FILENO != toproc_read) {
-        if (-1 == dup2(toproc_read, STDIN_FILENO)) {
-          perror((name + " failed to dup input").c_str());
-          _exit(1);
+      child_init();
+
+      if (pipechat) {
+        closePipe(tochild[WRITE], "child to child write");
+        closePipe(toparent[READ], "child to parent read");
+
+        if (STDIN_FILENO != tochild[READ]) {
+          dupPipe(tochild[READ], STDIN_FILENO, "child to child input");
+          closePipe(tochild[READ], "child to child input after dup");
         }
-        if (-1 == close(toproc_read)) {
-          perror((name + " failed to close toproc_read after dup").c_str());
-          _exit(1);
+        if (STDOUT_FILENO != toparent[WRITE]) {
+          dupPipe(toparent[WRITE], STDOUT_FILENO, "child to parent output");
+          closePipe(toparent[WRITE], "child to parent output after dup");
         }
+
+        // set stdin and stdout line-buffered
+        setlinebuf(stdout);
+        setlinebuf(stdin);
       }
 
-      if (-1 == close(toshell_read)) {
-        perror((name + " failed to close toshell_read").c_str());
-        _exit(1);
-      }
-      if (STDOUT_FILENO != toshell_write) {
-        if (-1 == dup2(toshell_write, STDOUT_FILENO)) {
-          perror((name + " failed to dup output").c_str());
-          _exit(1);
-        }
-        if (-1 == close(toshell_write)) {
-          perror((name + " failed to close toshell_write after dup").c_str());
-          _exit(1);
-        }
-      }
-      // set stdin and stdout line-buffered
-      setlinebuf(stdout);
-      setlinebuf(stdin);
-      f();
+      child_exec();
       perror((name + " failed to exit").c_str());
       _exit(1);
     }
 
-    // parent (shell)
-    close(toproc_read);
-    out.open(toproc_write, io::close_handle);
-    close(toshell_write);
-    in.open(toshell_read, io::close_handle);
+    // parent
+    if (pipechat) {
+      closePipe(tochild[READ], "parent to child read");
+      closePipe(toparent[WRITE], "parent to parent write");
+      in.open(const_cast<const int&>(toparent[READ]), io::close_handle);
+      out.open(const_cast<const int&>(tochild[WRITE]), io::close_handle);
+
+      // Close the in and out file descriptors on any subsequent exec
+      closeOnExec(in->handle(), "parent to parent input");
+      closeOnExec(out->handle(), "parent to child output");
+    }
   }
 
   // This is pretty useless...
@@ -103,12 +118,65 @@ public:
   }
 
   const string name;
+  // Enables in/out pipes for communication between the parent and the child's
+  // stdin/stdout.  Default: true.  If false, the child inherits the parent's
+  // stdin/stdout (sketchy).
+  bool pipechat;
   pid_t pid;
+  string cmd;           // command for child to invoke; defaults to name
+  vector<string> args;  // args for the command
+  // Streams only used by parent
   io::stream<io::file_descriptor_source> in;
   io::stream<io::file_descriptor_sink> out;
 
 protected:
-  virtual void f() = 0;
+  virtual void child_init() {}
+  virtual void child_exec() {
+    string path = "./";
+    path += cmd;
+    size_t lenargv = std::max((size_t)2, args.size()+1);
+    char** argv = new char*[lenargv];
+    argv[0] = const_cast<char*>(cmd.c_str());
+    int i = 0;
+    for (vector<string>::const_iterator it = args.begin();
+         it != args.end(); ++it, ++i) {
+      argv[i] = const_cast<char*>(it->c_str());
+    }
+    argv[lenargv-1] = NULL;
+    char *const env[] = { NULL };
+    execve(path.c_str(), argv, env);
+    delete[] argv;
+  }
+
+  void makePipe(int fds[2], const std::string& msg) {
+    if (pipe(fds) == -1) {
+      perror((name + " pipe " + msg).c_str()); exit(1);
+    }
+    //std::cerr << name << " make [" << msg << "]: read=" << fds[0] << " write=" << fds[1] << std::endl;
+  }
+
+  void closePipe(int fd, const std::string& msg) {
+    if (-1 == close(fd)) {
+      perror((name + " failed to close pipe " + msg).c_str());
+      _exit(1);
+    }
+    //std::cerr << name << " close [" << msg << "]: " << fd << std::endl;
+  }
+
+  void dupPipe(int oldfd, int newfd, const std::string& msg) {
+    //std::cerr << name << " dup: [" << msg << "]: oldfd=" << oldfd << " newfd=" << newfd << std::endl;
+    if (-1 == dup2(oldfd, newfd)) {
+      perror((name + " failed to dup " + msg).c_str());
+      _exit(1);
+    }
+  }
+
+  void closeOnExec(int fd, const std::string& msg) {
+    if (0 != fcntl(fd, F_SETFD, 1)) {
+      perror((name + " failed to set close-on-exec flag for " + msg).c_str());
+      _exit(1);
+    }
+  }
 };
 
 #endif // _Proc_h_
