@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
         }
         log.info("Evaluating: '" + ast.print() + "'");
         ast.evaluate();
-        cout << "Evaluated. " << ast.print() << endl;
+        cout << "" << endl;
       } catch (EvalError& e) {
         log.error(string("Error evaluating parse tree: ") + e.what());
         cout << endl;

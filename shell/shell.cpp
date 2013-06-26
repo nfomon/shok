@@ -77,13 +77,13 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  Proc lexer("lush_lexer");
+  Proc lexer("./lush_lexer");
   lexer.run();
 
-  Proc parser("lush_parser");
+  Proc parser("./lush_parser");
   parser.run();
 
-  Proc eval("lush_eval");
+  Proc eval("./lush_eval");
   eval.run();
 
   cout << PROMPT;

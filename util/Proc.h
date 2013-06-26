@@ -27,6 +27,7 @@ namespace io = boost::iostreams;
 
 #include <sys/wait.h>
 #include <cstdio>
+#include <errno.h>
 #include <fcntl.h>
 #include <fstream>
 #include <stdio.h>
@@ -115,6 +116,7 @@ public:
   pid_t pid;
   string cmd;           // command for child to invoke; defaults to name
   vector<string> args;  // args for the command
+  vector<string> path;  // PATH to search if cmd does not contain a /
   // Streams only used by parent
   io::stream<io::file_descriptor_source> in;
   io::stream<io::file_descriptor_sink> out;
@@ -122,20 +124,31 @@ public:
 protected:
   virtual void child_init() {}
   virtual void child_exec() {
-    string path = "./";
-    path += cmd;
-    size_t lenargv = std::max((size_t)2, args.size()+1);
-    char** argv = new char*[lenargv];
+    if (string::npos == cmd.find_first_of('/')) {
+      path.push_back("/bin/");
+      path.push_back("/usr/bin/");
+    } else {
+      path.push_back("./");
+    }
+    char** argv = new char*[args.size()+2];
     argv[0] = const_cast<char*>(cmd.c_str());
     int i = 0;
     for (vector<string>::const_iterator it = args.begin();
-         it != args.end(); ++it, ++i) {
+         it != args.end(); ++it) {
+      ++i;
       argv[i] = const_cast<char*>(it->c_str());
     }
-    argv[lenargv-1] = NULL;
+    argv[args.size()+1] = NULL;
     char *const env[] = { NULL };
-    execve(path.c_str(), argv, env);
+    errno = 0;
+    for (vector<string>::const_iterator i = path.begin();
+         i != path.end(); ++i) {
+      execve((*i + cmd).c_str(), argv, env);
+      if (ENOENT != errno) break;
+    }
     delete[] argv;
+    perror((name + " failed to exec").c_str());
+    exit(1);
   }
 
   void makePipe(int fds[2], const std::string& msg) {
