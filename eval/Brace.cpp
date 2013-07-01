@@ -52,7 +52,3 @@ void Brace::evaluate() {
   }
   throw EvalError("Brace::evaluate is incomplete");
 }
-
-string Brace::cmdText() const {
-  throw EvalError("Cannot get cmdText of Brace");
-}

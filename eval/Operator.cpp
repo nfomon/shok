@@ -26,10 +26,51 @@ string Operator::cmdText() const {
   if (!isCmd) {
     throw EvalError("Cannot display cmdText of operator " + name + " that has children");
   }
+  if ("not" == name ||
+      "nor" == name ||
+      "and" == name ||
+      "or" == name ||
+      "xor" == name ||
+      "xnor" == name ||
+      "typeof" == name)
+    return name;
+  //if ("LT" == name ) return "<";              // special <
+  //if ("LE" == name ) return "<=";             // special <
+  //if ("GT" == name ) return ">";              // special >
+  //if ("GE" == name ) return ">=";             // special >
+  if ("EQ" == name ) return "==";
+  //if ("NE" == name ) return "!=";             // special !
   if ("PLUS" == name) return "+";
   if ("MINUS" == name) return "-";
-  //if ("MULT" == name) return "*";     // these may have special meaning; not
-  //if ("DIV" == name) return "/";      // provided by the parser currently
+  //if ("STAR" == name) return "*";             // special *
+  if ("SLASH" == name) return "/";
+  if ("PERCENT" == name) return "%";
+  if ("CARAT" == name) return "^";
+  //if ("PIPE" == name) return "|";             // special |
+  //if ("AMP" == name) return "&";              // special &
+  //if ("TILDE" == name) return "~";            // special ~
+  //if ("DOUBLETILDE" == name) return "~~";     // special ~
+  if ("EQUALS" == name) return "=";
+  if ("PLUSEQUALS" == name) return "+=";
+  if ("MINUSEQUALS" == name) return "-=";
+  //if ("STAREQUALS" == name) return "*=";      // special *
+  if ("SLASHEQUALS" == name) return "/=";
+  if ("PERCENTEQUALS" == name) return "%=";
+  if ("CARATEQUALS" == name) return "^=";
+  //if ("PIPEEQUALS" == name) return "|=";      // special |
+  //if ("AMPEQUALS" == name) return "&=";       // special &
+  //if ("TILDEEQUALS" == name) return "~=";     // special ~
+  //if ("ARROW" == name) return "->";           // special >
+  //if ("LPAREN" == name) return "(";           // special (
+  //if ("RPAREN" == name) return ")";           // special )
+  if ("LBRACKET" == name) return "[";
+  if ("RBRACKET" == name) return "]";
+  //if ("LBRACE" == name) return "{";           // special {
+  //if ("RBRACE" == name) return "}";           // special }
+  if ("COMMA" == name) return ",";
+  if ("DOT" == name) return ".";
+  if ("COLON" == name) return ":";
+
   throw EvalError("cmdText unsupported for operator '" + name + "'");
 }
 
@@ -38,8 +79,10 @@ int Operator::priority() const {
     throw EvalError("Cannot query priority of incomplete operator '" + name + "'");
   }
   //if ("COMMA_AND" == name)
-  //  return 1;
-  if ("OR" == name || "XOR" == name || "XNOR" == name)
+  //  return 0;
+  if ("DOT" == name)
+    return 1;
+  if ("OR" == name || "NOR" == name || "XOR" == name || "XNOR" == name)
     return 2;
   if ("AND" == name)
     return 3;
@@ -53,9 +96,9 @@ int Operator::priority() const {
     return 7;
   if (isBinary && ("PLUS" == name || "MINUS" == name))
     return 8;
-  if ("MULT" == name || "DIV" == name || "MOD" == name)
+  if ("STAR" == name || "SLASH" == name || "PERCENT" == name)
     return 9;
-  if ("POWER" == name)
+  if ("CARAT" == name)
     return 10;
   if ("NOT" == name)
     return 11;

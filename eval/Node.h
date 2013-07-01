@@ -38,8 +38,6 @@ public:
   virtual void reorderOperators() {}    // TODO
   virtual void staticAnalysis() {}      // TODO
   virtual void evaluate() = 0;
-  // Only available after evaluate() has been called
-  virtual std::string cmdText() const;
   virtual operator std::string() const;
 
 protected:

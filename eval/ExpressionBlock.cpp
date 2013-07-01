@@ -17,9 +17,9 @@ void ExpressionBlock::complete() {
 
 void ExpressionBlock::evaluate() {
   children.front()->evaluate();
-  // DANGER: TODO: call the resulting object's ->str()->escape() (*UNIMPL*)
-  log.warning("String-escapes from exp blocks are unimplemented");
-  m_str = children.front()->cmdText();
+  // TODO: call the resulting object's ->str()->escape() (*UNIMPL*)
+  throw EvalError("Cannot evaluate expression-block: unimplemented");
+  //m_str = children.front()->cmdText();
 }
 
 string ExpressionBlock::cmdText() const {

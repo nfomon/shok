@@ -9,6 +9,7 @@
  */
 
 #include "Brace.h"
+#include "ExpressionBlock.h"
 #include "Log.h"
 #include "Token.h"
 //#include "Expression.h"
@@ -29,7 +30,7 @@ public:
   virtual std::string cmdText() const;
 
 private:
-  bool isCodeBlock;
+  ExpressionBlock* expBlock;
   //std::set<Variable> variables;
   //std::vector<Statement> statements;
   //Expression* expression;

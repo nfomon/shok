@@ -33,7 +33,6 @@ struct CmdResult {
 };
 
 CmdResult runCommand(const string& cmd) {
-  cout << "RUN: " << cmd << endl;
   // Parse the cmd into something exec-able
   // TODO: allow escaped spaces in the program name
   typedef boost::escaped_list_separator<char> els_t;

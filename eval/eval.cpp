@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     while (getline(cin, line)) {
       log.debug("Received input line: '" + line + "'");
       try {
-        Tokenizer::token_vec tokens = Tokenizer::tokenize(line);
+        Tokenizer::token_vec tokens = Tokenizer::tokenize(log, line);
         for (Tokenizer::token_iter i = tokens.begin();
              i != tokens.end(); ++i) {
           log.debug("Inserting token: '" + i->name + ":" + i->value + "'");

@@ -6,6 +6,7 @@ from PlusParser import Plus
 from SeqParser import Seq
 from StarParser import Star
 from TerminalParser import Terminal
+from ValueParser import ValueTerminal
 import logging
 
 class Future(object):
@@ -123,6 +124,80 @@ def SemiCheck(parser):
     parser.bad = True
     parser.done = False
 
+
+# Language token groups
+Keyword = Or('keyword', [
+  # Symbol table modifiers
+  'NEW', 'RENEW', 'DEL', 'ISVAR',
+  # Functions
+  'VOID', 'RETURN', 'YIELD',
+  # Branch constructs
+  'IF', 'ELIF', 'ELSE', 'SWITCH', 'CASE', 'DEFAULT',
+  # Loop constructs
+  'WHILE', 'LOOP', 'TIMES', 'EACH', 'IN', 'WHERE', 'BREAK', 'CONTINUE',
+  # Logical operators
+  'NOT', 'NOR', 'AND', 'OR', 'XOR', 'XNOR',
+  # Keyword operators
+  'TYPEOF',
+])
+
+Op = Or('op', [
+  # Equality operators
+  'LT', 'LE', 'GT', 'GE', 'EQ', 'NE',
+  # Numeric operators
+  'PLUS', 'MINUS', 'STAR', 'SLASH', 'PERCENT', 'CARAT',
+  # Object operators
+  'PIPE', 'AMP', 'TILDE', 'DOUBLETILDE',
+  # Assignment operators
+  'EQUALS', 'PLUSEQUALS', 'MINUSEQUALS', 'STAREQUALS', 'SLASHEQUALS',
+  'PERCENTEQUALS', 'CARATEQUALS', 'PIPEEQUALS', 'AMPEQUALS', 'TILDEEQUALS',
+  # Cast
+  'ARROW',
+  # Delimeters
+  'LPAREN', 'RPAREN',
+  'LBRACKET', 'RBRACKET',
+  'LBRACE', 'RBRACE',
+  'COMMA', 'DOT', 'COLON',
+])
+
+class CmdT(Terminal):
+  def __init__(self,name,msg):
+    Terminal.__init__(self, name, None, msg)
+
+CmdOp = Or('cmdop', [
+  # Equality operators -- disallow LT, LE, GT, GE
+  CmdT('EQ', '=='),
+  CmdT('NE', '!='),
+  # Numeric operators
+  CmdT('PLUS', '+'),
+  CmdT('MINUS', '-'),
+  CmdT('STAR', '*'),
+  CmdT('SLASH', '/'),
+  CmdT('PERCENT', '%'),
+  CmdT('CARAT', '^'),
+  # Object operators -- disallow PIPE, AMP
+  CmdT('TILDE', '~'),
+  CmdT('DOUBLETILDE', '~~'),
+  # Assignment operators -- disallow PIPEEQUALS, AMPEQUALS
+  CmdT('EQUALS', '='),
+  CmdT('PLUSEQUALS', '+='),
+  CmdT('MINUSEQUALS', '-='),
+  CmdT('STAREQUALS', '*='),
+  CmdT('SLASHEQUALS', '/='),
+  CmdT('PERCENTEQUALS', '%='),
+  CmdT('CARATEQUALS', '^='),
+  CmdT('PIPEEQUALS', '|='),
+  CmdT('AMPEQUALS', '&='),
+  CmdT('TILDEEQUALS', '~='),
+  # Cast -- disallow ARROW
+  # Delimeters: disallow () {}
+  CmdT('LBRACKET', '['),
+  CmdT('RBRACKET', ']'),
+  CmdT('COMMA', ','),
+  CmdT('DOT', '.'),
+  CmdT('COLON', ':'),
+])
+
 # Whitespace
 # w: optional whitespace (non-newline)
 w = Star('w',
@@ -177,37 +252,51 @@ IdProp = Seq('idprop',
   '%s%s', [0, 1]
 )
 
+
 # Expressions
+CmdLiteral = Or('cmdliteral', [
+  # disallow REGEXP, LABEL
+  ValueTerminal('INT'),
+  ValueTerminal('FIXED'),
+  ValueTerminal('STR'),
+  ValueTerminal('ID'),
+])
+
+PathToken = Or('pathtoken', [
+  Keyword,
+  CmdOp,
+  CmdLiteral,
+])
+
+PathPart = Star('pathpart', PathToken, '%s ')
+
+Path = Or('path', [
+  Seq('pathstartslash', ['SLASH', PathPart], '(path %s %s)', [0, 1]),
+  Seq('pathendslash', [PathPart, 'SLASH'], '%s %s', [0, 1]),
+  Seq('pathstartdotslash', ['DOT', 'SLASH', PathPart], '%s %s %s', [0, 1, 2]),
+  Seq('pathstartdotdotslash', ['DOT', 'DOT', 'SLASH', PathPart], '%s %s %s %s', [0, 1, 2, 3]),
+  Seq('pathstarttildeslash', ['TILDE', 'SLASH', PathPart], '%s %s %s', [0, 1, 2]),
+])
+
 Literal = Or('literal', [
-  'INT',
-  'FIXED',
-  'STR',
-  'REGEXP',
-  'PATH',
-  'LABEL',
+  'INT', 'FIXED', 'STR',
+  Path,
+  'REGEXP', 'LABEL', 'ID',
 ])
 
 PrefixOp = Or('prefixop', [
+  # Numeric prefix unary operators
   'MINUS',
 ])
 
 BinOp = Or('binop', [
-  'PLUS',
-  'MINUS',
-  'MULT',
-  'DIV',
-  'MOD',
-  'POWER',
-  'PIPE',
-  'AMP',
-  'TILDE',
-  'DOUBLETILDE',
-  'LT',
-  'LE',
-  'GT',
-  'GE',
-  'EQ',
-  'NE',
+  # Equality binary operators
+  'LT', 'LE', 'GT', 'GE', 'EQ', 'NE',
+  # Numeric binary operators
+  'PLUS', 'MINUS', 'STAR', 'SLASH', 'PERCENT', 'CARAT',
+  # Object binary operators
+  'PIPE', 'AMP', 'TILDE', 'DOUBLETILDE',
+  # User binary operators
   'USEROP',
 ])
 
@@ -316,10 +405,10 @@ StmtAssign = Seq('stmtassign',
     'EQUALS',
     'PLUSEQUALS',
     'MINUSEQUALS',
-    'MULTEQUALS',
-    'DIVEQUALS',
-    'MODEQUALS',
-    'POWEREQUALS',
+    'STAREQUALS',
+    'SLASHEQUALS',
+    'PERCENTEQUALS',
+    'CARATEQUALS',
     'PIPEEQUALS',
     'AMPEQUALS',
     'TILDEEEQUALS',
@@ -476,40 +565,43 @@ CmdCodeBlock = Star('cmdcodeblock',
   '', []
 )
 
-
 # Program invocation
-# We should be getting the raw text from the user instead of
-# back-tracking from these tokens.  Eventually...
-ProgramArg = Or('programarg', [
-  'ID',
-  'PLUS',
-  'MINUS',
-  'INT',
-  Seq('programargexpblock',
-    ['LBRACE', w, Exp, w, 'RBRACE'],
-    '{(exp %s)}', [2]),
+
+# Basic building block -- cannot contain an ExpBlock
+# OK to include "not cmdline approvide" symbols (operators) -- these
+# will have been parsed out earlier, and asking for their cmdText will
+# fail if we do accidentally catch any.
+ProgramBasic = Or('programbasic', [
+  Keyword,    # These will be output verbatim in both code and cmd mode
+  CmdOp,      # Operators spilled out for commands
+  CmdLiteral, # Literals spilled out for commands
 ])
 
+ProgramArg = Star('programarg',
+  Or('programarg1', [
+    ProgramBasic,
+    Seq('programargexpblock',
+      ['LBRACE', w, Exp, w, 'RBRACE'],
+      '{(exp %s)}', [2]),
+    # TODO: redirection, pipes, background-job, etc.
+  ])
+)
+
 ProgramArgs = Star('programargs',
-  Seq('wsarg', [ws, Plus('arg', ProgramArg, ' %s')], '%s', [1]),
-  ',%s'
+  Seq('wsarg', [ws, ProgramArg], ' %s', [1]),
 )
 
-ProgramMore = Star('programmore',
-  ProgramArg,
-  ' %s'
-)
-
-# Necessarily starts with a program name (not an ExpBlock; those are handled by
-# CmdBlock).  ProgramArgs are allowed to be ExpBlocks.
+# Just the name of a program to invoke, without its arguments.
+# Necessarily starts with a program name (not an ExpBlock; those are
+# handled by CmdBlock).  ProgramArg is allowed to contain ExpBlocks.
 Program = Seq('program',
-  ['ID', ProgramMore],
+  [ProgramBasic, ProgramArg],
   '%s%s', [0, 1]
 )
 
 ExpBlockProgram = Action(
   Seq('expblockprogram',
-    [w, Exp, w, Action('RBRACE', ExpBlockEnd), ProgramMore, ProgramArgs, Endl],
+    [w, Exp, w, Action('RBRACE', ExpBlockEnd), ProgramArg, ProgramArgs, Endl],
     '%s%s]', [4, 5]
   ), CmdEnd
 )

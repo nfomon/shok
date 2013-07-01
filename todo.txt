@@ -1,6 +1,6 @@
 0. LICENSE
 
-1. Run commands synchronously with redirected I/O
+1. Rename project
 
 2. Pragmas e.g. #!VERSION
 
@@ -13,8 +13,13 @@
 6. New statements
 
 Eventually:
+- signals
 - Unicode support
-- instead of "repeat" use "loop" again, e.g. "loop n times"
+- prompt customization
+- I/O redirection
+- command pipes
+- jobs
+- security review
 
 
 Language Checklist:

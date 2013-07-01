@@ -10,7 +10,7 @@ using namespace eval;
 
 Block::Block(Log& log, const Token& token)
   : Brace(log, token, true),
-    isCodeBlock(true) {
+    expBlock(NULL) {
     //expression(NULL) {
 }
 
@@ -18,30 +18,30 @@ Block::~Block() {
 }
 
 void Block::complete() {
+  if (m_isComplete) return;
   Brace::complete();
+
+  if (expBlock) {
+    throw EvalError("Block.expBlock should not already be set when completing");
+  }
 
   // Determine if we're a code block or an expression block
   if (1 == children.size()) {
-    ExpressionBlock* expBlock = dynamic_cast<ExpressionBlock*>(children.front());
-    if (expBlock) {
-      isCodeBlock = false;
-    }
+    expBlock = dynamic_cast<ExpressionBlock*>(children.front());
   }
 }
 
 void Block::evaluate() {
-  if (isCodeBlock) {
+  if (!expBlock) {
     throw EvalError("Code block is unimplemented");
-  } else if (children.size() != 1) {
-    throw EvalError("Cannot evaluate block with deficient expblock");
   } else {
-    children.front()->evaluate();
+    expBlock->evaluate();
   }
 }
 
 string Block::cmdText() const {
-  if (!isCodeBlock) {
-    return children.front()->cmdText();
+  if (!expBlock) {
+    throw EvalError("Cannot get cmdText of a code block");
   }
-  throw EvalError("CmdCodeBlock does not have a cmdText");
+  return expBlock->cmdText();
 }

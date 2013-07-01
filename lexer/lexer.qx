@@ -8,7 +8,6 @@ define {
   P_FIXED   [0-9]+"\."[0-9]+
   //P_STR
   //P_REGEXP
-  //P_PATH
   //P_LABEL
   //P_USEROP
   P_ID      [A-Za-z_][A-Za-z0-9_]*
@@ -33,7 +32,7 @@ token {
   SWITCH; CASE; DEFAULT;
 
   // Loop constructs
-  WHILE; LOOP; REPEAT; TIMES;
+  WHILE; LOOP; TIMES;
   EACH; IN;
   WHERE;
   BREAK; CONTINUE;
@@ -48,12 +47,14 @@ token {
   LT; LE; GT; GE; EQ; NE;
 
   // Numeric operators
-  PLUS; MINUS; MULT; DIV; MOD; POWER;
+  PLUS; MINUS; STAR; SLASH; PERCENT; CARAT;
+
+  // Object operators
   PIPE; AMP; TILDE; DOUBLETILDE;
 
   // Assignment operators
-  EQUALS; PLUSEQUALS; MINUSEQUALS; MULTEQUALS; DIVEQUALS;
-  MODEQUALS; POWEREQUALS; PIPEEQUALS; AMPEQUALS; TILDEEQUALS;
+  EQUALS; PLUSEQUALS; MINUSEQUALS; STAREQUALS; SLASHEQUALS;
+  PERCENTEQUALS; CARATEQUALS; PIPEEQUALS; AMPEQUALS; TILDEEQUALS;
 
   // Cast: ->
   ARROW;
@@ -72,13 +73,9 @@ token {
   FIXED;
   STR;
   REGEXP;
-  PATH;
   LABEL;
   USEROP;
   ID;
-
-  // COMMAND MODE
-  CMD;
 
   // Whitespace
   WS;
@@ -116,7 +113,6 @@ mode LUSH :
   // Loop constructs
   "while"     => QUEX_TKN_WHILE(LexemeNull);
   "loop"      => QUEX_TKN_LOOP(LexemeNull);
-  "repeat"    => QUEX_TKN_REPEAT(LexemeNull);
   "times"     => QUEX_TKN_TIMES(LexemeNull);
   "each"      => QUEX_TKN_EACH(LexemeNull);
   "in"        => QUEX_TKN_IN(LexemeNull);
@@ -146,10 +142,10 @@ mode LUSH :
   // Numeric operators
   "+"   => QUEX_TKN_PLUS(LexemeNull);
   "-"   => QUEX_TKN_MINUS(LexemeNull);
-  "*"   => QUEX_TKN_MULT(LexemeNull);
-  "/"   => QUEX_TKN_DIV(LexemeNull);
-  "%"   => QUEX_TKN_MOD(LexemeNull);
-  "^"   => QUEX_TKN_POWER(LexemeNull);
+  "*"   => QUEX_TKN_STAR(LexemeNull);
+  "/"   => QUEX_TKN_SLASH(LexemeNull);
+  "%"   => QUEX_TKN_PERCENT(LexemeNull);
+  "^"   => QUEX_TKN_CARAT(LexemeNull);
   "|"   => QUEX_TKN_PIPE(LexemeNull);
   "&"   => QUEX_TKN_AMP(LexemeNull);
   "~"   => QUEX_TKN_TILDE(LexemeNull);
@@ -159,10 +155,10 @@ mode LUSH :
   "="  => QUEX_TKN_EQUALS(LexemeNull);
   "+=" => QUEX_TKN_PLUSEQUALS(LexemeNull);
   "-=" => QUEX_TKN_MINUSEQUALS(LexemeNull);
-  "*=" => QUEX_TKN_MULTEQUALS(LexemeNull);
-  "/=" => QUEX_TKN_DIVEQUALS(LexemeNull);
-  "%=" => QUEX_TKN_MODEQUALS(LexemeNull);
-  "^=" => QUEX_TKN_POWEREQUALS(LexemeNull);
+  "*=" => QUEX_TKN_STAREQUALS(LexemeNull);
+  "/=" => QUEX_TKN_SLASHEQUALS(LexemeNull);
+  "%=" => QUEX_TKN_PERCENTEQUALS(LexemeNull);
+  "^=" => QUEX_TKN_CARATEQUALS(LexemeNull);
   "|=" => QUEX_TKN_PIPEEQUALS(LexemeNull);
   "&=" => QUEX_TKN_AMPEQUALS(LexemeNull);
   "~=" => QUEX_TKN_TILDEEQUALS(LexemeNull);
@@ -200,7 +196,6 @@ mode LUSH :
   {P_FIXED}       => QUEX_TKN_FIXED(Lexeme);
   //STR
   //REGEXP
-  //PATH
   //LABEL
   //USEROP
   {P_ID}          => QUEX_TKN_ID(Lexeme);

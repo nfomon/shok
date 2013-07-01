@@ -2,8 +2,8 @@
 
 #include "Block.h"
 #include "Brace.h"
-#include "Comma.h"
 #include "Command.h"
+#include "CommandFragment.h"
 #include "EvalError.h"
 #include "ExpressionBlock.h"
 #include "Identifier.h"
@@ -20,10 +20,6 @@ using namespace eval;
 /* Statics */
 
 Node* Node::MakeNode(Log& log, const Token& t) {
-  if ("ID" == t.name)
-    return new Identifier(log, t);
-  if ("," == t.name)
-    return new Comma(log, t);
   if ("[" == t.name)
     return new Command(log, t);
   if ("(" == t.name)
@@ -34,10 +30,20 @@ Node* Node::MakeNode(Log& log, const Token& t) {
       ")" == t.name ||
       "}" == t.name)
     return new Brace(log, t, false);
+  if ("cmd" == t.name)
+    return new CommandFragment(log, t);
+  if ("ID" == t.name)
+    return new Identifier(log, t);
   if ("PLUS" == t.name ||
       "MINUS" == t.name ||
-      "MULT" == t.name ||
-      "DIV" == t.name)
+      "STAR" == t.name ||
+      "SLASH" == t.name ||
+      "PERCENT" == t.name ||
+      "CARAT" == t.name ||
+      "PIPE" == t.name ||
+      "AMP" == t.name ||
+      "TILDE" == t.name ||
+      "DOUBLETILDE" == t.name)
     return new Operator(log, t);
   if ("exp" == t.name)
     return new ExpressionBlock(log, t);
@@ -84,10 +90,6 @@ string Node::print() const {
     r += ")";
   }
   return r;
-}
-
-string Node::cmdText() const {
-  throw EvalError("Node " + name + " has no command-line text");
 }
 
 Node::operator std::string() const {

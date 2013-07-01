@@ -3,12 +3,15 @@
 
 /* Token of AST input read from the parser */
 
+#include "Log.h"
+
 #include <string>
 #include <vector>
 
 namespace eval {
 
 struct Token {
+  Token() {}
   Token(const std::string& name, const std::string& value = "")
     : name(name), value(value) {}
   std::string print() const;
@@ -20,7 +23,7 @@ namespace Tokenizer {
   typedef std::vector<Token> token_vec;
   typedef token_vec::const_iterator token_iter;
 
-  token_vec tokenize(const std::string& ast);
+  token_vec tokenize(Log& log, const std::string& ast);
 };
 
 };

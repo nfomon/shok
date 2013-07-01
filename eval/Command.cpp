@@ -1,6 +1,8 @@
 #include "Command.h"
 
-#include "Comma.h"
+#include "Block.h"
+#include "CommandFragment.h"
+#include "EvalError.h"
 #include "Node.h"
 
 #include <boost/lexical_cast.hpp>
@@ -19,34 +21,18 @@ void Command::complete() {
 }
 
 void Command::evaluate() {
-  // There's much duplicated effort here.  We walk across our children,
-  // retrieving their cmdtext and shoving it into either the program string, or
-  // an element of the args vector.  Comma children become the spaces that
-  // separate args.  But at the end, we don't care about this vector, we just
-  // want a whole-string commandline.  But let's keep this duplication because
-  // it may become useful.
-  string program;
-  vector<string> args;
-  size_t pos = 0;
+  string cmd;
   for (Node::child_iter i = children.begin(); i != children.end(); ++i) {
     (*i)->evaluate();
-    string cmdtext = (*i)->cmdText();
-    if (dynamic_cast<Comma*>(*i)) {
-      ++pos;
-      continue;
-    }
-    if (0 == pos) {
-      program += cmdtext;
+    const CommandFragment* frag = dynamic_cast<const CommandFragment*>(*i);
+    const Block* block = dynamic_cast<const Block*>(*i);
+    if (frag) {
+      cmd += frag->cmdText();
+    } else if (block) {
+      cmd += block->cmdText();
     } else {
-      if (pos > args.size()) {
-        args.push_back("");
-      }
-      args.back() += cmdtext;
+      throw EvalError("Command has an unsupported child: " + string(**i));
     }
-  }
-  string cmd = program;
-  for (vector<string>::const_iterator i = args.begin(); i != args.end(); ++i) {
-    cmd += " " + *i;
   }
   log.info("RUNNING CMD: <" + cmd + ">");
   std::cout << "CMD:" << cmd << std::endl;

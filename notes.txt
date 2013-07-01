@@ -1,3 +1,30 @@
+Shell
+
+We currently use a "unified" shell framework:  one lexer, one parser, one evaluator, is shared between the command-line and code.
+
+Instead:  We should eventually change using separate programs for each.  In this model:
+shell: master.  Launches subprograms for command-line and code-mode.  Probably, the command-line is built-in to the shell so it's not really a separate program.
+command-line processor: accepts lines of text.  Parses out special characters/redirects/etc.  It allows anything within {}'s to be kept as pure text.  It decides which {}'s are expblocks or codeblocks (that's metadata kept alongside the {} chunks).  When it has checked its whole line for errors etc., it passes off the {} chunks to the code processor.  If a { happens with no }, then the code processor is told that it's in charge, and we hand off all the text that we've seen after the {.
+code processor: may receive some partial or full text regarding a particular block, and whether it's an expression or a code block.  It may "take charge" of any subsequent user input.  After error-checking, when it evaluates down and has some command-line segments, it can pass these off to the cmd processor to deal with.
+
+-----
+
+Parsing Cmds:
+ - let special things like <, >, & get abstracted out (i.e. build partial
+   parser support for them)
+ - then we can assume that deeper in we don't have them
+ - we have a general map of keyword/operator to cmdText
+ - we have a wrapper-parser that wraps Keyword or Op in a thing that yields its
+   cmdText() as its display instead of bare %s (somehow?)
+ - ExpBlocks will still need to be evaluated
+
+ProgramBasic
+ProgramArgs
+ProgramMore
+
+
+-----
+
 Interpreter I/O
 
 shell:  stdin, stdout, sterr are to the system/terminal.

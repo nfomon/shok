@@ -20,7 +20,6 @@ public:
 
   virtual void complete();
   virtual void evaluate();
-  virtual std::string cmdText() const;
 
 private:
   bool m_isOpen;
