@@ -38,10 +38,15 @@ namespace io = boost::iostreams;
 using std::string;
 using std::vector;
 
+extern char** environ;
+
 class Proc {
 public:
   Proc(const string& name)
-    : name(name), cmd(name), pipechat(true) {}
+    : name(name),
+      cmd(name),
+      pipechat(true),
+      env(environ) {}
 
   ~Proc() {
     finish();
@@ -117,6 +122,7 @@ public:
   string cmd;           // command for child to invoke; defaults to name
   vector<string> args;  // args for the command
   vector<string> path;  // PATH to search if cmd does not contain a /
+  char** env;
   // Streams only used by parent
   io::stream<io::file_descriptor_source> in;
   io::stream<io::file_descriptor_sink> out;
@@ -139,7 +145,6 @@ protected:
       argv[i] = const_cast<char*>(it->c_str());
     }
     argv[args.size()+1] = NULL;
-    char *const env[] = { NULL };
     errno = 0;
     for (vector<string>::const_iterator i = path.begin();
          i != path.end(); ++i) {
