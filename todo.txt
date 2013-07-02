@@ -2,24 +2,35 @@
 
 1. Rename project
 
-2. Pragmas e.g. #!VERSION
+2. Immediate concerns:
 
-3. Implement objects
+Shell:
+- cd
+- signals
+- comments
+- string literals
 
-4. Implement literals (and a few hardcoded objects that support them)
+Command-line:
+- ^L: clear screen
+- left/right/home/end : navigate a line
+- up/down: basic command history
 
-5. Basic expressions should work
+Program invocation:
 
-6. New statements
+Programming language:
+- objects
+- new statements
+- #!VERSION pragma
+- a couple built-in types
+- basic expressions
 
 Eventually:
-- signals
 - Unicode support
-- prompt customization
 - I/O redirection
 - command pipes
 - jobs
 - security review
+- basic prompt customization
 
 
 Language Checklist:
