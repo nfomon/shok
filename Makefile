@@ -43,7 +43,7 @@ lush_parser: parser/lush_parser.py
 lush_eval: eval/*.h eval/*.cpp
 	g++ -Iutil eval/*.cpp -o lush_eval
 
-lush: util/Proc.h shell/file_descriptor.cpp shell/shell.cpp
+lush: util/Proc.h util/Util.h shell/file_descriptor.cpp shell/shell.cpp
 	g++ -Iutil shell/file_descriptor.cpp shell/shell.cpp -o lush
 
 tidy: lexer lush

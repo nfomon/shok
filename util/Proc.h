@@ -35,14 +35,12 @@ namespace io = boost::iostreams;
 #include <string>
 #include <unistd.h>
 #include <vector>
-using std::string;
-using std::vector;
 
 extern char** environ;
 
 class Proc {
 public:
-  Proc(const string& name)
+  Proc(const std::string& name)
     : name(name),
       cmd(name),
       pipechat(true),
@@ -113,15 +111,15 @@ public:
     if (out.is_open()) out.close();
   }
 
-  const string name;
+  const std::string name;
   // Enables in/out pipes for communication between the parent and the child's
   // stdin/stdout.  Default: true.  If false, the child inherits the parent's
   // stdin/stdout (sketchy).
   bool pipechat;
   pid_t pid;
-  string cmd;           // command for child to invoke; defaults to name
-  vector<string> args;  // args for the command
-  vector<string> path;  // PATH to search if cmd does not contain a /
+  std::string cmd;      // command for child to invoke; defaults to name
+  std::vector<std::string> args;  // args for the command
+  std::vector<std::string> path;  // PATH to search if cmd does not contain a /
   char** env;
   // Streams only used by parent
   io::stream<io::file_descriptor_source> in;
@@ -130,23 +128,25 @@ public:
 protected:
   virtual void child_init() {}
   virtual void child_exec() {
-    if (string::npos == cmd.find_first_of('/')) {
+    if (std::string::npos == cmd.find_first_of('/')) {
       path.push_back("/bin/");
       path.push_back("/usr/bin/");
+    } else if (0 == cmd.find_first_of('/')) {
+      path.push_back("");
     } else {
       path.push_back("./");
     }
     char** argv = new char*[args.size()+2];
     argv[0] = const_cast<char*>(cmd.c_str());
     int i = 0;
-    for (vector<string>::const_iterator it = args.begin();
+    for (std::vector<std::string>::const_iterator it = args.begin();
          it != args.end(); ++it) {
       ++i;
       argv[i] = const_cast<char*>(it->c_str());
     }
     argv[args.size()+1] = NULL;
     errno = 0;
-    for (vector<string>::const_iterator i = path.begin();
+    for (std::vector<std::string>::const_iterator i = path.begin();
          i != path.end(); ++i) {
       execve((*i + cmd).c_str(), argv, env);
       if (ENOENT != errno) break;

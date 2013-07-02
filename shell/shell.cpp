@@ -1,5 +1,3 @@
-#include "Proc.h"
-
 /* lush command shell
  *
  * WARNING: This is insecure software.  There are security
@@ -10,6 +8,9 @@
  *
  * This is a work in (the early stages of) progress.
  */
+
+#include "Proc.h"
+#include "Util.h"
 
 #include <boost/tokenizer.hpp>
 
@@ -32,9 +33,13 @@ struct CmdResult {
   }
 };
 
-CmdResult runCommand(const string& cmd) {
+CmdResult runCommand(string cmd) {
   // Parse the cmd into something exec-able
   // TODO: allow escaped spaces in the program name
+  // First trim whitespace from left and right ends of cmd
+  cmd = Util::ltrim_space(cmd);
+  cmd = Util::rtrim_space(cmd);
+  //cout << "RUN CMD: '" << cmd << "'" << endl;
   typedef boost::escaped_list_separator<char> els_t;
   typedef boost::tokenizer<els_t> tok_t;
   els_t els("\\", " ", "\'\"");
