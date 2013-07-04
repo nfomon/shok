@@ -198,6 +198,26 @@ CmdOp = Or('cmdop', [
   CmdT('COLON', ':'),
 ])
 
+class PathT(ValueTerminal):
+  def __init__(self,name,msg):
+    ValueTerminal.__init__(self, name, None, msg)
+
+# Operators that are safe for use by path literals in code
+# Anything we allow here will be eaten aggressively by a path literal,
+# overriding any possible other meaning.  If you actually want to use the
+# regular / or . operators directly beside a path literal, enclose the path
+# literal in ()'s.
+PathOp = Or('cmdop', [
+  # Equality operators -- disallow < <= > >= == !=
+  # Numeric operators -- disallow + - * % ^
+  PathT('SLASH', '/'),
+  # Object operators -- disallow | & ~ ~~
+  # Assignment operators -- disallow = += -= *= /= %= ^= |= &= ~=
+  # Cast -- disallow ARROW
+  # Delimeters: disallow () [] {} , :
+  PathT('DOT', '.'),
+])
+
 # Whitespace
 # w: optional whitespace (non-newline)
 w = Star('w',
@@ -264,19 +284,19 @@ CmdLiteral = Or('cmdliteral', [
 
 PathToken = Or('pathtoken', [
   Keyword,
-  CmdOp,
+  PathOp,
   CmdLiteral,
 ])
 
-PathPart = Star('pathpart', PathToken, '%s ')
+PathPart = Star('pathpart', PathToken)
 
 Path = Or('path', [
-  Seq('pathstartslash', ['SLASH', PathPart], '(path %s %s)', [0, 1]),
-  Seq('pathendslash', [PathPart, 'SLASH'], '%s %s', [0, 1]),
-  Seq('pathstartdotslash', ['DOT', 'SLASH', PathPart], '%s %s %s', [0, 1, 2]),
-  Seq('pathstartdotdotslash', ['DOT', 'DOT', 'SLASH', PathPart], '%s %s %s %s', [0, 1, 2, 3]),
-  Seq('pathstarttildeslash', ['TILDE', 'SLASH', PathPart], '%s %s %s', [0, 1, 2]),
-])
+  Seq('pathstartslash', ['SLASH', PathPart], '/%s', [1]),
+  Seq('pathendslash', [PathPart, 'SLASH'], '%s/', [0]),
+  Seq('pathstartdotslash', ['DOT', 'SLASH', PathPart], './%s', [2]),
+  Seq('pathstartdotdotslash', ['DOT', 'DOT', 'SLASH', PathPart], '../%s', [3]),
+  Seq('pathstarttildeslash', ['TILDE', 'SLASH', PathPart], '~/%s', [2]),
+], '(path %s)')
 
 Literal = Or('literal', [
   'INT', 'FIXED', 'STR',
@@ -324,7 +344,6 @@ Parens = Seq('parens',
 
 Atom = Or('atom', [
   Literal,
-  'ID',
   List,
   Parens,
   #Object,
@@ -356,12 +375,12 @@ Exp = Or('exp', [
 # New statements
 Assign1 = Seq('assign1',
   ['ID', w, 'EQUALS', n, Exp],
-  '(= %s %s)', [0, 4]
+  '%s %s', [0, 4]
 )
 
 Assign2 = Seq('assign2',
   ['ID', w, 'EQUALS', n, Exp, w, 'EQUALS', n, Exp],
-  '(= %s %s %s)', [0, 4, 8]
+  '%s %s %s', [0, 4, 8]
 )
 
 # New
@@ -369,7 +388,7 @@ NewAssign = Or('newassign', [
   'ID',
   Assign1,
   Assign2,
-])
+], '(init %s)')
 
 New = Seq('new',
   ['NEW', n, NewAssign,
@@ -428,11 +447,10 @@ ExpList = Seq('explist',
 StmtProcCall = Or('stmtproccall', [
   Seq('proccallargs',
     [IdProp, w, 'LPAREN', n, ExpList, n, 'RPAREN'],
-    '(call %s %s);', [0, 4]),
+    '%s %s', [0, 4]),
   Seq('proccallvoid',
-    [IdProp, w, 'LPAREN', n, 'RPAREN'],
-    '(call %s);', [0]),
-])
+    [IdProp, w, 'LPAREN', n, 'RPAREN'])
+], '(call %s);')
 
 
 # Branch constructs
