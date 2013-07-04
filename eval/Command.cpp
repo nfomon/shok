@@ -16,7 +16,6 @@ using std::vector;
 using namespace eval;
 
 void Command::complete() {
-  log.info("Completing command");
   m_isComplete = true;
 }
 

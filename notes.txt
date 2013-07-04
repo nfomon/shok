@@ -1,3 +1,33 @@
+AST:
+I want it to give as "deep" (semantic) errors as possible, as early as
+possible.
+
+We'll have to improve this much later.  For now, we need to do things
+in this order, including reordering operators.  That should have
+actually been done by the parser, but we'll fix that when we replace
+our parser framework someday.
+
+Receive a token:
+ - insert it
+  - m_current is the most local brace
+  - normal nodes becomes children of m_current
+  - open braces are set as child, then become the new m_current
+ - on closing brace:
+  - if irrelevant, move the first child up
+  - this first child cannot have children.  If the parser changes to
+    allow this, it's a change in the structure of the trees we receive
+    from the parser, and it's not clear what it would mean.
+  - Now we setup the parent
+  - For each child, setup it and then complete it
+  - Finally, complete the parent
+
+Setup: parent->children
+Complete: children->parent
+reorderOperators: parent->children (another pass!)
+staticAnalysis: parent->children (another pass!!)
+
+-----
+
 Shell
 
 We currently use a "unified" shell framework:  one lexer, one parser, one evaluator, is shared between the command-line and code.

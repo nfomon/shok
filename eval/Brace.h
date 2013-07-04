@@ -1,7 +1,7 @@
 #ifndef _Brace_h_
 #define _Brace_h_
 
-/* Brace -- an AST token that requires a match */
+/* Brace -- actually, just an AST token that requires a match */
 
 #include "Log.h"
 #include "Node.h"

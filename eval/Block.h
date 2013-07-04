@@ -29,6 +29,8 @@ public:
   virtual void evaluate();
   virtual std::string cmdText() const;
 
+  //Type
+
 private:
   ExpressionBlock* expBlock;
   //std::set<Variable> variables;

@@ -36,13 +36,9 @@ bool Brace::matchesCloseBrace(Brace* closeBrace) const {
 }
 
 void Brace::complete() {
-  if (m_isComplete) return;
   if (("(" == name || ")" == name) && children.size() < 1) {
     throw EvalError("Empty parens in the AST are not allowed");
   }
-  for (child_iter i = children.begin(); i != children.end(); ++i) { 
-    (*i)->complete();
-  } 
   m_isComplete = true;
 }
 

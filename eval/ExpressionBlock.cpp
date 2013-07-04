@@ -11,7 +11,6 @@ void ExpressionBlock::complete() {
   if (children.size() != 1) {
     throw EvalError("Only a single expression is allowed in an ExpressionBlock");
   }
-  children.front()->complete();
   m_isComplete = true;
 }
 

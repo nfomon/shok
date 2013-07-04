@@ -20,7 +20,6 @@ public:
       isBinary(false) {}
   virtual void complete();
   virtual void evaluate();
-  virtual std::string cmdText() const;
 
   virtual int priority() const;
 

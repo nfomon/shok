@@ -19,7 +19,7 @@ using namespace eval;
 
 AST::AST(Log& log)
   : m_log(log),
-    m_top(NULL),
+    m_root(NULL),
     m_current(NULL) {
   init();
 }
@@ -30,7 +30,7 @@ AST::~AST() {
 }
 
 void AST::insert(const Token& token) {
-  if (!m_top) {
+  if (!m_root) {
     throw EvalError("Cannot insert token " + token.name + " into evaluator AST with no root token");
   }
   if (!m_current) {
@@ -63,7 +63,7 @@ void AST::insert(const Token& token) {
   } else if (!brace->isOpen()) {
     // m_current should be the open brace/paren to match against
     if (!m_current->parent) {
-      if (m_current != m_top) {
+      if (m_current != m_root) {
         throw EvalError("At token " + token.name + ", found node " + m_current->name + " with no parent but which isn't the root");
       }
       throw EvalError("Cannot move above root node " + m_current->name);
@@ -88,10 +88,10 @@ void AST::insert(const Token& token) {
       Node* op = open->children.front();    // "operator" becomes the parent
       open->children.pop_front();
       op->parent = open->parent;
-      // This check makes no sense.  a ({ will produce the condition, and
-      // that's fine.  But we do need a different escalation procedure...
+      // a '({' cannot appear in the input.  Note that parentheses in
+      // expressions are not given to us as a bare '(' brace.
       if (op->children.size() != 0) {
-        throw EvalError("Cannot (yet?) escalate child " + op->name + " that has " + boost::lexical_cast<string>(op->children.size()) + " > 0 children");
+        throw EvalError("Cannot escalate child " + op->name + " that has " + boost::lexical_cast<string>(op->children.size()) + " > 0 children");
       }
       op->children = open->children;
       open->children.clear();
@@ -110,9 +110,9 @@ void AST::insert(const Token& token) {
       }
       m_log.debug("Deleting open: " + open->print());
       delete open;
-      completeNode(op);
+      op->setupAndCompleteAsParent();
     } else {
-      completeNode(open);
+      open->setupAndCompleteAsParent();
     }
     m_current = m_current->parent;    // ascend
     m_log.debug("Deleting n: " + n->print());
@@ -127,16 +127,17 @@ void AST::reset() {
 }
 
 void AST::evaluate() {
-  m_log.debug("before reorder: root node has " + boost::lexical_cast<string>(m_top->children.size()) + " children");
-  reorderOperators();
-  staticAnalysis();
-  m_log.debug("before runcode: root node has " + boost::lexical_cast<string>(m_top->children.size()) + " children");
+  if (!m_root) {
+    throw EvalError("Cannot evaluate AST with no root node");
+  }
+  m_root->reorderOperators();
+  m_root->staticAnalysis();
   runCode();
 }
 
 string AST::print() const {
-  if (m_top) {
-    return "<" + m_top->print() + ">";
+  if (m_root) {
+    return "<" + m_root->print() + ">";
   }
   return "<>";
 }
@@ -144,120 +145,34 @@ string AST::print() const {
 /* private */
 
 void AST::init() {
-  if (m_top || m_current) {
+  if (m_root || m_current) {
     throw EvalError("Cannot initialize AST overtop of existing or dangling nodes");
   }
-  m_top = new RootNode(m_log);
-  m_current = m_top;
+  m_root = new RootNode(m_log);
+  m_current = m_root;
 }
 
 void AST::destroy() {
-  if (m_top) {
-    delete m_top;
+  if (m_root) {
+    delete m_root;
   }
-  m_top = NULL;
+  m_root = NULL;
   m_current = NULL;
-}
-
-void AST::completeNode(Node* n) {
-  for (Node::child_iter i = n->children.begin(); i != n->children.end(); ++i) {
-    (*i)->complete();
-    if (!(*i)->isComplete()) {
-      throw EvalError("Node " + n->print() + " child " + (*i)->print() + " did not complete");
-    }
-  }
-  n->complete();
-  if (!n->isComplete()) {
-    throw EvalError("Node " + n->print() + " did not complete");
-  }
-}
-
-void AST::reorderOperators() {
-  if (!m_top) {
-    throw EvalError("Cannot reorder operators with no top node");
-  }
-  m_log.info("Reordering operators. " + print());
-  reorderOps(m_top);
-}
-
-void AST::reorderOps(Node* n) const {
-  if (!n) throw EvalError("Cannot reorder operations on NULL node");
-  switch (n->children.size()) {
-    case 0: return;
-    // Operator with a single operator child: error, unsupported (it's unclear
-    // to me how these should be reordered, since I don't think they exist)
-    case 1: {
-      Node* child = n->children.at(0);
-      reorderOps(child);
-      Operator* op = dynamic_cast<Operator*>(n);
-      if (!op) return;
-      Operator* childOp = dynamic_cast<Operator*>(child);
-      if (childOp) {
-        throw EvalError("Unclear how to reorder unary operator with operator child");
-      }
-    } return;
-    // Left child is fine.  If right child has lower or equal priority than us,
-    // shuffle it around, and *then* recurse down the right child.
-    case 2: {
-      Node* left = n->children.at(0);
-      Node* right = n->children.at(1);
-      reorderOps(left);   // SKIP THIS IF IT'S A LEFT WE SWITCHEROO'D! (MAYBE?)
-      Operator* op = dynamic_cast<Operator*>(n);
-      Operator* rightOp = dynamic_cast<Operator*>(right);
-      if (!op || !rightOp ||
-          rightOp->children.size() != 2 ||
-          rightOp->priority() > op->priority()) {
-        reorderOps(right);
-        return;
-      }
-      if (!op->parent || !rightOp->parent) {
-        throw EvalError("Someone's parent is deficient");
-      }
-      op->children.pop_back();
-      op->children.push_back(rightOp->children.at(0));
-      rightOp->parent = op->parent;
-      op->parent = rightOp;
-      rightOp->children.pop_front();
-      rightOp->children.push_front(op);
-      for (Node::child_mod_iter i = rightOp->parent->children.begin();
-           i != rightOp->parent->children.end(); ++i) {
-        if (*i == op) {
-          *i = rightOp;
-          break;
-        }
-      }
-      reorderOps(rightOp);
-    } return;
-    default: {
-      for (Node::child_iter i = n->children.begin();
-           i != n->children.end(); ++i) {
-        reorderOps(*i);
-      }
-    } return;
-  }
-}
-
-void AST::staticAnalysis() {
-  if (!m_top) {
-    throw EvalError("Cannot perform static analysis no top node");
-  }
-  m_log.info("Performing static analysis. " + print());
-  m_top->staticAnalysis();
 }
 
 void AST::runCode() {
   m_log.info("Running code. " + print());
   // We only actually run code if m_current has arrived back at the root node,
-  // m_top.  This signifies a return to the outer-most (command-line) scope.
-  if (!m_top) {
+  // m_root.  This signifies a return to the outer-most (command-line) scope.
+  if (!m_root) {
     throw EvalError("Cannot evaluate AST -- no root node");
   }
   if (!m_current) {
     throw EvalError("Cannot evaluate AST -- no current node");
   }
-  if (m_current != m_top) {
-    m_log.debug(" - not at top -- not ready to run");
+  if (m_current != m_root) {
+    m_log.debug(" - not at root -- not ready to run");
     return;
   }
-  m_top->evaluate();
+  m_root->evaluate();
 }

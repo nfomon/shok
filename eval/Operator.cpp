@@ -22,58 +22,6 @@ void Operator::evaluate() {
   throw EvalError("Operator '" + name + "' not yet supported for evaluation");
 }
 
-string Operator::cmdText() const {
-  if (!isCmd) {
-    throw EvalError("Cannot display cmdText of operator " + name + " that has children");
-  }
-  if ("not" == name ||
-      "nor" == name ||
-      "and" == name ||
-      "or" == name ||
-      "xor" == name ||
-      "xnor" == name ||
-      "typeof" == name)
-    return name;
-  //if ("LT" == name ) return "<";              // special <
-  //if ("LE" == name ) return "<=";             // special <
-  //if ("GT" == name ) return ">";              // special >
-  //if ("GE" == name ) return ">=";             // special >
-  if ("EQ" == name ) return "==";
-  //if ("NE" == name ) return "!=";             // special !
-  if ("PLUS" == name) return "+";
-  if ("MINUS" == name) return "-";
-  //if ("STAR" == name) return "*";             // special *
-  if ("SLASH" == name) return "/";
-  if ("PERCENT" == name) return "%";
-  if ("CARAT" == name) return "^";
-  //if ("PIPE" == name) return "|";             // special |
-  //if ("AMP" == name) return "&";              // special &
-  //if ("TILDE" == name) return "~";            // special ~
-  //if ("DOUBLETILDE" == name) return "~~";     // special ~
-  if ("EQUALS" == name) return "=";
-  if ("PLUSEQUALS" == name) return "+=";
-  if ("MINUSEQUALS" == name) return "-=";
-  //if ("STAREQUALS" == name) return "*=";      // special *
-  if ("SLASHEQUALS" == name) return "/=";
-  if ("PERCENTEQUALS" == name) return "%=";
-  if ("CARATEQUALS" == name) return "^=";
-  //if ("PIPEEQUALS" == name) return "|=";      // special |
-  //if ("AMPEQUALS" == name) return "&=";       // special &
-  //if ("TILDEEQUALS" == name) return "~=";     // special ~
-  //if ("ARROW" == name) return "->";           // special >
-  //if ("LPAREN" == name) return "(";           // special (
-  //if ("RPAREN" == name) return ")";           // special )
-  if ("LBRACKET" == name) return "[";
-  if ("RBRACKET" == name) return "]";
-  //if ("LBRACE" == name) return "{";           // special {
-  //if ("RBRACE" == name) return "}";           // special }
-  if ("COMMA" == name) return ",";
-  if ("DOT" == name) return ".";
-  if ("COLON" == name) return ":";
-
-  throw EvalError("cmdText unsupported for operator '" + name + "'");
-}
-
 int Operator::priority() const {
   if (!m_isComplete) {
     throw EvalError("Cannot query priority of incomplete operator '" + name + "'");

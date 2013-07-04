@@ -6,6 +6,8 @@
 
 using namespace eval;
 
+/* public */
+
 RootNode::RootNode(Log& log)
   : Node(log, Token(":ROOT:")) {
 }
@@ -15,12 +17,28 @@ void RootNode::complete() {
 }
 
 void RootNode::reorderOperators() {
-  //log.warning("Root node: operator reordering unimplemented");
+  log.info("Root node: reordering operators");
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
+    if (m_reordered.end() == m_reordered.find(*i)) {
+      break;
+    }
+    (*i)->reorderOperators();
+    m_reordered.insert(*i);
+  }
 }
 
 void RootNode::staticAnalysis() {
-  //log.warning("Root node: static analysis unimplemented");
+  log.info("Root node: performing static analysis");
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
+    if (m_analyzed.end() == m_analyzed.find(*i)) {
+      break;
+    }
+    (*i)->staticAnalysis();
+    m_analyzed.insert(*i);
+  }
 }
+
+/* private */
 
 void RootNode::evaluate() {
   log.debug("Evaluating root node");

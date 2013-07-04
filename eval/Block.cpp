@@ -18,17 +18,17 @@ Block::~Block() {
 }
 
 void Block::complete() {
-  if (m_isComplete) return;
   Brace::complete();
+  m_isComplete = false;
 
   if (expBlock) {
     throw EvalError("Block.expBlock should not already be set when completing");
   }
-
   // Determine if we're a code block or an expression block
   if (1 == children.size()) {
     expBlock = dynamic_cast<ExpressionBlock*>(children.front());
   }
+  m_isComplete = true;
 }
 
 void Block::evaluate() {
