@@ -8,14 +8,6 @@ using std::string;
 
 using namespace eval;
 
-Block::Block(Log& log, const Token& token)
-  : Brace(log, token, true),
-    m_expBlock(NULL) {
-}
-
-Block::~Block() {
-}
-
 void Block::setup() {
   Brace::setup();
 
@@ -42,19 +34,18 @@ string Block::cmdText() const {
 }
 
 bool Block::isInScope(Variable* v) const {
-  if (m_variables.end() == m_variables.find(v)) {
-    if (block) {
-      return block->isInScope(v);
-    } else {
-      return false;
-    }
+  if (m_variables.find(v) != m_variables.end()) {
+    return true;
   }
-  return true;
+  if (parentBlock) {
+    return parentBlock->isInScope(v);
+  }
+  return root->global.hasVariable(v);
 }
 
 void Block::addVariable(Variable* v) {
   if (m_variables.find(v) != m_variables.end()) {
-    throw EvalError("Block " + print() + " cannot add variable " + v->print() + "; name conflicts in local scope");
+    throw EvalError("Block " + print() + " cannot add variable " + v->print() + "; name conflicts in its scope");
   }
   m_variables.insert(v);
 }

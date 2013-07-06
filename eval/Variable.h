@@ -6,6 +6,7 @@
 #include "Log.h"
 #include "Node.h"
 #include "Object.h"
+#include "RootNode.h"
 #include "Token.h"
 //#include "Type.h"
 
@@ -15,10 +16,10 @@ namespace eval {
 
 class Variable : public Node {
 public:
-  Variable(Log& log, const Token& token)
-    : Node(log, token) {}
+  Variable(Log& log, RootNode*const root, const Token& token)
+    : Node(log, root, token) {}
   virtual void setup();
-  virtual void analyze();
+  virtual void analyzeUp();
   virtual void evaluate();
 
   //std::string varname() { return value; }

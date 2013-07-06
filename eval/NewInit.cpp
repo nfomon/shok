@@ -55,15 +55,15 @@ void NewInit::setup() {
   }
 }
 
-void NewInit::analyze() {
+void NewInit::analyzeUp() {
   // Make sure there's no conflicting name in scope
-  if (!block) {
-    throw EvalError("Cannot analyze NewInit " + print() + " without a block");
+  if (!parentBlock) {
+    throw EvalError("Cannot analyze NewInit " + print() + " without a parent block");
   }
-  if (block->isInScope(m_var)) {
+  if (parentBlock->isInScope(m_var)) {
     throw EvalError("Variable " + m_var->print() + " already exists");
   }
-  block->addVariable(m_var);
+  parentBlock->addVariable(m_var);
 }
 
 void NewInit::evaluate() {

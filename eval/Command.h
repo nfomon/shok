@@ -9,14 +9,15 @@
 
 #include "Brace.h"
 #include "Log.h"
+#include "RootNode.h"
 #include "Token.h"
 
 namespace eval {
 
 class Command : public Brace {
 public:
-  Command(Log& log, const Token& token)
-    : Brace(log, token, true) {}
+  Command(Log& log, RootNode*const root, const Token& token)
+    : Brace(log, root, token, true) {}
   virtual void setup();
   virtual void evaluate();
 };

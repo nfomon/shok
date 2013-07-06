@@ -5,6 +5,7 @@
 
 #include "Log.h"
 #include "Node.h"
+#include "RootNode.h"
 #include "Token.h"
 
 #include <string>
@@ -13,8 +14,8 @@ namespace eval {
 
 class New : public Node {
 public:
-  New(Log& log, const Token& token)
-    : Node(log, token) {}
+  New(Log& log, RootNode*const root, const Token& token)
+    : Node(log, root, token) {}
   virtual void setup();
   virtual void evaluate();
 

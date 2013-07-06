@@ -11,6 +11,7 @@
 
 #include "Log.h"
 #include "Node.h"
+#include "RootNode.h"
 #include "Token.h"
 
 #include <string>
@@ -19,8 +20,8 @@ namespace eval {
 
 class ExpressionBlock : public Node {
 public:
-  ExpressionBlock(Log& log, const Token& token)
-    : Node(log, token) {}
+  ExpressionBlock(Log& log, RootNode*const root, const Token& token)
+    : Node(log, root, token) {}
   virtual void setup();
   virtual void evaluate();
   virtual std::string cmdText() const;

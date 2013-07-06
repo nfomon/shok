@@ -32,7 +32,7 @@ void AST::reset() {
 }
 
 void AST::insert(const Token& token) {
-  Node* n = Node::MakeNode(m_log, token);
+  Node* n = Node::MakeNode(m_log, &m_root, token);
   if (!n) {
     throw EvalError("Failed to make node for token " + token.name + ":" + token.value);
   }

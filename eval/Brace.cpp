@@ -7,14 +7,6 @@ using std::string;
 
 using namespace eval;
 
-Brace::Brace(Log& log, const Token& token, bool isOpen)
-  : Node(log, token),
-    m_isOpen(isOpen) {
-}
-
-Brace::~Brace() {
-}
-
 bool Brace::isOpen() const {
   return m_isOpen;
 }

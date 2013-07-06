@@ -5,14 +5,17 @@
 
 #include "Log.h"
 #include "Node.h"
+#include "RootNode.h"
 #include "Token.h"
 
 namespace eval {
 
 class Brace : public Node {
 public:
-  Brace(Log&, const Token&, bool isOpen);
-  virtual ~Brace();
+  Brace(Log& log, RootNode*const root, const Token& token, bool isOpen)
+    : Node(log, root, token),
+      m_isOpen(isOpen) {}
+  ~Brace() {}
 
   bool isOpen() const;
   bool isIrrelevant() const;

@@ -15,7 +15,7 @@ void Operator::setup() {
   }
 }
 
-void Operator::analyze() {
+void Operator::analyzeUp() {
   // For overloadable operators, see if the operand has implemented a method
   // for this operator.
   // If it's not overloadable, what are we doing here?  We probably should have

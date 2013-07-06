@@ -11,6 +11,7 @@
 #include "Brace.h"
 #include "ExpressionBlock.h"
 #include "Log.h"
+#include "RootNode.h"
 #include "Token.h"
 //#include "Statement.h"
 #include "Variable.h"
@@ -21,8 +22,10 @@ namespace eval {
 
 class Block : public Brace {
 public:
-  Block(Log&, const Token&);
-  virtual ~Block();
+  Block(Log& log, RootNode*const root, const Token& token)
+    : Brace(log, root, token, true),
+      m_expBlock(NULL) {}
+  ~Block() {}
 
   virtual void setup();
   virtual void evaluate();
@@ -35,6 +38,7 @@ public:
 private:
   ExpressionBlock* m_expBlock;
   std::set<Variable*> m_variables;
+  Global* m_global;
 };
 
 };

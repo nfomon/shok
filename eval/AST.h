@@ -18,10 +18,10 @@ public:
   AST(Log& log);
   ~AST();
 
-  // Performs the ugly work of inserting an input "AST Token" into the AST.
-  void insert(const Token& token);
   // Reset the AST to a correct state; may destroy some unevaluated code.
   void reset();
+  // Performs the ugly work of inserting an input "AST Token" into the AST.
+  void insert(const Token& token);
   // Analyze the AST and execute any appropriate, complete fragments of code
   void evaluate();
   // Pretty-print the contents of the AST to a string

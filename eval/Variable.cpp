@@ -13,7 +13,7 @@ void Variable::setup() {
   }
 }
 
-void Variable::analyze() {
+void Variable::analyzeUp() {
   //type = BasicType(this);
 }
 

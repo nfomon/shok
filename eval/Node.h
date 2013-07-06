@@ -20,10 +20,11 @@
 namespace eval {
 
 class Block;
+class RootNode;
 
 class Node {
 public:
-  static Node* MakeNode(Log&, const Token&);
+  static Node* MakeNode(Log&, RootNode*const root, const Token&);
 
   // Insert a Node n into the tree at the provided "current" position.
   // Called by AST; returns the new current position, the original may
@@ -48,7 +49,7 @@ public:
   virtual operator std::string() const;
 
 protected:
-  Node(Log&, const Token&);
+  Node(Log&, RootNode*const, const Token&);
 
   typedef std::deque<Node*> child_vec;
   typedef child_vec::const_iterator child_iter;
@@ -56,7 +57,8 @@ protected:
 
   void addChild(Node* child);
   virtual void setup() = 0;
-  virtual void analyze() {}
+  virtual void analyzeDown() {}   // Parent-first static analysis
+  virtual void analyzeUp() {}     // Child-first static analysis
   virtual void evaluate() = 0;
 
   // State flags
@@ -67,14 +69,15 @@ protected:
 
   // Set by constructor
   Log& log;
+  RootNode*const root;
   std::string name;
   std::string value;
   // Set by addToken()
   Node* parent;
   child_vec children;
   // Set by analyzeNode(), parent-first
-  Block* block;   // the most recent ancestor block (execution context)
-  // Set by analyze(), children-first
+  Block* parentBlock;   // nearest enclosing block (execution context)
+  // Set by analyzeUp()
   //Type type;
 };
 

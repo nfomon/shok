@@ -4,11 +4,13 @@
 /* Variable type */
 
 #include "Log.h"
-#include "Variable.h"
+//#include "Variable.h"
 
 #include <string>
 
 namespace eval {
+
+class Variable;
 
 class Type {
 };

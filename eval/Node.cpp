@@ -22,21 +22,21 @@ using namespace eval;
 
 /* Statics */
 
-Node* Node::MakeNode(Log& log, const Token& t) {
+Node* Node::MakeNode(Log& log, RootNode*const root, const Token& t) {
   if ("[" == t.name)
-    return new Command(log, t);
+    return new Command(log, root, t);
   if ("(" == t.name)
-    return new Brace(log, t, true);
+    return new Brace(log, root, t, true);
   if ("{" == t.name)
-    return new Block(log, t);
+    return new Block(log, root, t);
   if ("]" == t.name ||
       ")" == t.name ||
       "}" == t.name)
-    return new Brace(log, t, false);
+    return new Brace(log, root, t, false);
   if ("cmd" == t.name)
-    return new CommandFragment(log, t);
+    return new CommandFragment(log, root, t);
   if ("ID" == t.name)
-    return new Variable(log, t);
+    return new Variable(log, root, t);
   if ("PLUS" == t.name ||
       "MINUS" == t.name ||
       "STAR" == t.name ||
@@ -47,21 +47,22 @@ Node* Node::MakeNode(Log& log, const Token& t) {
       "AMP" == t.name ||
       "TILDE" == t.name ||
       "DOUBLETILDE" == t.name)
-    return new Operator(log, t);
+    return new Operator(log, root, t);
   if ("exp" == t.name)
-    return new ExpressionBlock(log, t);
+    return new ExpressionBlock(log, root, t);
   if ("new" == t.name)
-    return new New(log, t);
+    return new New(log, root, t);
   if ("init" == t.name)
-    return new NewInit(log, t);
+    return new NewInit(log, root, t);
   throw EvalError("Unsupported token " + t.print());
   return NULL;    // guard
 }
 
 /* Members */
 
-Node::Node(Log& log, const Token& token)
+Node::Node(Log& log, RootNode*const root, const Token& token)
   : log(log),
+    root(root),
     name(token.name),
     value(token.value),
     isSetup(false),
@@ -69,7 +70,7 @@ Node::Node(Log& log, const Token& token)
     isAnalyzed(false),
     isEvaluated(false),
     parent(NULL),
-    block(NULL) {
+    parentBlock(NULL) {
 }
 
 Node::~Node() {
@@ -186,7 +187,7 @@ void Node::reorderOperators() {
   if (isReordered) return;
   if (!isSetup) {
     // An immediate child of the root can skip reordering if it's not setup
-    if (!parent || dynamic_cast<RootNode*>(parent)) return;
+    if (root == parent) return;
     throw EvalError("Node " + print() + " cannot be reordered until it's setup");
   }
   switch (children.size()) {
@@ -249,22 +250,28 @@ void Node::analyzeNode() {
   if (isAnalyzed) return;
   if (!isSetup || !isReordered) {
     // An immediate child of the root can skip analysis if it's not setup
-    if (!parent || dynamic_cast<RootNode*>(parent)) return;
+    if (root == parent) return;
     throw EvalError("Node " + print() + " cannot do static analysis until setup and reordered");
   }
-  // Assign block parent-first
+
+  // Assign parent blocks from parent downwards
   Block* b = dynamic_cast<Block*>(parent);
   if (b) {
-    block = b;
+    parentBlock = b;
   } else if (parent) {
-    block = parent->block;
+    parentBlock = parent->parentBlock;
   }
-  // Analyze nodes children-first
+
+  // Parent-first static analysis
+  analyzeDown();
+
   for (child_iter i = children.begin(); i != children.end(); ++i) {   
     (*i)->analyzeNode();
   }
+
+  // Child-first static analysis
   log.debug(" - analyzing node " + print());
-  analyze();
+  analyzeUp();
   isAnalyzed = true;
 }
 
@@ -274,7 +281,7 @@ void Node::evaluateNode() {
   }
   if (!isSetup || !isReordered || !isAnalyzed) {
     // An immediate child of the root can skip evaluation if it's not setup
-    if (!parent || dynamic_cast<RootNode*>(parent)) return;
+    if (root == parent) return;
     throw EvalError("Node " + print() + " cannot be evaluated until setup, reordered, analyzed");
   }
   // Evaluate nodes children-first

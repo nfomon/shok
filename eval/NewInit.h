@@ -6,6 +6,7 @@
 #include "Log.h"
 #include "Node.h"
 #include "Object.h"
+#include "RootNode.h"
 #include "Token.h"
 #include "Type.h"
 #include "Variable.h"
@@ -16,12 +17,12 @@ namespace eval {
 
 class NewInit : public Node {
 public:
-  NewInit(Log& log, const Token& token)
-    : Node(log, token),
+  NewInit(Log& log, RootNode*const root, const Token& token)
+    : Node(log, root, token),
       m_var(NULL),
       m_value(NULL) {}
   virtual void setup();
-  virtual void analyze();
+  virtual void analyzeUp();
   virtual void evaluate();
 
 private:

@@ -5,6 +5,7 @@
 
 #include "Log.h"
 #include "Node.h"
+#include "RootNode.h"
 #include "Token.h"
 
 #include <string>
@@ -13,12 +14,12 @@ namespace eval {
 
 class Operator : public Node {
 public:
-  Operator(Log& log, const Token& token)
-    : Node(log, token),
+  Operator(Log& log, RootNode*const root, const Token& token)
+    : Node(log, root, token),
       isUnary(false),
       isBinary(false) {}
   virtual void setup();
-  virtual void analyze();
+  virtual void analyzeUp();
   virtual void evaluate();
 
   virtual int priority() const;

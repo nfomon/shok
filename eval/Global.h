@@ -8,13 +8,14 @@
  */
 
 #include "Log.h"
-#include "Type.h"
-#include "Variable.h"
+//#include "Type.h"
 
 #include <set>
 #include <string>
 
 namespace eval {
+
+class Variable;
 
 class Global {
 public:

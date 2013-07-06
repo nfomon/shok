@@ -23,9 +23,10 @@ public:
   virtual void setup();
   virtual void evaluate();
 
+  Global global;
+
 private:
   void clearChildren(bool onlyEvaluatedChildren = false);
-  Global m_global;
 };
 
 };

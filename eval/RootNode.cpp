@@ -9,8 +9,8 @@ using namespace eval;
 /* public */
 
 RootNode::RootNode(Log& log)
-  : Node(log, Token(":ROOT:")) {
-    isSetup = true;
+  : Node(log, NULL, Token(":ROOT:")) {
+  isSetup = true;
 }
 
 void RootNode::reset() {
