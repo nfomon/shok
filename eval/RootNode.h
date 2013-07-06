@@ -3,6 +3,7 @@
 
 /* Root node of the AST */
 
+#include "Global.h"
 #include "Log.h"
 #include "Node.h"
 
@@ -14,13 +15,17 @@ class RootNode : public Node {
 public:
   RootNode(Log&);
 
-  // Reset flags to prepare for re-evaluation
+  // Reset the whole AST; destroys all children
   void reset();
+  // Prepare the RootNode for another evaluation
+  void prepare();
 
   virtual void setup();
   virtual void evaluate();
 
 private:
+  void clearChildren(bool onlyEvaluatedChildren = false);
+  Global m_global;
 };
 
 };

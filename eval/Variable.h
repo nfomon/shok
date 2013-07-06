@@ -21,7 +21,7 @@ public:
   virtual void analyze();
   virtual void evaluate();
 
-  std::string varname() { return value; }
+  //std::string varname() { return value; }
 
 private:
   Object* m_object;

@@ -28,13 +28,8 @@ public:
   std::string print() const;
 
 private:
-  void init();
-  void destroy();
-
-  void runCode();
-
   Log& m_log;
-  RootNode* m_root;
+  RootNode m_root;
   Node* m_current;
 };
 

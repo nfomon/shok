@@ -19,77 +19,43 @@ using namespace eval;
 
 AST::AST(Log& log)
   : m_log(log),
-    m_root(NULL),
-    m_current(NULL) {
-  init();
+    m_root(log),
+    m_current(&m_root) {
 }
 
 AST::~AST() {
-  m_log.debug("Destroying AST");
-  destroy();
+}
+
+void AST::reset() {
+  m_log.info("Resetting AST. " + print());
+  m_root.reset();
 }
 
 void AST::insert(const Token& token) {
-  if (!m_root) {
-    throw EvalError("Cannot insert token " + token.name + " into evaluator AST with no root token");
-  }
-  if (!m_current) {
-    throw EvalError("Cannot insert token " + token.name + " into evaluator AST with no current token");
-  }
   Node* n = Node::MakeNode(m_log, token);
   if (!n) {
     throw EvalError("Failed to make node for token " + token.name + ":" + token.value);
   }
   m_current = Node::insertNode(m_current, n);
-}
-
-void AST::reset() {
-  m_log.info("Resetting AST. " + print());
-  destroy();
-  init();
+  if (!m_current) {
+    throw EvalError("Inserting node " + n->print() + " returned a deficient current node");
+  }
 }
 
 void AST::evaluate() {
-  if (!m_root) {
-    throw EvalError("Cannot evaluate AST with no root node");
-  }
-  if (!m_current) {
-    throw EvalError("Cannot evaluate AST with no current node");
-  }
-  m_root->reset();
-  m_root->reorderOperators();
-  m_root->analyzeNode();
+  m_root.prepare();
+  m_root.reorderOperators();
+  m_root.analyzeNode();
 
   // We only actually run code if m_current has arrived back at the root node,
   // m_root.  This signifies a return to the outer-most (command-line) scope.
-  if (m_current != m_root) {
+  if (m_current != &m_root) {
     m_log.debug(" - not at root -- not ready to run");
     return;
   }
-  m_root->evaluateNode();
+  m_root.evaluateNode();
 }
 
 string AST::print() const {
-  if (m_root) {
-    return "<" + m_root->print() + ">";
-  }
-  return "<>";
-}
-
-/* private */
-
-void AST::init() {
-  if (m_root || m_current) {
-    throw EvalError("Cannot initialize AST overtop of existing or dangling nodes");
-  }
-  m_root = new RootNode(m_log);
-  m_current = m_root;
-}
-
-void AST::destroy() {
-  if (m_root) {
-    delete m_root;
-  }
-  m_root = NULL;
-  m_current = NULL;
+  return "<" + m_root.print() + ">";
 }

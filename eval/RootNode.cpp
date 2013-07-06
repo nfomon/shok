@@ -14,6 +14,10 @@ RootNode::RootNode(Log& log)
 }
 
 void RootNode::reset() {
+  clearChildren(false);
+}
+
+void RootNode::prepare() {
   isReordered = false;
   isAnalyzed = false;
   isEvaluated = false;
@@ -26,17 +30,26 @@ void RootNode::setup() {
 }
 
 void RootNode::evaluate() {
-  log.debug("Evaluating root node");
-  int done = 0;
-  for (child_iter i = children.begin(); i != children.end(); ++i) {
-    if (!(*i)->isNodeEvaluated()) {
-      break;
+  clearChildren(true);
+}
+
+void RootNode::clearChildren(bool onlyEvaluatedChildren) {
+  int n = children.size();
+  if (onlyEvaluatedChildren) {
+    log.debug("Clearing root node's evaluated children");
+    n = 0;
+    for (child_iter i = children.begin(); i != children.end(); ++i) {
+      if (!(*i)->isNodeEvaluated()) {
+        break;
+      }
+      ++n;
     }
-    ++done;
+  } else {
+    log.debug("Clearing root node's children");
   }
-  while (done > 0) {
+  while (n > 0) {
     delete children.front();
     children.pop_front();
-    --done;
+    --n;
   }
 }
