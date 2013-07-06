@@ -125,6 +125,7 @@ int main(int argc, char *argv[]) {
     }
     if ("" != eval_result) {
       cout << "[shell] eval: '" << eval_result << "'" << endl;
+      // TODO: signal the Parser to restart parsing
     }
 
     // redisplay prompt
