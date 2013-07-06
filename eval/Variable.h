@@ -5,7 +5,9 @@
 
 #include "Log.h"
 #include "Node.h"
+#include "Object.h"
 #include "Token.h"
+//#include "Type.h"
 
 #include <string>
 
@@ -19,7 +21,11 @@ public:
   virtual void analyze();
   virtual void evaluate();
 
+  std::string varname() { return value; }
+
 private:
+  Object* m_object;
+  //Type m_type;
 };
 
 };

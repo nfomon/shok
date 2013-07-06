@@ -34,7 +34,6 @@ public:
 private:
   ExpressionBlock* m_expBlock;
   std::set<Variable*> m_variables;
-  //std::vector<Statement> m_statements;
 };
 
 };
