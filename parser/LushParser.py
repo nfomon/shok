@@ -128,20 +128,54 @@ def SemiCheck(parser):
     parser.done = False
 
 
+# Some silly token-construction convenience "macros"
+# Terminal constructor with second arg bound to 'msg'
+class TMsg(Terminal):
+  def __init__(self,name,msg):
+    Terminal.__init__(self, name, None, msg)
+
+# ValueTerminal constructor with second arg bound to 'msg'
+class VMsg(ValueTerminal):
+  def __init__(self,name,msg):
+    ValueTerminal.__init__(self, name, None, msg)
+
+
 # Language token groups
 Keyword = Or('keyword', [
   # Symbol table modifiers
-  'NEW', 'RENEW', 'DEL', 'ISVAR',
+  TMsg('NEW', 'new'),
+  TMsg('RENEW', 'renew'),
+  TMsg('DEL', 'del'),
+  TMsg('ISVAR', 'isvar'),
   # Functions
-  'VOID', 'RETURN', 'YIELD',
+  TMsg('VOID', 'void'),
+  TMsg('RETURN', 'return'),
+  TMsg('YIELD', 'yield'),
   # Branch constructs
-  'IF', 'ELIF', 'ELSE', 'SWITCH', 'CASE', 'DEFAULT',
+  TMsg('IF', 'if'),
+  TMsg('ELIF', 'elif'),
+  TMsg('ELSE', 'else'),
+  TMsg('SWITCH', 'switch'),
+  TMsg('CASE', 'case'),
+  TMsg('DEFAULT', 'default'),
   # Loop constructs
-  'WHILE', 'LOOP', 'TIMES', 'EACH', 'IN', 'WHERE', 'BREAK', 'CONTINUE',
+  TMsg('WHILE', 'while'),
+  TMsg('LOOP', 'loop'),
+  TMsg('TIMES', 'times'),
+  TMsg('EACH', 'each'),
+  TMsg('IN', 'in'),
+  TMsg('WHERE', 'where'),
+  TMsg('BREAK', 'break'),
+  TMsg('CONTINUE', 'continue'),
   # Logical operators
-  'NOT', 'NOR', 'AND', 'OR', 'XOR', 'XNOR',
+  TMsg('NOT', 'not'),
+  TMsg('NOR', 'nor'),
+  TMsg('AND', 'and'),
+  TMsg('OR', 'or'),
+  TMsg('XOR', 'xor'),
+  TMsg('XNOR', 'xnor'),
   # Keyword operators
-  'TYPEOF',
+  TMsg('TYPEOF', 'typeof'),
 ])
 
 Op = Or('op', [
@@ -163,47 +197,39 @@ Op = Or('op', [
   'COMMA', 'DOT', 'COLON',
 ])
 
-class CmdT(Terminal):
-  def __init__(self,name,msg):
-    Terminal.__init__(self, name, None, msg)
-
 CmdOp = Or('cmdop', [
   # Equality operators -- disallow LT, LE, GT, GE
-  CmdT('EQ', '=='),
-  CmdT('NE', '!='),
+  TMsg('EQ', '=='),
+  TMsg('NE', '!='),
   # Numeric operators
-  CmdT('PLUS', '+'),
-  CmdT('MINUS', '-'),
-  CmdT('STAR', '*'),
-  CmdT('SLASH', '/'),
-  CmdT('PERCENT', '%'),
-  CmdT('CARAT', '^'),
+  TMsg('PLUS', '+'),
+  TMsg('MINUS', '-'),
+  TMsg('STAR', '*'),
+  TMsg('SLASH', '/'),
+  TMsg('PERCENT', '%'),
+  TMsg('CARAT', '^'),
   # Object operators -- disallow PIPE, AMP
-  CmdT('TILDE', '~'),
-  CmdT('DOUBLETILDE', '~~'),
+  TMsg('TILDE', '~'),
+  TMsg('DOUBLETILDE', '~~'),
   # Assignment operators -- disallow PIPEEQUALS, AMPEQUALS
-  CmdT('EQUALS', '='),
-  CmdT('PLUSEQUALS', '+='),
-  CmdT('MINUSEQUALS', '-='),
-  CmdT('STAREQUALS', '*='),
-  CmdT('SLASHEQUALS', '/='),
-  CmdT('PERCENTEQUALS', '%='),
-  CmdT('CARATEQUALS', '^='),
-  CmdT('PIPEEQUALS', '|='),
-  CmdT('AMPEQUALS', '&='),
-  CmdT('TILDEEQUALS', '~='),
+  TMsg('EQUALS', '='),
+  TMsg('PLUSEQUALS', '+='),
+  TMsg('MINUSEQUALS', '-='),
+  TMsg('STAREQUALS', '*='),
+  TMsg('SLASHEQUALS', '/='),
+  TMsg('PERCENTEQUALS', '%='),
+  TMsg('CARATEQUALS', '^='),
+  TMsg('PIPEEQUALS', '|='),
+  TMsg('AMPEQUALS', '&='),
+  TMsg('TILDEEQUALS', '~='),
   # Cast -- disallow ARROW
   # Delimeters: disallow () {}
-  CmdT('LBRACKET', '['),
-  CmdT('RBRACKET', ']'),
-  CmdT('COMMA', ','),
-  CmdT('DOT', '.'),
-  CmdT('COLON', ':'),
+  TMsg('LBRACKET', '['),
+  TMsg('RBRACKET', ']'),
+  TMsg('COMMA', ','),
+  TMsg('DOT', '.'),
+  TMsg('COLON', ':'),
 ])
-
-class PathT(ValueTerminal):
-  def __init__(self,name,msg):
-    ValueTerminal.__init__(self, name, None, msg)
 
 # Operators that are safe for use by path literals in code
 # Anything we allow here will be eaten aggressively by a path literal,
@@ -213,12 +239,12 @@ class PathT(ValueTerminal):
 PathOp = Or('cmdop', [
   # Equality operators -- disallow < <= > >= == !=
   # Numeric operators -- disallow + - * % ^
-  PathT('SLASH', '/'),
+  VMsg('SLASH', '/'),
   # Object operators -- disallow | & ~ ~~
   # Assignment operators -- disallow = += -= *= /= %= ^= |= &= ~=
   # Cast -- disallow ARROW
   # Delimeters: disallow () [] {} , :
-  PathT('DOT', '.'),
+  VMsg('DOT', '.'),
 ])
 
 # Whitespace
