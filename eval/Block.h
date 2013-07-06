@@ -28,6 +28,7 @@ public:
   virtual void evaluate();
   virtual std::string cmdText() const;
 
+  bool isCodeBlock() const { return !m_expBlock; }
   bool isInScope(Variable*) const;
   void addVariable(Variable*);
 

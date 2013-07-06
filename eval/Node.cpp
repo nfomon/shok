@@ -48,7 +48,7 @@ Node* Node::MakeNode(Log& log, const Token& t) {
       "TILDE" == t.name ||
       "DOUBLETILDE" == t.name)
     return new Operator(log, t);
-  if ("expblock" == t.name)
+  if ("exp" == t.name)
     return new ExpressionBlock(log, t);
   if ("new" == t.name)
     return new New(log, t);

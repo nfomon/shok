@@ -11,7 +11,6 @@ using namespace eval;
 Block::Block(Log& log, const Token& token)
   : Brace(log, token, true),
     m_expBlock(NULL) {
-    //expression(NULL) {
 }
 
 Block::~Block() {
@@ -29,12 +28,10 @@ void Block::setup() {
   }
 }
 
+// We don't actually have to do anything here.  Nodes are evaluated
+// child-first.  Our child is either a single ExpressionBlock, or a list of
+// statements, which will be evaluated automatically.
 void Block::evaluate() {
-  if (!m_expBlock) {
-    throw EvalError("Code block is unimplemented");
-  } else {
-    m_expBlock->evaluate();
-  }
 }
 
 string Block::cmdText() const {

@@ -20,5 +20,8 @@ void ExpressionBlock::evaluate() {
 }
 
 string ExpressionBlock::cmdText() const {
+  if (!isEvaluated) {
+    throw EvalError("Cannot get cmdText of unevaluated ExpressionBlock");
+  }
   return m_str;
 }

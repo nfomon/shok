@@ -21,8 +21,9 @@ void Command::setup() {
 void Command::evaluate() {
   string cmd;
   for (Node::child_iter i = children.begin(); i != children.end(); ++i) {
-    const CommandFragment* frag = dynamic_cast<const CommandFragment*>(*i);
     const Block* block = dynamic_cast<const Block*>(*i);
+    if (block && block->isCodeBlock()) return;    // Code blocks aren't commands
+    const CommandFragment* frag = dynamic_cast<const CommandFragment*>(*i);
     if (frag) {
       cmd += frag->cmdText();
     } else if (block) {
