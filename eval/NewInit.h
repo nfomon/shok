@@ -20,7 +20,7 @@ public:
     : Node(log, token),
       m_var(NULL),
       m_value(NULL) {}
-  virtual void complete();
+  virtual void setup();
   virtual void analyze();
   virtual void evaluate();
 

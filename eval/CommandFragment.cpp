@@ -7,7 +7,7 @@ using std::string;
 
 using namespace eval;
 
-void CommandFragment::complete() {
+void CommandFragment::setup() {
 }
 
 void CommandFragment::evaluate() {

@@ -6,8 +6,8 @@
  * Use the MakeNode factory constructor to create the appropriate
  * subclass for a given AST token.  At construction, not all of its
  * members will be set to their correct values.  First you must add
- * all its child nodes via addChild(), then call complete().  This
- * will run some validation checks on the node, complete() its
+ * all its child nodes via addChild(), then call setup().  This
+ * will run some validation checks on the node, setup() its
  * children, and mark it as ready for use.
  */
 
@@ -32,19 +32,17 @@ public:
 
   virtual ~Node();
 
-  // This will be called by insertNode() only on parent nodes.  It
-  // should be the only thing that calls setupNode() and completeNode().
-  void setupAndCompleteAsParent();
-  // Setup properties that descend from the parent
-  void setupNode();
+  // This will be called by insertNode() only on parent nodes.
+  // It should be the only thing that calls setupNode().
+  void setupAsParent();
   // Validate properties regarding the node's children
-  void completeNode();
+  void setupNode();
   // Reorder operator/expression trees for correct operator precedence
   void reorderOperators();
   // Not intended to be overridden by anything other than RootNode
   void analyzeNode();
   void evaluateNode();
-  bool isEvaluated() { return m_isEvaluated; }
+  bool isNodeEvaluated() { return isEvaluated; }
 
   virtual std::string print() const;
   virtual operator std::string() const;
@@ -57,17 +55,15 @@ protected:
   typedef child_vec::iterator child_mod_iter;
 
   void addChild(Node* child);
-  virtual void setup() {}
-  virtual void complete() = 0;
+  virtual void setup() = 0;
   virtual void analyze() {}
   virtual void evaluate() = 0;
 
   // State flags
-  bool m_isSetup;
-  bool m_isComplete;
-  bool m_isReordered;
-  bool m_isAnalyzed;
-  bool m_isEvaluated;
+  bool isSetup;
+  bool isReordered;
+  bool isAnalyzed;
+  bool isEvaluated;
 
   // Set by constructor
   Log& log;
@@ -76,7 +72,7 @@ protected:
   // Set by addToken()
   Node* parent;
   child_vec children;
-  // Set by setupNode(), parent-first
+  // Set by analyzeNode(), parent-first
   Block* block;   // the most recent ancestor block (execution context)
   // Set by analyze(), children-first
   //Type type;

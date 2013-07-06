@@ -15,7 +15,7 @@ class CommandFragment : public Node {
 public:
   CommandFragment(Log& log, const Token& token)
     : Node(log, token) {}
-  virtual void complete();
+  virtual void setup();
   virtual void evaluate();
   virtual std::string cmdText() const;
 };

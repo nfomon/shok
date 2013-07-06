@@ -19,11 +19,25 @@ struct Token {
   std::string value;
 };
 
-namespace Tokenizer {
+class Tokenizer {
+public:
+  Tokenizer()
+    : mode(MODE_NONE),
+      codeDepth(0) {}
   typedef std::vector<Token> token_vec;
   typedef token_vec::const_iterator token_iter;
 
   token_vec tokenize(Log& log, const std::string& ast);
+
+private:
+  enum MODE {
+    MODE_NONE,
+    MODE_CMD,
+    MODE_CODE,
+  };
+
+  MODE mode;
+  int codeDepth;
 };
 
 };

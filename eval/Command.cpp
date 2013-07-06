@@ -15,7 +15,7 @@ using std::vector;
 
 using namespace eval;
 
-void Command::complete() {
+void Command::setup() {
 }
 
 void Command::evaluate() {

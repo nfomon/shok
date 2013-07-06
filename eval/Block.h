@@ -5,7 +5,7 @@
  *
  * The Token (construction-time) does not have enough information to know if
  * this is a code block (list of statements) or an expression block (single
- * expression).  We have to wait until complete()-time to determine which.
+ * expression).  We have to wait until setup()-time to determine which.
  */
 
 #include "Brace.h"
@@ -24,7 +24,7 @@ public:
   Block(Log&, const Token&);
   virtual ~Block();
 
-  virtual void complete();
+  virtual void setup();
   virtual void evaluate();
   virtual std::string cmdText() const;
 

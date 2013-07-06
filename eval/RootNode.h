@@ -17,7 +17,7 @@ public:
   // Reset flags to prepare for re-evaluation
   void reset();
 
-  virtual void complete();
+  virtual void setup();
   virtual void evaluate();
 
 private:

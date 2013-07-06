@@ -17,11 +17,11 @@ Block::Block(Log& log, const Token& token)
 Block::~Block() {
 }
 
-void Block::complete() {
-  Brace::complete();
+void Block::setup() {
+  Brace::setup();
 
   if (m_expBlock) {
-    throw EvalError("Block.m_expBlock should not already be set when completing");
+    throw EvalError("Block.m_expBlock should not already be set when setting up");
   }
   // Determine if we're a code block or an expression block
   if (1 == children.size()) {

@@ -17,7 +17,7 @@ public:
     : Node(log, token),
       isUnary(false),
       isBinary(false) {}
-  virtual void complete();
+  virtual void setup();
   virtual void analyze();
   virtual void evaluate();
 

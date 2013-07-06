@@ -15,7 +15,7 @@ class Variable : public Node {
 public:
   Variable(Log& log, const Token& token)
     : Node(log, token) {}
-  virtual void complete();
+  virtual void setup();
   virtual void analyze();
   virtual void evaluate();
 

@@ -35,7 +35,7 @@ bool Brace::matchesCloseBrace(Brace* closeBrace) const {
   return false;
 }
 
-void Brace::complete() {
+void Brace::setup() {
   if (("(" == name || ")" == name) && children.size() < 1) {
     throw EvalError("Empty parens in the AST are not allowed");
   }
@@ -45,5 +45,5 @@ void Brace::evaluate() {
   if (0 == children.size()) {
     return;
   }
-  throw EvalError("Brace::evaluate is incomplete");
+  throw EvalError("Brace::evaluate is not setup");
 }

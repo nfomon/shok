@@ -10,9 +10,14 @@
  * generation, and execution.
  *
  * Note that in the multiple stages of the evaluator, we perform each step
- * through to completion before advancing to the next phase.  This is to allow
- * any errors to be detected at the earliest possible stage before any of the
- * logic (or worst-case, execution) of any subsequent stage can occur.
+ * through to completion before advancing to the next phase.  I'd like to undo
+ * this.  Certainly evaluation (i.e. execution) should not happen until all
+ * possible validation / analysis of all possible nodes has happened.  But for
+ * the other stages, I think it might be best to provide as deep error-checking
+ * as possible on a line of code before reporting any errors regarding nodes
+ * that follow it.  Unsure about that though.  For now we perform each full
+ * stage of analysis (completion, reordering operators, static analysis,
+ * evaluation) in sequence.
  */
 
 #include "AST.h"
@@ -48,11 +53,12 @@ int main(int argc, char *argv[]) {
     AST ast(log);
     log.info("Initialized AST");
 
+    Tokenizer tokenizer;
     string line;
     while (getline(cin, line)) {
       log.debug("Received input line: '" + line + "'");
       try {
-        Tokenizer::token_vec tokens = Tokenizer::tokenize(log, line);
+        Tokenizer::token_vec tokens = tokenizer.tokenize(log, line);
         for (Tokenizer::token_iter i = tokens.begin();
              i != tokens.end(); ++i) {
           log.debug("Inserting token: '" + i->name + ":" + i->value + "'");

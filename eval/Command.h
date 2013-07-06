@@ -17,7 +17,7 @@ class Command : public Brace {
 public:
   Command(Log& log, const Token& token)
     : Brace(log, token, true) {}
-  virtual void complete();
+  virtual void setup();
   virtual void evaluate();
 };
 

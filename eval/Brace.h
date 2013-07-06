@@ -18,7 +18,7 @@ public:
   bool isIrrelevant() const;
   bool matchesCloseBrace(Brace* closeBrace) const;
 
-  virtual void complete();
+  virtual void setup();
   virtual void evaluate();
 
 private:

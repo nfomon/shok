@@ -10,6 +10,7 @@
 #include "New.h"
 #include "NewInit.h"
 #include "Operator.h"
+#include "RootNode.h"
 #include "Variable.h"
 
 #include <boost/lexical_cast.hpp>
@@ -63,11 +64,10 @@ Node::Node(Log& log, const Token& token)
   : log(log),
     name(token.name),
     value(token.value),
-    m_isSetup(false),
-    m_isComplete(false),
-    m_isReordered(false),
-    m_isAnalyzed(false),
-    m_isEvaluated(false),
+    isSetup(false),
+    isReordered(false),
+    isAnalyzed(false),
+    isEvaluated(false),
     parent(NULL),
     block(NULL) {
 }
@@ -152,54 +152,42 @@ Node* Node::insertNode(Node* current, Node* n) {
       }
     }
     delete open;
-    op->setupAndCompleteAsParent();
+    op->setupAsParent();
   } else {
-    open->setupAndCompleteAsParent();
+    open->setupAsParent();
   }
   delete n;   // always discard the closing brace/paren
   return parent;    // ascend
 }
 
-// Called only on nodes that are understood to be parents.  We setupNode()
-// the nodes parent-first, then completeNode() the nodes children-first.
-void Node::setupAndCompleteAsParent() {
-  log.debug("Setting up node " + print());
-  setupNode();
-  // The node's grandchildren should all already be complete.
+// Called only on nodes that are understood to be parents.
+// We setupNode() the nodes children-first.
+void Node::setupAsParent() {
+  // The node's grandchildren should all already be setup.
   for (child_iter i = children.begin(); i != children.end(); ++i) {
-    log.debug(print() + " Setting up child");
     (*i)->setupNode();
-    log.debug(print() + " Completing child");
-    (*i)->completeNode();
   }
-  completeNode();
-  log.debug("Completed node " + print());
+  setupNode();
+  log.debug("Setup node " + print());
 }
 
 void Node::setupNode() {
-  if (m_isSetup) return;
+  if (isSetup) return;
   if (!parent) {
     throw EvalError("Cannot setup Node " + print() + " with no parent");
   }
   log.debug(" - setting up node " + print());
   setup();
-  m_isSetup = true;
-}
-
-void Node::completeNode() {
-  if (m_isComplete) return;
-  if (!m_isSetup) {
-    throw EvalError("Node " + print() + " cannot be completed until setup");
-  }
-  log.debug(" - completing node " + print());
-  complete();
-  m_isComplete = true;
+  isSetup = true;
 }
 
 void Node::reorderOperators() {
-  if (m_isReordered) return;
-  if (!m_isSetup || !m_isComplete) {
-    throw EvalError("Node " + print() + " cannot be reordered until setup and complete");
+  log.debug("reorder " + print());
+  if (isReordered) return;
+  if (!isSetup) {
+    // An immediate child of the root can skip reordering if it's not setup
+    if (!parent || dynamic_cast<RootNode*>(parent)) return;
+    throw EvalError("Node " + print() + " cannot be reordered until it's setup");
   }
   switch (children.size()) {
     case 0: break;
@@ -254,13 +242,15 @@ void Node::reorderOperators() {
     } break;
   }
   log.debug(" - reordered node " + print());
-  m_isReordered = true;
+  isReordered = true;
 }
 
 void Node::analyzeNode() {
-  if (m_isAnalyzed) return;
-  if (!m_isSetup || !m_isComplete || !m_isReordered) {
-    throw EvalError("Node " + print() + " cannot do static analysis until setup, complete, reordered");
+  if (isAnalyzed) return;
+  if (!isSetup || !isReordered) {
+    // An immediate child of the root can skip analysis if it's not setup
+    if (!parent || dynamic_cast<RootNode*>(parent)) return;
+    throw EvalError("Node " + print() + " cannot do static analysis until setup and reordered");
   }
   // Assign block parent-first
   Block* b = dynamic_cast<Block*>(parent);
@@ -275,15 +265,17 @@ void Node::analyzeNode() {
   }
   log.debug(" - analyzing node " + print());
   analyze();
-  m_isAnalyzed = true;
+  isAnalyzed = true;
 }
 
 void Node::evaluateNode() {
-  if (m_isEvaluated) {
+  if (isEvaluated) {
     throw EvalError("Node " + print() + " has already been evaluated");
   }
-  if (!m_isSetup || !m_isComplete || !m_isReordered || !m_isAnalyzed) {
-    throw EvalError("Node " + print() + " cannot be evaluated until setup, complete, reordered, analyzed");
+  if (!isSetup || !isReordered || !isAnalyzed) {
+    // An immediate child of the root can skip evaluation if it's not setup
+    if (!parent || dynamic_cast<RootNode*>(parent)) return;
+    throw EvalError("Node " + print() + " cannot be evaluated until setup, reordered, analyzed");
   }
   // Evaluate nodes children-first
   for (child_iter i = children.begin(); i != children.end(); ++i) {   
@@ -291,7 +283,7 @@ void Node::evaluateNode() {
   }
   log.debug(" - evaluating node " + print());
   evaluate();
-  m_isEvaluated = true;
+  isEvaluated = true;
 }
 
 string Node::print() const {

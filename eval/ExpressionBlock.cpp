@@ -7,7 +7,7 @@ using std::string;
 
 using namespace eval;
 
-void ExpressionBlock::complete() {
+void ExpressionBlock::setup() {
   if (children.size() != 1) {
     throw EvalError("Only a single expression is allowed in an ExpressionBlock");
   }

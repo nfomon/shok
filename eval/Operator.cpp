@@ -7,7 +7,7 @@ using std::string;
 
 using namespace eval;
 
-void Operator::complete() {
+void Operator::setup() {
   switch (children.size()) {
     case 1: isUnary = true; break;
     case 2: isBinary = true; break;
@@ -35,8 +35,8 @@ void Operator::evaluate() {
 }
 
 int Operator::priority() const {
-  if (!m_isComplete) {
-    throw EvalError("Cannot query priority of incomplete operator '" + name + "'");
+  if (!isSetup) {
+    throw EvalError("Cannot query priority of not-setup operator '" + name + "'");
   }
   //if ("COMMA_AND" == name)
   //  return 0;

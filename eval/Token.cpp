@@ -18,35 +18,27 @@ string Token::print() const {
 // Note: we don't support command-line redirection etc. yet
 // Note: strings (and their escapes) are not supported either!
 Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
-  enum MODE {
-    NONE,
-    CMD,
-    CODE,
-  };
-
-  MODE mode = NONE;
   Token current;    // current chunk; becomes the next token
   Tokenizer::token_vec v;
   bool escape = false;    // only \ escape is supported
   bool inToken = false;
   bool inValue = false;
-  int codeDepth = 0;
   for (int i=0; i < ast.length(); ++i) {
     char c = ast[i];
     //log.debug(" - tokenizing char '" + string(1, c) + "'");
     switch (mode) {
-    case NONE:
+    case MODE_NONE:
       if (inToken || inValue) {
         throw EvalError("Unexpectedly inToken or inValue during NONE state");
       }
       if ('[' == c) {
         v.push_back(Token("["));
-        mode = CMD;
+        mode = MODE_CMD;
       } else {
         throw EvalError("Bad character in AST input: '" + string(1, c) + "'");
       }
       break;
-    case CMD:
+    case MODE_CMD:
       if ('[' == c) {
         if (inToken) {
           throw EvalError("Unexpected '[' within token of CMD mode");
@@ -60,7 +52,7 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
           inValue = false;
         }
         v.push_back(Token("]"));
-        mode = NONE;
+        mode = MODE_NONE;
       } else if ('{' == c) {
         if (inToken) {
           v.push_back(current);
@@ -69,7 +61,7 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
           inValue = false;
         }
         v.push_back(Token("{"));
-        mode = CODE;
+        mode = MODE_CODE;
         ++codeDepth;
       } else if ('}' == c) {
         throw EvalError("Unexpected '}' within CMD mode");
@@ -82,7 +74,7 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
         current.value += c;
       }
       break;
-    case CODE:
+    case MODE_CODE:
       if (escape && inValue) {
         current.value += c;
         escape = false;
@@ -98,7 +90,7 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
         v.push_back(Token("}"));
         --codeDepth;
         if (0 == codeDepth) {
-          mode = CMD;
+          mode = MODE_CMD;
         } else if (codeDepth < 0) {
           throw EvalError("CODE mode observed codeDepth < 0");
         }
@@ -162,6 +154,9 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
     default:
       throw EvalError("Internal error: unknown MODE detected");
     }
+  }
+  if (inToken) {
+    throw EvalError("Line ended with incomplete token");
   }
   return v;
 }

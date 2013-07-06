@@ -7,7 +7,7 @@ using std::string;
 
 using namespace eval;
 
-void Variable::complete() {
+void Variable::setup() {
   if (children.size() != 0) {
     throw EvalError("Variable node cannot have children");
   }

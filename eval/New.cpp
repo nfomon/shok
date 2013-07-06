@@ -8,7 +8,7 @@ using std::string;
 
 using namespace eval;
 
-void New::complete() {
+void New::setup() {
   // Children are inits
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     NewInit* init = dynamic_cast<NewInit*>(*i);

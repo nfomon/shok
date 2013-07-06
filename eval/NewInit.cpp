@@ -10,7 +10,7 @@ using std::string;
 
 using namespace eval;
 
-void NewInit::complete() {
+void NewInit::setup() {
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     if (!dynamic_cast<Variable*>(*i)) {
       throw EvalError("NewInit children must all be Variables");

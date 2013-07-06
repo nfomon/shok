@@ -15,7 +15,7 @@ class New : public Node {
 public:
   New(Log& log, const Token& token)
     : Node(log, token) {}
-  virtual void complete();
+  virtual void setup();
   virtual void evaluate();
 
 private:
