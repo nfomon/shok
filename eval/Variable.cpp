@@ -11,7 +11,10 @@ void Variable::complete() {
   if (children.size() != 0) {
     throw EvalError("Variable node cannot have children");
   }
-  m_isComplete = true;
+}
+
+void Variable::analyze() {
+  //type = BasicType(this);
 }
 
 void Variable::evaluate() {

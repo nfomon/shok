@@ -23,50 +23,63 @@ class Block;
 
 class Node {
 public:
-  friend class AST;
-
   static Node* MakeNode(Log&, const Token&);
 
-  Node(Log&, const Token&);
+  // Insert a Node n into the tree at the provided "current" position.
+  // Called by AST; returns the new current position, the original may
+  // have been destroyed.
+  static Node* insertNode(Node* current, Node*);
+
   virtual ~Node();
 
-  void addChild(Node* child);
-  void setup();
+  // This will be called by insertNode() only on parent nodes.  It
+  // should be the only thing that calls setupNode() and completeNode().
   void setupAndCompleteAsParent();
+  // Setup properties that descend from the parent
+  void setupNode();
+  // Validate properties regarding the node's children
+  void completeNode();
   // Reorder operator/expression trees for correct operator precedence
+  void reorderOperators();
   // Not intended to be overridden by anything other than RootNode
-  virtual void reorderOperators();
-  // Not intended to be overridden by anything other than RootNode
-  virtual void staticAnalysis();
-  bool isSetup() { return m_isSetup; }
-  bool isComplete() { return m_isComplete; }
-  bool isReordered() { return m_isReordered; }
-  bool isAnalyzed() { return m_isAnalyzed; }
+  void analyzeNode();
+  void evaluateNode();
+  bool isEvaluated() { return m_isEvaluated; }
 
   virtual std::string print() const;
-  virtual void complete() = 0;    // make protected?
-  virtual void analyze() { m_isAnalyzed = true; }
-  virtual void evaluate() = 0;
   virtual operator std::string() const;
 
 protected:
+  Node(Log&, const Token&);
+
   typedef std::deque<Node*> child_vec;
   typedef child_vec::const_iterator child_iter;
   typedef child_vec::iterator child_mod_iter;
+
+  void addChild(Node* child);
+  virtual void setup() {}
+  virtual void complete() = 0;
+  virtual void analyze() {}
+  virtual void evaluate() = 0;
+
+  // State flags
+  bool m_isSetup;
+  bool m_isComplete;
+  bool m_isReordered;
+  bool m_isAnalyzed;
+  bool m_isEvaluated;
 
   // Set by constructor
   Log& log;
   std::string name;
   std::string value;
-  bool m_isSetup;
-  bool m_isComplete;
-  bool m_isReordered;
-  bool m_isAnalyzed;
-  // Set by AST prior to completion
+  // Set by addToken()
   Node* parent;
   child_vec children;
-  // Set by setup(), parent-first
+  // Set by setupNode(), parent-first
   Block* block;   // the most recent ancestor block (execution context)
+  // Set by analyze(), children-first
+  //Type type;
 };
 
 };

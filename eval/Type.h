@@ -1,10 +1,7 @@
 #ifndef _Type_h_
 #define _Type_h_
 
-/* Variable type
- *
- * Implementation just a temporary shell for now
- */
+/* Variable type */
 
 #include "Log.h"
 #include "Variable.h"
@@ -13,23 +10,33 @@
 
 namespace eval {
 
-/*
 class Type {
-public:
-  Type() {}
-  Type(Variable* v)
-    : m_variable(v) {}
-  ~Type() {}
-
-private:
-  std::vector<Type*> subtypes;
 };
 
+class BasicType : public Type {
+public:
+  BasicType(Variable* v)
+    : m_var(v) {}
+private:
+  Variable* m_var;
+};
+
+/*
 class AndType : public Type {
-}
+public:
+  AndType(Operator*) {
+  }
+private:
+  std::vector<Type*> m_vars;
+};
 
 class OrType : public Type {
-}
+public:
+  OrType(Operator*) {
+  }
+private:
+  std::vector<Type*> m_vars;
+};
 */
 
 };

@@ -9,16 +9,28 @@ using namespace eval;
 
 void Operator::complete() {
   switch (children.size()) {
-    case 0: isCmd = true; break;
     case 1: isUnary = true; break;
     case 2: isBinary = true; break;
     default: throw EvalError("Operator cannot have > 2 children");
   }
-  m_isComplete = true;
+}
+
+void Operator::analyze() {
+  // For overloadable operators, see if the operand has implemented a method
+  // for this operator.
+  // If it's not overloadable, what are we doing here?  We probably should have
+  // been subclassed :)
+  // Note that some operators require specific types of their operands, or
+  // other special evaluations (e.g. ~ performs a ->str() on its operands).
+  //if (isOverloadable) {
+    // Unary => Prefix operator, for now
+  //} else {
+  //}
+
+  // Our type is the type of the result of the operation
 }
 
 void Operator::evaluate() {
-  if (isCmd) return;
   throw EvalError("Operator '" + name + "' not yet supported for evaluation");
 }
 

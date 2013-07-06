@@ -16,6 +16,7 @@ public:
   Variable(Log& log, const Token& token)
     : Node(log, token) {}
   virtual void complete();
+  virtual void analyze();
   virtual void evaluate();
 
 private:

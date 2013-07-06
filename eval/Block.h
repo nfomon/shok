@@ -12,9 +12,8 @@
 #include "ExpressionBlock.h"
 #include "Log.h"
 #include "Token.h"
-//#include "Expression.h"
 //#include "Statement.h"
-//#include "Variable.h"
+#include "Variable.h"
 
 #include <set>
 
@@ -29,13 +28,13 @@ public:
   virtual void evaluate();
   virtual std::string cmdText() const;
 
-  //Type
+  bool isInScope(Variable*) const;
+  void addVariable(Variable*);
 
 private:
-  ExpressionBlock* expBlock;
-  //std::set<Variable> variables;
-  //std::vector<Statement> statements;
-  //Expression* expression;
+  ExpressionBlock* m_expBlock;
+  std::set<Variable*> m_variables;
+  //std::vector<Statement> m_statements;
 };
 
 };

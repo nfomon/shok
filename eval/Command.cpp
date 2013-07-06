@@ -16,13 +16,11 @@ using std::vector;
 using namespace eval;
 
 void Command::complete() {
-  m_isComplete = true;
 }
 
 void Command::evaluate() {
   string cmd;
   for (Node::child_iter i = children.begin(); i != children.end(); ++i) {
-    (*i)->evaluate();
     const CommandFragment* frag = dynamic_cast<const CommandFragment*>(*i);
     const Block* block = dynamic_cast<const Block*>(*i);
     if (frag) {

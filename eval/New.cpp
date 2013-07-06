@@ -16,11 +16,7 @@ void New::complete() {
       throw EvalError("New statement's children must all be NewInit nodes");
     }
   }
-  m_isComplete = true;
 }
 
 void New::evaluate() {
-  for (child_iter i = children.begin(); i != children.end(); ++i) {
-    (*i)->evaluate();
-  }
 }

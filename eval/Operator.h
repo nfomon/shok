@@ -15,16 +15,15 @@ class Operator : public Node {
 public:
   Operator(Log& log, const Token& token)
     : Node(log, token),
-      isCmd(false),
       isUnary(false),
       isBinary(false) {}
   virtual void complete();
+  virtual void analyze();
   virtual void evaluate();
 
   virtual int priority() const;
 
 private:
-  bool isCmd;
   bool isUnary;
   bool isBinary;
 };

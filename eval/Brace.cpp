@@ -39,7 +39,6 @@ void Brace::complete() {
   if (("(" == name || ")" == name) && children.size() < 1) {
     throw EvalError("Empty parens in the AST are not allowed");
   }
-  m_isComplete = true;
 }
 
 void Brace::evaluate() {

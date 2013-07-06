@@ -11,11 +11,9 @@ void ExpressionBlock::complete() {
   if (children.size() != 1) {
     throw EvalError("Only a single expression is allowed in an ExpressionBlock");
   }
-  m_isComplete = true;
 }
 
 void ExpressionBlock::evaluate() {
-  children.front()->evaluate();
   // TODO: call the resulting object's ->str()->escape() (*UNIMPL*)
   throw EvalError("Cannot evaluate expression-block: unimplemented");
   //m_str = children.front()->cmdText();

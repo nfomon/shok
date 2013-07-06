@@ -1,5 +1,6 @@
 #include "NewInit.h"
 
+#include "Block.h"
 #include "EvalError.h"
 #include "Type.h"
 #include "Variable.h"
@@ -52,7 +53,17 @@ void NewInit::complete() {
     default:
       throw EvalError("NewInit node must have 1, 2, or 3 children");
   }
-  m_isComplete = true;
+}
+
+void NewInit::analyze() {
+  // Make sure there's no conflicting name in scope
+  if (!block) {
+    throw EvalError("Cannot analyze NewInit " + print() + " without a block");
+  }
+  if (block->isInScope(m_var)) {
+    throw EvalError("Variable " + m_var->print() + " already exists");
+  }
+  block->addVariable(m_var);
 }
 
 void NewInit::evaluate() {

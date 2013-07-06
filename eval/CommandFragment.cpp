@@ -8,7 +8,6 @@ using std::string;
 using namespace eval;
 
 void CommandFragment::complete() {
-  m_isComplete = true;
 }
 
 void CommandFragment::evaluate() {

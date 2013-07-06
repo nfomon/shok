@@ -65,6 +65,9 @@ Node::Node(Log& log, const Token& token)
     value(token.value),
     m_isSetup(false),
     m_isComplete(false),
+    m_isReordered(false),
+    m_isAnalyzed(false),
+    m_isEvaluated(false),
     parent(NULL),
     block(NULL) {
 }
@@ -76,103 +79,155 @@ Node::~Node() {
   }
 }
 
-void Node::addChild(Node* child) {
-  children.push_back(child);
-}
-
-string Node::print() const {
-  string r = name;
-  if (value.length() > 0) {
-    r += ":" + value;
+Node* Node::insertNode(Node* current, Node* n) {
+  if (!current || !n) {
+    throw EvalError("NULL nodes provided to Node::insertNode()");
   }
-  if (children.size() > 0) {
-    r += "(";
-    for (child_iter i = children.begin(); i != children.end(); ++i) {
-      if (i != children.begin()) r += " ";
-      r += (*i)->print();
+  Brace* brace = dynamic_cast<Brace*>(n);
+
+  // Neither an open nor a closing brace; add as a child of current
+  if (!brace) {
+    n->parent = current;
+    current->addChild(n);
+    return current;   // stay
+  }
+
+  // Open brace: descend into current; new nodes will be its children
+  if (brace->isOpen()) {
+    n->parent = current;
+    current->addChild(n);
+    return n;         // descend
+  }
+
+  // Closing brace: ensure it matches with the open brace (current), then
+  // ascend our focus up.
+  //
+  // When parentheses are matched, they will be eliminated from the AST since
+  // they represent nothing.  Instead, their first child (operator) will take
+  // over the "parent" spot; its children (operands) will remain as the
+  // operator's children.
+  // current should be the open brace/paren to match against
+  if (!current->parent) {
+    throw EvalError("Cannot move above root node " + current->name);
+  }
+
+  Brace* open = dynamic_cast<Brace*>(current);
+  if (!open) {
+    throw EvalError("Found closing brace " + brace->name + " but its parent " + current->name + " is not an open brace");
+  }
+  if (!open->matchesCloseBrace(brace)) {
+    throw EvalError("Incorrect brace/paren match: '" + open->name + "' against '" + n->name + "'");
+  }
+  Node* parent = current->parent;
+
+  // Parentheses: these are now useless.  We promote the first child (there
+  // must be at least one child!) into the parent (paren) spot; it is the
+  // operator, its children are its operands.  Huzzah!
+  if (open->isIrrelevant()) {
+    // Extract the first child of the open brace; it is the new "operator"
+    if (open->children.size() < 1) {
+      throw EvalError("Empty parens in the AST are not allowed");
     }
-    r += ")";
+    Node* op = open->children.front();    // "operator" becomes the parent
+    open->children.pop_front();
+    op->parent = open->parent;
+    // a '({' cannot appear in the input.  Note that actual parentheses in
+    // expressions are not given to us as a bare '(' brace.
+    if (op->children.size() != 0) {
+      throw EvalError("Cannot escalate child " + op->name + " that has " + boost::lexical_cast<string>(op->children.size()) + " > 0 children");
+    }
+    op->children = open->children;
+    open->children.clear();   // Clear open's children so they're not deleted
+    // Replace op's children's parent links from open to op
+    for (Node::child_iter i = op->children.begin();
+         i != op->children.end(); ++i) {
+      (*i)->parent = op;
+    }
+    // Replace parent's child of 'open' with 'op'
+    for (Node::child_mod_iter i = op->parent->children.begin();
+         i != op->parent->children.end(); ++i) {
+      if (*i == open) {
+        *i = op;
+        break;    // a node must only appear once in the AST
+      }
+    }
+    delete open;
+    op->setupAndCompleteAsParent();
+  } else {
+    open->setupAndCompleteAsParent();
   }
-  return r;
+  delete n;   // always discard the closing brace/paren
+  return parent;    // ascend
 }
 
-void Node::setup() {
-  if (m_isSetup) {
-    throw EvalError("Cannot setup already-setup Node " + print());
+// Called only on nodes that are understood to be parents.  We setupNode()
+// the nodes parent-first, then completeNode() the nodes children-first.
+void Node::setupAndCompleteAsParent() {
+  log.debug("Setting up node " + print());
+  setupNode();
+  // The node's grandchildren should all already be complete.
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
+    log.debug(print() + " Setting up child");
+    (*i)->setupNode();
+    log.debug(print() + " Completing child");
+    (*i)->completeNode();
   }
+  completeNode();
+  log.debug("Completed node " + print());
+}
+
+void Node::setupNode() {
+  if (m_isSetup) return;
   if (!parent) {
     throw EvalError("Cannot setup Node " + print() + " with no parent");
   }
-  Block* b = dynamic_cast<Block*>(parent);
-  block = b ? b : parent->block;
+  log.debug(" - setting up node " + print());
+  setup();
+  m_isSetup = true;
 }
 
-void Node::setupAndCompleteAsParent() {
-  // The node's grandchildren should all already be complete.
-  // We setup the node, then setup its children.
-  // We complete the children, then complete the node.
-  setup();
-  for (child_iter i = children.begin(); i != children.end(); ++i) {
-    for (child_iter j = (*i)->children.begin();
-         j != (*i)->children.end(); ++j) {
-      if (!(*j)->isComplete()) {
-        throw EvalError("Node " + print() + " child " + (*i)->print() +
-                        " grandchild " + (*j)->print() + " did not complete");
-      }
-    }
-    (*i)->setup();
-    if (!(*i)->isComplete()) {
-      (*i)->complete();
-    }
-    if (!(*i)->isComplete()) {
-      throw EvalError("Node " + print() + " child " + (*i)->print() +
-                      " did not complete");
-    }
+void Node::completeNode() {
+  if (m_isComplete) return;
+  if (!m_isSetup) {
+    throw EvalError("Node " + print() + " cannot be completed until setup");
   }
-  if (isComplete()) {
-    throw EvalError("Node " + print() + " is complete too early");
-  }
+  log.debug(" - completing node " + print());
   complete();
-  if (!isComplete()) {
-    throw EvalError("Node " + print() + " did not complete");
-  }
+  m_isComplete = true;
 }
 
 void Node::reorderOperators() {
-  if (!isSetup() || !isComplete()) {
+  if (m_isReordered) return;
+  if (!m_isSetup || !m_isComplete) {
     throw EvalError("Node " + print() + " cannot be reordered until setup and complete");
   }
-  if (isReordered()) {
-    throw EvalError("Node " + print() + " already has reordered operators");
-  }
   switch (children.size()) {
-    case 0: return;
+    case 0: break;
     // Operator with a single operator child: error, unsupported (it's unclear
     // to me how these should be reordered, since I don't think they exist)
     case 1: {
       Node* child = children.at(0);
       child->reorderOperators();
       Operator* op = dynamic_cast<Operator*>(this);
-      if (!op) return;
+      if (!op) break;
       Operator* childOp = dynamic_cast<Operator*>(child);
       if (childOp) {
         throw EvalError("Unclear how to reorder unary operator with operator child");
       }
-    } return;
+    } break;
     // Left child is fine.  If right child has lower or equal priority than us,
     // shuffle it around, and *then* recurse down the right child.
     case 2: {
       Node* left = children.at(0);
       Node* right = children.at(1);
-      left->reorderOperators();   // Optimization: we can probably skip this if
-                                  // it's a left we switcheroo'd! (maybe?)
+      left->reorderOperators();
       Operator* op = dynamic_cast<Operator*>(this);
       Operator* rightOp = dynamic_cast<Operator*>(right);
       if (!op || !rightOp ||
           rightOp->children.size() != 2 ||
           rightOp->priority() > op->priority()) {
         right->reorderOperators();
-        return;
+        break;
       }
       if (!op->parent || !rightOp->parent) {
         throw EvalError("Someone's parent is deficient");
@@ -191,29 +246,76 @@ void Node::reorderOperators() {
         }
       }
       rightOp->reorderOperators();
-    } return;
+    } break;
     default: {
       for (child_iter i = children.begin(); i != children.end(); ++i) {
         (*i)->reorderOperators();
       }
-    } return;
+    } break;
   }
+  log.debug(" - reordered node " + print());
+  m_isReordered = true;
 }
 
-void Node::staticAnalysis() {
-  // Analyze nodes children-first
-  if (!isSetup() || !isComplete() || !isReordered()) {
+void Node::analyzeNode() {
+  if (m_isAnalyzed) return;
+  if (!m_isSetup || !m_isComplete || !m_isReordered) {
     throw EvalError("Node " + print() + " cannot do static analysis until setup, complete, reordered");
   }
-  if (isAnalyzed()) {
-    throw EvalError("Node " + print() + " has already done static analysis");
+  // Assign block parent-first
+  Block* b = dynamic_cast<Block*>(parent);
+  if (b) {
+    block = b;
+  } else if (parent) {
+    block = parent->block;
   }
+  // Analyze nodes children-first
   for (child_iter i = children.begin(); i != children.end(); ++i) {   
-    (*i)->staticAnalysis();
+    (*i)->analyzeNode();
   }
+  log.debug(" - analyzing node " + print());
   analyze();
+  m_isAnalyzed = true;
+}
+
+void Node::evaluateNode() {
+  if (m_isEvaluated) {
+    throw EvalError("Node " + print() + " has already been evaluated");
+  }
+  if (!m_isSetup || !m_isComplete || !m_isReordered || !m_isAnalyzed) {
+    throw EvalError("Node " + print() + " cannot be evaluated until setup, complete, reordered, analyzed");
+  }
+  // Evaluate nodes children-first
+  for (child_iter i = children.begin(); i != children.end(); ++i) {   
+    (*i)->evaluateNode();
+  }
+  log.debug(" - evaluating node " + print());
+  evaluate();
+  m_isEvaluated = true;
+}
+
+string Node::print() const {
+  string r = name;
+  if (value.length() > 0) {
+    r += ":" + value;
+  }
+  if (children.size() > 0) {
+    r += "(";
+    for (child_iter i = children.begin(); i != children.end(); ++i) {
+      if (i != children.begin()) r += " ";
+      r += (*i)->print();
+    }
+    r += ")";
+  }
+  return r;
 }
 
 Node::operator std::string() const {
   return name;
+}
+
+/* protected */
+
+void Node::addChild(Node* child) {
+  children.push_back(child);
 }

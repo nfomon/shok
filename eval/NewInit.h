@@ -21,6 +21,7 @@ public:
       m_var(NULL),
       m_value(NULL) {}
   virtual void complete();
+  virtual void analyze();
   virtual void evaluate();
 
 private:
