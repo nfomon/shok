@@ -53,6 +53,6 @@ int main(int argc, char* argv[]) {
     if (QUEX_TKN_EXIT == token.type_id()) break;
   }
 
-  cout << "Processed " << num_tokens << " tokens." << endl;
+  //cout << "Processed " << num_tokens << " tokens." << endl;
   return 0;
 }

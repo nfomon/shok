@@ -73,7 +73,7 @@ def parse():
           return
     except Exception as e:
       logging.error("Parse error: %s" % tb.format_exc())
-      print "Parse error: %s" % e
+      print "::Parse error: %s" % e
       sys.stdout.flush()
       parser = Restart()
 

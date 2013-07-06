@@ -106,6 +106,10 @@ int main(int argc, char *argv[]) {
     // get AST
     string ast;
     std::getline(parser.in, ast);
+    if ("::Parse error:" == ast.substr(0, 14)) {
+      cout << "[shell] parser: " << ast.substr(15) << endl;
+      ast = "";   // skip eval
+    }
 
     // send AST to eval
     eval.out << ast << endl;
