@@ -1,3 +1,6 @@
+# Copyright (C) 2013 Michael Biggs.  See the COPYRIGHT file at the top-level
+# directory of this distribution and at http://lush-shell.org/copyright.html
+
 from Parser import Parser, MakeParser
 from Rule import Rule
 from copy import copy

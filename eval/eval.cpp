@@ -1,3 +1,6 @@
+// Copyright (C) 2013 Michael Biggs.  See the COPYRIGHT file at the top-level
+// directory of this distribution and at http://lush-shell.org/copyright.html
+
 /* Lush abstract syntax tree evaluator
  *
  * Reads lines of specially-formatted AST text input from stdin, performs

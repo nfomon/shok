@@ -9039,7 +9039,7 @@ TERMINAL_640:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 140 "lexer/lexer.qx"
+#   line 143 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_NE);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9054,7 +9054,7 @@ TERMINAL_641:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 143 "lexer/lexer.qx"
+#   line 146 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_PLUS);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9069,7 +9069,7 @@ TERMINAL_642:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 144 "lexer/lexer.qx"
+#   line 147 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_MINUS);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9084,7 +9084,7 @@ TERMINAL_643:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 145 "lexer/lexer.qx"
+#   line 148 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_STAR);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9099,7 +9099,7 @@ TERMINAL_644:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 146 "lexer/lexer.qx"
+#   line 149 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_SLASH);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9114,7 +9114,7 @@ TERMINAL_645:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 147 "lexer/lexer.qx"
+#   line 150 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_PERCENT);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9129,7 +9129,7 @@ TERMINAL_646:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 148 "lexer/lexer.qx"
+#   line 151 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_CARAT);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9144,7 +9144,7 @@ TERMINAL_647:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 149 "lexer/lexer.qx"
+#   line 152 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_PIPE);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9159,7 +9159,7 @@ TERMINAL_648:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 150 "lexer/lexer.qx"
+#   line 153 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_AMP);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9174,7 +9174,7 @@ TERMINAL_649:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 151 "lexer/lexer.qx"
+#   line 154 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_TILDE);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9189,7 +9189,7 @@ TERMINAL_650:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 152 "lexer/lexer.qx"
+#   line 155 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_DOUBLETILDE);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9204,7 +9204,7 @@ TERMINAL_651:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 155 "lexer/lexer.qx"
+#   line 158 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_EQUALS);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9219,7 +9219,7 @@ TERMINAL_652:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 156 "lexer/lexer.qx"
+#   line 159 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_PLUSEQUALS);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9234,7 +9234,7 @@ TERMINAL_653:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 157 "lexer/lexer.qx"
+#   line 160 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_MINUSEQUALS);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9249,7 +9249,7 @@ TERMINAL_654:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 158 "lexer/lexer.qx"
+#   line 161 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_STAREQUALS);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9264,7 +9264,7 @@ TERMINAL_655:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 159 "lexer/lexer.qx"
+#   line 162 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_SLASHEQUALS);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9279,7 +9279,7 @@ TERMINAL_656:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 160 "lexer/lexer.qx"
+#   line 163 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_PERCENTEQUALS);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9294,7 +9294,7 @@ TERMINAL_657:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 161 "lexer/lexer.qx"
+#   line 164 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_CARATEQUALS);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9309,7 +9309,7 @@ TERMINAL_658:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 162 "lexer/lexer.qx"
+#   line 165 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_PIPEEQUALS);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9324,7 +9324,7 @@ TERMINAL_659:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 163 "lexer/lexer.qx"
+#   line 166 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_AMPEQUALS);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9339,7 +9339,7 @@ TERMINAL_660:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 164 "lexer/lexer.qx"
+#   line 167 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_TILDEEQUALS);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9354,7 +9354,7 @@ TERMINAL_661:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 167 "lexer/lexer.qx"
+#   line 170 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_ARROW);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9369,7 +9369,7 @@ TERMINAL_662:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 170 "lexer/lexer.qx"
+#   line 173 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_LPAREN);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9384,7 +9384,7 @@ TERMINAL_663:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 171 "lexer/lexer.qx"
+#   line 174 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_RPAREN);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9399,7 +9399,7 @@ TERMINAL_664:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 172 "lexer/lexer.qx"
+#   line 175 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_LBRACKET);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9414,7 +9414,7 @@ TERMINAL_665:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 173 "lexer/lexer.qx"
+#   line 176 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_RBRACKET);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9429,7 +9429,7 @@ TERMINAL_666:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 174 "lexer/lexer.qx"
+#   line 177 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_LBRACE);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9444,7 +9444,7 @@ TERMINAL_667:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 184 "lexer/lexer.qx"
+#   line 187 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_RBRACE);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9459,7 +9459,7 @@ TERMINAL_668:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 185 "lexer/lexer.qx"
+#   line 188 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_COMMA);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9474,7 +9474,7 @@ TERMINAL_669:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 186 "lexer/lexer.qx"
+#   line 189 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_DOT);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9489,7 +9489,7 @@ TERMINAL_670:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 187 "lexer/lexer.qx"
+#   line 190 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_COLON);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9504,7 +9504,7 @@ TERMINAL_671:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 190 "lexer/lexer.qx"
+#   line 193 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_SEMI);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9519,7 +9519,7 @@ TERMINAL_672:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(LexemeL);
     {
-#   line 195 "lexer/lexer.qx"
+#   line 198 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, self.buffer._lexeme_start_p, self.buffer._input_p);
     self_send(QUEX_TKN_INT);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9534,7 +9534,7 @@ TERMINAL_673:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(LexemeL);
     {
-#   line 196 "lexer/lexer.qx"
+#   line 199 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, self.buffer._lexeme_start_p, self.buffer._input_p);
     self_send(QUEX_TKN_FIXED);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9549,7 +9549,7 @@ TERMINAL_674:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(LexemeL);
     {
-#   line 201 "lexer/lexer.qx"
+#   line 204 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, self.buffer._lexeme_start_p, self.buffer._input_p);
     self_send(QUEX_TKN_ID);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9563,7 +9563,7 @@ TERMINAL_675:
     __quex_debug("* terminal 675:   {P_WS}\n");
     __QUEX_COUNT_VOID(&self, LexemeBegin, LexemeEnd);
     {
-#   line 203 "lexer/lexer.qx"
+#   line 206 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_WS);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9578,7 +9578,7 @@ TERMINAL_606:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(4);
     {
-#   line 92 "lexer/lexer.qx"
+#   line 95 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_EXIT);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9593,7 +9593,7 @@ TERMINAL_607:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(3);
     {
-#   line 95 "lexer/lexer.qx"
+#   line 98 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_NEW);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9608,7 +9608,7 @@ TERMINAL_608:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(5);
     {
-#   line 96 "lexer/lexer.qx"
+#   line 99 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_RENEW);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9623,7 +9623,7 @@ TERMINAL_609:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(3);
     {
-#   line 97 "lexer/lexer.qx"
+#   line 100 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_DEL);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9638,7 +9638,7 @@ TERMINAL_610:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(5);
     {
-#   line 98 "lexer/lexer.qx"
+#   line 101 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_ISVAR);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9653,7 +9653,7 @@ TERMINAL_611:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(4);
     {
-#   line 101 "lexer/lexer.qx"
+#   line 104 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_VOID);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9668,7 +9668,7 @@ TERMINAL_612:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(6);
     {
-#   line 102 "lexer/lexer.qx"
+#   line 105 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_RETURN);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9683,7 +9683,7 @@ TERMINAL_613:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(5);
     {
-#   line 103 "lexer/lexer.qx"
+#   line 106 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_YIELD);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9698,7 +9698,7 @@ TERMINAL_614:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 106 "lexer/lexer.qx"
+#   line 109 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_IF);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9713,7 +9713,7 @@ TERMINAL_615:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(4);
     {
-#   line 107 "lexer/lexer.qx"
+#   line 110 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_ELIF);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9728,7 +9728,7 @@ TERMINAL_616:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(4);
     {
-#   line 108 "lexer/lexer.qx"
+#   line 111 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_ELSE);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9743,7 +9743,7 @@ TERMINAL_617:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(6);
     {
-#   line 109 "lexer/lexer.qx"
+#   line 112 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_SWITCH);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9758,7 +9758,7 @@ TERMINAL_618:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(4);
     {
-#   line 110 "lexer/lexer.qx"
+#   line 113 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_CASE);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9773,7 +9773,7 @@ TERMINAL_619:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(7);
     {
-#   line 111 "lexer/lexer.qx"
+#   line 114 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_DEFAULT);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9788,7 +9788,7 @@ TERMINAL_620:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(5);
     {
-#   line 114 "lexer/lexer.qx"
+#   line 117 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_WHILE);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9803,7 +9803,7 @@ TERMINAL_621:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(4);
     {
-#   line 115 "lexer/lexer.qx"
+#   line 118 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_LOOP);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9818,7 +9818,7 @@ TERMINAL_622:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(5);
     {
-#   line 116 "lexer/lexer.qx"
+#   line 119 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_TIMES);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9833,7 +9833,7 @@ TERMINAL_623:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(4);
     {
-#   line 117 "lexer/lexer.qx"
+#   line 120 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_EACH);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9848,7 +9848,7 @@ TERMINAL_624:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 118 "lexer/lexer.qx"
+#   line 121 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_IN);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9863,7 +9863,7 @@ TERMINAL_625:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(5);
     {
-#   line 119 "lexer/lexer.qx"
+#   line 122 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_WHERE);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9878,7 +9878,7 @@ TERMINAL_626:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(5);
     {
-#   line 120 "lexer/lexer.qx"
+#   line 123 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_BREAK);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9893,7 +9893,7 @@ TERMINAL_627:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(8);
     {
-#   line 121 "lexer/lexer.qx"
+#   line 124 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_CONTINUE);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9908,7 +9908,7 @@ TERMINAL_628:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(3);
     {
-#   line 124 "lexer/lexer.qx"
+#   line 127 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_NOT);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9923,7 +9923,7 @@ TERMINAL_629:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(3);
     {
-#   line 125 "lexer/lexer.qx"
+#   line 128 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_NOR);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9938,7 +9938,7 @@ TERMINAL_630:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(3);
     {
-#   line 126 "lexer/lexer.qx"
+#   line 129 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_AND);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9953,7 +9953,7 @@ TERMINAL_631:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 127 "lexer/lexer.qx"
+#   line 130 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_OR);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9968,7 +9968,7 @@ TERMINAL_632:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(3);
     {
-#   line 128 "lexer/lexer.qx"
+#   line 131 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_XOR);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9983,7 +9983,7 @@ TERMINAL_633:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(4);
     {
-#   line 129 "lexer/lexer.qx"
+#   line 132 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_XNOR);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -9998,7 +9998,7 @@ TERMINAL_634:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(6);
     {
-#   line 132 "lexer/lexer.qx"
+#   line 135 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_TYPEOF);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -10013,7 +10013,7 @@ TERMINAL_635:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 135 "lexer/lexer.qx"
+#   line 138 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_LT);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -10028,7 +10028,7 @@ TERMINAL_636:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 136 "lexer/lexer.qx"
+#   line 139 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_LE);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -10043,7 +10043,7 @@ TERMINAL_637:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(1);
     {
-#   line 137 "lexer/lexer.qx"
+#   line 140 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_GT);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -10058,7 +10058,7 @@ TERMINAL_638:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 138 "lexer/lexer.qx"
+#   line 141 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_GE);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -10073,7 +10073,7 @@ TERMINAL_639:
     __QUEX_IF_COUNT_SHIFT_VALUES();
 __QUEX_IF_COUNT_COLUMNS_ADD(2);
     {
-#   line 139 "lexer/lexer.qx"
+#   line 142 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, LexemeNull, LexemeNull);
     self_send(QUEX_TKN_EQ);
     QUEX_SETTING_AFTER_SEND_CONTINUE_OR_RETURN();
@@ -10099,7 +10099,7 @@ _1403: /* TERMINAL: FAILURE */
     }
     __QUEX_COUNT_VOID(&self, LexemeBegin, LexemeEnd);
     {
-#   line 89 "lexer/lexer.qx"
+#   line 92 "lexer/lexer.qx"
     QUEX_NAME_TOKEN(take_text)(self_write_token_p(), &self, self.buffer._lexeme_start_p, self.buffer._input_p);
     self_send(QUEX_TKN_FAIL);
     
@@ -10112,7 +10112,7 @@ _1403: /* TERMINAL: FAILURE */
 _1401:
 __QUEX_IF_COUNT_SHIFT_VALUES();
     {
-#   line 88 "lexer/lexer.qx"
+#   line 91 "lexer/lexer.qx"
     self_send(QUEX_TKN_TERMINATION);
     
 #   line 10119 "tiny_lexer_st.cpp"

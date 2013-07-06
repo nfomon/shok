@@ -1,3 +1,6 @@
+// Copyright (C) 2013 Michael Biggs.  See the COPYRIGHT file at the top-level
+// directory of this distribution and at http://lush-shell.org/copyright.html
+
 #include "tiny_lexer_st"
 
 #include <fstream>
