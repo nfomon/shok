@@ -31,6 +31,7 @@ AST::~AST() {
 
 void AST::reset() {
   m_log.info("Resetting AST. " + print());
+  m_current = &m_root;
   m_root.reset();
 }
 
