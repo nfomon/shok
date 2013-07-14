@@ -19,7 +19,7 @@
 //#include "Statement.h"
 #include "Variable.h"
 
-#include <set>
+#include <map>
 
 namespace eval {
 
@@ -27,21 +27,21 @@ class Block : public Brace {
 public:
   Block(Log& log, RootNode*const root, const Token& token)
     : Brace(log, root, token, true),
+      m_scope(log),
       m_expBlock(NULL) {}
-  ~Block() {}
+  ~Block();
 
   virtual void setup();
+  virtual void analyzeDown();
   virtual void evaluate();
   virtual std::string cmdText() const;
 
   bool isCodeBlock() const { return !m_expBlock; }
-  bool isInScope(Variable*) const;
-  void addVariable(Variable*);
+  virtual Scope* getScope() { return &m_scope; }
 
 private:
   ExpressionBlock* m_expBlock;
-  std::set<Variable*> m_variables;
-  Global* m_global;
+  Scope m_scope;
 };
 
 };

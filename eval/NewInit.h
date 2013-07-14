@@ -22,14 +22,13 @@ class NewInit : public Node {
 public:
   NewInit(Log& log, RootNode*const root, const Token& token)
     : Node(log, root, token),
-      m_var(NULL),
       m_value(NULL) {}
   virtual void setup();
   virtual void analyzeUp();
   virtual void evaluate();
 
 private:
-  Variable* m_var;
+  std::string m_varname;
   //Type m_type;
   Variable* m_value;
 };

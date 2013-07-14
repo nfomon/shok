@@ -1,8 +1,10 @@
-0. LICENSE
+0. Rename project
 
-1. Rename project
+1. restructure eval Node tree creation
 
-2. Immediate concerns:
+2. eval: instead of bare pointers, use auto_ptr in nodes
+
+3. Immediate concerns:
 
 Shell:
 - cd
@@ -19,7 +21,7 @@ Program invocation:
 
 Programming language:
 - objects
-- new statements
+- types
 - #!VERSION pragma
 - a couple built-in types
 - basic expressions

@@ -6,7 +6,6 @@
 
 /* Root node of the AST */
 
-#include "Global.h"
 #include "Log.h"
 #include "Node.h"
 
@@ -23,13 +22,14 @@ public:
   // Prepare the RootNode for another evaluation
   void prepare();
 
+protected:
   virtual void setup();
   virtual void evaluate();
-
-  Global global;
+  virtual Scope* getScope() { return &m_scope; }
 
 private:
   void clearChildren(bool onlyEvaluatedChildren = false);
+  Scope m_scope;
 };
 
 };

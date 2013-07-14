@@ -25,11 +25,7 @@ public:
   virtual void analyzeUp();
   virtual void evaluate();
 
-  //std::string varname() { return value; }
-
 private:
-  Object* m_object;
-  //Type m_type;
 };
 
 };

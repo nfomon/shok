@@ -15,6 +15,7 @@
  */
 
 #include "Log.h"
+#include "Scope.h"
 #include "Token.h"
 
 #include <string>
@@ -32,7 +33,7 @@ public:
   // Insert a Node n into the tree at the provided "current" position.
   // Called by AST; returns the new current position, the original may
   // have been destroyed.
-  static Node* insertNode(Node* current, Node*);
+  static Node* insertNode(Log&, Node* current, Node*);
 
   virtual ~Node();
 
@@ -51,6 +52,9 @@ public:
   virtual std::string print() const;
   virtual operator std::string() const;
 
+  std::string getName() const { return name; }
+  std::string getValue() const { return value; }
+
 protected:
   Node(Log&, RootNode*const, const Token&);
 
@@ -60,9 +64,11 @@ protected:
 
   void addChild(Node* child);
   virtual void setup() = 0;
-  virtual void analyzeDown() {}   // Parent-first static analysis
-  virtual void analyzeUp() {}     // Child-first static analysis
-  virtual void evaluate() = 0;
+  virtual void analyzeDown() {}         // Parent-first static analysis
+  virtual void analyzeUp() {}           // Child-first static analysis
+  virtual void evaluate() = 0;          // Child-first code execution
+  virtual void cleanup(bool error) {}   // Child-first cleanup
+  virtual Scope* getScope() { return NULL; }
 
   // State flags
   bool isSetup;
@@ -79,7 +85,7 @@ protected:
   Node* parent;
   child_vec children;
   // Set by analyzeNode(), parent-first
-  Block* parentBlock;   // nearest enclosing block (execution context)
+  Scope* parentScope;   // nearest enclosing scope (execution context)
   // Set by analyzeUp()
   //Type type;
 };

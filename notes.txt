@@ -1,3 +1,92 @@
+The evaluator was written with two conflicting ideas.  One is that we
+want to do as much "static analysis" (type checking, sanity code
+checking) as possible before doing any "evaluation" (code execution).
+This is important.
+
+The conflicting idea is the stupid way in which we build our Node
+tree.  The evaluator receives an AST input, breaks it into Tokens,
+turn those tokens into Nodes, and builds a Tree of nodes on-line as it
+gets them.  This process is ugly:
+ - keep a "current position" iterator
+ - get a token, make a new Node for it
+ - if it's a normal node: add it as a child of the current position
+ - if it's an open brace of some sort: descend into it
+ - if it's a closing brace: ascend, mark as "complete" all the
+   children, and perform static analysis checking.
+  -- furthermore: if we were a "parenthesis" then these are removed
+entirely, thus moving a subtree up a level.
+
+These goals conflict because, for a code block ('{'), we should be
+able to do some amount of "static analysis" the moment we complete a
+statement (if not sooner; but we only get Statement-chunks from the
+parser currently).  Waiting for the closing brace around a block is
+too late.
+
+This is a big enough change; it breaks our simple "setup, analyze,
+evaluate" model.
+
+I think the code model of Node-tree-creation is wrong.  It should be
+more aware of what it's doing.  And we need a better model for our
+code structures.  A block should contain a list of statements.  We
+have certain kinds of statements, they should receive the "children"
+parts that they need and process them as soon as they can/want.
+
+-----
+
+Block has a Global*, but it shouldn't.  Not every block needs one.
+Global should just be a Scope
+Scope is (has) a variables container, which is a map from names to
+Object*s that it creates and owns.
+
+The RootNode should be a Scope!!  That way
+every regular Block can just defer to its parent scope the usual way,
+and the root scope will never disappear.  Huzzah!
+
+We'll still need Node to pass down a parentScope to *everybody*; every
+kind of node probably wants this.  The RootNode is the only one with a
+parentScope of NULL.
+
+ok: have a getScope() which both RootNode and Block override to return
+their scope. ??
+
+Everybody has a parentScope.  A scope may have a parentScope too??
+
+what are our actual requirements:
+ - Node analyzeDown can set properties
+ - every Node wants to be able to retrieve its local scope, add/del
+   variables from it etc.
+ - a RootNode needs to have/be this
+ - a Block needs to have/be this (really? no, just marks where we need
+   a scope down the three)
+
+Maybe shoving everything into the RootNode (an alternate tree of actual code) isn't such a bad idea...
+ - yes it is, at least until we want to be just compiling bytecode
+   into a VM I think.
+
+We'll do this sliiightly messy.
+ - Scope is its own thing
+ - RootNode and Block both own a Scope
+ - every Node knows its parentScope
+ - every Scope knows its parentScope too!
+ - Node implements virtual getScope() { return NULL; } overridden by
+   RootNode and Block
+ - hasScope should be used by Node to decide who gets what scope
+
+-----
+
+We want to "pretend" add variables into scopes and do lots of really-close-to-evaluation work in analysis steps.  Since I don't want to try and think toooo far ahead in terms of requirements / what a NICE way to do things is, for now let's be pretty brute-force.  Alongside a scope's set of objects will be a "pending" set of objects.  They'll really go into the objects set too, the pending set is just to MARK which ones would need to be rolled-back if we encounter an error.
+
+Similarly, then, an Object (once it exists) will need to track a
+pending set of possible modifications.  waaaaaaiiit that gets veeeery
+close to "real" side-effecty evaluation, remember, we just want to
+*check* that things will work, not *do* them.
+
+And that's why we're not coming up with reqs too early :)  The
+pretend-add-var-to-scope is totally reasonable.
+
+
+-----
+
 AST:
 I want it to give as "deep" (semantic) errors as possible, as early as
 possible.

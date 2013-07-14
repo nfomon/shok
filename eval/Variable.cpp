@@ -17,7 +17,6 @@ void Variable::setup() {
 }
 
 void Variable::analyzeUp() {
-  //type = BasicType(this);
 }
 
 void Variable::evaluate() {

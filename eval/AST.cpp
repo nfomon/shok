@@ -40,7 +40,7 @@ void AST::insert(const Token& token) {
   if (!n) {
     throw EvalError("Failed to make node for token " + token.name + ":" + token.value);
   }
-  m_current = Node::insertNode(m_current, n);
+  m_current = Node::insertNode(m_log, m_current, n);
   if (!m_current) {
     throw EvalError("Inserting node " + n->print() + " returned a deficient current node");
   }

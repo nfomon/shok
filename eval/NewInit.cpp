@@ -14,11 +14,12 @@ using std::string;
 using namespace eval;
 
 void NewInit::setup() {
-  for (child_iter i = children.begin(); i != children.end(); ++i) {
-    if (!dynamic_cast<Variable*>(*i)) {
-      throw EvalError("NewInit children must all be Variables");
-    }
+  if (children.size() < 1 || children.size() > 3) {
+    throw EvalError("NewInit node must have 1, 2, or 3 children");
   }
+  Variable* var = dynamic_cast<Variable*>(children.at(0));
+  if (!var) throw EvalError("NewInit's first child must be a variable");
+  m_varname = var->getValue();
   switch (children.size()) {
     // new x -- type and value are both 'object'
     case 1:
@@ -60,13 +61,13 @@ void NewInit::setup() {
 
 void NewInit::analyzeUp() {
   // Make sure there's no conflicting name in scope
-  if (!parentBlock) {
-    throw EvalError("Cannot analyze NewInit " + print() + " without a parent block");
+  if (!parentScope) {
+    throw EvalError("Cannot analyze NewInit " + print() + " without a parent scope");
   }
-  if (parentBlock->isInScope(m_var)) {
-    throw EvalError("Variable " + m_var->print() + " already exists");
+  if (parentScope->hasObject(m_varname)) {
+    throw EvalError("Variable " + m_varname + " already exists");
   }
-  parentBlock->addVariable(m_var);
+  parentScope->newObject(m_varname);
 }
 
 void NewInit::evaluate() {

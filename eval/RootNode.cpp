@@ -12,12 +12,14 @@ using namespace eval;
 /* public */
 
 RootNode::RootNode(Log& log)
-  : Node(log, NULL, Token(":ROOT:")) {
+  : Node(log, NULL, Token(":ROOT:")),
+    m_scope(log) {
   isSetup = true;
 }
 
 void RootNode::reset() {
   clearChildren(false);
+  m_scope.cleanup();
 }
 
 void RootNode::prepare() {
@@ -33,7 +35,9 @@ void RootNode::setup() {
 }
 
 void RootNode::evaluate() {
+  // Children were evaluated successfully.  Clear them away.
   clearChildren(true);
+  m_scope.cleanup();
 }
 
 void RootNode::clearChildren(bool onlyEvaluatedChildren) {

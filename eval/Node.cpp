@@ -73,7 +73,7 @@ Node::Node(Log& log, RootNode*const root, const Token& token)
     isAnalyzed(false),
     isEvaluated(false),
     parent(NULL),
-    parentBlock(NULL) {
+    parentScope(NULL) {
 }
 
 Node::~Node() {
@@ -83,7 +83,7 @@ Node::~Node() {
   }
 }
 
-Node* Node::insertNode(Node* current, Node* n) {
+Node* Node::insertNode(Log& log, Node* current, Node* n) {
   if (!current || !n) {
     throw EvalError("NULL nodes provided to Node::insertNode()");
   }
@@ -257,12 +257,15 @@ void Node::analyzeNode() {
     throw EvalError("Node " + print() + " cannot do static analysis until setup and reordered");
   }
 
-  // Assign parent blocks from parent downwards
-  Block* b = dynamic_cast<Block*>(parent);
-  if (b) {
-    parentBlock = b;
-  } else if (parent) {
-    parentBlock = parent->parentBlock;
+  // Assign parent scopes from parent downwards
+  if (parent) {
+    parentScope = parent->getScope();
+    if (!parentScope) parentScope = parent->parentScope;
+    if (parentScope) {
+      log.debug("Gave parentScope to " + print());
+    } else {
+      log.debug("Did not give parentScope to " + print());
+    }
   }
 
   // Parent-first static analysis
