@@ -61,28 +61,6 @@ Node* Node::MakeNode(Log& log, RootNode*const root, const Token& t) {
   return NULL;    // guard
 }
 
-/* Members */
-
-Node::Node(Log& log, RootNode*const root, const Token& token)
-  : log(log),
-    root(root),
-    name(token.name),
-    value(token.value),
-    isSetup(false),
-    isReordered(false),
-    isAnalyzed(false),
-    isEvaluated(false),
-    parent(NULL),
-    parentScope(NULL) {
-}
-
-Node::~Node() {
-  log.debug("Destroying node " + name);
-  for (child_iter i = children.begin(); i != children.end(); ++i) {
-    delete *i;
-  }
-}
-
 Node* Node::insertNode(Log& log, Node* current, Node* n) {
   if (!current || !n) {
     throw EvalError("NULL nodes provided to Node::insertNode()");
@@ -104,7 +82,7 @@ Node* Node::insertNode(Log& log, Node* current, Node* n) {
   }
 
   // Closing brace: ensure it matches with the open brace (current), then
-  // ascend our focus up.
+  // ascend our focus up.  Perform static analysis on the new parent.
   //
   // When parentheses are matched, they will be eliminated from the AST since
   // they represent nothing.  Instead, their first child (operator) will take
@@ -164,10 +142,32 @@ Node* Node::insertNode(Log& log, Node* current, Node* n) {
   return parent;    // ascend
 }
 
+/* Members */
+
+Node::Node(Log& log, RootNode*const root, const Token& token)
+  : log(log),
+    root(root),
+    name(token.name),
+    value(token.value),
+    isSetup(false),
+    isReordered(false),
+    isAnalyzed(false),
+    isEvaluated(false),
+    parent(NULL),
+    parentScope(NULL) {
+}
+
+Node::~Node() {
+  log.debug("Destroying node " + name);
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
+    delete *i;
+  }
+}
+
 // Called only on nodes that are understood to be parents.
 // We setupNode() the nodes children-first.
 void Node::setupAsParent() {
-  // The node's grandchildren should all already be setup.
+  // Note: the node's grandchildren should all already be setup.
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     (*i)->setupNode();
   }
