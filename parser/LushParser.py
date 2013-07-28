@@ -50,7 +50,7 @@ def CmdEnd(parser):
 # been parsed at the time of the ExpBlockEnd call.
 def ExpBlockEnd(parser):
   logging.debug("- - EXP BLOCK END")
-  parser.top.ast += '(exp ' + parser.parent.displays[1] + ')}'
+  parser.top.ast += parser.parent.displays[1] + '}'
   parser.top.stack.pop()
 
 def BlockLazyEnd(parser):
@@ -355,7 +355,7 @@ List = Seq('list',
 )
 
 Parens = Seq('parens',
-  ['LPAREN', n, Future('Exp'), n, 'RPAREN'],
+  ['LPAREN', n, Future('SubExp'), n, 'RPAREN'],
   '(paren %s)', [2]
 )
 
@@ -384,21 +384,28 @@ PrefixExp = Seq('prefix',
 )
 
 BinopExp = Seq('binop',
-  [Atom, w, BinOp, n, Future('Exp')],
+  [Atom, w, BinOp, n, Future('SubExp')],
   '(%s %s %s)', [2,0,4]
 )
 
 PrefixBinopExp = Seq('prefixbinop',
-  [PrefixOp, n, Atom, w, BinOp, n, Future('Exp')],
+  [PrefixOp, n, Atom, w, BinOp, n, Future('SubExp')],
   '(%s (%s %s) %s)', [4,0,2,6]
 )
+
+SubExp = Or('subexp', [
+  Atom,
+  PrefixExp,
+  BinopExp,
+  PrefixBinopExp,
+])
 
 Exp = Or('exp', [
   Atom,
   PrefixExp,
   BinopExp,
   PrefixBinopExp,
-])
+], '(exp %s)')
 
 
 # New statements
@@ -629,7 +636,7 @@ ProgramArg = Star('programarg',
     ProgramBasic,
     Seq('programargexpblock',
       ['LBRACE', w, Exp, w, 'RBRACE'],
-      '{(exp %s)}', [2]),
+      '{%s}', [2]),
     # TODO: redirection, pipes, background-job, etc.
   ])
 )
@@ -688,11 +695,11 @@ CmdLine = Or('cmdline', [
 
 
 # Refresh missed rule dependencies
-Replace(BinopExp, 'Exp', Exp)
-Replace(PrefixBinopExp, 'Exp', Exp)
+Replace(BinopExp, 'SubExp', SubExp)
+Replace(PrefixBinopExp, 'SubExp', SubExp)
 Replace(List, 'ExpList', ExpList)
-Replace(Parens, 'Exp', Exp)
-#Replace(Object, 'Exp', Exp)
+Replace(Parens, 'SubExp', SubExp)
+#Replace(Object, 'Exp', Exp)    # or SubExp ?
 Replace(IfPred.items[0], 'Stmt', Stmt)
 Replace(IfPred.items[1], 'CodeBlock', CodeBlock)
 Replace(ElifPred.items[0], 'Stmt', Stmt)

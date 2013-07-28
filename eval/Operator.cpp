@@ -10,6 +10,8 @@ using std::string;
 
 using namespace eval;
 
+/* public */
+
 void Operator::setup() {
   switch (children.size()) {
     case 1: isUnary = true; break;
@@ -18,32 +20,20 @@ void Operator::setup() {
   }
 }
 
-// Note: we know that this node and its children have all been setup.
-void Operator::reorderOperators() {
-  log.debug("reordering " + print());
-  if (isReordered) return;
-  if (2 == children.size()) {
-    Operator* leftOp = dynamic_cast<Operator*>(children.at(0));
-    Operator* rightOp = dynamic_cast<Operator*>(children.at(1));
-    if (leftOp) {
-      leftOp->reorderOperators();
-    }
-    if (!rightOp) return;
-    if (!parent || !rightOp->parent) {
-      throw EvalError("Someone's parent is deficient");
-    }
-    children.pop_back();
-    children.push_back(rightOp->children.at(0));
-    rightOp->parent = parent;
-    parent = rightOp;
-    rightOp->children.pop_front();
-    rightOp->children.push_front(this);
-    rightOp->parent->replaceChild(this, rightOp);
-    rightOp->reorderOperators();
-  }
-  log.debug(" - reordered node " + print());
-  isReordered = true;
+void Operator::analyzeTree() {
+  reorderOperatorTree();
+  validateOperatorTree();
 }
+
+void Operator::evaluate() {
+  // TODO remove this check once we're confident it can never happen
+  if (!isReordered || !isValidated) {
+    throw EvalError("Cannot evaluate operator '" + name + "' which has not been reordered and validated");
+  }
+  throw EvalError("Operator '" + name + "' not yet supported for evaluation");
+}
+
+/* protected */
 
 void Operator::validate() {
   if (!isReordered) {
@@ -62,14 +52,6 @@ void Operator::validate() {
 
   // Our type is the type of the result of the operation
   isValidated = true;
-}
-
-void Operator::evaluate() {
-  // TODO remove this check once we're confident it can never happen
-  if (!isReordered || !isValidated) {
-    throw EvalError("Cannot evaluate operator '" + name + "' which has not been reordered and validated");
-  }
-  throw EvalError("Operator '" + name + "' not yet supported for evaluation");
 }
 
 int Operator::priority() const {
@@ -109,4 +91,49 @@ int Operator::priority() const {
   if ("paren" == name || "bracket" == name)
     return 15;
   throw EvalError("Unknown priority for operator '" + name + "'");
+}
+
+/* private */
+
+// Note: we know that this node and its children have all been setup.
+void Operator::reorderOperatorTree() {
+  log.debug("reordering " + print());
+  if (isReordered) return;
+  if (2 == children.size()) {
+    Operator* leftOp = dynamic_cast<Operator*>(children.at(0));
+    Operator* rightOp = dynamic_cast<Operator*>(children.at(1));
+    if (leftOp) {
+      leftOp->reorderOperatorTree();
+    }
+    if (rightOp) {
+      if (!parent || !rightOp->parent) {
+        throw EvalError("Someone's parent is deficient");
+      }
+      if (rightOp->priority() > priority()) {
+        rightOp->reorderOperatorTree();
+      } else {
+        children.pop_back();
+        children.push_back(rightOp->children.at(0));
+        rightOp->parent = parent;
+        parent = rightOp;
+        rightOp->children.pop_front();
+        rightOp->children.push_front(this);
+        rightOp->parent->replaceChild(this, rightOp);
+        rightOp->reorderOperatorTree();
+      }
+    }
+  }
+  log.debug(" - reordered node " + print());
+  isReordered = true;
+}
+
+// Child-first validation
+void Operator::validateOperatorTree() {
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
+    Operator* op = dynamic_cast<Operator*>(*i);
+    if (op) {
+      op->validateOperatorTree();
+    }
+  }
+  validate();
 }

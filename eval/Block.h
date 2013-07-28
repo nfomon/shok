@@ -12,7 +12,7 @@
  */
 
 #include "Brace.h"
-#include "ExpressionBlock.h"
+#include "Expression.h"
 #include "Log.h"
 #include "RootNode.h"
 #include "Token.h"
@@ -28,7 +28,7 @@ public:
   Block(Log& log, RootNode*const root, const Token& token)
     : Brace(log, root, token, true),
       m_scope(log),
-      m_expBlock(NULL) {}
+      m_exp(NULL) {}
   ~Block();
 
   virtual void init();
@@ -36,11 +36,11 @@ public:
   virtual void evaluate();
   virtual std::string cmdText() const;
 
-  bool isCodeBlock() const { return !m_expBlock; }
+  bool isCodeBlock() const { return !m_exp; }
   virtual Scope* getScope() { return &m_scope; }
 
 private:
-  ExpressionBlock* m_expBlock;
+  Expression* m_exp;
   Scope m_scope;
 };
 

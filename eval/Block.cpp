@@ -4,7 +4,7 @@
 #include "Block.h"
 
 #include "EvalError.h"
-#include "ExpressionBlock.h"
+#include "Expression.h"
 
 #include <string>
 using std::string;
@@ -21,24 +21,24 @@ void Block::init() {
 void Block::setup() {
   Brace::setup();
 
-  if (m_expBlock) {
-    throw EvalError("Block.m_expBlock should not already be set when setting up");
+  if (m_exp) {
+    throw EvalError("Block.m_exp should not already be set when setting up");
   }
   // Determine if we're a code block or an expression block
   if (1 == children.size()) {
-    m_expBlock = dynamic_cast<ExpressionBlock*>(children.front());
+    m_exp = dynamic_cast<Expression*>(children.front());
   }
 }
 
 // We don't actually have to do anything here.  Nodes are evaluated
-// child-first.  Our child is either a single ExpressionBlock, or a list of
+// child-first.  Our child is either a single Expression, or a list of
 // statements, which will be evaluated automatically.
 void Block::evaluate() {
 }
 
 string Block::cmdText() const {
-  if (!m_expBlock) {
+  if (!m_exp) {
     throw EvalError("Cannot get cmdText of a code block");
   }
-  return m_expBlock->cmdText();
+  return m_exp->cmdText();
 }

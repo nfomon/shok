@@ -8,7 +8,7 @@
 #include "Command.h"
 #include "CommandFragment.h"
 #include "EvalError.h"
-#include "ExpressionBlock.h"
+#include "Expression.h"
 #include "Log.h"
 #include "New.h"
 #include "NewInit.h"
@@ -52,7 +52,7 @@ Node* Node::MakeNode(Log& log, RootNode*const root, const Token& t) {
       "DOUBLETILDE" == t.name)
     return new Operator(log, root, t);
   if ("exp" == t.name)
-    return new ExpressionBlock(log, root, t);
+    return new Expression(log, root, t);
   if ("new" == t.name)
     return new New(log, root, t);
   if ("init" == t.name)

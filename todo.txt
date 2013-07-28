@@ -1,10 +1,8 @@
 0. Rename project
 
-1. restructure eval Node tree creation
+1. eval: instead of bare pointers, use auto_ptr in nodes
 
-2. eval: instead of bare pointers, use auto_ptr in nodes
-
-3. Immediate concerns:
+2. Immediate concerns:
 
 Shell:
 - cd

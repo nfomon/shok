@@ -23,19 +23,32 @@ public:
       isValidated(false),
       isUnary(false),
       isBinary(false) {}
+
   virtual void setup();
-  void reorderOperators();
-  virtual void validate();    // operators do a late evaluation
-                              // initiated by some ancestor
+
+  // Static analysis of a whole operator tree.  Reorders operators to account
+  // for operator precedence rules, and validates the operators bottom-up.
+  // Called by Expression::setup(), which wraps the top of the operator tree.
+  void analyzeTree();
+
   virtual void evaluate();
 
+protected:
+  virtual void validate();
   virtual int priority() const;
 
-private:
   bool isReordered;
   bool isValidated;
   bool isUnary;
   bool isBinary;
+
+private:
+  // Reorder tree of operators for our priority-based precedence rules,
+  // starting at this.  Called by analyzeTree().
+  void reorderOperatorTree();
+  // Validate tree of operators, starting at this.  Called by analyzeTree().
+  // This late syntactic analysis is kickstarted by the parent Expression.
+  void validateOperatorTree();
 };
 
 };
