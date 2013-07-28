@@ -27,25 +27,25 @@ class TestCmdLine(LushTester):
   def test_Cmd(self):
     self.lushTestAll([
       ("ID:'ls' NEWL",
-        "(cmd ID:'ls');"),
+        "[ls]"),
       ("WS ID:'ls' WS MINUS ID:'al' WS ID:'foo.txt' WS NEWL",
-        "(cmd ID:'ls', MINUS ID:'al', ID:'foo.txt');"),
+        "[ls -al foo.txt]"),
     ])
 
   def test_ExpBlock(self):
     self.lushTestAll([
       ("LBRACE ID:'foo' RBRACE WS ID:'lolz' NEWL",
-        "{(exp ID:'foo')}, ID:'lolz';"),
+        "[{(exp ID:'foo')} lolz]"),
       ("LBRACE ID:'foo' WS RBRACE WS ID:'one' WS LBRACE ID:'two' RBRACE NEWL",
-        "{(exp ID:'foo')}, ID:'one', {(exp ID:'two')};"),
+        "[{(exp ID:'foo')} one {(exp ID:'two')}]"),
       ("WS LBRACE WS ID:'foo' WS RBRACE WS ID:'one' WS LBRACE WS ID:'two' WS RBRACE WS NEWL",
-        "{(exp ID:'foo')}, ID:'one', {(exp ID:'two')};"),
+        "[{(exp ID:'foo')} one {(exp ID:'two')}]"),
     ])
 
   def test_CodeBlock(self):
     self.lushTestAll([
       ("WS LBRACE WS NEWL WS NEWL NEWL WS NEWL WS RBRACE WS NEWL",
-        "{}"),
+        "[{}]"),
     ])
 
 

@@ -15,15 +15,6 @@ namespace {
   unsigned num_tests = 0;
 };
 
-class Lexer : public Proc {
-public:
-  Lexer() : Proc("lexer") {}
-protected:
-  virtual void f() {
-    execlp("./lush_lexer", "lush_lexer", (char*)NULL);
-  }
-};
-
 bool test(Proc& p, const string& in, const string& expected) {
   ++num_tests;
   ++line_number;
@@ -53,7 +44,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  Lexer lexer;
+  Proc lexer("./lush_lexer");
   lexer.run();
 
   // Braces
