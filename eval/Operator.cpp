@@ -14,11 +14,41 @@ void Operator::setup() {
   switch (children.size()) {
     case 1: isUnary = true; break;
     case 2: isBinary = true; break;
-    default: throw EvalError("Operator cannot have > 2 children");
+    default: throw EvalError("Operator must have one or two children");
   }
 }
 
-void Operator::analyzeUp() {
+// Note: we know that this node and its children have all been setup.
+void Operator::reorderOperators() {
+  log.debug("reordering " + print());
+  if (isReordered) return;
+  if (2 == children.size()) {
+    Operator* leftOp = dynamic_cast<Operator*>(children.at(0));
+    Operator* rightOp = dynamic_cast<Operator*>(children.at(1));
+    if (leftOp) {
+      leftOp->reorderOperators();
+    }
+    if (!rightOp) return;
+    if (!parent || !rightOp->parent) {
+      throw EvalError("Someone's parent is deficient");
+    }
+    children.pop_back();
+    children.push_back(rightOp->children.at(0));
+    rightOp->parent = parent;
+    parent = rightOp;
+    rightOp->children.pop_front();
+    rightOp->children.push_front(this);
+    rightOp->parent->replaceChild(this, rightOp);
+    rightOp->reorderOperators();
+  }
+  log.debug(" - reordered node " + print());
+  isReordered = true;
+}
+
+void Operator::validate() {
+  if (!isReordered) {
+    throw EvalError("Cannot validate operator " + print() + " which has not been reordered");
+  }
   // For overloadable operators, see if the operand has implemented a method
   // for this operator.
   // If it's not overloadable, what are we doing here?  We probably should have
@@ -31,9 +61,14 @@ void Operator::analyzeUp() {
   //}
 
   // Our type is the type of the result of the operation
+  isValidated = true;
 }
 
 void Operator::evaluate() {
+  // TODO remove this check once we're confident it can never happen
+  if (!isReordered || !isValidated) {
+    throw EvalError("Cannot evaluate operator '" + name + "' which has not been reordered and validated");
+  }
   throw EvalError("Operator '" + name + "' not yet supported for evaluation");
 }
 

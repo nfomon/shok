@@ -30,7 +30,9 @@ public:
 
   void init(Scope* parentScope);
   void reset();
-  void cleanup();
+  void commit(const std::string& varname);
+  void revert(const std::string& varname);
+  void revertAll();
 
   bool hasObject(const std::string& varname) const;
   Object* newObject(const std::string& varname);
@@ -39,8 +41,8 @@ public:
 private:
   typedef std::map<std::string,Object*> object_map;
   typedef std::pair<std::string,Object*> object_pair;
-  typedef std::map<std::string,Object*>::const_iterator object_iter;
-  typedef std::map<std::string,Object*>::iterator object_mod_iter;
+  typedef object_map::const_iterator object_iter;
+  typedef object_map::iterator object_mod_iter;
  
   Log& m_log;
   object_map m_objects;

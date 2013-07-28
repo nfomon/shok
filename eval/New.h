@@ -7,19 +7,21 @@
 /* New statement */
 
 #include "Log.h"
-#include "Node.h"
 #include "RootNode.h"
+#include "Statement.h"
 #include "Token.h"
 
 #include <string>
 
 namespace eval {
 
-class New : public Node {
+class New : public Statement {
 public:
   New(Log& log, RootNode*const root, const Token& token)
-    : Node(log, root, token) {}
+    : Statement(log, root, token) {}
+
   virtual void setup();
+  virtual void analyze();
   virtual void evaluate();
 
 private:

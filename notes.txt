@@ -1,3 +1,58 @@
+2k13-07-27
+
+insertNode: called by each token as it comes from input
+ - new node->init(parent node which might be temporary but can descend stuff)
+
+setupAsParent: called at each closing brace
+ - setupNode children
+ - setupNode parent
+
+setupNode:
+ - setup()
+ - analyzeNode()
+
+analyzeNode:
+ - if it's a Statement, do statement->analyze
+
+statement->analyze:
+ - Statement-specific analysis
+ - New: prepares each NewInit child
+ - NewInit: inserts variables into its parent scope, for "pending"
+ - NewInit::evaluate will tell the scope to clear the "pending" set
+ - NewInit::~NewInit will tell the scope to undo pending changes
+
+-----
+2k13-07-27
+
+current:  insert nodes, setup
+on ast.evaluate: evaluateNode: reorder, analyze, evaluate
+
+instead:
+insert nodes, constructor does setup, children-up we analyze
+on ast.evaluate: evaluate
+
+hmm.. this interferes with reordering operators.
+Either we can wrap expressions in "exp" which is the only thing that
+does reorderOperators at its static-analysis time.  Or, we sentinel
+semicolons at the end of expressions.  Or, we have every thing that
+has an exp knows it should do static analysis on it.  The first option
+seems great.. except the premise is also to do "analysis" at the end
+of each paren, but then we're trying to analyze operators before
+they've been re-ordered.
+
+insertToken: makeNode, insertNode
+
+setup (validate children; early step... but we don't want early steps)
+reorderOperators (needs to be done at top of whole Exp)
+analyze
+
+How about: stop being dumb.  At "setupAsParent()" we call setup() on a
+node.  It calls setup() on its children.  Then the parent does
+whatever static analysis it wants, all the error checking it
+can/should do before evaluation.  This includes doing a preAnalysis on the children, which would (for operators) do their reordering.
+
+-----
+
 The evaluator was written with two conflicting ideas.  One is that we
 want to do as much "static analysis" (type checking, sanity code
 checking) as possible before doing any "evaluation" (code execution).

@@ -19,15 +19,21 @@ class Operator : public Node {
 public:
   Operator(Log& log, RootNode*const root, const Token& token)
     : Node(log, root, token),
+      isReordered(false),
+      isValidated(false),
       isUnary(false),
       isBinary(false) {}
   virtual void setup();
-  virtual void analyzeUp();
+  void reorderOperators();
+  virtual void validate();    // operators do a late evaluation
+                              // initiated by some ancestor
   virtual void evaluate();
 
   virtual int priority() const;
 
 private:
+  bool isReordered;
+  bool isValidated;
   bool isUnary;
   bool isBinary;
 };

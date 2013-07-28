@@ -14,17 +14,22 @@ using namespace eval;
 RootNode::RootNode(Log& log)
   : Node(log, NULL, Token(":ROOT:")),
     m_scope(log) {
+  isInit = true;
   isSetup = true;
+  isAnalyzed = true;
 }
 
+// Reset any pending-evaluation children, and undo any pending changes
+// to the scope.  Note that this does not clear out variables that are
+// already commit in the global scope; we only let that happen on
+// destruction.
 void RootNode::reset() {
+  log.debug("Resetting root node");
   clearChildren(false);
-  m_scope.cleanup();
+  m_scope.revertAll();
 }
 
 void RootNode::prepare() {
-  isReordered = false;
-  isAnalyzed = false;
   isEvaluated = false;
 }
 
@@ -37,7 +42,6 @@ void RootNode::setup() {
 void RootNode::evaluate() {
   // Children were evaluated successfully.  Clear them away.
   clearChildren(true);
-  m_scope.cleanup();
 }
 
 void RootNode::clearChildren(bool onlyEvaluatedChildren) {

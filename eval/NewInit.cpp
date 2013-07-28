@@ -13,7 +13,19 @@ using std::string;
 
 using namespace eval;
 
+NewInit::~NewInit() {
+  // Revert our object if we've partially created it.
+  // Be paranoid here since this is regarding error conditions.
+  if (m_prepared && parentScope && m_varname != "" &&
+      parentScope->hasObject(m_varname)) {
+    parentScope->revert(m_varname);
+  }
+}
+
 void NewInit::setup() {
+  if (!parentScope) {
+    throw EvalError("Cannot setup NewInit " + print() + " with no parent scope");
+  }
   if (children.size() < 1 || children.size() > 3) {
     throw EvalError("NewInit node must have 1, 2, or 3 children");
   }
@@ -59,16 +71,19 @@ void NewInit::setup() {
   }
 }
 
-void NewInit::analyzeUp() {
-  // Make sure there's no conflicting name in scope
+void NewInit::prepare() {
   if (!parentScope) {
-    throw EvalError("Cannot analyze NewInit " + print() + " without a parent scope");
+    throw EvalError("Cannot prepare NewInit " + print() + " with no parent scope");
   }
   if (parentScope->hasObject(m_varname)) {
     throw EvalError("Variable " + m_varname + " already exists");
   }
   parentScope->newObject(m_varname);
+  m_prepared = true;
 }
 
+// Commit our new object to our enclosing scope
 void NewInit::evaluate() {
+  parentScope->commit(m_varname);
+  m_prepared = false;
 }

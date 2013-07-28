@@ -11,16 +11,6 @@
  * In the future, this may be broken into several parts; such as operator
  * re-ordering, type-checking and static analysis, optimization, code/bytecode
  * generation, and execution.
- *
- * Note that in the multiple stages of the evaluator, we perform each step
- * through to completion before advancing to the next phase.  I'd like to undo
- * this.  Certainly evaluation (i.e. execution) should not happen until all
- * possible validation / analysis of all possible nodes has happened.  But for
- * the other stages, I think it might be best to provide as deep error-checking
- * as possible on a line of code before reporting any errors regarding nodes
- * that follow it.  Unsure about that though.  For now we perform each full
- * stage of analysis (completion, reordering operators, static analysis,
- * evaluation) in sequence.
  */
 
 #include "AST.h"
@@ -70,6 +60,10 @@ int main(int argc, char *argv[]) {
         log.info("Evaluating: '" + ast.print() + "'");
         ast.evaluate();
         cout << "" << endl;
+      } catch (RecoveredError& e) {
+        log.error(string("Error evaluating parse tree: ") + e.what());
+        cout << endl;
+        // TODO: synchronize state with the parser
       } catch (EvalError& e) {
         log.error(string("Error evaluating parse tree: ") + e.what());
         cout << endl;

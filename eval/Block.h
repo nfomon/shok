@@ -31,8 +31,8 @@ public:
       m_expBlock(NULL) {}
   ~Block();
 
+  virtual void init();
   virtual void setup();
-  virtual void analyzeDown();
   virtual void evaluate();
   virtual std::string cmdText() const;
 

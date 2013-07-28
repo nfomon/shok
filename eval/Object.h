@@ -8,7 +8,6 @@
 
 #include "Log.h"
 //#include "Type.h"
-//#include "Variable.h"
 
 #include <string>
 
@@ -17,7 +16,12 @@ namespace eval {
 class Object {
 public:
   Object();
+  //Object(const std::string& type);
+
   ~Object();
+
+  //Object& getProperty() const;
+  //std::auto_ptr<Object> call(const std::string& function, const Tuple& args);
 
 private:
   //Type m_type;

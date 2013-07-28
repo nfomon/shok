@@ -40,7 +40,15 @@ void AST::insert(const Token& token) {
   if (!n) {
     throw EvalError("Failed to make node for token " + token.name + ":" + token.value);
   }
-  m_current = Node::insertNode(m_log, m_current, n);
+  try {
+    m_current = Node::insertNode(m_log, m_current, n);
+  } catch (RecoveredError& e) {
+    m_current = e.getRecoveredPosition();
+    if (!m_current) {
+      throw EvalError(string("Attempting to recover from error '") + e.what() + "' returned a deficient current node");
+    }
+    throw;
+  }
   if (!m_current) {
     throw EvalError("Inserting node " + n->print() + " returned a deficient current node");
   }
@@ -48,8 +56,6 @@ void AST::insert(const Token& token) {
 
 void AST::evaluate() {
   m_root.prepare();
-  m_root.reorderOperators();
-  m_root.analyzeNode();
 
   // We only actually run code if m_current has arrived back at the root node,
   // m_root.  This signifies a return to the outer-most (command-line) scope.

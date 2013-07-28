@@ -10,6 +10,7 @@
 #include "Node.h"
 #include "Object.h"
 #include "RootNode.h"
+#include "Scope.h"
 #include "Token.h"
 #include "Type.h"
 #include "Variable.h"
@@ -22,12 +23,16 @@ class NewInit : public Node {
 public:
   NewInit(Log& log, RootNode*const root, const Token& token)
     : Node(log, root, token),
+      m_prepared(false),
       m_value(NULL) {}
+  ~NewInit();
+
   virtual void setup();
-  virtual void analyzeUp();
+  void prepare();
   virtual void evaluate();
 
 private:
+  bool m_prepared;
   std::string m_varname;
   //Type m_type;
   Variable* m_value;

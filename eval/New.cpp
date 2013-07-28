@@ -21,5 +21,13 @@ void New::setup() {
   }
 }
 
+void New::analyze() {
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
+    NewInit* init = dynamic_cast<NewInit*>(*i);
+    init->prepare();
+  }
+}
+
+// Children will have already been evaluated (commit their changesets)
 void New::evaluate() {
 }

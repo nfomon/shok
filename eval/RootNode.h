@@ -8,6 +8,7 @@
 
 #include "Log.h"
 #include "Node.h"
+#include "Scope.h"
 
 #include <set>
 

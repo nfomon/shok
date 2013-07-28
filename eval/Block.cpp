@@ -14,6 +14,10 @@ using namespace eval;
 Block::~Block() {
 }
 
+void Block::init() {
+  m_scope.init(parentScope);
+}
+
 void Block::setup() {
   Brace::setup();
 
@@ -24,10 +28,6 @@ void Block::setup() {
   if (1 == children.size()) {
     m_expBlock = dynamic_cast<ExpressionBlock*>(children.front());
   }
-}
-
-void Block::analyzeDown() {
-  m_scope.init(parentScope);
 }
 
 // We don't actually have to do anything here.  Nodes are evaluated

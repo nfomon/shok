@@ -71,6 +71,7 @@ Node* Node::insertNode(Log& log, Node* current, Node* n) {
   if (!brace) {
     n->parent = current;
     current->addChild(n);
+    n->initNode();
     return current;   // stay
   }
 
@@ -78,6 +79,7 @@ Node* Node::insertNode(Log& log, Node* current, Node* n) {
   if (brace->isOpen()) {
     n->parent = current;
     current->addChild(n);
+    n->initNode();
     return n;         // descend
   }
 
@@ -134,12 +136,55 @@ Node* Node::insertNode(Log& log, Node* current, Node* n) {
       }
     }
     delete open;
-    op->setupAsParent();
+    // Errors from setupAsParent are recoverable
+    try {
+      op->setupAsParent();
+    } catch (EvalError& e) {
+      recoverFromError(e, op);
+      throw EvalError(string("Failed to recover from error: ") + e.what());
+    }
   } else {
-    open->setupAsParent();
+    // Errors from setupAsParent are recoverable
+    try {
+      open->setupAsParent();
+    } catch (EvalError& e) {
+      recoverFromError(e, open);
+      throw EvalError(string("Failed to recover from error: ") + e.what());
+    }
   }
   delete n;   // always discard the closing brace/paren
   return parent;    // ascend
+}
+
+// Find the nearest enclosing block (ancestor) of the given node, and delete
+// the subtree from which it came, and (to be paranoid) any of the block's
+// children that follow it (there shouldn't be any).
+//
+// On success, throws a recoveredError with the new "recoveredPosition" that
+// should be the AST's new current position (the cleaned-up block).
+// On error, throws its own EvalError.
+void Node::recoverFromError(EvalError& e, Node* problemNode) {
+  Node* current = problemNode;
+  try {
+    while (current && current->parent) {
+      Block* parentBlock = dynamic_cast<Block*>(current->parent);
+      if (!parentBlock) {
+        current = current->parent;
+        continue;
+      }
+      // Find current in the parentBlock's children.  Delete it and any
+      // subsequent children.
+      parentBlock->removeChildrenStartingAt(current);
+      throw RecoveredError(e, parentBlock);
+    }
+  } catch (EvalError& x) {
+    throw EvalError(string("Cannot recover from error '") + e.what() + "': " + x.what());
+  }
+  if (!current || current->parent || !dynamic_cast<RootNode*>(current)) {
+    throw EvalError(string("Cannot recover from error '") + e.what() + "': unknown error");
+  }
+  // We made it to the root node.
+  throw RecoveredError(e, current);
 }
 
 /* Members */
@@ -149,8 +194,8 @@ Node::Node(Log& log, RootNode*const root, const Token& token)
     root(root),
     name(token.name),
     value(token.value),
+    isInit(false),
     isSetup(false),
-    isReordered(false),
     isAnalyzed(false),
     isEvaluated(false),
     parent(NULL),
@@ -162,6 +207,35 @@ Node::~Node() {
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     delete *i;
   }
+}
+
+// This is a very early initialization.  We have a parent, but it may not be
+// our "final" parent; e.g. it may be an irrelevant open-paren that will be
+// eliminated from the tree by the time we call setupNode().  However, we *can*
+// trust/use the parent to pass some data members down that we want to
+// initialize on all nodes.  We even allow nodes to (carefully!) override their
+// own init() for their own purposes (e.g. initialize child scopes).
+void Node::initNode() {
+  if (!parent) {
+    throw EvalError("Cannot init the root node");
+  }
+  parentScope = parent->getScope();
+  if (!parentScope) {
+    parentScope = parent->getParentScope();
+  }
+  init();
+  isInit = true;
+  //log.debug(" - init node " + print());
+}
+
+void Node::replaceChild(Node* oldChild, Node* newChild) {
+  for (child_mod_iter i = children.begin(); i != children.end(); ++i) {
+    if (*i == oldChild) {
+      *i = newChild;
+      break;
+    }
+  }
+  log.debug("Replaced " + oldChild->print() + " in " + print() + " with " + newChild->print());
 }
 
 // Called only on nodes that are understood to be parents.
@@ -177,118 +251,41 @@ void Node::setupAsParent() {
 
 void Node::setupNode() {
   if (isSetup) return;
+  if (!isInit) {
+    throw EvalError("Cannot setup Node " + print() + " until it's init");
+  }
   if (!parent) {
     throw EvalError("Cannot setup Node " + print() + " with no parent");
   }
   log.debug(" - setting up node " + print());
   setup();
   isSetup = true;
-}
-
-void Node::reorderOperators() {
-  log.debug("reorder " + print());
-  if (isReordered) return;
-  if (!isSetup) {
-    // An immediate child of the root can skip reordering if it's not setup
-    if (root == parent) return;
-    throw EvalError("Node " + print() + " cannot be reordered until it's setup");
-  }
-  switch (children.size()) {
-    case 0: break;
-    // Operator with a single operator child: error, unsupported (it's unclear
-    // to me how these should be reordered, since I don't think they exist)
-    case 1: {
-      Node* child = children.at(0);
-      child->reorderOperators();
-      Operator* op = dynamic_cast<Operator*>(this);
-      if (!op) break;
-      Operator* childOp = dynamic_cast<Operator*>(child);
-      if (childOp) {
-        throw EvalError("Unclear how to reorder unary operator with operator child");
-      }
-    } break;
-    // Left child is fine.  If right child has lower or equal priority than us,
-    // shuffle it around, and *then* recurse down the right child.
-    case 2: {
-      Node* left = children.at(0);
-      Node* right = children.at(1);
-      left->reorderOperators();
-      Operator* op = dynamic_cast<Operator*>(this);
-      Operator* rightOp = dynamic_cast<Operator*>(right);
-      if (!op || !rightOp ||
-          rightOp->children.size() != 2 ||
-          rightOp->priority() > op->priority()) {
-        right->reorderOperators();
-        break;
-      }
-      if (!op->parent || !rightOp->parent) {
-        throw EvalError("Someone's parent is deficient");
-      }
-      op->children.pop_back();
-      op->children.push_back(rightOp->children.at(0));
-      rightOp->parent = op->parent;
-      op->parent = rightOp;
-      rightOp->children.pop_front();
-      rightOp->children.push_front(op);
-      for (child_mod_iter i = rightOp->parent->children.begin();
-           i != rightOp->parent->children.end(); ++i) {
-        if (*i == op) {
-          *i = rightOp;
-          break;
-        }
-      }
-      rightOp->reorderOperators();
-    } break;
-    default: {
-      for (child_iter i = children.begin(); i != children.end(); ++i) {
-        (*i)->reorderOperators();
-      }
-    } break;
-  }
-  log.debug(" - reordered node " + print());
-  isReordered = true;
+  log.debug(" - analyzing node " + print());
+  analyzeNode();
+  isAnalyzed = true;
 }
 
 void Node::analyzeNode() {
   if (isAnalyzed) return;
-  if (!isSetup || !isReordered) {
-    // An immediate child of the root can skip analysis if it's not setup
-    if (root == parent) return;
-    throw EvalError("Node " + print() + " cannot do static analysis until setup and reordered");
+  if (!isInit || !isSetup) {
+    throw EvalError("Node " + print() + " cannot do static analysis until init and setup");
   }
 
-  // Assign parent scopes from parent downwards
-  if (parent) {
-    parentScope = parent->getScope();
-    if (!parentScope) parentScope = parent->parentScope;
-    if (parentScope) {
-      log.debug("Gave parentScope to " + print());
-    } else {
-      log.debug("Did not give parentScope to " + print());
-    }
+  Statement* statement = dynamic_cast<Statement*>(this);
+  if (statement) {
+    log.debug(" - - analyzing statement " + print());
+    statement->analyze();
   }
-
-  // Parent-first static analysis
-  analyzeDown();
-
-  for (child_iter i = children.begin(); i != children.end(); ++i) {   
-    (*i)->analyzeNode();
-  }
-
-  // Child-first static analysis
-  log.debug(" - analyzing node " + print());
-  analyzeUp();
-  isAnalyzed = true;
 }
 
 void Node::evaluateNode() {
   if (isEvaluated) {
     throw EvalError("Node " + print() + " has already been evaluated");
   }
-  if (!isSetup || !isReordered || !isAnalyzed) {
+  if (!isInit || !isSetup || !isAnalyzed) {
     // An immediate child of the root can skip evaluation if it's not setup
-    if (root == parent) return;
-    throw EvalError("Node " + print() + " cannot be evaluated until setup, reordered, analyzed");
+    if (root == parent && root != NULL) return;
+    throw EvalError("Node " + print() + " cannot be evaluated until init, setup, and analyzed");
   }
   // Evaluate nodes children-first
   for (child_iter i = children.begin(); i != children.end(); ++i) {   
@@ -323,4 +320,19 @@ Node::operator std::string() const {
 
 void Node::addChild(Node* child) {
   children.push_back(child);
+}
+
+void Node::removeChildrenStartingAt(const Node* child) {
+  log.debug("Removing children from " + print() + " starting at " + child->print());
+  int foundChildren = 0;
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
+    if (child == *i || foundChildren > 0) {
+      ++foundChildren;
+      delete *i;
+      child = NULL;
+    }
+  }
+  for (int i=0; i < foundChildren; ++i) {
+    children.pop_back();
+  }
 }
