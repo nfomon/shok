@@ -10,28 +10,11 @@
  * is our internal Object representation; it has a list of members, and a Type
  * which refers to its parents.
  *
- * The members currently are not owned by the Object; they must already exist
- * somewhere.  But I think that is broken.  It's maybe fine for objects being
- * created by the user from other objects, but it doesn't help us statically
- * put things in them.  Maybe that's ok -- they're static, so I just need to
- * create them somewhere statically.  Let's go with that for now....
- *
- * Seems like an Object needs both: members that it owns (acts like a scope
- * for), and members that are just links to Objects that will outlive this
- * Object.  Maybe we have a Member class that knows how to be destroyed, how to
- * hold a new Object incarnation or to point to an existing one. Hmmmmmmm.
- * Let's think carefully about Object vs. object etc...
- *
- * uhhh it should definitely own all its members, which are variables: copies
- * of some object.  The real question is: how does this relate to Scope?
- *
- * We'll split Scope in two.  The basis is "ObjectStore", an Object container
- * with revert/commit logic.  The other is Scope, which *has* an ObjectStore
- * and keeps it behind the "scope depth" logic (0 is root node, 1 is special).
- * Object will also *have* an ObjectStore behind it in the same way.
+ * The Object owns its members by way of an internal ObjectStore.
  */
 
 #include "Log.h"
+#include "ObjectStore.h"
 #include "Type.h"
 
 #include <map>
@@ -41,6 +24,7 @@
 namespace eval {
 
 class Expression;
+class ObjectStore;
 class Type;
 
 class Object {
@@ -79,13 +63,10 @@ protected:
   // without duplicating an existing type (e.g. stdlib::object)
   Object(Log& log, const std::string& name);
 
-  typedef std::map<std::string,Object*> member_list;
-  typedef member_list::const_iterator member_iter;
-
   Log& m_log;
+  std::auto_ptr<ObjectStore> m_objectStore;
   std::string m_name;
   std::auto_ptr<Type> m_type;
-  member_list m_members;
 };
 
 };
