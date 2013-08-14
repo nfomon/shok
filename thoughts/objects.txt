@@ -1,0 +1,45 @@
+Notation: use ':' to set type, or use '=' twice?
+  new x:animal = cat
+  new x=animal = cat
+
+  new y:int = 4
+  new y=int = 4
+
+  new z:str = 'hello'
+  new z=str = 'hello'
+
+I'm starting to really like the ':' style.  It lends itself to uses
+elsewhere, e.g.:
+
+new makeLion = @(name:str, ?age:int)->r:lion {
+  r.name = name
+  r.age = age
+  :echo making lion named {name} age {age}
+  new x=:yes
+  x()
+}
+each f:file in ~/music/ {...}
+
+rather than:
+new makeLion = @(name=str, ?age=int)->r=lion {...}
+each file f in ~/music/ {...}  # or
+each f=file in ~/music/ {...}
+
+-----
+
+In object literals (definitions),
+
+a) require 'new' to declare members?  (i.e. it's like a codeblock
+except 'new' is the only statement allowed.)
+b) Or is 'new' disallowed, though every "fake statement" acts like a
+new?
+c) Or is it actually just a full-blown block of code, that will execute
+at the time it is copied?
+
+I kind of prefer (a) for now, because it's stylistically quite obvious
+what's going on.  We can change to (b) once we're solid, and people
+request the convenience of:
+  new animal = { name:str; age:int }
+instead of:
+  new animal = { new name:str; new age:int }
+

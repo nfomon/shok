@@ -7,6 +7,8 @@
 #include "EvalError.h"
 #include "Token.h"
 
+#include "stdlib/object.h"
+
 using namespace eval;
 
 /* public */
@@ -17,6 +19,10 @@ RootNode::RootNode(Log& log)
   isInit = true;
   isSetup = true;
   isAnalyzed = true;
+
+  // Insert default objects (standard library)
+  m_scope.newObject("object", new stdlib::object(log));
+  m_scope.commitAll();
 }
 
 // Reset any pending-evaluation children, and undo any pending changes

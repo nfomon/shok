@@ -3,15 +3,53 @@
 
 #include "Object.h"
 
+#include <memory>
 #include <string>
-#include <vector>
+using std::auto_ptr;
 using std::string;
-using std::vector;
 
 using namespace eval;
 
-Object::Object() {
+Object::Object(Log& log, const string& name, const Type& type)
+  : m_log(log),
+    m_name(name),
+    m_type(type.duplicate()) {
 }
 
-Object::~Object() {
+Object::Object(Log& log, const string& name)
+  : m_log(log),
+    m_name(name),
+    m_type(NULL) {
 }
+
+const Object* Object::getMember(const string& name) const {
+  if (!m_type.get()) {
+    throw EvalError("Cannot get member " + name + " of Object " + print() + " that has no type");
+  }
+  member_iter i = m_members.find(name);
+  if (i != m_members.end()) {
+    return i->second;
+  // If we don't have it, check our parent(s).
+  // Note: it's up to the caller to ensure that whatever action they take on
+  // the result, it should be done in the context of the child object, and not
+  // the Object* they get back on its own.
+  }
+  return m_type->getMember(name);
+}
+
+auto_ptr<Type> Object::getMemberType(const string& name) const {
+  if (!m_type.get()) {
+    throw EvalError("Cannot get type of member " + name + " of Object " + print() + " that has no type");
+  }
+  member_iter i = m_members.find(name);
+  if (i != m_members.end()) {
+    return auto_ptr<Type>(i->second->getType().duplicate());
+  }
+  return m_type->getMemberType(name);
+}
+
+/*
+void Object::assign(const Expression* value) {
+  m_log.warning("Object assignment is unimplemented");
+}
+*/

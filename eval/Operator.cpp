@@ -4,7 +4,9 @@
 #include "Operator.h"
 
 #include "EvalError.h"
+#include "Function.h"
 
+#include <memory>
 #include <string>
 using std::string;
 
@@ -12,6 +14,8 @@ using namespace eval;
 
 /* public */
 
+// Only do the most minimal of validation here.  We can't trust our children,
+// but it is important that we know how many we have; that won't change.
 void Operator::setup() {
   switch (children.size()) {
     case 1: isUnary = true; break;
@@ -20,6 +24,7 @@ void Operator::setup() {
   }
 }
 
+// Called by Expression::setup() top-down across its Operator tree.
 void Operator::analyzeTree() {
   reorderOperatorTree();
   validateOperatorTree();
@@ -33,25 +38,59 @@ void Operator::evaluate() {
   throw EvalError("Operator '" + name + "' not yet supported for evaluation");
 }
 
+string Operator::methodName() const {
+  if ("EQ" == name)
+    return "operator==";
+  if ("NE" == name)
+    return "operator!=";
+  if ("LT" == name)
+    return "operator<";
+  if ("LE" == name)
+    return "operator<=";
+  if ("GT" == name)
+    return "operator>";
+  if ("GE" == name)
+    return "operator>=";
+  if ("USEROP" == name)
+    return "operator`" + value + "`";
+  if ("PLUS" == name)
+    return "operator+";
+  if ("MINUS" == name)
+    return "operator-";
+  if ("STAR" == name)
+    return "operator*";
+  if ("SLASH" == name)
+    return "operator/";
+  if ("PERCENT" == name)
+    return "operator%";
+  if ("CARAT" == name)
+    return "operator^";
+  return "";
+}
+
+
 /* protected */
 
 void Operator::validate() {
-  if (!isReordered) {
-    throw EvalError("Cannot validate operator " + print() + " which has not been reordered");
+  if (!isSetup || !isReordered) {
+    throw EvalError("Cannot validate operator " + print() + " before it is setup and reordered");
   }
-  // For overloadable operators, see if the operand has implemented a method
-  // for this operator.
-  // If it's not overloadable, what are we doing here?  We probably should have
-  // been subclassed :)
-  // Note that some operators require specific types of their operands, or
-  // other special evaluations (e.g. ~ performs a ->str() on its operands).
-  //if (isOverloadable) {
-    // Unary => Prefix operator, for now
-  //} else {
-  //}
 
-  // Our type is the type of the result of the operation
-  isValidated = true;
+  if (isUnary) {
+    left = dynamic_cast<TypedNode*>(children.at(0));
+    if (!left) {
+      throw EvalError("Operator " + print() + "'s child must have a Type");
+    } else if (right) {
+      throw EvalError("Cannot validate unary Operator " + print() + " that somehow has a right child");
+    }
+  } else if (isBinary) {
+    left = dynamic_cast<TypedNode*>(children.at(0));
+    right = dynamic_cast<TypedNode*>(children.at(1));
+    if (!left || !right) {
+      throw EvalError("Operator " + print() + "'s children must have Types");
+    }
+  }
+  computeType();
 }
 
 int Operator::priority() const {
@@ -88,7 +127,7 @@ int Operator::priority() const {
     return 13;
   if ("AMP" == name)
     return 14;
-  if ("paren" == name || "bracket" == name)
+  if ("paren" == name)
     return 15;
   throw EvalError("Unknown priority for operator '" + name + "'");
 }
@@ -136,4 +175,87 @@ void Operator::validateOperatorTree() {
     }
   }
   validate();
+  isValidated = true;
+}
+
+// This is responsible for setting m_type.  This is ok to be an OrType of the
+// possible return types of the overloads of the method that will be called.
+void Operator::computeType() {
+  if (!isSetup || !isReordered) {
+    throw EvalError("Cannot compute type of Operator " + print() + " before it is setup, reordered, and validated");
+  }
+
+  // For overloadable operators, see if the operand has implemented a method
+  // for this operator.
+  // If it's not overloadable, what are we doing here?  We probably should have
+  // been subclassed :)  I think this is just | and & and ~, and for now we'll
+  // implement all operator logic right here.
+  // Note that some operators require specific types of their operands, or
+  // other special evaluations (e.g. ~ performs a ->str on its operands).
+  if ("PIPE" == name) {
+    if (!isBinary) {
+      throw EvalError("| must be a binary operator");
+    }
+    m_type.reset(new OrType(*left->getType(), *right->getType()));
+  } else if ("AMP" == name) {
+    if (children.size() != 2) {
+      throw EvalError("& must be a binary operator");
+    }
+    m_type.reset(new AndType(*left->getType(), *right->getType()));
+  } else if ("TILDE" == name || "DOUBLETILDE" == name) {
+    if (!isBinary) {
+      throw EvalError("| must be a binary operator");
+    }
+    // TODO: get this directly from the global scope
+    Object* str = parentScope->getObject("str");
+    if (!str) {
+      throw EvalError("Cannot use ~ or ~~ operator until str is defined");
+    }
+    m_type.reset(new BasicType(*str));
+    // TODO more custom ~ and ~~ logic goes here or above
+    throw EvalError("~ and ~~ operators are not yet implemented");
+  } else {
+    // Lookup the operator as a member of our first (or only) child's type.  If
+    // it's there (and in the binary case, if it accepts the second child's
+    // Type for its single argument), then our type is the (set of possible)
+    // result type(s) of that method call.
+    string method_name = methodName();
+    if ("" == method_name) {
+      throw EvalError("Cannot determine Type of unimplemented operator " + print());
+    }
+    const Object* methodObject = left->getType()->getMember(method_name);
+    if (!methodObject) {
+      throw EvalError(left->print() + " does not define operator" + name);
+    }
+    const Function* method = dynamic_cast<const Function*>(methodObject);
+    if (!method) {
+      throw EvalError("Somehow, " + method_name + " is a non-function member of " + left->print());
+    }
+
+    if (isUnary) {
+      type_list args; // Leave empty (no args)
+      if (!method->takesArgs(args)) {
+        throw EvalError(left->print() + "." + method_name + " is not defined to take 0 arguments");
+      }
+      m_type = method->getPossibleReturnTypes(args);
+      if (!m_type.get()) {
+        throw EvalError(left->print() + "." + method_name + " somehow has no return type");
+      }
+    } else if (isBinary) {
+      if (!right) {
+        throw EvalError("Right-hand side of binary " + name + " operator must have a type");
+      }
+      type_list args;
+      args.push_back(&right->type());
+      if (!method->takesArgs(args)) {
+        throw EvalError(left->print() + "." + method_name + " is not defined to take right-hand side " + right->print() + " of type " + args.at(0)->print());
+      }
+      m_type = method->getPossibleReturnTypes(args);
+      if (!m_type.get()) {
+        throw EvalError(left->print() + "." + method_name + " with argument " + right->print() + " somehow has no return type");
+      }
+    } else {
+      throw EvalError("What IS this crazy operator!?");
+    }
+  }
 }

@@ -112,8 +112,6 @@ protected:
   child_vec children;
   // Set by init()
   Scope* parentScope;   // nearest enclosing scope (execution context)
-
-  //Type type;
 };
 
 };

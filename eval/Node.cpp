@@ -14,6 +14,7 @@
 #include "NewInit.h"
 #include "Operator.h"
 #include "RootNode.h"
+#include "TypeSpec.h"
 #include "Variable.h"
 
 #include <boost/lexical_cast.hpp>
@@ -57,6 +58,8 @@ Node* Node::MakeNode(Log& log, RootNode*const root, const Token& t) {
     return new New(log, root, t);
   if ("init" == t.name)
     return new NewInit(log, root, t);
+  if ("type" == t.name)
+    return new TypeSpec(log, root, t);
   throw EvalError("Unsupported token " + t.print());
   return NULL;    // guard
 }

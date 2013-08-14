@@ -147,6 +147,7 @@ Keyword = Or('keyword', [
   TMsg('RENEW', 'renew'),
   TMsg('DEL', 'del'),
   TMsg('ISVAR', 'isvar'),
+  TMsg('TYPEOF', 'typeof'),
   # Functions
   TMsg('VOID', 'void'),
   TMsg('RETURN', 'return'),
@@ -174,8 +175,6 @@ Keyword = Or('keyword', [
   TMsg('OR', 'or'),
   TMsg('XOR', 'xor'),
   TMsg('XNOR', 'xnor'),
-  # Keyword operators
-  TMsg('TYPEOF', 'typeof'),
 ])
 
 Op = Or('op', [
@@ -407,6 +406,13 @@ Exp = Or('exp', [
   PrefixBinopExp,
 ], '(exp %s)')
 
+Type = Or('type', [
+  Atom,
+  PrefixExp,
+  BinopExp,
+  PrefixBinopExp,
+], '(type %s)')
+
 
 # New statements
 Assign1 = Seq('assign1',
@@ -415,7 +421,7 @@ Assign1 = Seq('assign1',
 )
 
 Assign2 = Seq('assign2',
-  ['ID', w, 'EQUALS', n, Exp, w, 'EQUALS', n, Exp],
+  ['ID', w, 'EQUALS', n, Type, w, 'EQUALS', n, Exp],
   '%s %s %s', [0, 4, 8]
 )
 

@@ -1,3 +1,60 @@
+2k13-08-11
+
+Function calls, signatures, types
+
+I was attempting to allow function overloading (multiple signatures per
+function name), with pattern-matching dispatch.  I was attempting to need only
+the type of the arguments provided to the function to determine which signature
+receives the dispatch.  I would consider signatures to be independent (so they can belong to the same function) if their argument sets were not *identical*.  This is wrong because:
+  new foo = @(A|B) {...}
+  new foo = @(A|C) {...}
+
+Which foo gets called by   foo(A)   ?
+
+To solve this we need signatures to be non-overloadable if any argument (on its
+own or as part of an OR) is identical to any part of an existing signature's
+same-position argument (or any part of an OR).
+
+** For now, functions are not overloadable if they have the same # arguments.
+This is sufficient to solve the problem (in the absense of optional
+parameters).
+
+Another problem is:
+  new foo = @(X)->Q {...}
+  new foo = @(Y)->R {...}
+  new bar = @(B)->X|Y {...}
+  foo(bar(b))
+
+Which foo gets called?  Does this foo return a Q or an R?  It seems like I need
+to know precisely which return type from bar I should expect, but I do NOT want
+to have to know that without running bar.
+
+The answer should be that it returns Q|R.  The OR-Union of any of the OR'd
+arguments from the caller.  During type-checking stages, we can get OR-types
+bubbling up from children where they won't actually belong when we know the
+objects, but it's also appropriate for us to figure out the OR-types of the
+possible outcomes of any operation, to ensure that an appropriate path exists
+for every possible type of inputs (children).
+
+Since there's even more complexity to implement all this, and be sure it's
+correct and even desirable, for now I'm stripping it out.  We'll start with
+allowing overloads only at different # of arguments.  Eventually we'll add
+named parameters, default values, and a more intelligent pattern-matching
+dispatch.
+
+*** At some point, also need to determine semantics of functions that have no
+return type (void).  Because they can only belong in specific places etc..
+
+aha!  isCompatible() is a very different question than compatabilityScore().
+The former always has an appropriate answer, while the latter may not.  So we
+should implement both as separate processes, at least for now.  When
+compatabilityScore() is properly implemented, it will be when we have verry
+careful dispatch...
+WAIT our problem cases were sooo neeearly done, I think!  I should really just
+chart it all out, we have the semantics worked out pretty great by now I think.
+Oh well carry on with bool isCompatible().
+-----
+
 2k13-07-27
 
 insertNode: called by each token as it comes from input

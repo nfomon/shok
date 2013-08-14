@@ -9,37 +9,38 @@
  * This just wraps an expression, which could be an atom (literal, variable
  * name, etc.) or the top operator of an expression tree.
  *
- * At setup() we reorder the operators (since they will be provided to us in a
- * ridiculous ordering from the parser), then validate them bottom-up.
+ * At setup() we reorder the operators (since they will be initially given to
+ * the AST in a ridiculous ordering from the parser), then validate them
+ * bottom-up.
  *
  * This single expression may be owned by a command block, in which case the
  * expression is meant to evaluate to an object on which we'll call
- * ->str().escape() and then provided this text as a command-line fragment.
- * Currently we assume the ->str() does not throw and thus requires no
- * validation.  However, TODO we should know (via init()) if we're an
- * expression from an expression block, and validate in setup() that this
- * ->str() is at least reasonable.
+ * ->str.escape() and then provide this text as a command-line fragment.
+ *
+ * The expression's Type is determined at setup() time.
  */
 
 #include "Log.h"
-#include "Node.h"
 #include "RootNode.h"
 #include "Token.h"
+#include "Type.h"
+#include "TypedNode.h"
 
 #include <string>
 
 namespace eval {
 
-class Expression : public Node {
+class Expression : public TypedNode {
 public:
   Expression(Log& log, RootNode*const root, const Token& token)
-    : Node(log, root, token) {}
+    : TypedNode(log, root, token) {}
   virtual void setup();
   virtual void evaluate();
   virtual std::string cmdText() const;
 
 private:
-  std::string m_str;
+  // from TypedNode
+  virtual void computeType();
 };
 
 };

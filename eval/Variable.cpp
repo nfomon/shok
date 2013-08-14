@@ -14,10 +14,24 @@ void Variable::setup() {
   if (children.size() != 0) {
     throw EvalError("Variable node cannot have children");
   }
+  // Lookup the in-scope Object that we represent, if it exists
+  if (m_object) {
+    throw EvalError("Variable cannot be setup while it already has an object");
+  }
+  m_object = parentScope->getObject(getVariableName());
+  log.info("Seeking Object for Variable " + print() + " -- " + (m_object ? "found" : "not found"));
+  if (m_object) {
+    computeType();
+  }
 }
 
-void Variable::analyzeUp() {
-}
-
+// Nothing to do
 void Variable::evaluate() {
+}
+
+void Variable::computeType() {
+  if (!m_object) {
+    throw EvalError("Cannot compute type of Variable " + print() + " for non-existant object");
+  }
+  m_type.reset(new BasicType(*m_object));
 }

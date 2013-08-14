@@ -28,6 +28,7 @@ void Scope::init(Scope* parentScope) {
   m_log.debug("Init scope at depth " + boost::lexical_cast<string>(m_depth));
 }
 
+// Clears all objects from the scope
 void Scope::reset() {
   m_log.debug("Resetting scope at depth " +
               boost::lexical_cast<string>(m_depth));
@@ -52,6 +53,20 @@ void Scope::commit(const string& varname) {
   m_log.debug("Committing " + varname + " to scope depth " +
              boost::lexical_cast<string>(m_depth));
   m_pending.erase(varname);
+}
+
+// Commit all pending-commit objects
+void Scope::commitAll() {
+  // depth of 1 is fake; it just defers up to the root scope
+  if (1 == m_depth) {
+    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
+    return m_parentScope->commitAll();
+  }
+  m_log.info("Committing all variables from scope depth " +
+             boost::lexical_cast<string>(m_depth));
+  for (object_iter i = m_pending.begin(); i != m_pending.end(); ++i) {
+    commit(i->first);
+  }
 }
 
 // Revert a pending-commit object
@@ -88,42 +103,35 @@ void Scope::revertAll() {
   }
 }
 
-bool Scope::hasObject(const string& varname) const {
-  // depth of 1 is fake; it just defers up to the root scope
-  if (1 == m_depth) {
-    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
-    return m_parentScope->hasObject(varname);
+Object* Scope::getObject(const string& varname) const {
+  object_iter o = m_objects.find(varname);
+  if (o != m_objects.end()) return o->second;
+  if (!m_parentScope) {
+    return NULL;
   }
-  if (m_objects.find(varname) != m_objects.end()) {
-    return true;
-  } else if (!m_parentScope) {
-    return false;
-  }
-  return m_parentScope->hasObject(varname);
+  return m_parentScope->getObject(varname);
 }
 
-Object* Scope::newObject(const string& varname) {
+void Scope::newObject(const string& varname, Object* object) {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
-    return m_parentScope->newObject(varname);
+    return m_parentScope->newObject(varname, object);
   }
-  if (hasObject(varname)) {
-    throw EvalError("Cannot create variable " +
-                    varname + "; already exists in this scope; " +
-                    boost::lexical_cast<string>(m_objects.size()));
+  // An object name collision should have already been detected, but repeat
+  // this now until we're confident about that
+  if (getObject(varname)) {
+    throw EvalError("Cannot create variable " + varname + "; already exists in this scope, and should never have been created");
   }
-  m_log.info("Creating (pending) object " + varname +
+  m_log.info("Adding (pending) object " + varname +
              " at scope depth " + boost::lexical_cast<string>(m_depth));
-  Object* o = new Object();
-  object_pair op(varname, o);
+  object_pair op(varname, object);
   m_objects.insert(op);
   m_pending.insert(op);
   m_log.info("Scope depth " + boost::lexical_cast<string>(m_depth) +
              " now has " + boost::lexical_cast<string>(m_objects.size()) +
              " objects and " + boost::lexical_cast<string>(m_pending.size()) +
              " pending");
-  return o;
 }
 
 void Scope::delObject(const string& varname) {
@@ -134,10 +142,12 @@ void Scope::delObject(const string& varname) {
   }
   m_log.info("Deleting object " + varname +
              " from scope depth " + boost::lexical_cast<string>(m_depth));
-  if (m_objects.end() == m_objects.find(varname)) {
+  object_iter o = m_objects.find(varname);
+  if (m_objects.end() == o) {
     throw EvalError("Cannot delete variable " + varname +
                     "; does not exist in this scope");
   }
+  delete o->second;
   m_objects.erase(varname);
   m_pending.erase(varname);   // if it's there
 }

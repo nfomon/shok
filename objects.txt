@@ -1,0 +1,115 @@
+Implementing objects:
+
+Parser knows where it has types and not general expressions.  Replace
+the (exp %s) with (type %s) in this case.  These should all be
+expressions that specifically disallow object-literals.  We'll relax
+that restriction if we want to support duck typing, which might be
+never, although the notation is super convenient.
+
+In the evaluator, Expression has a ->getType() which investigates its
+tree and returns a Type object.  TypeNode is a subclass of Expression.
+It uses Expression's awareness of how to analyzeTree().  However at
+setup(), the Type actually just uses Expression->getType() and then
+prunes (really deletes!) any unneeded objects left in the tree (e.g.
+literals).  They should never be evaluated, they only existed to
+convey type information, and we need to delete them here (during
+setup()) so the evaluation does not occur.
+
+The Type object is not a Node tree, it is its own special kind of
+tree: an OrList of AndLists of objects, held as Object*'s since
+constructing this Type will have already done the requisite lookups.
+It should be impossible for a Type to ever hold an invalid Object;
+they'll outlive us, corollary of Scope lookups.  They are constructed
+via Expression->getType(); the Expression does a traversal, and since
+it's after all the childrens' setup()s were called, it can easily just
+do method-return-type-lookups to figure out the types of all the
+operators up the tree.  Once we get to & and | operators, things get
+weird...
+
+(2+3)&foo|bar -- this is fine
+(a|b)&(c~d) -- also fine
+
+What's going on?  Expression static analysis determines a type for every node in an expression tree.  For "regular operators" e.g. paren, plus, etc., we do method-type-lookup and determine the return type, which becomes the type of the operator.  For TypeNode we know to delete the children when we get this far.  If we hit a | or &, we stop, the | or & childrens' types are left there as a BasicType.  And we keep going up.
+
+The especially interesting case is:  x+(a|b)
+In this case, the paren has type: a|b
+we lookup x.op+(a|b) for its return value.  We have two choices:
+1. disallow this
+2. fine, maybe that's reasonable in some or all (really all) cases.  e.g. if x has an op+(a)->foo and op+(b)->bar then our return type is foo|bar.  Cool?
+This might be an overly burdonsome burdon on the compiler.  But this
+is all in type-checking analysis phase; we could compile this out!
+But beware what happens when we need to check if an object matches a
+Type, or worse yet, if we ever have to check if one type is
+"compatible" with another.
+
+hmm.  An expression *does* have a top-level "type" of the expression,
+that is, there's a definite way to collapse the tree to get a tree of
+Ands, Ors, and Object*s.  yay!
+
+-----
+
+As for types: Variables have type (their object).
+Objects have type: their AND-list parents!  Note that an object cannot
+have an OR-list.
+
+I seem to have two types of types:
+1. TypeSpec -- can have | in it
+2. ValueType -- no | allowed  (It might have been there near the bottom but doesn't actually evaluate into the type)
+
+The TypeSpec is after the :
+The ValueType is after the =
+Always!
+
+uhhhhhh isn't that just an Expression then in the truest sense
+
+So let's just have Expression vs. TypeSpec
+
+-----
+
+So far, TypeSpec is unused, although it's present in the grammar (for
+two-equals New statements).
+
+new x = a*b
+
+Expression needs to implement getType().  But first, who's calling it?
+Variable might want to know its type.  Maaybe.  But I don't see why yet.
+
+NewInit::setup() is the time we actually need it.
+
+-----
+
+Types:
+ - Variable, Operator are TypedNodes
+ - They have a getType() which returns a brand new Type*, they don't take
+   ownership nor even have a type member
+ - Expression and TypeSpec are also TypedNodes
+ - NewInit calls getType(), and gives ownership of the Type* to its new Object
+   before inserting it into the Scope
+ - Object has ownership of Type*, and deletes it when it's deleted (by its
+   Scope, eventually).
+ - this breaks down in a few places...
+
+-----
+
+Better Types:
+ - Variable, Operator, Expression, TypeSpec are TypedNodes
+ - They compute their own Type and keep it around as auto_ptr m_type
+ - getType() will return a *duplicate* of m_type which the caller gets to own
+ - no premature optimization!  Just do this!  Until we figure out what the
+   requirements actually are!
+ - ok this seems to work!
+
+-----
+
+ - Review code!  + commit!
+ - TypeSpec is unused, new x=y=z is unimplemented in a scary way
+ - : vs =
+ - Implement Object: do proper Method lookups, especially in Operator
+ - Clean up logging, verify we're setting up types reasonably
+ - Go ahead and implement int in stdlib, and its + method
+ - Implement object->str->escape, Expression::cmdText()
+ - Implement typeof (requires str), istype (requires bool), vars (requires list)
+ - Implement cd
+ - Enhance Exception hierarchy (Internal errors vs. User errors)
+ - Split up log sources so we can control what logging we want to see (e.g.
+   logging of Types, logging of user's command-line actions)
