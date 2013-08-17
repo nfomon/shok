@@ -40,7 +40,7 @@ void NewInit::setup() {
     // new x -- type and value are both 'object'
     case 1: {
       // TODO get this directly from the global scope
-      Object* object = parentScope->getObject("object");
+      const Object* object = parentScope->getObject("object");
       if (!object) {
         throw EvalError("Cannot find the object object.  Uhoh.");
       }
@@ -97,13 +97,11 @@ void NewInit::prepare() {
     throw EvalError("Cannot prepare NewInit " + print() + " which has not determined the new object's Type");
   }
 
-  // Construct the object.  It takes ownership of its type, which we need no
-  // longer.
-  m_object = new Object(log, m_varname, *m_type.get());
-
-  // Insert into scope.  Scope takes ownership of the Object; but we keep the
-  // Object* so that we can assign its initial value during evaluate().
-  parentScope->newObject(m_varname, m_object);
+  // Construct the object in our parent scope.  We keep a reference to the
+  // Object just so we don't have to look it up again in evaluate() when we may
+  // want to assign an initial value.  We pass along the auto_ptr to m_type; we
+  // don't need it anymore, and this saves a copy.
+  m_object = &parentScope->newObject(m_varname, m_type);
   m_isPrepared = true;
 }
 
@@ -112,6 +110,8 @@ void NewInit::evaluate() {
   // TODO: remove this when we are confident it can't happen
   if (!m_isPrepared) {
     throw EvalError("Cannot evaluate NewInit node until it has been prepared");
+  } else if (!m_object) {
+    throw EvalError("Cannot evaluate NewInit with deficient Object");
   }
   parentScope->commit(m_varname);
   m_isPrepared = false;

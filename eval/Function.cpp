@@ -10,7 +10,7 @@ using std::string;
 
 using namespace eval;
 
-Function::Function(Log& log, const string& name, const Type& type,
+Function::Function(Log& log, const string& name, auto_ptr<Type> type,
                    Signature initialSignature)
   : Object(log, name, type) {
   m_signatures.push_back(initialSignature);

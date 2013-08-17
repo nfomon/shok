@@ -39,7 +39,7 @@ public:
 private:
   // from TypedNode
   virtual void computeType();
-  Object* m_object;
+  const Object* m_object;
 };
 
 };

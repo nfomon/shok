@@ -18,9 +18,7 @@
  * store; a Scope knows that if an object can't be found in its store then it
  * should defer up a parentScope chain until it finds it or doesn't.
  *
- * The Scope takes ownership of Object*s that are inserted into it.
- *
- * newObject() inserts a new Object to the scope, but it is marked as "pending"
+ * newObject() creates a new Object in the scope, but it is marked as "pending"
  * until it is finally either commit() or revert().  This allows any
  * setup/analysis stages to track the Object and its Type but lets us abort in
  * case of error.  All of this is handled by the underlying ObjectStore.
@@ -56,9 +54,9 @@ public:
 
   // Lookup an object, deferring up the tree if it's not found locally.
   // Returns NULL if it does not exist anywhere.
-  Object* getObject(const std::string& varname) const;
+  const Object* getObject(const std::string& varname) const;
   // Insert a new object, as "pending" until it's either commit or revert
-  void newObject(const std::string& varname, Object* object);
+  const Object& newObject(const std::string& varname, std::auto_ptr<Type> type);
   void delObject(const std::string& varname);
 
 private:

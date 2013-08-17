@@ -27,6 +27,7 @@
 #include "Type.h"
 #include "Variable.h"
 
+#include <memory>
 #include <string>
 
 namespace eval {
@@ -37,7 +38,7 @@ class Function : public Object {
 public:
   // What is the function's type?  something like @(A)->B  ?  or just @->B?  or
   // just @?
-  Function(Log& log, const std::string& name, const Type& type,
+  Function(Log& log, const std::string& name, std::auto_ptr<Type> type,
            Signature initialSignature);
 
   void addSignature(Signature signature);

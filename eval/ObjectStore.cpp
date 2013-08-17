@@ -7,7 +7,9 @@
 
 #include <boost/lexical_cast.hpp>
 
+#include <memory>
 #include <string>
+using std::auto_ptr;
 using std::string;
 
 using namespace eval;
@@ -63,22 +65,24 @@ void ObjectStore::revertAll() {
   }
 }
 
-Object* ObjectStore::getObject(const string& varname) const {
+const Object* ObjectStore::getObject(const string& varname) const {
   object_iter o = m_objects.find(varname);
   if (o != m_objects.end()) return o->second;
   return NULL;
 }
 
-void ObjectStore::newObject(const string& varname, Object* object) {
+const Object& ObjectStore::newObject(const string& varname,
+                                     auto_ptr<Type> type) {
   // An object name collision should have already been detected, but repeat
   // this now until we're confident about that
   if (getObject(varname)) {
     throw EvalError("Cannot create variable " + varname + "; already exists, and should never have been created");
   }
   m_log.info("Adding (pending) object " + varname + " to an object store");
-  object_pair op(varname, object);
+  object_pair op(varname, new Object(m_log, varname, type));
   m_objects.insert(op);
   m_pending.insert(op);
+  return *(op.second);
 }
 
 void ObjectStore::delObject(const string& varname) {

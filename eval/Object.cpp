@@ -10,18 +10,11 @@ using std::string;
 
 using namespace eval;
 
-Object::Object(Log& log, const string& name, const Type& type)
+Object::Object(Log& log, const string& name, std::auto_ptr<Type> type)
   : m_log(log),
     m_objectStore(new ObjectStore(log)),
     m_name(name),
-    m_type(type.duplicate()) {
-}
-
-Object::Object(Log& log, const string& name)
-  : m_log(log),
-    m_objectStore(new ObjectStore(log)),
-    m_name(name),
-    m_type(NULL) {
+    m_type(type) {
 }
 
 const Object* Object::getMember(const string& name) const {
@@ -32,7 +25,7 @@ const Object* Object::getMember(const string& name) const {
   // Note: it's up to the caller to ensure that whatever action they take on
   // the result, it should be done in the context of the child object, and not
   // the Object* they get back on its own.
-  Object* o = m_objectStore->getObject(name);
+  const Object* o = m_objectStore->getObject(name);
   if (o) return o;
   return m_type->getMember(name);
 }
@@ -41,7 +34,7 @@ auto_ptr<Type> Object::getMemberType(const string& name) const {
   if (!m_type.get()) {
     throw EvalError("Cannot get type of member " + name + " of Object " + print() + " that has no type");
   }
-  Object* o = m_objectStore->getObject(name);
+  const Object* o = m_objectStore->getObject(name);
   if (o) return auto_ptr<Type>(o->getType().duplicate());
   return m_type->getMemberType(name);
 }

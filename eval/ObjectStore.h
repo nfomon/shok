@@ -24,6 +24,7 @@
 namespace eval {
 
 class Object;
+class Type;
 
 class ObjectStore {
 public:
@@ -39,9 +40,9 @@ public:
 
   // Lookup an object, deferring up the tree if it's not found locally.
   // Returns NULL if it does not exist anywhere.
-  Object* getObject(const std::string& varname) const;
+  const Object* getObject(const std::string& varname) const;
   // Insert a new object, as "pending" until it's either commit or revert
-  void newObject(const std::string& varname, Object* object);
+  const Object& newObject(const std::string& varname, std::auto_ptr<Type> type);
   void delObject(const std::string& varname);
 
   size_t size() const { return m_objects.size(); }

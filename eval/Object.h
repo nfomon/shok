@@ -29,7 +29,8 @@ class Type;
 
 class Object {
 public:
-  Object(Log& log, const std::string& name, const Type& type);
+  Object(Log& log, const std::string& name, std::auto_ptr<Type> type);
+
   virtual ~Object() {}
 
   std::string print() const { return m_name; }
@@ -59,10 +60,6 @@ public:
   //void assign(const std::string& name, Object* value);
 
 protected:
-  // Overridable constructor for children that want to set their own m_type
-  // without duplicating an existing type (e.g. stdlib::object)
-  Object(Log& log, const std::string& name);
-
   Log& m_log;
   std::auto_ptr<ObjectStore> m_objectStore;
   std::string m_name;

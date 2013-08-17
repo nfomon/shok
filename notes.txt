@@ -1,3 +1,109 @@
+2k13-08-16
+
+new x                 # x :: object = object
+new x : lion          # syntax error?
+new x = lion          # x :: lion = lion
+new x = makeLion()    # x :: lion = @makeLion()  ??
+
+assuming makeLion :: @()->lion
+
+
+new lion = animal & {new roar = @() {print("roar")} }   # lion :: animal
+new makeLion = @()->lion { ....  }
+
+
+new foo = @(num n)->object { return {magic:str='lolz'} }    # disallowed
+
+# We could allow this; it's I suppose a constructor function
+new foo = @(num n)->{magic:int} {
+  self.magic = n
+}
+foo :: @foo(num)->@foo :: @foo :: @     # errrrk does that work? don't think so
+
+contrast with
+makeLion :: @()->lion :: @->lion :: @
+
+This is a bit confusing but maybe works.
+
+-----
+2k13-08-14
+
+BasicType(const Object& object)
+  : m_object(object) {
+}
+
+// again, Caller should duplicate the type first probably
+ObjectStore::newObject(varname, auto_ptr<Type>) {
+  new Object(log, varname, type);
+}
+
+// Caller should duplicate the type first probably, or give us a new NullType
+// if you're RootNode and baller like that
+Object::Object(log, varname, auto_ptr<Type>)
+  : m_type(type) {
+}
+
+RootNode can just make the root object itself with no hassle
+
+-----
+ObjectStore has newObject(varname, Object*)
+It then puts this in an internal map<string,Object*>.
+
+Instead I want this to be a map<string,Object>; Objects held by value.
+You should be able to give it a parent const Object&, which it will clone, or
+enough information for it to make an object for you (how are we doing object
+literals?).
+
+Immediate use-cases:
+ - object
+ - operator+
+ - an initial Type (NewInit, which doesn't take an initial value yet, and hence
+   does not accept object literals)
+
+making ObjectStore::newObject() accept a name and Type, and return a const
+Object&.  Go through the ObjectStore if you want to modify the Object after.
+
+How does initial value work?  How do object literals work?  Some example syntax:
+  new animal
+  new animal : object
+  new animal = {name:str}
+  new animal = {name:str = 'animal'; int age}
+  new animal : object = {name:str}
+  new lion : animal = {
+  new simba : lion = mufasa & { name = 'simba'; age = 3 }
+  new lion 
+
+new date = {year:int, month:int, day:int}
+new datetime = date & {h:int, m:int, s:int}
+new date:object = {
+
+new simba:lion = mufasa & {name='simba', age=3}
+
+new simba=lion=mufasa&{...}
+
+new datetime :date = {h:int, m:int, s:int}
+
+new datetime = date & {h:int, m:int=1, s:int}
+datetime:object = date&{...}
+OR IS IT
+datetime:date = date&{...}
+AS OPPOSED TO
+new datetime:date = date&{h:int, ...}
+
+It's really a question of *type inference*.  What is x in
+  new x = lion        # ?????
+
+We can assign x:object = lion, then we seem to lose type safety on x
+Or we can assign x:lion = lion, now x is stuck a lion which may not be intended
+Or we can know x:object = lion and INFER x:lion for now!???? wait hmm?
+
+FOR NOW, as these questions get sorted out:
+ - no object literals
+ - we're still using new x=lion=simba notation
+ - just figure out what to do with static objects :)  assignment as copy over
+   members etc.
+
+-----
 2k13-08-11
 
 Function calls, signatures, types

@@ -8,6 +8,8 @@
 #include <boost/lexical_cast.hpp>
 
 #include <string>
+#include <string>
+using std::auto_ptr;
 using std::string;
 
 using namespace eval;
@@ -74,25 +76,20 @@ void Scope::revertAll() {
   m_objectStore.revertAll();
 }
 
-Object* Scope::getObject(const string& varname) const {
-  Object* o = m_objectStore.getObject(varname);
+const Object* Scope::getObject(const string& varname) const {
+  const Object* o = m_objectStore.getObject(varname);
   if (o) return o;
   if (!m_parentScope) return NULL;
   return m_parentScope->getObject(varname);
 }
 
-void Scope::newObject(const string& varname, Object* object) {
+const Object& Scope::newObject(const string& varname, auto_ptr<Type> type) {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
-    return m_parentScope->newObject(varname, object);
+    return m_parentScope->newObject(varname, type);
   }
-  m_objectStore.newObject(varname, object);
-  m_log.info("Scope depth " + boost::lexical_cast<string>(m_depth) +
-              " now has " + boost::lexical_cast<string>(m_objectStore.size()) +
-             " objects and " +
-             boost::lexical_cast<string>(m_objectStore.pendingSize()) +
-             " pending");
+  return m_objectStore.newObject(varname, type);
 }
 
 void Scope::delObject(const string& varname) {

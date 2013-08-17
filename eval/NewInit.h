@@ -60,14 +60,12 @@ private:
   // child 1 if there are 2 children: explicit type specifier
   TypeSpec* m_typeSpec;
   // Type of the new variable.  Provided by m_typeSpec if it exists, otherwise
-  // by the type of m_exp if it exists, otherwise stdlib::object.  We only hang
-  // on to this temporarily (but require that we have ownership during that
-  // time); the new Object will be given ownership at prepare()-time.
+  // by the type of m_exp if it exists, otherwise stdlib::object.
   std::auto_ptr<Type> m_type;
-  // The new Object that was created.  Set by prepare(), and used to perform
-  // the initial value assignment during evaluate().  We do not have ownership,
-  // we just hang onto this so we don't have to look it up again.
-  Object* m_object;
+  // The new Object that was created.  Set by Scope::newObject(), and used to
+  // perform the initial value assignment during evaluate().  We do not have
+  // ownership, we just hang onto this so we don't have to look it up again.
+  const Object* m_object;
 };
 
 };

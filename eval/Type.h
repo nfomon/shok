@@ -71,11 +71,13 @@ private:
 class Type {
 public:
   virtual ~Type() {}
+
   // Query our underlying object(s) for a member.
   // Returns NULL if the member does not exist or is otherwise inaccessible
   // (e.g. a disallowed aggregate).  This can NOT be used on an OrType (not
   // sure if that should just return NULL instead?)
   virtual const Object* getMember(const std::string& name) const = 0;
+
   // Query directly for the Type of a member of the underlying object(s).
   // Use this if you're just doing type-checking analysis rather than
   // retrieving the Object* itself, please.
@@ -84,8 +86,10 @@ public:
   // Note that for a function member (method), the type is the type of this
   // method, e.g. @(A)->B, and not just the (set of) return type(s).
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const = 0;
+
   // Checks if the provided Type is a compatible subtype of this Type
   virtual bool isCompatible(const Type& rhs) const = 0;
+
   /*
   virtual bool isCompatible(const Type& rhs) const {
     return compatibilityScore(rhs).isCompatible();
@@ -97,6 +101,7 @@ public:
   virtual TypeScore compatibilityScore(
     const Type& rhs, TypeScore initialScore = 0) const = 0;
   */
+
   // Returns a duplicate of the Type.  Caller takes ownership.
   virtual std::auto_ptr<Type> duplicate() const = 0;
   virtual std::string print() const = 0;

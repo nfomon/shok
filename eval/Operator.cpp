@@ -207,7 +207,7 @@ void Operator::computeType() {
       throw EvalError("| must be a binary operator");
     }
     // TODO: get this directly from the global scope
-    Object* str = parentScope->getObject("str");
+    const Object* str = parentScope->getObject("str");
     if (!str) {
       throw EvalError("Cannot use ~ or ~~ operator until str is defined");
     }

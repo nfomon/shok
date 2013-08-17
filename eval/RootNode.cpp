@@ -7,7 +7,8 @@
 #include "EvalError.h"
 #include "Token.h"
 
-#include "stdlib/object.h"
+#include <memory>
+using std::auto_ptr;
 
 using namespace eval;
 
@@ -21,7 +22,8 @@ RootNode::RootNode(Log& log)
   isAnalyzed = true;
 
   // Insert default objects (standard library)
-  m_scope.newObject("object", new stdlib::object(log));
+  const Object& object = m_scope.newObject("object",
+                                           auto_ptr<Type>(new NullType()));
   m_scope.commitAll();
 }
 
