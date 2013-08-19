@@ -65,13 +65,13 @@ void ObjectStore::revertAll() {
   }
 }
 
-const Object* ObjectStore::getObject(const string& varname) const {
+Object* ObjectStore::getObject(const string& varname) const {
   object_iter o = m_objects.find(varname);
   if (o != m_objects.end()) return o->second;
   return NULL;
 }
 
-const Object& ObjectStore::newObject(const string& varname,
+Object& ObjectStore::newObject(const string& varname,
                                      auto_ptr<Type> type) {
   // An object name collision should have already been detected, but repeat
   // this now until we're confident about that

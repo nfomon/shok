@@ -22,8 +22,8 @@ RootNode::RootNode(Log& log)
   isAnalyzed = true;
 
   // Insert default objects (standard library)
-  const Object& object = m_scope.newObject("object",
-                                           auto_ptr<Type>(new NullType()));
+  Object& object = m_scope.newObject("object", auto_ptr<Type>(new NullType()));
+  //object.newMember("foo", std::auto_ptr<Type>(new BasicType(object))); // test
   m_scope.commitAll();
 }
 

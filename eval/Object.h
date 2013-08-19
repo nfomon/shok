@@ -42,11 +42,9 @@ public:
   }
 
   // Retrieve a member, deferring to the parent type(s) if it's not found.
-  // Since the result should be considered in the context of the child, we
-  // return a const Object* here and expect any mutation to go through us first
-  // (allowing us to implement copy-on-write semantics).
-  const Object* getMember(const std::string& name) const;
+  Object* getMember(const std::string& name) const;
   std::auto_ptr<Type> getMemberType(const std::string& name) const;
+  Object& newMember(const std::string& varname, std::auto_ptr<Type> type);
 
   // Does an object get "assigned" to?  I think not!
   //    x = y
@@ -61,6 +59,8 @@ public:
 
 protected:
   Log& m_log;
+  // This is an auto_ptr only to resolve a circular type dependency that
+  // prevents us from keeping it by value  :/
   std::auto_ptr<ObjectStore> m_objectStore;
   std::string m_name;
   std::auto_ptr<Type> m_type;

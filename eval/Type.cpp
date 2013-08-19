@@ -12,7 +12,7 @@ using namespace eval;
 
 /* NullType */
 
-const Object* NullType::getMember(const string& name) const {
+Object* NullType::getMember(const string& name) const {
   return NULL;
 }
 
@@ -40,12 +40,12 @@ string NullType::print() const {
 
 /* BasicType */
 
-const Object* BasicType::getMember(const string& name) const {
+Object* BasicType::getMember(const string& name) const {
   return m_object.getMember(name);
 }
 
 auto_ptr<Type> BasicType::getMemberType(const string& name) const {
-  const Object* member = m_object.getMember(name);
+  Object* member = m_object.getMember(name);
   if (!member) {
     return auto_ptr<Type>(NULL);
   }
@@ -108,10 +108,10 @@ string BasicType::print() const {
 
 /* AndType */
 
-const Object* AndType::getMember(const string& name) const {
+Object* AndType::getMember(const string& name) const {
   // It should only exist in one of the children, but that should have been
   // enforced at construction.
-  const Object* o = m_left->getMember(name);
+  Object* o = m_left->getMember(name);
   if (o) return o;
   return m_right->getMember(name);
 }
@@ -192,7 +192,7 @@ auto_ptr<Type> OrType::OrUnion(const Type& a, const Type& b) {
   return auto_ptr<Type>(new OrType(a, b));
 }
 
-const Object* OrType::getMember(const string& name) const {
+Object* OrType::getMember(const string& name) const {
   // I don't think this is allowed.
   throw EvalError("Cannot request member " + name + " from OrType " + print());
 }

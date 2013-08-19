@@ -76,7 +76,7 @@ public:
   // Returns NULL if the member does not exist or is otherwise inaccessible
   // (e.g. a disallowed aggregate).  This can NOT be used on an OrType (not
   // sure if that should just return NULL instead?)
-  virtual const Object* getMember(const std::string& name) const = 0;
+  virtual Object* getMember(const std::string& name) const = 0;
 
   // Query directly for the Type of a member of the underlying object(s).
   // Use this if you're just doing type-checking analysis rather than
@@ -112,7 +112,7 @@ public:
 class NullType : public Type {
 public:
   NullType() {}
-  virtual const Object* getMember(const std::string& name) const;
+  virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
   /*
@@ -130,7 +130,7 @@ class BasicType : public Type {
 public:
   BasicType(const Object& o)
     : m_object(o) {}
-  virtual const Object* getMember(const std::string& name) const;
+  virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
   /*
@@ -150,7 +150,7 @@ public:
     : m_left(left.duplicate()), m_right(right.duplicate()) {}
   const Type& left() const { return *m_left.get(); }    // must exist
   const Type& right() const { return *m_right.get(); }  // must exist
-  virtual const Object* getMember(const std::string& name) const;
+  virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
   /*
@@ -174,7 +174,7 @@ public:
     : m_left(left.duplicate()), m_right(right.duplicate()) {}
   const Type& left() const { return *m_left.get(); }
   const Type& right() const { return *m_right.get(); }
-  virtual const Object* getMember(const std::string& name) const;
+  virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
   /*

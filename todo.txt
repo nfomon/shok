@@ -18,8 +18,6 @@ Command-line:
 Program invocation:
 
 Programming language:
-- objects
-- types
 - #!VERSION pragma
 - a couple built-in types
 - basic expressions

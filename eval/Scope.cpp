@@ -76,14 +76,14 @@ void Scope::revertAll() {
   m_objectStore.revertAll();
 }
 
-const Object* Scope::getObject(const string& varname) const {
-  const Object* o = m_objectStore.getObject(varname);
+Object* Scope::getObject(const string& varname) const {
+  Object* o = m_objectStore.getObject(varname);
   if (o) return o;
   if (!m_parentScope) return NULL;
   return m_parentScope->getObject(varname);
 }
 
-const Object& Scope::newObject(const string& varname, auto_ptr<Type> type) {
+Object& Scope::newObject(const string& varname, auto_ptr<Type> type) {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
