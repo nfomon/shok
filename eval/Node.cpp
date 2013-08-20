@@ -9,6 +9,7 @@
 #include "CommandFragment.h"
 #include "EvalError.h"
 #include "Expression.h"
+#include "IsVar.h"
 #include "Log.h"
 #include "New.h"
 #include "NewInit.h"
@@ -60,6 +61,8 @@ Node* Node::MakeNode(Log& log, RootNode*const root, const Token& t) {
     return new NewInit(log, root, t);
   if ("type" == t.name)
     return new TypeSpec(log, root, t);
+  if ("isvar" == t.name)
+    return new IsVar(log, root, t);
   throw EvalError("Unsupported token " + t.print());
   return NULL;    // guard
 }

@@ -42,7 +42,6 @@ CmdResult runCommand(string cmd) {
   // First trim whitespace from left and right ends of cmd
   cmd = Util::ltrim_space(cmd);
   cmd = Util::rtrim_space(cmd);
-  //cout << "RUN CMD: '" << cmd << "'" << endl;
   typedef boost::escaped_list_separator<char> els_t;
   typedef boost::tokenizer<els_t> tok_t;
   els_t els("\\", " ", "\'\"");
@@ -126,9 +125,10 @@ int main(int argc, char *argv[]) {
       eval.out << cmd_result.print() << endl;
       std::getline(eval.in, eval_result);
     }
-    if ("" != eval_result) {
+    while ("" != eval_result) {
       cout << "[shell] eval: '" << eval_result << "'" << endl;
-      // TODO: signal the Parser to restart parsing
+      std::getline(eval.in, eval_result);
+      // TODO: if error, signal the Parser to restart parsing
     }
 
     // redisplay prompt

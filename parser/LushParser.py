@@ -459,6 +459,12 @@ StmtNew = Or('stmtnew', [
   Del,
 ])
 
+# IsVar statement
+StmtIsVar = Seq('isvar',
+  ['ISVAR', n, 'ID'],
+  '(isvar %s);', [2]
+)
+
 
 # Assignment statements
 StmtAssign = Seq('stmtassign',
@@ -569,6 +575,7 @@ StmtBreak = Or('stmtbreak', [
 # Statements
 Stmt1 = Or('stmt', [
   StmtNew,
+  StmtIsVar,
   StmtAssign,
   StmtProcCall,
   If,

@@ -101,7 +101,6 @@ Better Types:
 
 -----
 
- - Review code!  + commit!
  - TypeSpec is unused, new x=y=z is unimplemented in a scary way
  - : vs =
  - Implement Object: do proper Method lookups, especially in Operator

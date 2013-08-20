@@ -71,8 +71,7 @@ Object* ObjectStore::getObject(const string& varname) const {
   return NULL;
 }
 
-Object& ObjectStore::newObject(const string& varname,
-                                     auto_ptr<Type> type) {
+Object& ObjectStore::newObject(const string& varname, auto_ptr<Type> type) {
   // An object name collision should have already been detected, but repeat
   // this now until we're confident about that
   if (getObject(varname)) {
