@@ -21,7 +21,7 @@ void IsVar::setup() {
     throw EvalError("IsVar must have a single Variable as child");
   }
   bool isvar = parentScope->getObject(var->getVariableName()) != NULL;
-  std::cout << (isvar ? "true" : "false") << std::endl;
+  std::cout << "PRINT:" << (isvar ? "true" : "false") << std::endl;
 }
 
 // Nothing to do here

@@ -1,19 +1,22 @@
 0. Rename project
 
-1. eval: instead of bare pointers, use auto_ptr in nodes
+1. eval: instead of bare pointers, use (list of? euhh) auto_ptr in nodes
 
 2. Immediate concerns:
 
 Shell:
-- cd
 - signals
 - comments
 - string literals
+- int literals
 
 Command-line:
 - ^L: clear screen
 - left/right/home/end : navigate a line
 - up/down: basic command history
+- basic filesystem tab completion
+- terminal colours :)
+- nicer prompt
 
 Program invocation:
 
@@ -21,6 +24,7 @@ Programming language:
 - #!VERSION pragma
 - a couple built-in types
 - basic expressions
+- implement ->str on object
 
 Eventually:
 - Unicode support
@@ -28,7 +32,6 @@ Eventually:
 - command pipes
 - jobs
 - security review
-- basic prompt customization
 
 
 Language Checklist:

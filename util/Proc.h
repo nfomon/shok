@@ -132,9 +132,22 @@ protected:
   virtual void child_init() {}
   virtual void child_exec() {
     if (std::string::npos == cmd.find_first_of('/')) {
-      path.push_back("/bin/");
-      path.push_back("/usr/bin/");
-    } else if (0 == cmd.find_first_of('/')) {
+      // use PATH
+      std::string PATH(getenv("PATH"));
+      size_t pos = 0;
+      size_t sep_pos = PATH.find_first_of(':');
+      while (sep_pos != std::string::npos) {
+        path.push_back(PATH.substr(pos, sep_pos-pos));
+        // Put a trailing / on the path, preceding the command name, if needed
+        if ("/" != path.back().substr(path.back().length()-1, 1)) {
+          path.back().push_back('/');
+        }
+        pos = sep_pos+1;
+        sep_pos = PATH.find_first_of(':', sep_pos+1);
+      }
+    } else if (0 == cmd.find_first_of('/') ||
+              "./" == cmd.substr(0,2) ||
+              "../" == cmd.substr(0,3)) {
       path.push_back("");
     } else {
       path.push_back("./");
