@@ -1,8 +1,12 @@
 0. Rename project
 
-1. eval: instead of bare pointers, use (list of? euhh) auto_ptr in nodes
+1. eval: Node children could be held by an auto_ptr list of sorts, rather than bare pointers.
 
-2. Immediate concerns:
+2. Method calls
+
+3. Operator method calls
+
+4. Int literals
 
 Shell:
 - signals
