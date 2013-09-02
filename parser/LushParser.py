@@ -295,10 +295,13 @@ CmdStmtEndl = Or('cmdstmtendl', [
 
 # Object property access
 # Currently only goes through an identifier
-IdProp = Seq('idprop',
-  ['ID', Star('props', Seq('prop', [w, 'DOT', n, 'ID'], '.%s', [3]))],
-  '%s%s', [0, 1]
-)
+IdProp = Or('idprop', [
+  'ID',
+  Seq('prop',
+    ['ID', w, 'DOT', n, Future('IdProp')],
+    '(prop %s %s)', [0, 4]
+  ),
+])
 
 
 # Expressions
@@ -329,7 +332,7 @@ Path = Or('path', [
 Literal = Or('literal', [
   'INT', 'FIXED', 'STR',
   Path,
-  'REGEXP', 'LABEL', 'ID',
+  'REGEXP', 'LABEL', IdProp,
 ])
 
 PrefixOp = Or('prefixop', [
@@ -461,7 +464,7 @@ StmtNew = Or('stmtnew', [
 
 # IsVar statement
 StmtIsVar = Seq('isvar',
-  ['ISVAR', n, 'ID'],
+  ['ISVAR', n, IdProp],
   '(isvar %s);', [2]
 )
 
@@ -708,6 +711,7 @@ CmdLine = Or('cmdline', [
 
 
 # Refresh missed rule dependencies
+Replace(IdProp.items[1], 'IdProp', IdProp)
 Replace(BinopExp, 'SubExp', SubExp)
 Replace(PrefixBinopExp, 'SubExp', SubExp)
 Replace(List, 'ExpList', ExpList)

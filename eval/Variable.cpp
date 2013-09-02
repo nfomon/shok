@@ -14,6 +14,9 @@ void Variable::setup() {
   if (children.size() != 0) {
     throw EvalError("Variable node cannot have children");
   }
+  if ("" == value) {
+    throw EvalError("Variable name cannot be blank");
+  }
   // Lookup the in-scope Object that we represent, if it exists
   if (m_object) {
     throw EvalError("Variable cannot be setup while it already has an object");

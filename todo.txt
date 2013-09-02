@@ -40,10 +40,7 @@ Lists in expressions
 Parens in expressions
 Objects in expressions
 Tuples in expressions
-Binary operators
-Prefix unary operators
 Operator precedence
-Object property access (in lvalues and expressions)
 Int literals
 Fixed literals
 Str literals
@@ -66,4 +63,4 @@ Continue
 Labelled continue
 Return
 Yield
-Non-horrible error handling
+Nicer error messages
