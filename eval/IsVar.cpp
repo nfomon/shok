@@ -4,8 +4,7 @@
 #include "IsVar.h"
 
 #include "EvalError.h"
-#include "Property.h"
-#include "Variable.h"
+#include "Identifier.h"
 
 #include <iostream>
 #include <string>
@@ -16,37 +15,43 @@ using std::string;
 using namespace eval;
 
 void IsVar::setup() {
-  if (children.size() != 1) {
-    throw EvalError("IsVar must have a single child");
+  if (children.size() < 1) {
+    throw EvalError("IsVar must have >= 1 children");
   }
-  Variable* var = dynamic_cast<Variable*>(children.at(0));
-  Property* prop = dynamic_cast<Property*>(children.at(0));
-  if ((var && prop) || (!var && !prop)) {
-    throw EvalError("IsVar must have a single Variable or Property as child");
-  }
-  if (var) {
-    bool isvar = parentScope->getObject(var->getVariableName()) != NULL;
-    cout << "PRINT:" << (isvar ? "true" : "false") << endl;
-    return;
-  } else if (prop) {
-    Object* obj = parentScope->getObject(prop->getObjectName());
-    if (!obj) {
-      cout << "PRINT:Object " << prop->getObjectName() << " does not exist" << endl;
-      return;
+  Object* current = NULL;
+  bool found = true;
+  string missingName;
+  int i = 0;
+  for (; i < children.size(); ++i) {
+    Identifier* ident = dynamic_cast<Identifier*>(children.at(i));
+    if (!ident) {
+      throw EvalError("Children of IsVar " + print() + " must be Identifiers");
     }
-    while (!prop->isTerminal()) {
-      prop = prop->getSubProperty();
-      obj = obj->getMember(prop->getObjectName());
-      if (!obj) {
-        cout << "PRINT:Object " << prop->getObjectName() << " does not exist" << endl;
-        return;
+    if (!current) {
+      missingName = ident->getName();
+      current = parentScope->getObject(ident->getName());
+      if (!current) {
+        found = false;
+        break;
+      }
+    } else {
+      missingName += "." + ident->getName();
+      current = current->getMember(ident->getName());
+      if (!current) {
+        found = false;
+        break;
       }
     }
-    bool isvar = obj->getMember(prop->getPropertyName()) != NULL;
-    cout << "PRINT:" << (isvar ? "true" : "false") << endl;
-    return;
   }
-  throw EvalError("IsVar must have either a Variable or Property as child");
+  string msg;
+  if (found) {
+    msg = "true";
+  } else if (i < children.size()-1) {
+    msg = "Object " + missingName + " does not exist";
+  } else {
+    msg = "false";
+  }
+  cout << "PRINT:" << msg << endl;
 }
 
 // Nothing to do here

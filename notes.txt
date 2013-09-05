@@ -1,3 +1,36 @@
+2k13-09-04
+
+nononosilly.
+
+new x; new y=a
+(init ID:'x') (init ID:'y' (exp (var ID:'a')))
+
+new x = a = a.b + q
+(init ID:'x' (type ID:'a') (exp (PLUS (var ID:'a' ID:'b') (var ID:'q'))))
+
+chaining var does property chaining!
+
+ID: Identifier
+
+2k13-09-02
+
+instead of just 'ID', let's split up two cases for Variable:
+1. (newvar ID:'x')  =>  NewVariable, which necessarily cannot already exist
+2. (var ID:'x')  =>  Variable, which necessarily must already exist
+3. ID will be held by a very basic node, Identifier.
+
+Parser decides where each can be.
+
+For properties:
+(prop (var ID:'foo') (member ID:'bar' (member ID:'baz')))
+
+prop knows its first arg is a var, its second is a member.
+At setup(), a prop will perform the whole recursive tree search.
+
+member knows to do pretty much nothing, except recognize it's terminal or not,
+and yield its identifier and second child if any.
+
+-----
 2k13-08-16
 
 new x                 # x :: object = object

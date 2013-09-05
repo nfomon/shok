@@ -9,12 +9,12 @@
 #include "CommandFragment.h"
 #include "EvalError.h"
 #include "Expression.h"
+#include "Identifier.h"
 #include "IsVar.h"
 #include "Log.h"
 #include "New.h"
 #include "NewInit.h"
 #include "Operator.h"
-#include "Property.h"
 #include "RootNode.h"
 #include "TypeSpec.h"
 #include "Variable.h"
@@ -42,9 +42,9 @@ Node* Node::MakeNode(Log& log, RootNode*const root, const Token& t) {
   if ("cmd" == t.name)
     return new CommandFragment(log, root, t);
   if ("ID" == t.name)
+    return new Identifier(log, root, t);
+  if ("var" == t.name)
     return new Variable(log, root, t);
-  if ("prop" == t.name)
-    return new Property(log, root, t);
   if ("PLUS" == t.name ||
       "MINUS" == t.name ||
       "STAR" == t.name ||

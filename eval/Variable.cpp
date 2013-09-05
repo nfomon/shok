@@ -4,37 +4,54 @@
 #include "Variable.h"
 
 #include "EvalError.h"
+#include "Identifier.h"
 
 #include <string>
+#include <vector>
 using std::string;
+using std::vector;
 
 using namespace eval;
 
 void Variable::setup() {
-  if (children.size() != 0) {
-    throw EvalError("Variable node cannot have children");
+  if (children.size() < 1) {
+    throw EvalError("Variable node must have >= 1 children");
   }
-  if ("" == value) {
-    throw EvalError("Variable name cannot be blank");
+  Object* current = NULL;
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
+    Identifier* ident = dynamic_cast<Identifier*>(*i);
+    if (!ident) {
+      throw EvalError("Variable children must all be Identifiers");
+    }
+    if (!current) {
+      m_varname = ident->getName();
+      current = parentScope->getObject(ident->getName());
+    } else {
+      m_varname += "." + ident->getName();
+      current = current->getMember(ident->getName());
+    }
   }
-  // Lookup the in-scope Object that we represent, if it exists
-  if (m_object) {
-    throw EvalError("Variable cannot be setup while it already has an object");
+  m_object = current;
+  if (!m_object) {
+    throw EvalError("Object " + m_varname + " does not exist");
   }
-  m_object = parentScope->getObject(getVariableName());
-  log.info("Seeking Object for Variable " + print() + " -- " + (m_object ? "found" : "not found"));
-  if (m_object) {
-    computeType();
-  }
+  computeType();
 }
 
 // Nothing to do
 void Variable::evaluate() {
 }
 
+Object& Variable::getObject() const {
+  if (!m_object) {
+    throw EvalError("Cannot retrieve Object of deficient Variable " + print());
+  }
+  return *m_object;
+}
+
 void Variable::computeType() {
   if (!m_object) {
-    throw EvalError("Cannot compute type of Variable " + print() + " for non-existant object");
+    throw EvalError("Failed to find object behind Variable " + print());
   }
   m_type.reset(new BasicType(*m_object));
 }

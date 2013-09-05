@@ -5,8 +5,8 @@
 
 #include "Block.h"
 #include "EvalError.h"
+#include "Identifier.h"
 #include "Type.h"
-#include "Variable.h"
 
 #include <string>
 using std::string;
@@ -29,12 +29,14 @@ void NewInit::setup() {
   if (children.size() < 1 || children.size() > 3) {
     throw EvalError("NewInit node must have 1, 2, or 3 children");
   }
-  if (m_variable || m_exp || m_typeSpec || m_type.get()) {
+  if (m_identifier || m_exp || m_typeSpec || m_type.get()) {
     throw EvalError("NewInit node " + print() + " is already partially setup");
   }
-  m_variable = dynamic_cast<Variable*>(children.at(0));
-  if (!m_variable) throw EvalError("NewInit's first child must be a variable");
-  m_varname = m_variable->getVariableName();
+  m_identifier = dynamic_cast<Identifier*>(children.at(0));
+  if (!m_identifier) {
+    throw EvalError("NewInit's first child must be an identifier");
+  }
+  m_varname = m_identifier->getName();
   log.info("NewInit varname is " + m_varname);
   switch (children.size()) {
     // new x -- type and value are both 'object'

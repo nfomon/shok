@@ -13,13 +13,13 @@
  */
 
 #include "Expression.h"
+#include "Identifier.h"
 #include "Log.h"
 #include "Node.h"
 #include "RootNode.h"
 #include "Scope.h"
 #include "Token.h"
 #include "TypeSpec.h"
-#include "Variable.h"
 
 #include <string>
 
@@ -30,7 +30,7 @@ public:
   NewInit(Log& log, RootNode*const root, const Token& token)
     : Node(log, root, token),
       m_isPrepared(false),
-      m_variable(NULL),
+      m_identifier(NULL),
       m_exp(NULL),
       m_typeSpec(NULL),
       m_type(NULL),
@@ -52,8 +52,8 @@ public:
 private:
   bool m_isPrepared;
   std::string m_varname;
-  // child 0: the variable being created
-  Variable* m_variable;
+  // child 0: the identifier of the variable being created
+  Identifier* m_identifier;
   // child 1 or 2: the expression that evaluates to the initial value
   // In the absense of an explicit type specifier, this gives us our type
   Expression* m_exp;

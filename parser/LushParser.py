@@ -293,15 +293,12 @@ CmdStmtEndl = Or('cmdstmtendl', [
   Action(Seq('endbrace', [w, 'RBRACE', End], '', []), BlockLazyEnd),
 ])
 
-# Object property access
-# Currently only goes through an identifier
-IdProp = Or('idprop', [
-  'ID',
-  Seq('prop',
-    ['ID', w, 'DOT', n, Future('IdProp')],
-    '(prop %s %s)', [0, 4]
-  ),
-])
+# Variable or object property access
+# Currently, property access can only go through an identifier.
+Var = Seq('var',
+  ['ID', Star('props', Seq('prop', [w, 'DOT', n, 'ID'], ' %s', [3]))],
+  '(var %s%s)', [0, 1]
+)
 
 
 # Expressions
@@ -332,7 +329,7 @@ Path = Or('path', [
 Literal = Or('literal', [
   'INT', 'FIXED', 'STR',
   Path,
-  'REGEXP', 'LABEL', IdProp,
+  'REGEXP', 'LABEL', Var,
 ])
 
 PrefixOp = Or('prefixop', [
@@ -464,14 +461,15 @@ StmtNew = Or('stmtnew', [
 
 # IsVar statement
 StmtIsVar = Seq('isvar',
-  ['ISVAR', n, IdProp],
-  '(isvar %s);', [2]
+  ['ISVAR', n, 'ID',
+   Star('isvarprops', Seq('isvarprop', [w, 'DOT', n, 'ID'], ' %s', [3]))],
+  '(isvar %s%s);', [2, 3]
 )
 
 
 # Assignment statements
 StmtAssign = Seq('stmtassign',
-  [IdProp, w, Or('assignop', [
+  [Var, w, Or('assignop', [
     'EQUALS',
     'PLUSEQUALS',
     'MINUSEQUALS',
@@ -493,14 +491,14 @@ ExpList = Seq('explist',
   '%s%s', [0, 1]
 )
 
-# Debate: Allow whitespace after the function name (IdProp) but before
-# the first paren?
+# Debate: Allow whitespace after the function name (Var) but before the first
+# paren?
 StmtProcCall = Or('stmtproccall', [
   Seq('proccallargs',
-    [IdProp, w, 'LPAREN', n, ExpList, n, 'RPAREN'],
+    [Var, w, 'LPAREN', n, ExpList, n, 'RPAREN'],
     '%s %s', [0, 4]),
   Seq('proccallvoid',
-    [IdProp, w, 'LPAREN', n, 'RPAREN'])
+    [Var, w, 'LPAREN', n, 'RPAREN'])
 ], '(call %s);')
 
 
@@ -711,7 +709,6 @@ CmdLine = Or('cmdline', [
 
 
 # Refresh missed rule dependencies
-Replace(IdProp.items[1], 'IdProp', IdProp)
 Replace(BinopExp, 'SubExp', SubExp)
 Replace(PrefixBinopExp, 'SubExp', SubExp)
 Replace(List, 'ExpList', ExpList)

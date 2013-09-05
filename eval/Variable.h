@@ -6,20 +6,17 @@
 
 /* Variable
  *
- * A Variable simply refers to an object by name.  In most uses, the Object
- * already exists, and at setup() we determine our Type (a BasicType that wraps
- * the existing Object).  If the Object does not exist, then we might be the
- * left-hand side of a New statement which is going to create one.  In this
- * case we leave m_object and m_type both NULL, and the NewInit will use our
- * variable name (stored as our 'value' member) to create the new Object.
+ * A Variable simply refers to an object, or nested object-members, by name.
+ * Its children are Identifiers, and there must be at least one.  The first
+ * must refer to an object that exists.  The second and subsequent are the
+ * names of a member, a member on that member, etc.  These must all exist in
+ * the parent scope at setup()-time, so the Variable can be a TypedNode.
  */
 
 #include "Log.h"
-#include "Node.h"
 #include "Object.h"
 #include "RootNode.h"
 #include "Token.h"
-#include "Type.h"
 #include "TypedNode.h"
 
 #include <string>
@@ -34,12 +31,13 @@ public:
   virtual void setup();
   virtual void evaluate();
 
-  std::string getVariableName() const { return value; }
+  Object& getObject() const;
 
 private:
   // from TypedNode
   virtual void computeType();
-  const Object* m_object;
+  std::string m_varname;
+  Object* m_object;
 };
 
 };
