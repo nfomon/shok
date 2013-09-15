@@ -1,0 +1,183 @@
+What if
+  abstract a = { x:int }
+  new b = a & { x = 4 }
+  new c = a & { x = 17 }
+  new d = b&c
+
+This is an error equivalent to if we had done:
+  new a = {x:int=4}
+  new b = {x:int=17}
+  new c = a&b
+
+So it is not allowed.  And another thing:
+  abstract a = { x:int }
+  abstract b = { x:float }
+  abstract c = a & b      # not allowed!  even if a.x and b.x had the same type!
+                          # (semantic collision)
+
+However:
+  abstract a = { x:num }
+  new b = a & { x=42 }          b.x :: num = 42
+  new c = a & { x:int = 15 }    c.x :: int = 15
+
+These are all fine.
+
+In short, you can't &-together different implementations of the same abstract.
+You can't &-together objects that would declare the same member (of same or
+different type and/or initial value).  And you can't &-together abstracts that
+would declare the same member (of same or different type).
+
+When you inherit from an abstract you may provide type restrictions and/or
+default values for none, some, or all of its members, in addition to
+introducing new members.  If every member has a default value, then it is an
+object, otherwise it is an abstract.
+!!!!!!!!!!!!! WAAHHHH (after-the-fact edit) THAT WAS A SILLY NOTION OF
+ABSTRACT!!
+
+-----
+
+abstract @ = {
+  op() : _builtin_function_
+}
+
+abstract @->int = @ & {
+  op()->int : _builtin_function_returns_int_
+}
+
+abstract @(int,int) = @ & {
+  op(int,int) : _builtin_function_int_int_
+}
+
+abstract @(int,int)->int = @(int,int) & @->int & {
+  op(int,int)->int : _builtin_function_int_int_returns_int_
+}
+
+Now,
+new max = @(int,int)->int {
+  if a > b, return a; return b
+}
+
+is just syntactic sugar for:
+new max = @(int,int)->int & {
+  op(int,int)->int = {
+    a:int = _builtin_function_bind_arg_(1,int)
+    b:int = _builtin_function_bind_arg_(2,int)
+    _function_body_ = _builtin_code_block_(QUOTE{
+        if a > b, return a; return b
+      }QUOTE)
+  }
+  op(int,int) = op(int,int)->int
+  op()->int = op(int,int)->int
+  op() = op(int,int)->int
+}
+
+Nope, can't collide on member op().  There was no point to this anyway.  Wasn't
+there?  Nope.  Sure, @ has an op() member, but neither @(int,int) nor @->int
+are providing a value for that.  They can't, they don't have it.  They retain
+an unspecified op() and also add unspecified their own abstract members that an
+eventual function implementation will need to provide in order to qualify.
+
+Alright aren't we just deeper in the hole now?  For overloading signatures...
+
+max &= @(float,float)->float & {
+  op(float,float)->float = {
+    (*...args and body...*)
+  }
+  op(float,float) = op(float,float)->float
+  op()->float = op(float,float)->float
+  op() = op(float,float)->float    # COLLISION!!!!
+}
+
+OK let's try a refined scheme!!!  Here goes!
+-----
+@ has a list of signatures and bodies.
+@->int is for a function that *can* return int, not that it *must*.  return
+types are conceptually OR'd together across signatures, and are not unique.
+Where is this represented?
+@(int,int) is a function that *can* take two ints, but doesn't necessarily.
+Conceptually, argument sets are OR'd together, and cannot collide.
+@(int,int)->int is a specific signature and function body.
+
+Collisions of accepted argument types is based on the rule: an OR-item of one
+positional argument cannot be identical to an OR-item of another.  This
+suggests that we want to explode the arguments' OR-types and provide an
+abstract member for each possibility, which will just happen to share the same
+function body.  A function @(A|B)->C  is just syntactic sugar for @(A)->C &
+@(B)->C with the same body.  YESZ!
+
+abstract @ = {
+  op() : [_builtin_function_] ? $.size >= 1
+}
+
+abstract @->int = @ & {
+  op()->int : [_builtin_function_returns_int_] ? $.size >= 1
+}
+
+abstract @(int,int) = @ & {
+  op(int,int) : [_builtin_function_int_int_] ? $.size >= 1
+}
+
+abstract @(int,int)->int = @(int,int) & @->int & {
+  op(int,int)->int : _builtin_function_int_int_returns_int_
+  op()->int &= op(int,int)->int       # ????? I think not...
+}
+
+Maybe I'm trying too hard to make a very specific, language-builtin runtime
+behaviour (function pattern-matching lookup) to be a usable static facility of
+the language.  hmmm.
+
+I've got this.  Abstracts ARE allowed to collide on *types* of their members,
+just not initial values.  When the types "collide" in parents, what's really
+happening is that they are the &-type of both parents.  Easy-peasey.
+
+abstract @ = {
+  op() : _builtin_function_
+}
+
+abstract @->int = @ & {
+  op()->int : _builtin_function_returns_int_
+  op() : _builtin_function_returns_int_   # this is just a type restriction!
+}
+
+abstract @(int,int) = @ & {
+  op(int,int) : _builtin_function_int_int_
+  op() : _builtin_function_int_int_       # another type restriction,
+                                          # does NOT conflict with the one above
+}
+
+abstract @(int,int)->int = @ & {
+  op(int,int)->int : _builtin_function_int_int_returns_int_
+  op(int,int) : _builtin_function_int_int_returns_int_
+  op->int : _builtin_function_int_int_returns_int_
+  op() : _builtin_function_int_int_returns_int_
+}
+
+
+hrm.  now op() :: _bf_int_int_r_int_ & _bf_int_int_ & _bf_r_int & _bf_
+               :: _bf_int_int_r_int_
+so eventually  :: _bf_int_int_r_int_ & _bf_float_float_r_float_
+
+How can this be given any value at all?
+I suppose, only if op() is a kind of static list, that can provide each of its
+types by having an element that satisfies the type. errrrkk...
+
+new max = @(a:int,b:int)->int {
+} & @(a:float,b:float)->float {
+}
+
+new max = @(int,int)->int & {
+  op(int,int)->int = _builtin_function_body_(QUOTE{
+    #...
+  })
+  op(int,int) &= op(int,int)->int  ????
+}
+
+Wish I knew more about
+ - list
+ - tuple
+ - static lists/sets/values of any sort???  static vs runtime data structures??
+
+-----
+abstract means "has some functions unimplemented and/or has some objects whose
+type is an |-type but provides no default value yet".
+

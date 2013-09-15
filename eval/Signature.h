@@ -6,7 +6,9 @@
 
 /* Function signatures (arguments and return types)
  *
- * TODO: Describe pattern-matching signature lookups here
+ * A function may have multiple Signatures, where each Signature must
+ * be different in some way.  For now, we just require that they have
+ * different number of arguments; see Function.h for more.
  */
 
 #include "Log.h"

@@ -1,3 +1,69 @@
+2k13-09-15
+
+Function is not what we normally think of as Function.  Function is
+implemented as a member of an object that we think of as a function (has type
+@ and all the rest).  The actual Function is indeed a subclass of Object (just
+so it gets to be a member), it given a name like "@(int,int)->int" which the
+users cannot touch.  Its type should be something like _builtin_function_, its
+purpose is to occupy this "@(int,int)->int" member space and to store a
+CodeBlock for the body of a specific function signature.
+
+That is, Function need only represent a single Signature.  We don't need fancy
+"find which signature" logic, that all becomes part of getMember() on Object.
+No compatibility score required.  |-types will be broken for now, since we
+don't "explode" them yet.  That will be a small change, we don't need to
+destroy the way Types get constructed into a tree; some of that is probably
+still required (e.g. for Expressions to compute and escalate types).
+
+-----
+2k13-09-06
+
+Ya I think:
+ - Function does not descend from Object
+ - many Function things are in Object itself
+ - If an object has a .op(), it descends from @
+ - and in particular, it descends from @(args)->(return) which
+   descends from @(args)&@->return which both descend from @
+ - wait what
+ - also how does multiple inheritance work???
+
+  @(args)->return
+  @(args)->return|void
+
+-----
+2k13-09-05
+
+Calling procedures/functions ("ProcCall")
+ - this works fine, if only functions/methods made any sense.
+
+Currently in the codebase, Function derives from Object.  But in the
+language, a Function is any Object that has been given a .op() member.
+So every Object *can* be a Function.  And Functions are indeed rather
+special.
+
+We could give to Object a (C++) member:  ObjectExt* extra which can
+dynamic-like contain whatever extra attributes it might have (instead
+of allowing anyone to derive from Object).  Then Function's extra
+stuff can be an ObjectExtra thing to give that functionality to some
+Objects.
+
+But what other possible types of things would want to ever do that?
+Surely not just any random builtin stdlib object, right??
+
+So forget that.  Every Object might be a Function too; use
+isFunction() to check, which just checks if it has a .op() member.
+The .op() member is special, maybe you can't getMember() it or
+something, and all the Function-y stuff is also on Object it's just
+maybe switched off.  Or maybe getMember(".op()") will give you a
+Function which is not an Object and is just this stuff wrapped up.
+Or, uh, something.
+
+We reeeeeally need to re-invesetigate the semantics of Functions vs.
+Objects to see if this makes sense.  What is the type of a function?
+If you give a .op() to an object, does that add @ to its type?  What
+about function overloads with different return types etc.??
+
+-----
 2k13-09-04
 
 nononosilly.

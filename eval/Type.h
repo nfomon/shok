@@ -10,9 +10,8 @@
  * AndList of nodes, or an Object*.
  *
  * We do not own these Object*s; the Object should always outlive a child's
- * Type.  Types are typically owned by a Node or an Object, which will provide
- * a const Type& getType(), from which you can get your own Type by explicitly
- * calling its .duplicate().
+ * Type.  Types are typically owned by a TypedNode, which can give you its
+ * Type or a duplicate with its getType() or type() methods.
  *
  * A Type can be used to query the members of its underlying object(s), or just
  * their types.  Note that some of the semantics of |-types and &-types are not

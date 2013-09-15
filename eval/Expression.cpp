@@ -5,6 +5,7 @@
 
 #include "EvalError.h"
 #include "Operator.h"
+#include "Variable.h"
 
 #include <string>
 using std::string;
@@ -16,7 +17,11 @@ void Expression::setup() {
     throw EvalError("Expression must wrap a single expression fragment");
   }
 
+  Variable* var = dynamic_cast<Variable*>(children.at(0));
   Operator* op = dynamic_cast<Operator*>(children.at(0));
+  if (!var && !op) {
+    throw EvalError("Expression " + print() + " does not yet support child type " + children.at(0)->print());
+  }
   if (op) {
     op->analyzeTree();
   }
@@ -34,6 +39,18 @@ string Expression::cmdText() const {
   // TODO: call the resulting object's ->str.escape() (*UNIMPL*)
   //return children.front()->cmdText();
   return "";
+}
+
+Object& Expression::getObject() const {
+  if (!isEvaluated) {
+    throw EvalError("Cannot get object from Expression " + print() + " before its evaluation");
+  }
+  Variable* var = dynamic_cast<Variable*>(children.at(0));
+  if (var) {
+    return var->getObject();
+  }
+  // TODO: Operator
+  throw EvalError("Expression " + print() + " cannot retrieve Object from unsupported child type " + children.at(0)->print());
 }
 
 void Expression::computeType() {

@@ -58,6 +58,8 @@ public:
   //const Signature* getSignature(const type_list& args) const;
   std::auto_ptr<Type> getPossibleReturnTypes(const type_list& args) const;
 
+  std::auto_ptr<Object> call(const object_list& args) const;
+
 private:
   typedef std::vector<Signature> signature_list;
   typedef signature_list::const_iterator signature_iter;

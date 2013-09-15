@@ -61,6 +61,12 @@ auto_ptr<Type> Function::getPossibleReturnTypes(const type_list& args) const {
   return returnTypes;
 }
 
+auto_ptr<Object> Function::call(const object_list& args) const {
+  // TODO
+  return auto_ptr<Object>(NULL);
+}
+
+
 /*
 const Signature* Function::getSignature(const argtype_list& args) const {
   if (m_signatures.size() < 1) {

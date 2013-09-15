@@ -15,6 +15,7 @@
 #include "New.h"
 #include "NewInit.h"
 #include "Operator.h"
+#include "ProcCall.h"
 #include "RootNode.h"
 #include "TypeSpec.h"
 #include "Variable.h"
@@ -64,6 +65,8 @@ Node* Node::MakeNode(Log& log, RootNode*const root, const Token& t) {
     return new NewInit(log, root, t);
   if ("type" == t.name)
     return new TypeSpec(log, root, t);
+  if ("call" == t.name)
+    return new ProcCall(log, root, t);
   if ("isvar" == t.name)
     return new IsVar(log, root, t);
   throw EvalError("Unsupported token " + t.print());

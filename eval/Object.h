@@ -44,6 +44,8 @@ public:
   // Retrieve a member, deferring to the parent type(s) if it's not found.
   Object* getMember(const std::string& name) const;
   std::auto_ptr<Type> getMemberType(const std::string& name) const;
+  // TODO should an initial value (object) be required?  by auto_ptr I guess?
+  // Probably shouldn't allow creation of an OrType with no default value?
   Object& newMember(const std::string& varname, std::auto_ptr<Type> type);
 
   // Does an object get "assigned" to?  I think not!

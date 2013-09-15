@@ -1,0 +1,87 @@
+abstract: object definition declares one or more functions (i.e. types them, at
+least partially, maybe just @  or  @->int)  but without providing {} codeblock
+definitions for them.
+
+@(int,int)->int :: @(int,int) & @->int :: @
+
+Let's be clear on the terminology of types, values, objects, abstracts.
+
+An object or member is defined as a name, an optional type specifier, and a
+default value which is sometimes optional.
+
+A type specifier is either:
+ - an object-type specifier: name(s) of existing object(s) combined with &
+ - an |-type specifier: a tree of objects combined with & and |
+
+If an |-type specifier is provided in an object definition, then a default
+value is required (unless we are defining an abstract).
+
+Otherwise the default default value is the object-type-specifier-object.
+
+A default value can be any combination of names of existing objects and object
+literals.  An object literal has the form:
+  { member-list }
+where member-list is a list of member definitions that follow the same
+object-definition rules as above.  Note that members cannot be abstract unless
+they are members of an abstract.
+
+Function signatures:
+A function's value is a [<signature, code block>].
+
+When it is defined like this:
+  new max = @(a:int,b:int)->int {
+    if a > b, return a; return b
+  } & @(a:float,b:float)->float {
+    if a > b, return a; return b
+  }
+
+It can be considered like:
+  new max = @(a:int,b:int)->int & @(a:float,b:float)->float {...} {...}
+
+That is,
+  max :: @(int,int)->int & @(float,float)->float
+      :: @(int,int) & @(float,float) & @->int & @->float
+      :: @
+
+One might have
+  new func : @(int,int) = max
+or
+  new func : @->float = max
+or
+  new func : @ = max
+or
+  new func = max
+      func :: @(int,int)->int & @(float,float)->float
+
+resolv: when multiple function bodies are defined (for different argument
+sets), consider the signatures being &'d together to get the type, way before
+the code blocks are even looked at.  The different signatures provide
+different &'d abstract parent-types into the fray.  Noone tries to replace the
+internal op() method.  op() just does the actual language's "look up the best
+matching function for these arguments, and call it" logic.  So we don't have
+the collision we were hitting before.
+
+
+-----
+DIGRESSION: {
+These rules all seem a bit complex.  But I suppose that the = = case is even
+worse; since |-type specifiers need to be objects themselves, but then any
+object could be a "not an object yet" |-thing:
+  new x = date|none
+  foo(x)      # wtf??
+So we would need to say "if you have |-type as your first equals thing then
+you need another = after" which is weird.  Plus we lose lots of : niceties (I
+think..).
+}
+
+-----
+TANGENT: {
+    suppose max :: @(int,int)->int
+
+    new x = max(1,4)
+    x :: @max(1,4) :: @max(int,int)->int :: int
+} except this goes strange places (x's type may refer to objects that don't
+exist in places where x exists and is valid), so can be ignored for now...
+
+This is the scope problem that is alluded to at the bottom of shok.txt .
+

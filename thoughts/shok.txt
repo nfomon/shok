@@ -1,0 +1,57 @@
+Pending thought:
+----------------
+
+1. The qday problem (practice.txt):
+new aday : date = {
+  year = 1983
+  month=7
+  day=12
+}
+
+new bday : date
+bday.year = 1983
+bday.month = 7
+bday.day = 12
+
+new qday = date & {
+  year = 1983
+  month=7
+  day=12
+}
+
+aday, bday, and qday are near-equivalents but subtly different.  Maybe aday and
+qday are equivalent, I'm not sure.
+
+Nevermind THESE ARE IDENTICAL.  The last should maybe give a warning, "this
+would be better expressed as (the aday way) since no new members or type
+changes have been enacted".
+
+2. reprise_worries.txt was written assuming that "abstract" means "defines
+members with types but without initial values" or some such that makes no
+sense.  OR DOES IT?  That might even be a valid line of thought, and possibly a
+source of confusion with the word "abstract" in other languages, but it wasn't
+the plan per se.  Abstract maybe only means "has functions with types but not
+bodies", which PERHAPS is DIFFERENT than having a type but no value.  Need to
+think that through.
+
+3. reprise_worries.txt is trying to provide an idiomatic internal construct for
+the syntactic sugar of defining a function vs. an object that has a member
+function.  That might be needless or infinitely recursively dumb.
+
+4. fobjs.txt decides that a function should be a child of its return type.
+e.g.  @max(int,int)->int  ::  int
+
+No not quite right.  Stated properly: when
+  x = max(int,int)
+  x :: @max(int,int)->int :: int
+
+The value you get returned has type "oh look you just called that function"
+which has type "the actually stated return type".
+
+I really like the idea of this tainting.  It does NOT mean that "the function"
+has type of its return type.  It just means that the value returned from
+calling a function is decorated with which specific function was called to get
+it.  Let's be careful about what the SCOPE of that returned thing is;  is it
+only using names that necessarily exist to wherever that value gets returned?
+doubt it...
+

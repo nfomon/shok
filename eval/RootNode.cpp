@@ -23,7 +23,11 @@ RootNode::RootNode(Log& log)
 
   // Insert default objects (standard library)
   Object& object = m_scope.newObject("object", auto_ptr<Type>(new NullType()));
-  object.newMember("foo", std::auto_ptr<Type>(new BasicType(object))); // test
+  //object.newMember("foo", std::auto_ptr<Type>(new BasicType(object))); // test
+  Object& func = m_scope.newObject("@", auto_ptr<Type>(new BasicType(object)));
+  // Test: member function
+  Object& foo = object.newMember("foo", std::auto_ptr<Type>(new BasicType(func)));
+  //std::auto_ptr<Function> foofunc(new Function(log, 
   m_scope.commitAll();
 }
 

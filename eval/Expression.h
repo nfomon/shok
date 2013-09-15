@@ -38,6 +38,11 @@ public:
   virtual void evaluate();
   virtual std::string cmdText() const;
 
+  // Get the resulting Object after this Expression has been evaluated.
+  // Note that this Object& will not stick around for long!  It has not been
+  // saved to a scope.
+  Object& getObject() const;
+
 private:
   // from TypedNode
   virtual void computeType();
