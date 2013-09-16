@@ -25,7 +25,7 @@ token {
   FAIL; EXIT;
 
   // Symbol table modifiers
-  NEW; RENEW; DEL; ISVAR; 
+  NEW; RENEW; DEL; ISVAR; TYPEOF;
 
   // Functions
   VOID; RETURN; YIELD;
@@ -42,9 +42,6 @@ token {
 
   // Logical operators
   NOT; NOR; AND; OR; XOR; XNOR;
-
-  // Keyword operators
-  TYPEOF;
 
   // Equality operators
   LT; LE; GT; GE; EQ; NE;
@@ -99,6 +96,7 @@ mode LUSH :
   "renew" => QUEX_TKN_RENEW(LexemeNull);
   "del"   => QUEX_TKN_DEL(LexemeNull);
   "isvar" => QUEX_TKN_ISVAR(LexemeNull);
+  "typeof"  => QUEX_TKN_TYPEOF(LexemeNull);
 
   // Functions
   "void"    => QUEX_TKN_VOID(LexemeNull);
@@ -130,9 +128,6 @@ mode LUSH :
   "or"    => QUEX_TKN_OR(LexemeNull);
   "xor"   => QUEX_TKN_XOR(LexemeNull);
   "xnor"  => QUEX_TKN_XNOR(LexemeNull);
-
-  // Keyword operators
-  "typeof"  => QUEX_TKN_TYPEOF(LexemeNull);
 
   // Equality operators
   "<"   => QUEX_TKN_LT(LexemeNull);
