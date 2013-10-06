@@ -1,0 +1,148 @@
+{7+@(x,y)->z{z=4}&{}}
+
+{
+[{
+
+{7
+[{                                    HOLD INT:'7'
+                                      ALT  [{(INT:'7'
+
+{7+
+[{(PLUS INT:'7'                       ALT [{(INT:'7' PLUS
+
+{7+@
+[{(PLUS INT:'7'                       ALT [{(INT:'7' PLUS (func
+
+{7+@(
+[{(PLUS INT:'7' (func (args           ALT [{(INT:'7' PLUS (func (args
+
+{7+@(x
+[{(PLUS INT:'7' (func (args           HOLD ID:'x'
+                                      ALT [{(INT:'7' PLUS (func (args ID:'x'
+
+{7+@(x,
+[{(PLUS INT:'7' (func (args ID:'x'_   ALT [{(INT:'7' PLUS (func (args ID:'x'_
+
+{7+@(x,y
+[{(PLUS INT:'7' (func (args ID:'x'    HOLD ID:'y'
+                          ALT [{(INT:'7' PLUS (func (args ID:'x' ID:'y'
+
+{7+@(x,y)
+[{(PLUS INT:'7' (func (args ID:'x' ID:'y')
+                          ALT [{(INT:'7' PLUS (func (args ID:'x' ID:'y')
+
+{7+@(x,y)->
+[{(PLUS INT:'7' (func (args ID:'x' ID:'y') (returns
+ALT     [{(INT:'7' PLUS (func (args ID:'x' ID:'y') (returns
+
+{7+@(x,y)->z
+[{(PLUS INT:'7' (func (args ID:'x' ID:'y') (returns ID:'z'
+ALT     [{(INT:'7' PLUS (func (args ID:'x' ID:'y') (returns ID:'z'
+
+:: {7+@(x,y)->z{z=4}&{}}
+{7+@(x,y)->z{
+ALT     [{(INT:'7' PLUS (func (args ID:'x' ID:'y') (returns ID:'z' {
+
+{7+@(x,y)->z{z
+ALT     [{(INT:'7' PLUS (func (args ID:'x' ID:'y') (returns ID:'z') {(ID:'z'
+
+{7+@(x,y)->z{z=
+ALT     [{(INT:'7' PLUS (func (args ID:'x' ID:'y') (returns ID:'z') {(ID:'z' EQUALS INT:'4')} AMP {
+
+{1+2*3+4*5}
+
+[{1 PLUS 2 TIMES 3 PLUS 4 TIMES 5}]
+
+-----
+{7+@(x,y)==12}foo bar{y}lol
+
+
+-----
+A different sort of parser, then.
+
+Top-level parse object has:
+  ast:str
+  stack:[<depth:int,parser>]
+
+A terminal (TMsg or VMsg or such) will stack things onto the ast.
+Any OR parser that deduces a single rule is running, can put it onto a stack (uhhhhh up some tree I guesss....????)...... ummmmm..
+When do we put a rule/parser onto the stack?  When can we pop+match and emit finishing text to the ast?
+
+-----
+How about:
+ - an OR parser, once it has a single possible rule, pushes everything up to that point, and each that follows
+  -- but what if it then determines it doesn't match?  uhhh, badtimez.
+ - an AND parser emits each IF it has been told it's ok to do so.  What?
+
+suppose we're in a code block expecting a statement.
+stack:  [codeblock]
+ast: ''
+
+Or(If, Loop, Assign)
+
+If: 'if' Exp COMMA Statement
+    'if' Exp CodeBlock
+Loop: 'loop' CodeBlock
+Assign: ID (prop ID)* EQUALS Exp
+ProcCall: ID (prop ID)* LPAREN ExpList RPAREN
+
+TEST:
+A Seq rule has a "decided" position.  Once it gets to that position, it is
+decided that it is the uniquely correct parse.  It can emit everything up to
+that point, and thereafter as it comes.
+hm.
+
+If decides after 1.
+Loop decides after 1.
+Assign decides at the EQUALS.
+
+It feels like each statement can emit up until a PIVOT.  that PIVOT tells the
+evaluator how to build the tree; which of a list should emerge as the parent.
+
+x = 4 * 5 + 3
+  =
+x   4 * 5 + 3
+  =
+x     *
+    4   5 + 3
+  =
+x     *
+    4     +
+        5   3
+
+Most Rules won't do anything special, and only know how to display themselves
+when they're done.  Specific stages are different.  Statements are special.
+
+CmdLine = [{ OR [PROGRAM]
+
+-----
+Some Rules take "ownership".  That is, while they are parsing, they are the
+sole arbiter of emitting text to the ast.  They go on the stack, and may have
+final text to output when they get popped.  Also, they may emit at various
+points along their parsing.
+
+Some rules are unsure.  They might be somewhere deep along a branch that is one
+of multiple possibilities.  They keep a display text that MAYBE their parent
+rule will grab if/when it gets done.
+
+Our Ownership rules are maybe:
+CmdLine   [         .. ]
+CmdBlock  {         .. }
+ProgramInvocation   (any program text)
+Exp       (exp      .. )
+Stmt      (stmt     .. )
+
+What happens in Stmt?  Maybe Stmt does it, maybe its individual components....
+ - we don't know which Stmt until one of them confirms.  How do we let that
+   happen?
+
+We can have an OrParser receive a signal from one of its rules, saying "CONFIRM
+ME!".  Then it just kills all the others even if they're still pending.  Once
+one of its rules confirms, ... wait a minute... we should ALREADY KNOW when
+we're confirm-able.  Why not just make eeeevery parser greedy?  In that, start emitting as soon as it knows it can.  A SeqParser always emits to however far along it's done.  An OrParser starts emitting once it has only one rule.  Everything else just does it;  well, Star and Plus emit after each run-through.
+
+It's the OrParser that really holds us up, and that's great.
+
+As for the complexity of block begins and ends?  Let's revisit how we push and
+pop that stack...
+

@@ -15,23 +15,14 @@ class TerminalParser(Parser):
     self.tname = self.rule.items[0]
     self.value = None
 
-  def restart(self):
-    Parser.restart(self)
-    self.tname = self.rule.items[0]
-    self.value = None
-
   def parse(self,token):
-    if self.signalRestart:
-      self.restart()
-      self.signalRestart = False
     logging.debug("%s TerminalParser parsing '%s'" % (self.name, token))
     if self.bad:
       raise Exception("%s TerminalParser already bad" % self.name)
     if self.done:
       self.done = False
       self.bad = True
-      self.neverGoBadCheck(token)
-      return
+      return ''
     if token.ttype == self.tname:
       self.done = True
       if token.tvalue != None and token.tvalue != '':
@@ -39,22 +30,22 @@ class TerminalParser(Parser):
     else:
       self.done = False
       self.bad = True
-    self.neverGoBadCheck(token)
+      return ''
 
-  def display(self):
-    if self.bad or not self.done:
-      raise Exception("Terminal '%s' is unmatched" % self.name)
     if self.value == None:
       if self.rule.msg.find('%s') == -1:
         return self.rule.msg
       return self.rule.msg % self.tname
     return self.rule.msg % ("%s:%s" % (self.tname, self.value))
 
+  def finish(self):
+    return ''
+
 class Terminal(Rule):
-  def __init__(self,name,items=None,msg='%s',inds=[0]):
+  def __init__(self,name,items=None,msg='%s'):
     if not items:
       items = [name]
-    Rule.__init__(self, name, items, msg, inds)
+    Rule.__init__(self, name, items, msg)
 
   def MakeParser(self,parent):
     return TerminalParser(self, parent)

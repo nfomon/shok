@@ -8,25 +8,26 @@ import logging
 
 # PlusParser repeats its single parser at least once.  It's done anytime its
 # sub-parser is done.  If it gets another token it re-creates itself with
-# another instance, so we are memory- and stack-bounded.
-# We only re-establish the sub-parser if it was done and it's bad if it were
-# given another token.
+# another instance, so we are memory- and stack-bounded (except we grab the
+# segment's display text into a list).
+# We only re-establish the sub-parser if it was done and becomes bad if given
+# another token.
 class PlusParser(Parser):
   def __init__(self,rule,parent):
     Parser.__init__(self, rule, parent)
     self.active = None
-    self.disps = []
     self.reps = 0
-
-  def restart(self):
-    Parser.restart(self)
-    self.active = None
-    self.disps = []
+    self.firstparse = True
+    # validation: self.rule.inds: must be [0] or []
+    if len(self.rule.inds) > 1 or (len(self.rule.inds) == 1 and self.rule.inds[0] != 0):
+      raise Exception("Bad msg/inds for rule %s" % self.name)
+    self.msg_parts = self.rule.msg.split('%s', 2)
+    self.msg_start = self.msg_parts[0]
+    self.msg_end = ''
+    if len(self.msg_parts) > 1:
+      self.msg_end = self.msg_parts[1]
 
   def parse(self,token):
-    if self.signalRestart:
-      self.restart()
-      self.signalRestart = False
     logging.debug("%s PlusParser parsing token '%s'" % (self.name, token))
     if not self.active:
       self.active = MakeParser(self.rule.items, self)
@@ -34,33 +35,45 @@ class PlusParser(Parser):
     if self.bad:
       raise Exception("%s PlusParser is bad" % self.name)
     wasdone = False
-    tempdisp = ''
     if self.active.done:
       wasdone = True
-      tempdisp = self.active.display()
-    self.active.parse(token)
+    disp = self.active.parse(token)
     if wasdone and self.active.bad:
+      if disp != '':
+        raise Exception("Bad parse should have given no return value; at %s" % self.name)
       # re-establish
+      fdisp = self.active.finish()
+      edisp = self.msg_end
+      #fin = self.active.finish() + self.msg_end
+      fin = fdisp + edisp
+      self.firstparse = True
       self.active = MakeParser(self.rule.items, self)
-      self.disps.append(tempdisp)
       self.reps += 1
-      logging.debug("Re-establishing %s; reps=%s, disps=%s" % (self.name, self.reps, self.disps))
-      self.parse(token)   # this is not recursive in the way that would hurt
+      disp = self.parse(token)  # this is not horribly recursive
+      if self.bad:
+        return ''
+      return fin + self.display(disp)
     self.bad = self.active.bad
     self.done = self.active.done
-    self.neverGoBadCheck(token)
-
-  def display(self):
-    if self.bad or not self.done:
-      raise Exception("%s PlusParser is unfinished" % self.name)
-    disps = copy(self.disps)
-    disps.append(self.active.display())
-    s = ''
-    for m in range(0,len(disps)):
-      s += self.rule.msg
-    if not s:
+    if self.bad:
       return ''
-    return s % tuple(disps)
+    return self.display(disp)
+
+  def display(self,disp):
+    if self.firstparse:
+      disp = self.msg_start + disp
+      self.firstparse = False
+    return disp
+
+  def finish(self):
+    fdisp = ''
+    edisp = ''
+    if self.active and self.active.done and not self.active.bad:
+      fdisp = self.active.finish()
+      edisp = self.msg_end
+    if not self.done:   # EXPERIMENT TIMEZ
+      return ''
+    return fdisp + edisp
 
 class Plus(Rule):
   def MakeParser(self,parent):

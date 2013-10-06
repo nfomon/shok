@@ -5,7 +5,8 @@ from Parser import Parser, MakeParser
 from Rule import Rule
 import logging
 
-# ActionParser performs its Action-rule's associated function the first time# its sub-parser is done.
+# ActionParser performs its Action-rule's associated function the first time
+# its sub-parser is done.
 #
 # Why not do it every time?  Well, probably because of the way SeqParser works
 # now (tries to repeat any rule until it fails)....  Not sure about that tho.
@@ -21,13 +22,14 @@ class ActionParser(Parser):
     self.active = MakeParser(rule.items, self)
 
   def parse(self,token):
-    self.active.parse(token)
+    disp = self.active.parse(token)
     self.bad = self.active.bad
     self.done = self.active.done
     if not self.actioned and not self.bad and self.done:
       self.rule.func(self)
       self.actioned = True
-    self.neverGoBadCheck(token)
+      return disp
+    return ''
 
   # The Action's msg should contain at most a single %s, which will be filled
   # by the display of its sub-parser.  It may have other text in its msg which

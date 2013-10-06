@@ -1,0 +1,126 @@
+A Parser is explicitly constructed once, at the top of our grammar,
+with a call to MakeParser(Lush).  Lush is a rule.  There are many rule
+types, and each is composed of one or more Terminals or other Rules.
+
+Let's be more explicit about the Stack.
+Lush receives a token:
+ - if noone's at the top, puts a CmdLine at the top
+ - passes token to the top of the stack
+
+OrParser receives a token:
+ - moves along each of its sub-parsers
+ - if exactly one remains non-bad: Confirm it
+ - Confirm means: put the winning sub-parser on the stack
+ - if we actually have display text: need to think about that.
+   Maybe we have a Finishing Move to apply the child's display into
+   our own.  But I'm not sure we get popped at the right time to
+   display.
+
+SeqParser receives a token:
+ - If it moves ahead: it Confirms the new item........wait
+
+Ultimately, OrParsers are the arbiters of what happens.
+When an OrParser determines a branch: that's awesome.  We can grab all the text in that branch as far as we know it, and display it.
+
+Stack:
+CmdLine
+  ws
+  ws
+  ws
+  NEWL    -> ok done.
+
+CmdLine
+  ws
+  foo     -> resolves! put ProgramInvocatio on the stack.
+
+ProgramInvocation:
+  ws
+  bar
+  ws
+  moo
+  Endl    -> ok.  pop up until someone catches Endl?? or what?
+
+CmdLine
+  '{'     -> resolves! push CmdBlock on the stack.
+
+CmdBlock
+  NEWL    -> resolves! push CodeBlock on the stack.
+
+CodeBlock
+
+Context: must be the closest-to-the-top OrParser that is NOT YET
+resolved.
+
+-----
+We have a Stack.  It gets the closest-to-the-(main,bottom) OrParser.
+When we parse a token, the main parser sends it to the top of the
+stack.  The top of the stack knows it's at the top.  It sends parse
+tokens to its sub-parsers, which send it down etc. all knowing that
+they're not the top (context).  The moment the Context gets down to 1
+parser after it parses a token, it can tell that winning parser to
+display itself (so far).  Then with each next token, that parser
+displays the next amount-it-can-display-with-that-next-token, up until
+it hits *anywhere* an OrParser.  Once it hits an OrParser, that
+OrParser becomes the top of the stack.  Pretty crazy!
+
+Now the mech for this inf:
+Lush has ast and stack, and hasOr=false.
+Lush.parse('ls')
+
+Lush is a Star of CmdLine.
+CmdLine is an Or.
+CmdLine parses the token.
+CmdLine.wn goes to bad.
+CmdLine.ProgramInvocation goes to ok
+CmdLine.CmdBlock goes to bad
+CmdLine is an Or that has done a parse.  It has a single ok branch.
+So it gets that branch's partial display so far, pushes it to the ast,
+and pushes itself (CmdLine) onto the stack.
+Note that the ProgramInvocation was responsible for emitting a '['.
+
+Lush.parse('WS')
+Lush.stack[-1].parse(token)
+CmdLine's single branch, ProgramInvocation, eats it.
+CmdLine now says: I'm a confirmed Or parser.  Get any NEW display text
+from my winning branch, and put it onto ast.
+
+Lush.parse('-al')
+(same)
+
+Lush.parse(ENDL)
+Lush.stack[-1].parse(token)
+CmdLine's single branch, ProgramInvocation, eats it.
+CmdLine is told its only branch moves to done (upon an ENDL).
+CmdLine gets last display text from its branch, which gives back ']',
+which goes to the ast.
+CmdLine finishes, and has no finish().  Just pops itself from stack.
+
+(...)
+
+So how do we move past CmdLine? Easy:
+ - CmdLine has multiple branches: none of them go on the stack
+ - Once CmdLine discovers it has a single branch (after consuming a
+   token): It asks that branch "Hey, if you have an Or active, push
+   it!".
+Let's try it out!
+
+Lush.parse('{')
+Lush.parse('if')
+Lush.parse('x')
+Lush.parse('>')
+Lush.parse('7')
+Lush.parse('{')
+Lush.parse(NEWL)
+Lush.parse('y')
+Lush.parse('(')
+Lush.parse(')')
+Lush.parse('}')
+Lush.parse('new')
+Lush.parse('z')
+Lush.parse('}')
+
+-----
+
+Parser: In each display(), we should double-check that we're not bad.
+
+Parser: Let's move all the rule msg/inds validation to Rule itself
