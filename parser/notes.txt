@@ -124,3 +124,18 @@ Lush.parse('}')
 Parser: In each display(), we should double-check that we're not bad.
 
 Parser: Let's move all the rule msg/inds validation to Rule itself
+
+-----
+2k13-10-06
+
+Implemented ASAP.  Results still inconclusive...
+
+At the last item in a Seq, that's in a Star that's in a Seq.  If the
+inner Seq is repeated (thanks to the Star), with non-done-states to
+begin, I *could* emit the msg_end of the last item in the seq, but
+currently I wait until we either finish parsing ok along that second
+refresh, OR that path goes to bunk and the outer Seq wants to advance
+beyond the Star.  But I don't think I'll care about that.
+
+ - oy I think I tooootally care about that now.  maybe.  hm.  let's
+   revisit all the parser logic and update it for correctness.

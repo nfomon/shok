@@ -39,8 +39,8 @@ class ActionParser(Parser):
     return self.rule.display([d])
 
 class Action(Rule):
-  def __init__(self,items,func,msg='%s',inds=[0]):
-    Rule.__init__(self, "action(%s,%s)" % (items, func), items, msg, inds)
+  def __init__(self,items,func,msg='%s'):
+    Rule.__init__(self, "action(%s,%s)" % (items, func), items, msg)
     self.func = func
 
   def MakeParser(self,parent):

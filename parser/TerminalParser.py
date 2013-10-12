@@ -32,6 +32,9 @@ class TerminalParser(Parser):
       self.bad = True
       return ''
 
+    return self.display()
+
+  def display(self):
     if self.value == None:
       if self.rule.msg.find('%s') == -1:
         return self.rule.msg

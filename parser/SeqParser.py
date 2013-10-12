@@ -31,28 +31,33 @@ class SeqParser(Parser):
     self.firstlastparse = True  # has the last rule's parser emit its msg_start
     self.msg_parts = [] # start and end parts of each rule's msg
     self.lastfinish = ''  # finish() text from last time subparser was done
-    logging.info("%s SeqParser initialized with rule: %s" % (self.name, self.rule))
+    self.silents = []   # a bool for each parser, is it silent
+    self.visited = []   # a bool for each parser, has it emit its msg_start
 
   def parse(self,token):
-    logging.debug("%s SeqParser at pos=%s attempting to parse token '%s'" % (self.name, self.pos, token))
-
     if self.pos >= len(self.rule.items):
-      logging.debug("%s SeqParser moved beyond rule items; now bad" % self.name)
       self.bad = True
       self.done = False
     elif not self.active:
-      logging.info("%s SeqParser making parser for %s at pos=%s" % (self.name, self.rule.items[self.pos], self.pos))
       item = self.rule.items[self.pos]
       msg = '%s'
       if type(item) is tuple:
+        if len(item) != 2:
+          raise Exception("%s SeqParser: deficient tuple item %s" % (self.name, item))
         msg = item[1]
         item = item[0]
+      if msg.count('%s') == 0:
+        self.silents.append(True)
+      else:
+        self.silents.append(False)
+      self.visited.append(False)
       self.msg_parts.append(msg.split('%s'))
       if len(self.msg_parts[-1]) > 2:
         raise Exception("%s SeqParser: has a msg part with > 2 parts" % self.name)
+      elif len(self.msg_parts[-1]) == 1:
+        self.msg_parts[-1].append('')
       self.parsers.append(MakeParser(item, self))
       self.displays.append('')
-      logging.info("%s SeqParser now parsers=%s, len=%s" % (self.name, self.parsers, len(self.parsers)))
       self.active = self.parsers[-1]
       self.bad = self.active.bad
     if self.pos != len(self.parsers)-1:
@@ -60,16 +65,13 @@ class SeqParser(Parser):
     if self.bad:
       self.done = False
       raise Exception("%s SeqParser is bad; can't accept token '%s'" % (self.name, token))
-    logging.info("%s SeqParser parsing token '%s'; active=%s,%s" % (self.name, token, self.pos, self.active.name))
 
     wasdone = self.active.done    # was the current active parser already done
-    if wasdone:
-      logging.debug("%s SeqParser was done, at '%s'" % (self.name, self.active.name))
 
     # Parse!
     newdisp = self.active.parse(token)
-    logging.debug("%s SeqParser parsed token '%s'; now evaluating" % (self.name, token))
-    self.displays[self.pos] += newdisp
+    if not self.silents[self.pos]:
+      self.displays[self.pos] += newdisp
 
     # if in last pos
     if self.pos == len(self.rule.items)-1:
@@ -81,14 +83,14 @@ class SeqParser(Parser):
         self.done = self.active.done
       if self.done:
         self.lastfinish = self.active.finish() + self.msg_parts[self.pos][1]
-      logging.debug("%s SeqParser in last state; now bad=%s, done=%s" % (self.name, self.bad, self.done))
-      return self.display(self.pos)
+      disp = self.display(self.pos)
+      logging.info("%s SeqParser received '%s', last state, emits '%s'" % (self.name, token, disp))
+      return disp
 
     if self.active.bad:
       if wasdone:
         # accept that state as having never parsed this token yet, and go
         # forward
-        logging.info("%s SeqParser at token '%s' is force-advancing pos %s to %s" % (self.name, token, self.pos, self.pos+1))
         self.pos += 1
         self.active = None
         self.accum = []
@@ -109,7 +111,6 @@ class SeqParser(Parser):
         self.accum = []
         disp = ''
         for a in accum:
-          logging.info("%s SeqParser is force-advancing pos %s to %s with accumulated token '%s'" % (self.name, self.pos, self.pos+1, a))
           if not self.bad:
             disp += self.parse(a)
         if self.bad:
@@ -120,29 +121,27 @@ class SeqParser(Parser):
       else:
         self.bad = True
         self.done = False
-        logging.debug("%s SeqParser wasn't done, now bad" % self.name)
         return ''
 
     if self.active.done:
-      self.lastfinish = self.displays[self.pos] + self.active.finish() + self.msg_parts[self.pos][1]
-      if self.pos < len(self.rule.items)-1:
-        self.lastfinish = self.msg_parts[self.pos][0] + self.lastfinish
+      disp = copy(self.displays[self.pos])
+      self.displays[self.pos] = ''
+      if self.pos < len(self.rule.items)-1 and not self.visited[self.pos]:
+        disp = self.msg_parts[self.pos][0] + disp
+        self.visited[self.pos] = True
+      self.lastfinish = self.active.finish() + self.msg_parts[self.pos][1]
       # stay here until we turn bad
       # if all upcoming rule items are Stars, then mark the whole Seq as done.
-      logging.info("%s SeqParser active pos=%s went done; waiting until it turns bad before advancing" % (self.name, self.pos))
       self.accum = []
       nonstars = False
       for item in self.rule.items[self.pos+1:]:
-        if type(item) is tuple:
         if not (isinstance(item, Star) or (type(item) is tuple and isinstance(item[0], Star))):
           nonstars = True
       if not nonstars:
         self.done = True
-        logging.debug("%s SeqParser is earlydone" % self.name)
-      return ''
+      return disp
 
     # we're ok, stay put for now
-    logging.debug("%s SeqParser is staying put after '%s'" % (self.name, token))
     self.accum.append(token)
     return ''
 
@@ -162,9 +161,9 @@ class SeqParser(Parser):
   def finish(self):
     if self.pos < len(self.rule.items)-1:
       return ''
-    pdisp = self.displays[self.pos]
-    fdisp = self.parsers[self.pos].finish()
-    edisp = self.msg_parts[self.pos][1]
+    #pdisp = self.displays[self.pos]
+    #fdisp = self.parsers[self.pos].finish()
+    #edisp = self.msg_parts[self.pos][1]
     #return pdisp + fdisp + edisp
     return self.lastfinish
 

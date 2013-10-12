@@ -74,9 +74,18 @@ class TestTerminals(RuleTester):
 
   # Terminal rule that has its own display representation
   def test_TermDisp(self):
-    rule = Terminal('a', ['A'], 'foo:%s')
+    rule = Terminal('a', ['A'], '<%s>')
     self.series = [
-      [init, tok('1:A', False, True, 'foo:A'),
+      [init, tok('1:A', False, True, '<A>'),
+             tok('1:A', True, False)],
+      [init, tok('1:X', True, False)],
+    ]
+    self.ruleTest(rule, self.series)
+
+  def test_TermDisp2(self):
+    rule = Terminal('a', ['A'], 'lolz')
+    self.series = [
+      [init, tok('1:A', False, True, 'lolz'),
              tok('1:A', True, False)],
       [init, tok('1:X', True, False)],
     ]
@@ -94,13 +103,13 @@ class TestSeq(RuleTester):
     self.ruleTest(rule, series)
 
   def test_Two(self):
-    rule = Seq('two', ['A', 'B'], '12%s34%s56foo', [0, 1])
+    rule = Seq('two', [('A','1%s2'), ('B','3%s4')])
     series = [
-      [init, tok('1:A', False, False, ''),
-             tok('1:B', False, True, 'AB'),
-             tok('1:B', True, False, '')],
-      [init, tok('1:A', False, False, ''),
-             tok('1:A', True, False, '')],
+      [init, tok('1:A', False, False, '1A'),
+             tok('1:B', False, True, '23B'),
+             tok('1:B', True, False)],
+      [init, tok('1:A', False, False, '1A'),
+             tok('1:A', True, False)],
       [init, tok('1:X', True, False)],
     ]
     self.ruleTest(rule, series)
@@ -108,12 +117,12 @@ class TestSeq(RuleTester):
   def test_Three(self):
     rule = Seq('three', [('A','1%s2'), ('B','3%s4'), ('C','5%s6')])
     series = [
-      [init, tok('1:A', False, False, ''),
-             tok('1:B', False, False, '1A2'),
-             tok('1:C', False, True, '3B45C'),
-             tok('1:D', True, False, '')],
-      [init, tok('1:A', False, False, ''),
-             tok('1:A', True, False, '')],
+      [init, tok('1:A', False, False, '1A'),
+             tok('1:B', False, False, '23B'),
+             tok('1:C', False, True, '45C'),
+             tok('1:D', True, False)],
+      [init, tok('1:A', False, False, '1A'),
+             tok('1:A', True, False)],
       [init, tok('1:X', True, False)],
     ]
     self.ruleTest(rule, series)
@@ -121,13 +130,45 @@ class TestSeq(RuleTester):
   def test_Four(self):
     rule = Seq('three', [('A','1%s2'), ('B','3%s4'), ('C','5%s6'), ('D','7%s8')])
     series = [
-      [init, tok('1:A', False, False, ''),
-             tok('1:B', False, False, '1A2'),
-             tok('1:C', False, False, '3B4'),
-             tok('1:D', False, True, '5C67D'),
-             tok('1:E', True, False, '')],
+      [init, tok('1:A', False, False, '1A'),
+             tok('1:B', False, False, '23B'),
+             tok('1:C', False, False, '45C'),
+             tok('1:D', False, True, '67D'),
+             tok('1:E', True, False)],
       [init, tok('1:X', True, False)],
     ]
+    self.ruleTest(rule, series)
+
+  def test_MiddlePlusTerm(self):
+    rule = Seq('main', [
+        ('A','1%s2'),
+        (Plus('+', 'B', '<%s>'), '3%s4'),
+        ('C', '5%s6'),
+      ])
+    series = [
+      [init, tok('1:A', False, False, '1A'),
+             tok('1:B', False, False, '23<B'),
+             tok('1:B', False, False, '><B'),
+             tok('1:B', False, False, '><B'),
+             tok('1:C', False, True, '>45C'),
+             tok('1:X', True, False)],
+      ]
+    self.ruleTest(rule, series)
+
+  def test_MiddlePlusTerm(self):
+    rule = Seq('main', [
+        ('A','1%s2'),
+        (Plus('+', 'B', '<%s>'), '3%s4'),
+        ('C', '5%s6'),
+      ])
+    series = [
+      [init, tok('1:A', False, False, '1A'),
+             tok('1:B', False, False, '23<B'),
+             tok('1:B', False, False, '><B'),
+             tok('1:B', False, False, '><B'),
+             tok('1:C', False, True, '>45C'),
+             tok('1:X', True, False)],
+      ]
     self.ruleTest(rule, series)
 
   def test_Plus(self):
@@ -141,26 +182,26 @@ class TestSeq(RuleTester):
              tok('1:X', True, False)],
       [init, tok('1:A', False, False),
              tok('1:B', False, False),
-             tok('1:C', False, False),
+             tok('1:C', False, False, '!a1A23B45C'),
              tok('1:Q', True, False)],
       [init, tok('1:A', False, False),
              tok('1:B', False, False),
-             tok('1:C', False, False),
-             tok('1:C', False, False, '!a1A23B45C6b@ #c'),
-             tok('1:D', False, False, '7C8'),
-             tok('1:E', False, True, '9D01E')],
+             tok('1:C', False, False, '!a1A23B45C'),
+             tok('1:C', False, False, '6b@ #c7C'),
+             tok('1:D', False, False, '89D'),
+             tok('1:E', False, True, '01E')],
       [init, tok('1:A', False, False),
              tok('1:B', False, False),
-             tok('1:C', False, False),
+             tok('1:C', False, False, '!a1A23B45C'),
              tok('1:A', False, False),
              tok('1:B', False, False),
-             tok('1:C', False, False),
-             tok('1:C', False, False, '!a1A23B45C6ba1A23B45C6b@ #c'),
-             tok('1:D', False, False, '7C8'),
-             tok('1:E', False, True, '9D01E'),
-             tok('1:C', False, False, '2dc'),
-             tok('1:D', False, False, '7C8'),
-             tok('1:E', False, True, '9D01E')],
+             tok('1:C', False, False, '6ba1A23B45C'),
+             tok('1:C', False, False, '6b@ #c7C'),
+             tok('1:D', False, False, '89D'),
+             tok('1:E', False, True, '01E'),
+             tok('1:C', False, False, '2dc7C'),
+             tok('1:D', False, False, '89D'),
+             tok('1:E', False, True, '01E')],
     ]
     self.ruleTest(rule, series)
 
@@ -183,26 +224,26 @@ class TestSeq(RuleTester):
              tok('1:X', True, False)],
       [init, tok('1:A', False, False),
              tok('1:B', False, False),
-             tok('1:C', False, False),
+             tok('1:C', False, False, '!a1A23B45C'),
              tok('1:A', False, False),
 #             tok('1:D', True, False)],   # Old limitation!
-             tok('1:D', False, False, '!a1A23B45C6b@ #c1A2'),
-             tok('1:E', False, True, '3D45E')],
+             tok('1:D', False, False, '6b@ #c1A23D'),
+             tok('1:E', False, True, '45E')],
       [init, tok('1:A', False, False),
              tok('1:B', False, False),
-             tok('1:C', False, False),
+             tok('1:C', False, False, '!a1A23B45C'),
              tok('1:A', False, False),
              tok('1:B', False, False),
-             tok('1:C', False, False),
+             tok('1:C', False, False, '6ba1A23B45C'),
              tok('1:A', False, False),
-             tok('1:D', False, False, '!a1A23B45C6ba1A23B45C6b@ #c1A2'),
-             tok('1:E', False, True, '3D45E'),
-             tok('1:A', False, False, '6dc'),
-             tok('1:D', False, False, '1A2'),
-             tok('1:E', False, True, '3D45E')],
+             tok('1:D', False, False, '6b@ #c1A23D'),
+             tok('1:E', False, True, '45E'),
+             tok('1:A', False, False, '6dc1A'),
+             tok('1:D', False, False, '23D'),
+             tok('1:E', False, True, '45E')],
       [init, tok('1:A', False, False),
              tok('1:B', False, False),
-             tok('1:C', False, False),
+             tok('1:C', False, False, '!a1A23B45C'),
              tok('1:C', True, False)],
     ]
     self.ruleTest(rule, series)
@@ -224,33 +265,89 @@ class TestSeq(RuleTester):
              tok('1:X', True, False)],
       [init, tok('1:A', False, False),
              tok('1:B', False, False),
-             tok('1:C', False, False),
+             tok('1:C', False, False, '<a1A23B45C'),
              tok('1:X', True, False)],
       [init, tok('1:A', False, False),
              tok('1:B', False, False),
-             tok('1:C', False, False),
-             tok('1:D', False, False, '<a1A23B45C6b>'),
-             tok('1:E', False, True, '(D)'),
-             tok('1:F', False, False, '{E}[c'),
-             tok('1:G', False, False, 'eFf'),
-             tok('1:H', False, True, 'gGhiH')],
+             tok('1:C', False, False, '<a1A23B45C'),
+             tok('1:D', False, False, '6b>(D'),
+             tok('1:E', False, True, '){E'),
+             tok('1:F', False, False, '}[ceF'),
+             tok('1:G', False, False, 'fgG'),
+             tok('1:H', False, True, 'hiH'),
+             tok('1:X', True, False)],
       [init, tok('1:A', False, False),
              tok('1:B', False, False),
-             tok('1:C', False, False),
+             tok('1:C', False, False, '<a1A23B45C'),
              tok('1:A', False, False),
              tok('1:B', False, False),
-             tok('1:C', False, False),
-             tok('1:D', False, False, '<a1A23B45C6ba1A23B45C6b>'),
-             tok('1:E', False, True, '(D)'),
-             tok('1:F', False, False, '{E}[c'),
-             tok('1:G', False, False, 'eFf'),
-             tok('1:H', False, True, 'gGhiH'),
-             tok('1:F', False, False, 'jdc'),
-             tok('1:G', False, False, 'eFf'),
-             tok('1:H', False, True, 'gGhiH')],
+             tok('1:C', False, False, '6ba1A23B45C'),
+             tok('1:D', False, False, '6b>(D'),
+             tok('1:E', False, True, '){E'),
+             tok('1:F', False, False, '}[ceF'),
+             tok('1:G', False, False, 'fgG'),
+             tok('1:H', False, True, 'hiH'),
+             tok('1:F', False, False, 'jdceF'),
+             tok('1:G', False, False, 'fgG'),
+             tok('1:H', False, True, 'hiH')],
     ]
     self.ruleTest(rule, series)
 
+  def test_Disp(self):
+    rule1 = Seq('disp', ['A'])
+    series1 = [
+      [init, tok('1:A', False, True, 'A'),
+             tok('1:A', True, False)],
+      [init, tok('1:X', True, False)],
+    ]
+    self.ruleTest(rule1, series1)
+
+    rule2 = Seq('disp', [('A','hello')])
+    series2 = [
+      [init, tok('1:A', False, True, 'hello'),
+             tok('1:A', True, False)],
+      [init, tok('1:X', True, False)],
+    ]
+    self.ruleTest(rule2, series2)
+
+    rule3 = Seq('disp', [('A','he%sllo')])
+    series3 = [
+      [init, tok('1:A', False, True, 'heA'),
+             tok('1:A', True, False)],
+      [init, tok('1:X', True, False)],
+    ]
+    self.ruleTest(rule3, series3)
+
+    rule4 = Seq('disp', [('A','')])
+    series4 = [
+      [init, tok('1:A', False, True),
+             tok('1:A', True, False)],
+      [init, tok('1:X', True, False)],
+    ]
+    self.ruleTest(rule4, series4)
+
+  def test_Or(self):
+    rule = Seq('seq',
+      [Or('one', ['A', 'B', 'C'], '1%s2'),
+      Or('two', ['D', 'E', 'F'], '3%s4'),
+      Or('three', ['G', 'H', 'I'], '5%s6'),
+      ])
+    series = [
+      [init, tok('1:A', False, False, '1A'),
+             tok('1:D', False, False, '23D'),
+             tok('1:G', False, True, '45G'),
+             tok('1:H', True, False)],
+      [init, tok('1:X', True, False)],
+    ]
+    self.ruleTest(rule, series)
+
+  # We need a test for OrParsers where
+  # - multiple subparsers will be done at the same time
+  # - one subparser is done, one subparser is ok not done or bad yet
+  # while simultaneously the SeqParser is either done, or needs to
+  # move on.
+  def test_Or2(self):
+    pass
  
 class TestOr(RuleTester):
   def test_One(self):
@@ -289,21 +386,52 @@ class TestOr(RuleTester):
              tok('1:QQ', True, False)],
       [init, tok('1:QQ', False, True, '<(term QQ)'),
              tok('1:Q', True, False)],
-      [init, tok('1:A', False, False),
+      [init, tok('1:A', False, False, '<'),
              tok('1:C', True, False)],
-      [init, tok('1:A', False, False),
-             tok('1:B', False, True, '<(seq1:A:B'),
+      [init, tok('1:A', False, False, '<'),
+             tok('1:B', False, True, '(seq1:A:B'),
              tok('1:D', True, False)],
-      [init, tok('1:A', False, False),
+      [init, tok('1:A', False, False, '<'),
              tok('1:D', False, True),
-             tok('1:E', False, True, '<(seq4:A:D:E'),
+             tok('1:E', False, True, '(seq4:A:D:E'),
              tok('1:E', True, False)],
-      [init, tok('1:B', False, False),
+      [init, tok('1:B', False, False, '<'),
              tok('1:C', False, False),
              tok('1:D', False, True),
-             tok('1:E', False, False, '<(seq5:B..CD'),
-             tok('1:F', False, True, 'E..F'),
+             tok('1:E', False, False, '(seq5:B..CDE'),
+             tok('1:F', False, True, '..F'),
              tok('1:E', True, False)],
+    ]
+    self.ruleTest(rule, series)
+
+  def test_PathSadness(self):
+    rule = Seq('master', [Or('literal', [
+        'A',
+        Seq('seq', [
+          'A',
+          'B',
+        ]),
+      ], '1%s2'), 'Q'])
+    series = [
+      [init, tok('1:A', False, False, '1'),
+             tok('1:B', False, False, 'AB'),
+             tok('1:Q', False, True, '2Q'),
+             tok('1:X', True, False)],
+    ]
+    self.ruleTest(rule, series)
+
+  def test_PathSadness2(self):
+    start = ini(False, True, '')
+    rule = Star('pathpart', Or('pathtoken', [
+                'A',
+                'Q',
+              ], 'a%sb')
+            )
+    series = [
+      [start, tok('1:A', False, True, 'aA'),
+             tok('1:A', False, True, 'baA'),
+             tok('1:A', False, True, 'baA'),
+             tok('1:X', True, False)],
     ]
     self.ruleTest(rule, series)
 
@@ -321,6 +449,39 @@ class TestPlus(RuleTester):
     ]
     self.ruleTest(rule, series)
 
+  def test_DefaultDisp(self):
+    rule = Plus('term', 'A')
+    series = [
+      [init, tok('1:A', False, True, 'A'),
+             tok('1:A', False, True, 'A'),
+             tok('1:A', False, True, 'A'),
+             tok('1:X', True, False)],
+      [init, tok('1:X', True, False)],
+    ]
+    self.ruleTest(rule, series)
+
+  def test_StaticMsg(self):
+    rule = Plus('term', 'A', 'hello')
+    series = [
+      [init, tok('1:A', False, True, 'hello'),
+             tok('1:A', False, True, 'hello'),
+             tok('1:A', False, True, 'hello'),
+             tok('1:X', True, False)],
+      [init, tok('1:X', True, False)],
+    ]
+    self.ruleTest(rule, series)
+
+  def test_Silent(self):
+    rule = Plus('term', 'A', '')
+    series = [
+      [init, tok('1:A', False, True),
+             tok('1:A', False, True),
+             tok('1:A', False, True),
+             tok('1:X', True, False)],
+      [init, tok('1:X', True, False)],
+    ]
+    self.ruleTest(rule, series)
+
   def test_Seq(self):
     rule = Plus('plus',
       Seq('seq',
@@ -328,33 +489,33 @@ class TestPlus(RuleTester):
       'x%sy')
     series = [
       [init, tok('1:X', True, False)],
-      [init, tok('1:A', False, False, 'x'),
+      [init, tok('1:A', False, False, 'x1A'),
              tok('1:X', True, False)],
-      [init, tok('1:A', False, False, 'x'),
-             tok('1:B', False, False, '1A2'),
+      [init, tok('1:A', False, False, 'x1A'),
+             tok('1:B', False, False, '23B'),
              tok('1:X', True, False)],
-      [init, tok('1:A', False, False, 'x'),
-             tok('1:B', False, False, '1A2'),
-             tok('1:C', False, True, '3B45C'),
+      [init, tok('1:A', False, False, 'x1A'),
+             tok('1:B', False, False, '23B'),
+             tok('1:C', False, True, '45C'),
              tok('1:C', True, False, '')],
-      [init, tok('1:A', False, False, 'x'),
-             tok('1:B', False, False, '1A2'),
-             tok('1:C', False, True, '3B45C'),
-             tok('1:A', False, False, '6yx'),
+      [init, tok('1:A', False, False, 'x1A'),
+             tok('1:B', False, False, '23B'),
+             tok('1:C', False, True, '45C'),
+             tok('1:A', False, False, '6yx1A'),
              tok('1:X', True, False)],
-      [init, tok('1:A', False, False, 'x'),
-             tok('1:B', False, False, '1A2'),
-             tok('1:C', False, True, '3B45C'),
-             tok('1:A', False, False, '6yx'),
-             tok('1:B', False, False, '1A2'),
-             tok('1:C', False, True, '3B45C'),
+      [init, tok('1:A', False, False, 'x1A'),
+             tok('1:B', False, False, '23B'),
+             tok('1:C', False, True, '45C'),
+             tok('1:A', False, False, '6yx1A'),
+             tok('1:B', False, False, '23B'),
+             tok('1:C', False, True, '45C'),
              tok('1:C', True, False)],
     ]
     self.ruleTest(rule, series)
 
 
 class TestStar(RuleTester):
-  # Plus with a terminal
+  # Star with a terminal
   def test_Term(self):
     start = ini(False, True, '')
     rule = Star('term', 'A', msg='x%sy')
@@ -362,6 +523,30 @@ class TestStar(RuleTester):
       [start, tok('1:A', False, True, 'xA'),
               tok('1:A', False, True, 'yxA'),
               tok('1:A', False, True, 'yxA'),
+              tok('1:X', True, False)],
+      [start, tok('1:X', True, False)],
+    ]
+    self.ruleTest(rule, series)
+
+  def test_StaticMsg(self):
+    start = ini(False, True, '')
+    rule = Star('term', 'A', msg='hello')
+    series = [
+      [start, tok('1:A', False, True, 'hello'),
+              tok('1:A', False, True, 'hello'),
+              tok('1:A', False, True, 'hello'),
+              tok('1:X', True, False)],
+      [start, tok('1:X', True, False)],
+    ]
+    self.ruleTest(rule, series)
+
+  def test_Silent(self):
+    start = ini(False, True, '')
+    rule = Star('term', 'A', msg='')
+    series = [
+      [start, tok('1:A', False, True),
+              tok('1:A', False, True),
+              tok('1:A', False, True),
               tok('1:X', True, False)],
       [start, tok('1:X', True, False)],
     ]
@@ -375,26 +560,26 @@ class TestStar(RuleTester):
       'x%sy')
     series = [
       [start, tok('1:X', True, False, '')],
-      [start, tok('1:A', False, False, 'x'),
+      [start, tok('1:A', False, False, 'x1A'),
               tok('1:X', True, False)],
-      [start, tok('1:A', False, False, 'x'),
-              tok('1:B', False, False, '1A2'),
+      [start, tok('1:A', False, False, 'x1A'),
+              tok('1:B', False, False, '23B'),
               tok('1:X', True, False)],
-      [start, tok('1:A', False, False, 'x'),
-              tok('1:B', False, False, '1A2'),
-              tok('1:C', False, True, '3B45C'),
+      [start, tok('1:A', False, False, 'x1A'),
+              tok('1:B', False, False, '23B'),
+              tok('1:C', False, True, '45C'),
               tok('1:C', True, False)],
-      [start, tok('1:A', False, False, 'x'),
-              tok('1:B', False, False, '1A2'),
-              tok('1:C', False, True, '3B45C'),
-              tok('1:A', False, False, '6yx'),
+      [start, tok('1:A', False, False, 'x1A'),
+              tok('1:B', False, False, '23B'),
+              tok('1:C', False, True, '45C'),
+              tok('1:A', False, False, '6yx1A'),
               tok('1:X', True, False)],
-      [start, tok('1:A', False, False, 'x'),
-              tok('1:B', False, False, '1A2'),
-              tok('1:C', False, True, '3B45C'),
-              tok('1:A', False, False, '6yx'),
-              tok('1:B', False, False, '1A2'),
-              tok('1:C', False, True, '3B45C'),
+      [start, tok('1:A', False, False, 'x1A'),
+              tok('1:B', False, False, '23B'),
+              tok('1:C', False, True, '45C'),
+              tok('1:A', False, False, '6yx1A'),
+              tok('1:B', False, False, '23B'),
+              tok('1:C', False, True, '45C'),
               tok('1:C', True, False)],
     ]
     self.ruleTest(rule, series)
@@ -408,21 +593,20 @@ class TestStar(RuleTester):
       ), '<%s>')
     series = [
       [start, tok('1:X', True, False)],
-      [start, tok('1:A', False, True, '<'),
-              tok('1:A', False, True, ''),
-              tok('1:B', False, True, '1aAbaAb23cB'),
+      [start, tok('1:A', False, True, '<1aA'),
+              tok('1:A', False, True, 'baA'),
+              tok('1:B', False, True, 'b23cB'),
               tok('1:B', False, True, 'dcB'),
               tok('1:X', True, False)],
       [start, tok('1:B', False, True, '<3cB'),
-              tok('1:A', False, True, 'd4><'),
-              tok('1:B', False, True, '1aAb23cB')],
+              tok('1:A', False, True, 'd4><1aA'),
+              tok('1:B', False, True, 'b23cB')],
     ]
     self.ruleTest(rule, series)
 
 
 def suite():
   suite = unittest.TestSuite()
-  #testcases = [TestTerminals, TestPlus, TestStar, TestSeq, TestOr]
   testcases = [TestTerminals, TestPlus, TestStar, TestSeq, TestOr]
   suite.addTests([unittest.TestLoader().loadTestsFromTestCase(x) for x in testcases])
   return suite
