@@ -89,10 +89,14 @@ def StmtEnd(parser):
 
 def PreBlock(parser):
   logging.debug("- - PRE BLOCK")
-  parser.top.stack[-1].preblock = parser.display()
+  if not hasattr(parser.top.stack[-1], 'preblock'):
+    parser.top.stack[-1].preblock = parser.display()
+  else:
+    parser.top.stack[-1].preblock += parser.display()
 
 # Whether or not an If or Elif statement just happened: record this in the top
 # of stack parser
+# Welp, that will fail, when we have functions and exp blocks!
 def StmtIfCheck(parser):
   logging.debug("- - STMT IF CHECK")
   stmt = parser.active.doneparsers[0].name
@@ -296,7 +300,7 @@ CmdStmtEndl = Or('cmdstmtendl', [
 # Variable or object property access
 # Currently, property access can only go through an identifier.
 Var = Seq('var',
-  ['ID', Star('props', Seq('prop', [w, 'DOT', n, 'ID'], ' %s', [3]))],
+  ['ID', Star('props', Seq('prop', [(w,' '), 'DOT', n, ('ID','%s')])],
   '(var %s%s)', [0, 1]
 )
 
@@ -370,6 +374,39 @@ Parens = Seq('parens',
 #  '{obj %s}', [2]
 #)
 
+TypeList = Seq('typelist',
+  [Future('Type'), Star('typelists',
+    Seq('commatype', [w, 'COMMA', n, Future('Type')], ' %s', [3]))
+  ], '%s%s', [0, 1]
+)
+
+Signature = Or('signatures', [
+  TMsg('AT', '-sigat-'),
+#  Seq('sigargs', ['AT', w, TypeList], '(args %s) ', [2]),
+#  Seq('sigret',
+#    ['AT', w, 'ARROW', w, Future('Type')],
+#    '(returns %s) ', [4]),
+#  Seq('sigargsret',
+#    ['AT', w, TypeList, w, 'ARROW', w, Future('Type')],
+#    '(args %s) (returns %s) ', [2, 6]
+#  ),
+])
+
+MooBlock = Seq('mooblock',
+  [w, Future('CodeBlock')],
+  '%s', [1]
+)
+
+Function = Seq('function',
+  [Action(Seq('prefunc', [Signature, w]), PreBlock), Future('CodeBlock')],
+  '(func %s%s)', [0, 1]
+)
+
+#Function = Seq('function',
+#  [Action(Signature, PreBlock), MooBlock],
+#  '(func %s%s)', [0, 1]
+#)
+
 Atom = Or('atom', [
   Literal,
   List,
@@ -378,7 +415,7 @@ Atom = Or('atom', [
 ])
 
 PrefixExp = Seq('prefix',
-  [PrefixOp, n, Atom],
+  [PrefixOp, n, Future('SubExp')],
   '(%s %s)', [0,2]
 )
 
@@ -582,6 +619,7 @@ Stmt1 = Or('stmt', [
   If,
   Elif,
   Else,
+  Function,
   #Future('Switch'),
   #Seq('stmtstmtbranch', [StmtBranch, Endl]),
   #StmtLoop,
@@ -636,9 +674,9 @@ CmdCodeBlock = Star('cmdcodeblock',
 # Program invocation
 
 # Basic building block -- cannot contain an ExpBlock
-# OK to include "not cmdline approvide" symbols (operators) -- these
-# will have been parsed out earlier, and asking for their cmdText will
-# fail if we do accidentally catch any.
+# OK to include "not cmdline approved" symbols (operators) -- these will have
+# been parsed out earlier, and asking for their cmdText will fail if we do
+# accidentally catch any.
 ProgramBasic = Or('programbasic', [
   Keyword,    # These will be output verbatim in both code and cmd mode
   CmdOp,      # Operators spilled out for commands
@@ -684,7 +722,7 @@ ExpBlockProgram = Action(
 # either of those guys here -- let them do it themselves, and they will set the
 # CmdBlock as complete.
 #
-# Note though that for any CmdBlock we'll want to emit '}' eventually and ']'
+# Note though that for any CmdBlock we'll want to emit '}' eventually a ']'
 # when it's done :)
 CmdBlock = Seq('cmdblock',
   [w,
@@ -709,6 +747,13 @@ CmdLine = Or('cmdline', [
 
 
 # Refresh missed rule dependencies
+Replace(TypeList, 'Type', Type)
+Replace(TypeList.items[1].items, 'Type', Type)
+#Replace(Signature.items[2], 'Type', Type)
+#Replace(Signature.items[3], 'Type', Type)
+Replace(MooBlock, 'CodeBlock', CodeBlock)
+Replace(Function, 'CodeBlock', CodeBlock)
+Replace(PrefixExp, 'SubExp', SubExp)
 Replace(BinopExp, 'SubExp', SubExp)
 Replace(PrefixBinopExp, 'SubExp', SubExp)
 Replace(List, 'ExpList', ExpList)
@@ -725,13 +770,47 @@ Replace(BlockOrCmdStmt, 'CodeBlock', CodeBlock)
 
 
 # Lush
-# The LushParser holds some "global" state.  It should also probably do
+# The Lush parser holds some "global" state.  It should also probably do
 # something smart the moment it turns bad.
-Lush = Star('lush', CmdLine, neverGoBad=True)
+# The ast string is a buffer consumed by the lush_parser, which resets it to ''
+# after any consumption.
+#
+# NEW: we probably should kill the whole stack thing.  We don't need it -- just
+# do two fans.  But maybe a sometimes-used explicit-stack is better, mlehhh, I
+# don't like this duality and redundancy of sometimes-implicit and
+# sometimes-explicit stack.  Second fan out ftw!
+
+#Lush = Star('lush', CmdLine, neverGoBad=True)
+class Lush(object):
+  def __init__(self):
+    self.stack = []
+    self.ast = ''
+    self.bad = False
+    self.top = self
+    self.parser = MakeParser(CmdLine, self)
+  def parse(self,token):
+    # assume that WE aren't the one cleaning up after bad branches, for now.
+    # A finished element of the stack will pop itself and as many others off as
+    # necessary.
+    disp = ''
+    if self.stack:
+      disp = self.stack[-1].parse(token)
+      # TODO check stuff... stack.... bad/done...
+      #if self.stack:
+    else:
+      disp = self.parser.parse(token)
+    if self.parser.bad or (self.stack and self.stack[-1].bad):
+      raise Exception("Lush failed to parse token '%s'" % token)
+      restart()
+    ast += disp
+  def restart(self):
+    self.stack = []
+    self.parser = MakeParser(CmdLine, self)
+    self.ast = ''
+    self.bad = False
+    self.top = self
+
 def LushParser():
-  parser = MakeParser(Lush)
-  parser.stack = []
-  parser.ast = ''
-  parser.codeblocklazyends = 0
-  return parser
+  #parser.codeblocklazyends = 0
+  return Lush()
 
