@@ -3,6 +3,7 @@
 
 from Parser import Parser, MakeParser
 from Rule import Rule
+from copy import copy
 import logging
 
 # The OrParser's rule is a list of Rules that will be matched in
@@ -18,15 +19,6 @@ class OrParser(Parser):
       parser = MakeParser(item, self)
       self.parsers.append(parser)
       self.displays[parser] = ''
-    self.firstdisp = True
-    msg = self.rule.msg.split('%s')
-    self.msg_start = msg[0]
-    self.msg_end = ''
-    if len(msg) == 2:
-      self.msg_end = msg[1]
-    elif len(msg) > 2:
-      raise Exception("OrParser %s found in appropriate msg '%s'" % (self.name, msg))
-    self.doneparsers = []
 
   def parse(self,token):
     logging.debug("%s OrParser parsing '%s'" % (self.name, token))
@@ -36,53 +28,75 @@ class OrParser(Parser):
     if self.bad:
       raise Exception("State '%s' is bad" % self.name)
     badparsers = []
-    self.doneparsers = []
+    doneparsers = []
+    wasdoneparsers = []
     # all of self.parsers are ok, none are bad
     # feed them each the token and see who turns bad or done
     for prod in self.parsers:
       logging.info("%s OrParser parsing prod %s" % (self.name, prod.name))
       if prod.bad:
         raise Exception("%s OrParser already has bad prod '%s'" % (self.name, prod.name))
+      elif prod.done:
+        wasdoneparsers.append(prod)
       self.displays[prod] += prod.parse(token)
       if prod.bad:
         logging.info("%s OrParser prod '%s' went bad" % (self.name, prod.name))
         badparsers.append(prod)
       elif prod.done:
         logging.info("%s OrParser has doneparser '%s'" % (self.name, prod.name))
-        self.doneparsers.append(prod)
+        doneparsers.append(prod)
 
     for prod in badparsers:
       self.parsers.remove(prod)
-      del self.displays[prod]
 
     if len(self.parsers) == 0:
       logging.info("%s OrParser turned bad" % self.name)
       self.bad = True
       self.done = False
+      if len(wasdoneparsers) >= 1:
+        # emit the wasdoneparsers output if they all agree
+        disp = None
+        for wdp in wasdoneparsers:
+          if disp is None:
+            disp = self.displays[wdp]
+          elif disp != self.displays[wdp]:
+            for i in wasdoneparsers:
+              logging.debug('%s wdp: %s' % (self.name, self.displays[i]))
+            return ''
+        disp = copy(self.displays[wasdoneparsers[0]])
+        self.displays[wasdoneparsers[0]] = ''
+        for prod in badparsers:   # unnecessary cleanup
+          del self.displays[prod]
+        return disp
+      for prod in badparsers:   # unnecessary cleanup
+        del self.displays[prod]
       return ''
-    elif len(self.doneparsers) >= 1:
+
+    if len(doneparsers) >= 1:
       self.done = True
     else:
       self.done = False
 
     if len(self.parsers) == 1:
-      disp = self.displays[self.parsers[0]]
+      disp = copy(self.displays[self.parsers[0]])
       self.displays[self.parsers[0]] = ''
-      return self.display(disp)
-    return self.display('')
-
-  def display(self,disp):
-    # self.rule.msg: 'start%send'
-    # use firstdisp to determine if left should be output
-    if self.firstdisp:
-      disp = self.msg_start + disp
-      self.firstdisp = False
+      return disp
+    # eagerness: if all parsers have same display, return it, otherwise ''.
+    disp = None
+    for prod in self.parsers:
+      if disp is None:
+        disp = self.displays[prod]
+      elif disp != self.displays[prod]:
+        return ''
+    disp = copy(self.displays[self.parsers[0]])
+    for prod in self.parsers:
+      self.displays[prod] = ''
     return disp
 
-  def finish(self):
-    if len(self.doneparsers) >= 1:
-      return self.display(self.displays[self.doneparsers[0]]) + self.doneparsers[0].finish() + self.msg_end
-    return self.display('') + self.msg_end
+  def fakeEnd(self):
+    if len(self.parsers) == 1:
+      return self.parsers[0].fakeEnd()
+    return ''
 
 class Or(Rule):
   def MakeParser(self,parent):

@@ -36,19 +36,15 @@ class TerminalParser(Parser):
 
   def display(self):
     if self.value == None:
-      if self.rule.msg.find('%s') == -1:
-        return self.rule.msg
-      return self.rule.msg % self.tname
-    return self.rule.msg % ("%s:%s" % (self.tname, self.value))
+      return self.tname
+    return "%s:%s" % (self.tname, self.value)
 
-  def finish(self):
+  def fakeEnd(self):
     return ''
 
 class Terminal(Rule):
-  def __init__(self,name,items=None,msg='%s'):
-    if not items:
-      items = [name]
-    Rule.__init__(self, name, items, msg)
+  def __init__(self,name):
+    Rule.__init__(self, name, [name])
 
   def MakeParser(self,parent):
     return TerminalParser(self, parent)

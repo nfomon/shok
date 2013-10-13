@@ -21,16 +21,6 @@ class Parser(object):
   def __repr__(self):
     return '%s (%s)' % (self.name, self.rule.name)
 
-  def goDone(self):
-    self.done = True
-    self.parse = self.goBad
-
-  def goBad(self,token):
-    if self.bad:
-      raise Exception("%s Parser is already bad" % self.name)
-    self.bad = True
-    self.done = False
-
 def MakeParser(x, parent=None):
   if isinstance(x, Parser):
     return x

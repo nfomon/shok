@@ -16,16 +16,6 @@ class PlusParser(Parser):
   def __init__(self,rule,parent):
     Parser.__init__(self, rule, parent)
     self.active = None
-    self.reps = 0
-    self.firstparse = True
-    self.msg_parts = self.rule.msg.split('%s', 2)
-    self.msg_start = self.msg_parts[0]
-    self.msg_end = ''
-    if len(self.msg_parts) > 1:
-      self.msg_end = self.msg_parts[1]
-    self.quiet = False
-    if self.rule.msg.count('%s') == 0:
-      self.quiet = True
 
   def parse(self,token):
     logging.debug("%s PlusParser parsing token '%s'" % (self.name, token))
@@ -39,47 +29,18 @@ class PlusParser(Parser):
       wasdone = True
     disp = self.active.parse(token)
     if wasdone and self.active.bad:
-      if disp != '':
-        raise Exception("Bad parse should have given no return value; at %s" % self.name)
       # re-establish
-      fdisp = self.active.finish()
-      edisp = self.msg_end
-      self.firstparse = True
       self.active = MakeParser(self.rule.items, self)
-      self.reps += 1
-      disp = self.parse(token)
-      if self.bad:
-        return ''
-      return fdisp + edisp + self.display(disp)
+      disp += self.parse(token)
+      return disp
     self.bad = self.active.bad
     self.done = self.active.done
-    if self.bad:
-      return ''
-    if self.quiet:
-      return self.display('')
-    return self.display(disp)
-
-  def display(self,disp):
-    if self.firstparse:
-      disp = self.msg_start + disp
-      self.firstparse = False
     return disp
 
-  def finish(self):
-    sdisp = ''
-    fdisp = ''
-    edisp = ''
-    if self.firstparse:
-      self.firstparse = False
-      sdisp = self.msg_start
-    if self.active and self.active.done and not self.active.bad:
-      fdisp = self.active.finish()
-      edisp = self.msg_end
-    if not self.done:   # EXPERIMENT TIMEZ
-      return ''
-    if self.quiet:
-      return sdisp + edisp
-    return sdisp + fdisp + edisp
+  def fakeEnd(self):
+    if self.active:
+      return self.active.fakeEnd()
+    return ''
 
 class Plus(Rule):
   def MakeParser(self,parent):
