@@ -9,6 +9,7 @@ from ActionParser import Action
 from OrParser import Or
 from PlusParser import Plus
 from SeqParser import Seq
+from StableSeqParser import StableSeq
 from StarParser import Star
 from TerminalParser import Terminal
 
@@ -102,6 +103,18 @@ class TestSeq(RuleTester):
     ]
     self.ruleTest(rule, series)
 
+  def test_StableTwo(self):
+    rule = StableSeq('two', [('A','1%s2'), ('B','3%s4')])
+    series = [
+      [init, tok('1:A', False, False, '1A'),
+             tok('1:B', False, True, '23B'),
+             tok('1:B', True, False, '4')],
+      [init, tok('1:A', False, False, '1A'),
+             tok('1:A', True, False)],
+      [init, tok('1:X', True, False)],
+    ]
+    self.ruleTest(rule, series)
+
   def test_Two(self):
     rule = Seq('two', [('A','1%s2'), ('B','3%s4')])
     series = [
@@ -166,21 +179,21 @@ class TestSeq(RuleTester):
              tok('1:X', True, False)],
       [init, tok('1:A', False, False, '!a1A'),
              tok('1:B', False, False, '23B'),
-             tok('1:C', False, False),
+             tok('1:C', False, False, '45C'),
              tok('1:Q', True, False)],
       [init, tok('1:A', False, False, '!a1A'),
              tok('1:B', False, False, '23B'),
-             tok('1:C', False, False),
-             tok('1:C', False, False, '45C6b@ #c7C'),
+             tok('1:C', False, False, '45C'),
+             tok('1:C', False, False, '6b@ #c7C'),
              tok('1:D', False, False, '89D'),
              tok('1:E', False, True, '01E')],
       [init, tok('1:A', False, False, '!a1A'),
              tok('1:B', False, False, '23B'),
-             tok('1:C', False, False),
-             tok('1:A', False, False, '45C6ba1A'),
-             tok('1:B', False, False, '23B'),
-             tok('1:C', False, False),
-             tok('1:C', False, False, '45C6b@ #c7C'),
+             tok('1:C', False, False, '45C'),
+             tok('1:A', False, False, ''),
+             tok('1:B', False, False, ''),
+             tok('1:C', False, False, '6ba1A23B45C'),
+             tok('1:C', False, False, '6b@ #c7C'),
              tok('1:D', False, False, '89D'),
              tok('1:E', False, True, '01E'),
              tok('1:C', False, False, '2dc7C'),
@@ -217,8 +230,8 @@ class TestSeq(RuleTester):
              tok('1:B', False, False, '23B'),
              tok('1:C', False, False, '45C'),
              tok('1:A', False, False),
-             tok('1:B', False, False, '6ba1A23B'),
-             tok('1:C', False, False, '45C'),
+             tok('1:B', False, False),
+             tok('1:C', False, False, '6ba1A23B45C'),
              tok('1:A', False, False),
              tok('1:D', False, False, '6b@ #c1A23D'),
              tok('1:E', False, True, '45E'),
@@ -244,28 +257,28 @@ class TestSeq(RuleTester):
           'c%sd')), '[%s]'),
       ])
     series = [
-      [init, tok('1:A', False, False, '<a1A'),
-             tok('1:B', False, False, '23B'),
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
              tok('1:X', True, False)],
-      [init, tok('1:A', False, False, '<a1A'),
-             tok('1:B', False, False, '23B'),
-             tok('1:C', False, False, '45C'),
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False, '<a1A23B45C'),
              tok('1:X', True, False)],
-      [init, tok('1:A', False, False, '<a1A'),
-             tok('1:B', False, False, '23B'),
-             tok('1:C', False, False, '45C'),
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False, '<a1A23B45C'),
              tok('1:D', False, False, '6b>(D'),
              tok('1:E', False, True, '){E'),
              tok('1:F', False, False, '}[ceF'),
              tok('1:G', False, False, 'fgG'),
              tok('1:H', False, True, 'hiH'),
              tok('1:X', True, False, 'jd]')],
-      [init, tok('1:A', False, False, '<a1A'),
-             tok('1:B', False, False, '23B'),
-             tok('1:C', False, False, '45C'),
-             tok('1:A', False, False, '6ba1A'),
-             tok('1:B', False, False, '23B'),
-             tok('1:C', False, False, '45C'),
+      [init, tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False, '<a1A23B45C'),
+             tok('1:A', False, False),
+             tok('1:B', False, False),
+             tok('1:C', False, False, '6ba1A23B45C'),
              tok('1:D', False, False, '6b>(D'),
              tok('1:E', False, True, '){E'),
              tok('1:F', False, False, '}[ceF'),

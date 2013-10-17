@@ -25,29 +25,23 @@ def Replace(rule,name,new):
       if item.name == name:
         rule.items[i] = new
 
-# Some silly token-construction convenience "macros"
-# Terminal constructor with second arg bound to 'msg'
-class TMsg(Terminal):
-  def __init__(self,name,msg):
-    Terminal.__init__(self, name, None, msg)
-
 # Language token groups
 Keyword = Or('keyword', [
   # Symbol table modifiers
-  TMsg('NEW', 'new'), TMsg('RENEW', 'renew'), TMsg('DEL', 'del'),
-  TMsg('ISVAR', 'isvar'), TMsg('TYPEOF', 'typeof'),
+  ('NEW', 'new'), ('RENEW', 'renew'), ('DEL', 'del'),
+  ('ISVAR', 'isvar'), ('TYPEOF', 'typeof'),
   # Functions
-  TMsg('VOID', 'void'), TMsg('RETURN', 'return'), TMsg('YIELD', 'yield'),
+  ('VOID', 'void'), ('RETURN', 'return'), ('YIELD', 'yield'),
   # Branch constructs
-  TMsg('IF', 'if'), TMsg('ELIF', 'elif'), TMsg('ELSE', 'else'),
-  TMsg('SWITCH', 'switch'), TMsg('CASE', 'case'), TMsg('DEFAULT', 'default'),
+  ('IF', 'if'), ('ELIF', 'elif'), ('ELSE', 'else'),
+  ('SWITCH', 'switch'), ('CASE', 'case'), ('DEFAULT', 'default'),
   # Loop constructs
-  TMsg('WHILE', 'while'), TMsg('LOOP', 'loop'), TMsg('TIMES', 'times'),
-  TMsg('EACH', 'each'), TMsg('IN', 'in'), TMsg('WHERE', 'where'),
-  TMsg('BREAK', 'break'), TMsg('CONTINUE', 'continue'),
+  ('WHILE', 'while'), ('LOOP', 'loop'), ('TIMES', 'times'),
+  ('EACH', 'each'), ('IN', 'in'), ('WHERE', 'where'),
+  ('BREAK', 'break'), ('CONTINUE', 'continue'),
   # Logical operators
-  TMsg('NOT', 'not'), TMsg('NOR', 'nor'), TMsg('AND', 'and'), TMsg('OR', 'or'),
-  TMsg('XOR', 'xor'), TMsg('XNOR', 'xnor'),
+  ('NOT', 'not'), ('NOR', 'nor'), ('AND', 'and'), ('OR', 'or'),
+  ('XOR', 'xor'), ('XNOR', 'xnor'),
 ])
 
 Op = Or('op', [
@@ -69,21 +63,21 @@ Op = Or('op', [
 
 CmdOp = Or('cmdop', [
   # Equality operators -- disallow LT, LE, GT, GE
-  TMsg('EQ', '=='), TMsg('NE', '!='),
+  ('EQ', '=='), ('NE', '!='),
   # Numeric operators
-  TMsg('PLUS', '+'), TMsg('MINUS', '-'), TMsg('STAR', '*'), TMsg('SLASH', '/'),
-  TMsg('PERCENT', '%'), TMsg('CARAT', '^'),
+  ('PLUS', '+'), ('MINUS', '-'), ('STAR', '*'), ('SLASH', '/'),
+  ('PERCENT', '%'), ('CARAT', '^'),
   # Object operators -- disallow PIPE, AMP
-  TMsg('TILDE', '~'), TMsg('DOUBLETILDE', '~~'),
+  ('TILDE', '~'), ('DOUBLETILDE', '~~'),
   # Assignment operators -- disallow PIPEEQUALS, AMPEQUALS
-  TMsg('EQUALS', '='), TMsg('PLUSEQUALS', '+='), TMsg('MINUSEQUALS', '-='),
-  TMsg('STAREQUALS', '*='), TMsg('SLASHEQUALS', '/='),
-  TMsg('PERCENTEQUALS', '%='), TMsg('CARATEQUALS', '^='),
-  TMsg('PIPEEQUALS', '|='), TMsg('AMPEQUALS', '&='), TMsg('TILDEEQUALS', '~='),
+  ('EQUALS', '='), ('PLUSEQUALS', '+='), ('MINUSEQUALS', '-='),
+  ('STAREQUALS', '*='), ('SLASHEQUALS', '/='),
+  ('PERCENTEQUALS', '%='), ('CARATEQUALS', '^='),
+  ('PIPEEQUALS', '|='), ('AMPEQUALS', '&='), ('TILDEEQUALS', '~='),
   # Cast -- disallow ARROW
   # Delimeters: disallow () {}
-  TMsg('LBRACKET', '['), TMsg('RBRACKET', ']'), TMsg('COMMA', ','),
-  TMsg('DOT', '.'), TMsg('COLON', ':'),
+  ('LBRACKET', '['), ('RBRACKET', ']'), ('COMMA', ','),
+  ('DOT', '.'), ('COLON', ':'),
 ])
 
 # Operators that are safe for use by path literals in code
@@ -94,25 +88,23 @@ CmdOp = Or('cmdop', [
 PathOp = Or('cmdop', [
   # Equality operators -- disallow < <= > >= == !=
   # Numeric operators -- disallow + - * % ^
-  TMsg('SLASH', '/'),
+  ('SLASH', '/'),
   # Object operators -- disallow | & ~ ~~
   # Assignment operators -- disallow = += -= *= /= %= ^= |= &= ~=
   # Cast -- disallow ARROW
   # Delimeters: disallow () [] {} , :
-  TMsg('DOT', '.'),
+  ('DOT', '.'),
 ])
 
 # Whitespace
 # w: optional whitespace (non-newline)
 w = Star('w',
-  'WS',
-  ''
+  ('WS', '')
 )
 
 # ws: mandatory whitespace (non-newline)
 ws = Plus('ws',
-  'WS',
-  ' '
+  ('WS', ' ')
 )
 
 # wn: optional whitespace preceding a single newline
@@ -123,15 +115,14 @@ wn = Seq('wn', [w, ('NEWL','')])
 
 # n: any amount of optional whitespace and newlines.  Greedy!
 n = Star('n',
-  [w, Star('nn', 'NEWL', '')],
-  ''
+  [w, Star('nn', ('NEWL', ''))]
 )
 
 # Basic parsing constructs
 End = Or('end', [
   wn,
-  Seq('endsemi', [w, 'SEMI']),
-], '')
+  Seq('endsemi', [w, ('SEMI','')]),
+])
 
 Endl = Or('endl', [
   End,
@@ -142,7 +133,7 @@ Endl = Or('endl', [
 # Currently, property access can only go through an identifier.
 Var = Seq('var',
   [('ID','(var %s'),
-   (Star('props', Seq('prop', [w, ('DOT',''), n, ('ID','%s')]),' %s'),'%s)')
+   (Star('props', (Seq('prop', [w, ('DOT',''), n, ('ID','%s')]),' %s')),'%s)')
 ])
 
 
@@ -163,13 +154,13 @@ PathToken = Or('pathtoken', [
 
 PathPart = Star('pathpart', PathToken)
 
-Path = Or('path', [
+Path = (Or('path', [
   Seq('pathstartslash', [('SLASH','/'), PathPart]),
-  #Seq('pathendslash', [PathPart, ('SLASH','/')]),  # requires parser upgrade
+  #Seq('pathendslash', [PathPart, ('SLASH','/')]),  # TODO
   Seq('pathstartdotslash', [('DOT','.'), ('SLASH','/'), PathPart]),
   Seq('pathstartdotdotslash', [('DOT','.'), ('DOT','.'), ('SLASH','/'), PathPart]),
   Seq('pathstarttildeslash', [('TILDE','~'), ('SLASH','/'), PathPart]),
-], '(path %s)')
+]), '(path %s)')
 
 Literal = Or('literal', [
   'INT', 'FIXED', 'STR',
@@ -275,12 +266,12 @@ Atom = Or('atom', [
 #  PrefixBinopExp,
 #])
 
-Exp = Or('exp', [
+Exp = (Or('exp', [
   Atom,
   #PrefixExp,
   #BinopExp,
   #PrefixBinopExp,
-], '(exp %s)')
+]), '(exp %s)')
 
 #Type = Or('type', [
 #  Atom,
@@ -432,7 +423,7 @@ StmtLoop = Or('stmtloop', [
 StmtBreak = Or('stmtbreak', [
   'BREAK',
   Seq('breaklabel',
-    [('BREAK','break'), ws, ('LABEL','<label>')]),
+    [('BREAK','break'), ws, ('ID','<label>')]),
   'CONTINUE',
 #  Seq('continuelabel',
 #    [('CONTINUE','continue'), ws, ('LABEL','<label>')]),
@@ -441,7 +432,7 @@ StmtBreak = Or('stmtbreak', [
   #  [('RETURN','return'), ws, Exp]),
   #Seq('yield',
   #  [('YIELD','yield'), ws, Exp]),
-], 'x%sy')
+])
 
 
 # Statements
@@ -458,7 +449,7 @@ Stmt = Or('stmt', [
   #Seq('stmtstmtbranch', [StmtBranch, Endl]),
   StmtLoop,
   StmtBreak,
-], 'a%sb')
+])
 
 #CodeBlock = Seq('codeblock',
 #  [('LBRACE','{'), Stmt, ('RBRACE','}')],
@@ -551,6 +542,7 @@ CmdBlock = Seq('cmdblock',
     ExpBlockProgram,
     CmdCodeBlock,
     ]), '[%s'),
+    w,
   ('NEWL', ']'),
 ])
 
@@ -593,39 +585,17 @@ Replace(List, 'ExpList', ExpList)
 # something smart the moment it turns bad.
 # The ast string is a buffer consumed by the lush_parser, which resets it to ''
 # after any consumption.
-#
-# NEW: we probably should kill the whole stack thing.  We don't need it -- just
-# do two fans.  But maybe a sometimes-used explicit-stack is better, mlehhh, I
-# don't like this duality and redundancy of sometimes-implicit and
-# sometimes-explicit stack.  Second fan out ftw!
-
-#Lush = Star('lush', CmdLine, neverGoBad=True)
 class Lush(object):
   def __init__(self):
-    self.stack = []
     self.ast = ''
     self.bad = False
     self.top = self
     self.parser = MakeParser(CmdLines, self)
-    self.active = self.parser
 
   def parse(self,token):
-    # assume that WE aren't the one cleaning up after bad branches, for now.
-    # A finished element of the stack will pop itself and as many others off as
-    # necessary.
-    disp = ''
-    if self.stack:
-      self.active = self.stack[-1]
-    else:
-      self.active = self.parser
-    # parse
-    disp = self.active.parse(token)
-    if self.active.bad:
+    disp = self.parser.parse(token)
+    if self.parser.bad:
       raise Exception("Lush failed to parse token '%s'" % token)
-    self.ast += disp
-
-  def finish(self):
-    disp = self.active.finish()
     self.ast += disp
 
 def LushParser():

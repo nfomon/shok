@@ -4,7 +4,7 @@
 # directory of this distribution and at http://lush-shell.org/copyright.html
 
 import logging
-logging.basicConfig(filename='parser.log',filemode='w',level=logging.INFO)
+logging.basicConfig(filename='parser.log',filemode='w',level=logging.WARNING)
 import sys
 import traceback as tb
 from LexToken import LexToken, NewlineToken
@@ -67,7 +67,6 @@ def parse():
       else:
         logging.info("! sending token '%s'" % NewlineToken())
         parser.parse(NewlineToken())
-        parser.finish()
         if parser.ast:
           ast += parser.ast
           parser.ast = ''

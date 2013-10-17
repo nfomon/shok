@@ -14,6 +14,9 @@ class TerminalParser(Parser):
       raise Exception("TerminalParser's Terminal must have one rule.item; instead got '%s'" % self.rule.items)
     self.tname = self.rule.items[0]
     self.value = None
+    self.displayValue = False
+    if hasattr(self.rule, 'displayValue') and self.rule.displayValue:
+      self.displayValue = self.rule.displayValue
 
   def parse(self,token):
     logging.debug("%s TerminalParser parsing '%s'" % (self.name, token))
@@ -37,6 +40,8 @@ class TerminalParser(Parser):
   def display(self):
     if self.value == None:
       return self.tname
+    if self.displayValue:
+      return '%s' % self.value[1:-1]
     return "%s:%s" % (self.tname, self.value)
 
   def fakeEnd(self):

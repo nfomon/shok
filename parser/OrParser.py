@@ -19,6 +19,7 @@ class OrParser(Parser):
       parser = MakeParser(item, self)
       self.parsers.append(parser)
       self.displays[parser] = ''
+    self.lastHappyEnding = ''
 
   def parse(self,token):
     logging.debug("%s OrParser parsing '%s'" % (self.name, token))
@@ -74,6 +75,8 @@ class OrParser(Parser):
 
     if len(doneparsers) >= 1:
       self.done = True
+      if len(doneparsers) == 1:
+        self.lastHappyEnding = copy(self.displays[doneparsers[0]])
     else:
       self.done = False
 
@@ -96,7 +99,7 @@ class OrParser(Parser):
   def fakeEnd(self):
     if len(self.parsers) == 1:
       return self.parsers[0].fakeEnd()
-    return ''
+    return self.lastHappyEnding
 
 class Or(Rule):
   def MakeParser(self,parent):
