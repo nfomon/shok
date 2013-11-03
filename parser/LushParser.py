@@ -118,9 +118,6 @@ ws = Plus('ws',
 # wn: optional whitespace preceding a single newline
 wn = Seq('wn', [w, ('NEWL','')])
 
-# nw: a single newline optionally followed by whitespace (unused)
-#nw = Seq('nw', [('NEWL',''), w])
-
 # n: any amount of optional whitespace and newlines.  Greedy!
 n = Star('n',
   [w, Star('nn', ('NEWL', ''))]
@@ -204,6 +201,7 @@ Parens = Seq('parens',
   [('LPAREN','(paren '), n, Future('SubExp'), n, ('RPAREN',')')]
 )
 
+
 # Object literals
 # Care is required because there could be an ambiguity between object literals
 # and expblocks, depending on what is allowed inside each.
@@ -272,6 +270,7 @@ Replace(TypeList, 'Type', Type)
 Replace(TypeList.items[1].items, 'Type', Type)
 Replace(FunctionReturn, 'Type', Type)
 
+
 # New statements
 # New
 NewAssign = (Seq('newassign',
@@ -338,41 +337,38 @@ StmtProcCall = (Seq('stmtproccall',
 ), '(call %s)')
 
 
-## Branch constructs
-## If
-#IfPred = Or('ifpred', [
-#  Seq('ifline', ['COMMA', w, Future('Stmt')], '%s', [2]),
-#  Seq('ifblock', [n, Future('CodeBlock')], '%s', [1]),
-#])
-#
-#If = Seq('if',
-#  [Action(Seq('ifstart', ['IF', n, Exp], '(if %s ', [2]), PreBlock), IfPred],
-#  '%s);', [1]
-#)
-#
-## Elif
-#ElifPred = Or('elifpred', [
-#  Seq('elifline', ['COMMA', w, Future('Stmt')], '%s', [2]),
-#  Seq('elifblock', [n, Future('CodeBlock')], '%s', [1]),
-#])
-#
-#Elif = Seq('elif',
-#  [Action(Seq('elifstart', [Action('ELIF', ElifCheck), n, Exp], '(elif %s ', [2]), PreBlock), ElifPred],
-#  '%s);', [1]
-#)
-#
-## Else
-#ElsePred = Or('elsepred', [
-#  Future('Stmt'),
-#  Seq('elseblock', [n, Future('CodeBlock')], '%s', [1]),
-#])
-#
-#Else = Seq('else',
-#  [Action(Action('ELSE', ElseCheck, '(else ', []), PreBlock), ElsePred],
-#  '%s);', [1]
-#)
-#
-#
+# Branch constructs
+# If
+IfPred = Or('ifpred', [
+  Seq('ifline', [w, ('COMMA',''), w, Future('Stmt')]),
+  Seq('ifblock', [n, Future('CodeBlock')]),
+])
+
+If = Seq('if',
+  [('IF','(if '), n, (Exp,'%s '), IfPred]
+)
+
+# Elif
+ElifPred = Or('elifpred', [
+  Seq('elifline', [w, ('COMMA',''), w, Future('Stmt')]),
+  Seq('elifblock', [n, Future('CodeBlock')]),
+])
+
+Elif = Seq('elif',
+  [('ELIF','(elif '), n, (Exp,'%s '), ElifPred]
+)
+
+# Else
+ElsePred = Or('elsepred', [
+  Future('Stmt'),
+  Seq('elseblock', [n, Future('CodeBlock')]),
+])
+
+Else = Seq('else',
+  [('ELSE','(else '), ElsePred]
+)
+
+
 ## Loop constructs
 #Loop = 'LOOP'         # TODO
 #LabelLoop = 'SLOOP'   # TODO
@@ -410,15 +406,14 @@ Stmt = Or('stmt', [
   StmtIsVar,
   StmtAssign,
   StmtProcCall,
-  #If,
-  #Elif,
-  #Else,
-  #Function,
   #Future('Switch'),
   #Seq('stmtstmtbranch', [StmtBranch, Endl]),
   #StmtLoop,
   StmtBreak,
 ])
+Replace(IfPred.items[0], 'Stmt', Stmt)
+Replace(ElifPred.items[0], 'Stmt', Stmt)
+Replace(ElsePred, 'Stmt', Stmt)
 
 ExpBlock = Seq('expblock',
   [('LBRACE','{'), w, Exp, w, ('RBRACE','}')]
@@ -428,14 +423,26 @@ ExpBlock = Seq('expblock',
 # A code block may have 0 or more statements.
 # We're very careful about where semicolons and newlines are allowed and/or
 # required, including as regards nested blocks.
+# Only If and Elif statements can be followed by Elif and Else statements.
 StmtExt = Or('stmtext', [
   Seq('stmtextsemi', [w, ('SEMI',';'), n, Future('CodeBlockBody')]),
   Seq('stmtextwn', [(wn,';'), n, Future('CodeBlockBody')]),
 ])
+IfStmtExt = Or('ifstmtext', [
+  Seq('ifstmtextsemi', [w, ('SEMI',';'), n, Future('IfPostCodeBlockBody')]),
+  Seq('ifstmtextwn', [(wn,';'), n, Future('IfPostCodeBlockBody')]),
+])
 
-CodeBlockStmt = Seq('codeblockstmt',
-  [Stmt, Opt(StmtExt)]
-)
+CodeBlockStmt = Or('codeblockstmt', [
+  Seq('codeblockbasicstmt', [Stmt, Opt(StmtExt)]),
+  Seq('codeblockifstmt', [If, Opt(IfStmtExt)]),
+])
+IfPostCodeBlockStmt = Or('ifpostcodeblockstmt', [
+  Seq('codeblockbasicstmt', [Stmt, Opt(StmtExt)]),
+  Seq('codeblockifstmt', [If, Opt(IfStmtExt)]),
+  Seq('codeblockelifstmt', [Elif, Opt(IfStmtExt)]),
+  Seq('codeblockelsestmt', [Else, Opt(StmtExt)]),
+])
 
 CodeBlockCodeBlock = Seq('codeblockcodeblock',
   [Future('CodeBlock'), w, (Opt(Terminal('SEMI')),';'), n, Future('CodeBlockBody')]
@@ -445,13 +452,21 @@ CodeBlockItem = Or('codeblockitem', [
   CodeBlockStmt,
   CodeBlockCodeBlock,
 ])
+IfPostCodeBlockItem = Or('ifpostcodeblockitem', [
+  IfPostCodeBlockStmt,
+  CodeBlockCodeBlock,
+])
 
 CodeBlockBody = Opt(Seq('codeblockbody',
   [n, CodeBlockItem]
 ))
-Replace(CodeBlockBody, 'CodeBlockBody', CodeBlockBody)
+IfPostCodeBlockBody = Opt(Seq('ifpostcodeblockbody',
+  [n, IfPostCodeBlockItem]
+))
 Replace(StmtExt.items[0], 'CodeBlockBody', CodeBlockBody)
 Replace(StmtExt.items[1], 'CodeBlockBody', CodeBlockBody)
+Replace(IfStmtExt.items[0], 'IfPostCodeBlockBody', IfPostCodeBlockBody)
+Replace(IfStmtExt.items[1], 'IfPostCodeBlockBody', IfPostCodeBlockBody)
 Replace(CodeBlockCodeBlock, 'CodeBlockBody', CodeBlockBody)
 
 CodeBlock = Seq('codeblock',
@@ -459,6 +474,9 @@ CodeBlock = Seq('codeblock',
 )
 Replace(Function[0], 'CodeBlock', CodeBlock)
 Replace(CodeBlockCodeBlock, 'CodeBlock', CodeBlock)
+Replace(IfPred.items[1], 'CodeBlock', CodeBlock)
+Replace(ElifPred.items[1], 'CodeBlock', CodeBlock)
+Replace(ElsePred.items[1], 'CodeBlock', CodeBlock)
 
 # Program invocation
 
