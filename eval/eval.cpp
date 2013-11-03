@@ -4,9 +4,8 @@
 /* Lush abstract syntax tree evaluator
  *
  * Reads lines of specially-formatted AST text input from stdin, performs
- * static analysis to ensure it specifies a valid program, and executes the
- * program.  This may involve forking off child processes to run shell
- * commands.
+ * static analysis to ensure it specifies a valid program, and emits text on
+ * stdout possibly instructing the shell to run programs on our behalf.
  *
  * In the future, this may be broken into several parts; such as operator
  * re-ordering, type-checking and static analysis, optimization, code/bytecode
@@ -59,7 +58,7 @@ int main(int argc, char *argv[]) {
         }
         log.info("Evaluating: '" + ast.print() + "'");
         ast.evaluate();
-        cout << "" << endl;
+        cout << endl;
       } catch (RecoveredError& e) {
         log.error(string("Error evaluating parse tree: ") + e.what());
         cout << endl;
