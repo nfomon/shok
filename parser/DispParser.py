@@ -23,6 +23,7 @@ class DispParser(Parser):
     self.parser = MakeParser(self.rule.items[0], self)
     self.bad = self.parser.bad
     self.done = self.parser.done
+    self.name = self.name % self.parser.name
 
   def parse(self,token):
     if self.bad:
@@ -32,6 +33,7 @@ class DispParser(Parser):
     wasdone = self.parser.done
     disp = self.parser.parse(token)
     self.bad = self.parser.bad
+    self.evil = self.parser.evil
     self.done = self.parser.done
     if self.bad:
       if self.firstparse:
@@ -58,7 +60,7 @@ class DispParser(Parser):
 
 class Disp(Rule):
   def __init__(self,items,msg='%s'):
-    Rule.__init__(self, '<disp>', [items])
+    Rule.__init__(self, '<disp:%s>', [items])
     self.msg = msg
 
   def MakeParser(self,parent):

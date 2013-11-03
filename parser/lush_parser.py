@@ -57,19 +57,15 @@ def parse():
         for token in tokens:
           t = LexToken(token)
           logging.info("! sending token '%s'" % t)
-          parser.parse(t)
-          if parser.ast:
-            ast += parser.ast
-            parser.ast = ''
+          ast += parser.parse(t)
 
-      if parser.bad:
+      if parser.evil:
+        raise Exception("Top parser went evil: %s" % parser)
+      elif parser.bad:
         raise Exception("Top parser went bad: %s" % parser)
       else:
         logging.info("! sending token '%s'" % NewlineToken())
-        parser.parse(NewlineToken())
-        if parser.ast:
-          ast += parser.ast
-          parser.ast = ''
+        ast += parser.parse(NewlineToken())
         try:
           print ast
           sys.stdout.flush()

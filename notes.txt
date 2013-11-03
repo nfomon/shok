@@ -585,3 +585,28 @@ a {x} b
 {x}a b c{3+2}d
   [{(exp (ID:'x'))} ID:'a',ID:'b',ID:'c' {(exp (PLUS INT:'3' INT:'2'))} ID:'d']
 
+-----
+
+uhhh
+SeqParser doesn't necessarily go evil if it's been outputting stuff from a
+parser that goes evil.  We're accumulating the tokens we gave it, right?  Say
+it goes from ok, even, to evil.  Then let's swing across the rest of us with
+those accum's.  If we go bad along THAT path, then we're evil, sure!  But if we
+can move done after we do that, or even just ok, then coooool, no evil was done
+:)
+
+uhhhhh that's what we're doing, apparently. hm.
+
+-----
+2k13-10-30
+
+I'm not convinced SeqParser couldn't be improved by some amount of,
+maybe backtracking is the wrong word, but accum'ing even more than it
+does currently and double-checking that even though a parser went
+evil, say, that if we feed-forward those same tokens across later
+parsers that we don't end up with the exact same text for that much of
+it, and can then keep going.
+
+This is a bit much to dive into right now, though, if we can get away
+with re-writing the language's use of the parser instead....
+

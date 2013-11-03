@@ -11,44 +11,77 @@ import logging
 # advancing only when an individual rule is done and turns bad if given another
 # token.  The SeqParser is done anytime that its last rule is done.
 #
-# This is the quick+simple SeqParser.  It will not backtrack prior to the last
-# token that brought us to a done state.  Equivalently, it requires that the
-# first ok (not done) token accepted by a parser that directly follows a
-# done-token (token that puts the parser in a done state) is not a token that
-# is accepted by the next parser that accepts a token.  We check this as a way
-# to identify if this SeqParser is being used in violation of the condition.
-# This is a runtime counterexample-check, kind of ugly, but better than not
-# knowing :)  If a sequence cannot obey this constraint (and you're sure you
-# can't just use an Opt to get around it), use a DecentSeqParser or a
-# StableSeqParser instead.
+# If a not-the-last rule is fed a token and it moves from done to not-bad,
+# not-done: we greedily assume things will pan out in our favour, and emit what
+# text we can.  If you cared about deeper correctness, you should have used a
+# Nice or Decent or StableSeqParser.  Although, we also accumulate all the
+# tokens we feed to any intermediary parser.  If it goes bad, we pretend that
+# we haven't fed it (since its last done state; no deeper backtracking than
+# that!) and run the tokens forward.  In this case, I think we currently don't
+# allow that intermediary parser to have output any text... but eventually we
+# can make it so we're still ok if marching forward past it we'll output all
+# the same text that it gave us in "evilness".
 #
-# Note that this scheme accompanies an explicit prioritization of getting
-# displaytext output from a parser ahead of correctness in a specific way.  To
-# be more correct we could hold off outputting a position of the SeqParser
-# until we move past it.  Instead here we are outputting each token of a
-# position until it gets to its first done state.  From there, we output only
-# at each time the state becomes done again.  This is a bit greedy but I think
-# still easy enough to manage.  Perhaps the DecentSeqParser would be where we
-# wait until we actually move past a position to return all its displaytext.
+# We turn 'evil' if:
+# - we have returned non-empty text and go bad before ever being done
+#   -- i.e. go bad with unconfirmed
+# - after ever being done, we go ok (with non-empty text) and then bad instead
+# of getting done again
+#   -- i.e. go bad with unconfirmed
+# - we ever return text from a parser that then turns evil, and running the
+# accumulated tokens forward gives us different text than what we already
+# returned (currently I'm not sure we do this, we might only allow an
+# intermediary parser to go evil if it gave us no text since it was last done).
+#
+# --- begin old thoughts:
+# HRRRM or wait, let's rethink that.  We turn evil if we realize we have ever
+# emit text that was cursed.  What is our normal process?
+# We emit every result from every parse that is accepted by a parser until it
+# goes bad, and then we either go bad ourselves or advance.  When active goes
+# from done to bad, we advance.  We go bad if we go from not-done to bad, ever,
+# or if the last state goes bad for any reason.
+#
+# Thus, we go evil if self.unconfirmed and self.bad.  OR if any parser goes
+# evil and we may have used its text ever.
+#
+# when we do:
+#   disp = self.active.parse(token)
+#
+# well, we should check if active was evil before the parse.
+# If it is evil only after the parse, hmm, have we used its output before?  how
+# to know?  um because it was active.  also, we could buffer the text and state
+# from each active parser to make our own determination about whether or not
+# it's evil.  But certainly if it's ever evil then we're evil, if it ever gave
+# us any text.
+#
+# 2k13-10-27 let's return '' if we go bad.  See what this breaks.  It means we
+# can trust "evil" means "something previous was evil".  Note that evil always
+# means "previously provided bad non-empty text".
+# 2k13-10-28: ^^ careful.  When a sub-parser goes from done to bad, we do want
+# to use the "going bad" text!  If that's in the last pos, then do return it.
+# So easier: let's always return the text from the moment we turn bad.  But
+# what if we turned evil?
+# Evil means that *previous* text was bad.  If evil, then choose not to return
+# the current display text.  We can make this true everywhere.
+# --- end old thoughts
+
 class SeqParser(Parser):
   def __init__(self,rule,parent):
     Parser.__init__(self, rule, parent)
     self.parsers = []   # parsers constructed for each of rule.items
     self.active = None  # main active parser (top of self.parsers)
     self.pos = 0        # position in self.rule.items
-
-    # The not-done tokens that immediately followed done-tokens by the last
-    # parser that accepted any tokens.  If the next parser that accepts a
-    # token's very first token is in this set, then this SeqParser was used
-    # erroneously!
-    self.firstnotdonetokens = set()
-    self.everdone = []  # True for each position that was ever done
-    self.tokenssincedone = []   # each token observed since the last done state
-    self.display = ''   # buffer of text to emit at the next emittable state
-    self.lastdonetext = ''    # text from the last time we were done
+    self.unconfirmed = '' # text we have output since starting or being done
+    self.activeused = False # have we ever previously returned text from active
+    self.everdone = []  # true for each position that was ever done
+    self.tokenssincedone = [] # each token observed since the last done state
+    self.everevil = False # have we ever emit stuff from a parser that went evil
+    self.debug = []
 
   def parse(self,token):
-    firsttoken = False
+    if self.name in self.debug:
+      print
+      print "%s parsing %s at pos=%s" % (self.name, token, self.pos)
     if self.pos >= len(self.rule.items):
       self.bad = True
       self.done = False
@@ -58,53 +91,73 @@ class SeqParser(Parser):
       self.active = self.parsers[-1]
       self.bad = self.active.bad
       self.everdone.append(self.active.done)
-      firsttoken = True
+      self.activeused = False
     if self.pos != len(self.parsers)-1:
       raise Exception("%s SeqParser: parsers (%s) vs. self.pos=%s mismatch; len=%s" % (self.name, self.parsers, self.pos, len(self.parsers)))
+    if self.evil and not self.bad:
+      raise Exception("%s SeqParser in bad-evil inconsistency")
     if self.bad:
       self.done = False
       raise Exception("%s SeqParser is bad; can't accept token '%s'" % (self.name, token))
 
     wasdone = self.active.done    # was the current active parser already done
+    wasevil = self.active.evil    # this should be unnecessary I think..
+    if wasdone and wasevil:
+      raise Exception("%s SeqParser's active %s is both done and evil at %s" % (self.name, self.active.name, token))
+    elif wasevil:
+      raise Exception("%s SeqParser refuses to pass %s to already evil %s" % (self.name, token, self.active.name))
 
     # Parse!
-    olddisp = copy(self.display)
-    self.display = ''
-    newdisp = self.active.parse(token)
+    disp = self.active.parse(token)
+
+    # just in case checks
+    if self.active.evil and not self.active.bad:
+      raise Exception("SeqParser sanity 1 fail")
+    elif self.active.bad and self.active.done:
+      raise Exception("SeqParser sanity 2 fail")
+
+#    if self.active.evil and disp:
+#      raise Exception("%s's active %s went evil but gave '%s'; it this allowed??" % (self.name, self.active.name, disp))
 
     # if in last pos
     if self.pos == len(self.rule.items)-1:
       self.bad = self.bad or self.active.bad
       if self.bad:
         self.done = False
+        if self.unconfirmed:
+          self.evil = True
+        elif self.active.evil:
+          raise Exception("last pos active is evil but no %s.unconfirmed, how is this possible" % self.name)
       else:
         self.done = self.active.done
-      logging.info("%s SeqParser received '%s', last state, olddisp '%s', newdisp '%s'" % (self.name, token, olddisp, newdisp))
-      return olddisp + newdisp
+      logging.info("%s SeqParser received '%s', last state, bad=%s, emits '%s'" % (self.name, token, self.bad, disp))
+      if self.name in self.debug:
+        print "%s in lastpos, now bad=%s, evil=%s, done=%s" % (self.name, self.bad, self.evil, self.done)
+      if self.done:
+        self.unconfirmed = ''
+      else:
+        self.unconfirmed += disp
+      if disp:
+        self.activeused = True
+      return disp
 
     if self.active.bad:
-      self.firstnotdonetokens = set()
       if wasdone:
         # accept that state as having never parsed this token yet, and go
-        # forward
+        # forward.  We don't even care if it thinks it went evil.
+        self.pos += 1
+        if self.name in self.debug:
+          print "%s active %s wasdone, its bad=%s evil=%s" % (self.name, self.active.name, self.active.bad, self.active.done)
+          print "%s at %s evil=%s reparsing %s with unconfirmed '%s'" % (self.name, self.pos, self.evil, token, self.unconfirmed)
+        self.active = None
+        if self.name in self.debug:
+          print "%s reparsing %s!" % (self.name, token)
+        disp += self.parse(token)
+      elif self.everdone[self.pos]:
+        # we can try to feed forward tokens since last done state
         self.pos += 1
         self.active = None
-        self.lastdonetext = ''
-        newdisp += self.parse(token)
-        if self.bad:
-          return olddisp
-        return olddisp + newdisp
-
-      # if this state was ever done, feed forward all the tokens it has been
-      # fed since the last time it was done.  Instead of accumulated display
-      # text (olddisp) we want to predicate the current and all the new
-      # (forward-fed accum token) display text with just the output of the last
-      # *done* state, lastdonetext.
-      olddisp = copy(self.lastdonetext)
-      self.lastdonetext = ''
-      if self.everdone[self.pos]:
-        self.pos += 1
-        self.active = None
+        newdisp = ''
         tokenssincedone = copy(self.tokenssincedone)
         self.tokenssincedone = []
         for t in tokenssincedone:
@@ -112,24 +165,21 @@ class SeqParser(Parser):
             newdisp += self.parse(t)
         if not self.bad:
           newdisp += self.parse(token)
+        disp += newdisp
       else:
         self.bad = True
         self.done = False
-      if self.bad:
-        return olddisp
-      return olddisp + newdisp
-
-    # We accepted a token.  If it's the first token for this parser, ensure
-    # it's not in the firstnotdonetokens set!
-    if firsttoken:
-      if token.ttype in self.firstnotdonetokens:
-        raise Exception("%s SeqParser pos=%s accepts first token \"%s\" which was the first not done token in the previous parser that accepted tokens!  This violates a condition for usage of SeqParser.  Please use a DecentSeqParser or StableSeqParser instead" % (self.name, self.pos, token));
-      self.firstnotdonetokens = set()
+        if self.unconfirmed:
+          self.evil = True
+        elif self.active.evil:
+          raise Exception("active is evil but no %s.unconfirmed, how is this possible" % self.name)
+        # failing above check, let active.evil => self.evil   ?????MAYBE??
+      if self.name in self.debug:
+        print "%s at %s token=%s done=%s bad=%s evil=%s" % (self.name, self.pos, token, self.done, self.bad, self.evil)
+      return disp
 
     if self.active.done:
       # if all upcoming rule items are done, then mark the whole Seq as done.
-      # Note that we're not ready to "commit" to done as much as we can in the
-      # "last pos, wasdone" state further above.
       self.done = True    # a bit eager, n'est-ce pas?
       for item in self.rule.items[self.pos+1:]:
         if not IsRuleDone(item):
@@ -137,27 +187,31 @@ class SeqParser(Parser):
           break
       self.everdone[self.pos] = True
       self.tokenssincedone = []
-      self.lastdonetext = self.fakeEnd()
-      return olddisp + newdisp
+      if self.done:
+        self.unconfirmed = ''
+      else:
+        self.unconfirmed += disp
+      if self.active.evil:
+        raise Exception("Terror")
+      if self.name in self.debug:
+        print "%s done=%s, active %s done=%s unc='%s' disp='%s'" % (self.name, self.done, self.active.name, self.active.done, self.unconfirmed, disp)
+      return disp
 
-    if wasdone:
-      self.firstnotdonetokens.add(token.ttype)
-
-    # This state is ok.  If the active parser has ever been done, accumulate
-    # the text from this parse; we don't know if we'll actually use it, or if
-    # it will be fed forward.  Return ''.  If this state has never been done,
-    # alternatively, return whatever we can (it *must* be accepted for the
-    # whole sequence to ever work).  What if it starts done?  Then indeed it
-    # has ever been done, that counts too, make sure we accumulate in that case
-    # and output nothing right now -- until we arrive at a done state again.
     if self.everdone[self.pos]:
       self.tokenssincedone.append(token)
-      self.display = olddisp + newdisp
-      return ''
-    return olddisp + newdisp
+
+    self.done = False   # in case we started done; not true now after a parse
+    if self.active.evil:
+      raise Exception("Awful")
+    self.unconfirmed += disp
+    if self.name in self.debug:
+      print "%s is ok, unconfirmed='%s', disp='%s', done=%s" % (self.name, self.unconfirmed, disp, self.done)
+    return disp
 
   def fakeEnd(self):
     if self.active:
+      if self.active.evil:
+        raise Exception("no fakeend when active.evil I guess")
       return self.active.fakeEnd()
     return ''
 

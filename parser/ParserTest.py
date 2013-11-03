@@ -4,6 +4,7 @@
 import unittest
 from LexToken import LexToken
 from MakeRule import MakeRule
+from Rule import Opt
 from Parser import MakeParser
 from ActionParser import Action
 from OrParser import Or
@@ -92,6 +93,15 @@ class TestTerminals(RuleTester):
     ]
     self.ruleTest(rule, self.series)
 
+  def test_TermOpt(self):
+    start = ini(False, True, '')
+    rule = (Opt(Terminal('A')),'<%s>')
+    self.series = [
+      [start, tok('1:A', False, True, '<A'),
+              tok('1:A', True, False, '>')],
+    ]
+    self.ruleTest(rule, self.series)
+
 
 class TestSeq(RuleTester):
   def test_One(self):
@@ -122,7 +132,7 @@ class TestSeq(RuleTester):
              tok('1:B', False, True, '23B'),
              tok('1:B', True, False, '4')],
       [init, tok('1:A', False, False, '1A'),
-             tok('1:A', True, False)],
+             tok('1:A', True, False, '2')],
       [init, tok('1:X', True, False)],
     ]
     self.ruleTest(rule, series)
@@ -135,7 +145,7 @@ class TestSeq(RuleTester):
              tok('1:C', False, True, '45C'),
              tok('1:D', True, False, '6')],
       [init, tok('1:A', False, False, '1A'),
-             tok('1:A', True, False)],
+             tok('1:A', True, False, '2')],
       [init, tok('1:X', True, False)],
     ]
     self.ruleTest(rule, series)
@@ -176,11 +186,11 @@ class TestSeq(RuleTester):
     series = [
       [init, tok('1:A', False, False, '!a1A'),
              tok('1:B', False, False, '23B'),
-             tok('1:X', True, False)],
+             tok('1:X', True, False, '4')],
       [init, tok('1:A', False, False, '!a1A'),
              tok('1:B', False, False, '23B'),
              tok('1:C', False, False, '45C'),
-             tok('1:Q', True, False)],
+             tok('1:Q', True, False, '6b@')],
       [init, tok('1:A', False, False, '!a1A'),
              tok('1:B', False, False, '23B'),
              tok('1:C', False, False, '45C'),
@@ -190,9 +200,9 @@ class TestSeq(RuleTester):
       [init, tok('1:A', False, False, '!a1A'),
              tok('1:B', False, False, '23B'),
              tok('1:C', False, False, '45C'),
-             tok('1:A', False, False, ''),
-             tok('1:B', False, False, ''),
-             tok('1:C', False, False, '6ba1A23B45C'),
+             tok('1:A', False, False, '6ba1A'),
+             tok('1:B', False, False, '23B'),
+             tok('1:C', False, False, '45C'),
              tok('1:C', False, False, '6b@ #c7C'),
              tok('1:D', False, False, '89D'),
              tok('1:E', False, True, '01E'),
@@ -218,30 +228,30 @@ class TestSeq(RuleTester):
     series = [
       [init, tok('1:A', False, False, '!a1A'),
              tok('1:B', False, False, '23B'),
-             tok('1:X', True, False)],
+             tok('1:X', True, False, '4')],
       [init, tok('1:A', False, False, '!a1A'),
              tok('1:B', False, False, '23B'),
              tok('1:C', False, False, '45C'),
-             tok('1:A', False, False),
-#             tok('1:D', True, False)],   # Old limitation!
-             tok('1:D', False, False, '6b@ #c1A23D'),
-             tok('1:E', False, True, '45E')],
+             tok('1:A', False, False, '6ba1A'),
+             tok('1:D', False, False, '2')],   # Old limitation!
+#             tok('1:D', False, False, '6b@ #c1A23D'),
+#             tok('1:E', False, True, '45E')],
+#      [init, tok('1:A', False, False, '!a1A'),
+#             tok('1:B', False, False, '23B'),
+#             tok('1:C', False, False, '45C'),
+#             tok('1:A', False, False),
+#             tok('1:B', False, False),
+#             tok('1:C', False, False, '6ba1A23B45C'),
+#             tok('1:A', False, False),
+#             tok('1:D', False, False, '6b@ #c1A23D'),
+#             tok('1:E', False, True, '45E'),
+#             tok('1:A', False, False, '6dc1A'),
+#             tok('1:D', False, False, '23D'),
+#             tok('1:E', False, True, '45E')],
       [init, tok('1:A', False, False, '!a1A'),
              tok('1:B', False, False, '23B'),
              tok('1:C', False, False, '45C'),
-             tok('1:A', False, False),
-             tok('1:B', False, False),
-             tok('1:C', False, False, '6ba1A23B45C'),
-             tok('1:A', False, False),
-             tok('1:D', False, False, '6b@ #c1A23D'),
-             tok('1:E', False, True, '45E'),
-             tok('1:A', False, False, '6dc1A'),
-             tok('1:D', False, False, '23D'),
-             tok('1:E', False, True, '45E')],
-      [init, tok('1:A', False, False, '!a1A'),
-             tok('1:B', False, False, '23B'),
-             tok('1:C', False, False, '45C'),
-             tok('1:C', True, False)],
+             tok('1:C', True, False, '6b@')],
     ]
     self.ruleTest(rule, series)
 
@@ -257,28 +267,28 @@ class TestSeq(RuleTester):
           'c%sd')), '[%s]'),
       ])
     series = [
-      [init, tok('1:A', False, False),
-             tok('1:B', False, False),
-             tok('1:X', True, False)],
-      [init, tok('1:A', False, False),
-             tok('1:B', False, False),
-             tok('1:C', False, False, '<a1A23B45C'),
-             tok('1:X', True, False)],
-      [init, tok('1:A', False, False),
-             tok('1:B', False, False),
-             tok('1:C', False, False, '<a1A23B45C'),
+      [init, tok('1:A', False, False, '<a1A'),
+             tok('1:B', False, False, '23B'),
+             tok('1:X', True, False, '4')],
+      [init, tok('1:A', False, False, '<a1A'),
+             tok('1:B', False, False, '23B'),
+             tok('1:C', False, False, '45C'),
+             tok('1:X', True, False, '6b>')],
+      [init, tok('1:A', False, False, '<a1A'),
+             tok('1:B', False, False, '23B'),
+             tok('1:C', False, False, '45C'),
              tok('1:D', False, False, '6b>(D'),
              tok('1:E', False, True, '){E'),
              tok('1:F', False, False, '}[ceF'),
              tok('1:G', False, False, 'fgG'),
              tok('1:H', False, True, 'hiH'),
              tok('1:X', True, False, 'jd]')],
-      [init, tok('1:A', False, False),
-             tok('1:B', False, False),
-             tok('1:C', False, False, '<a1A23B45C'),
-             tok('1:A', False, False),
-             tok('1:B', False, False),
-             tok('1:C', False, False, '6ba1A23B45C'),
+      [init, tok('1:A', False, False, '<a1A'),
+             tok('1:B', False, False, '23B'),
+             tok('1:C', False, False, '45C'),
+             tok('1:A', False, False, '6ba1A'),
+             tok('1:B', False, False, '23B'),
+             tok('1:C', False, False, '45C'),
              tok('1:D', False, False, '6b>(D'),
              tok('1:E', False, True, '){E'),
              tok('1:F', False, False, '}[ceF'),
@@ -488,10 +498,10 @@ class TestPlus(RuleTester):
     series = [
       [init, tok('1:X', True, False)],
       [init, tok('1:A', False, False, 'x<1A'),
-             tok('1:X', True, False)],
+             tok('1:X', True, False, '2')],
       [init, tok('1:A', False, False, 'x<1A'),
              tok('1:B', False, False, '23B'),
-             tok('1:X', True, False)],
+             tok('1:X', True, False, '4')],
       [init, tok('1:A', False, False, 'x<1A'),
              tok('1:B', False, False, '23B'),
              tok('1:C', False, True, '45C'),
@@ -500,7 +510,7 @@ class TestPlus(RuleTester):
              tok('1:B', False, False, '23B'),
              tok('1:C', False, True, '45C'),
              tok('1:A', False, False, '6><1A'),
-             tok('1:X', True, False)],
+             tok('1:X', True, False, '2')],
       [init, tok('1:A', False, False, 'x<1A'),
              tok('1:B', False, False, '23B'),
              tok('1:C', False, True, '45C'),
@@ -557,12 +567,12 @@ class TestStar(RuleTester):
         [('A','1%s2'), ('B','3%s4'), ('C','5%s6')]), '<%s>')),
       'x%sy')
     series = [
-      [start, tok('1:X', True, False, '')],
+      [start, tok('1:X', True, False)],
       [start, tok('1:A', False, False, 'x<1A'),
-              tok('1:X', True, False)],
+              tok('1:X', True, False, '2')],
       [start, tok('1:A', False, False, 'x<1A'),
               tok('1:B', False, False, '23B'),
-              tok('1:X', True, False)],
+              tok('1:X', True, False, '4')],
       [start, tok('1:A', False, False, 'x<1A'),
               tok('1:B', False, False, '23B'),
               tok('1:C', False, True, '45C'),
@@ -571,7 +581,7 @@ class TestStar(RuleTester):
               tok('1:B', False, False, '23B'),
               tok('1:C', False, True, '45C'),
               tok('1:A', False, False, '6><1A'),
-              tok('1:X', True, False)],
+              tok('1:X', True, False, '2')],
       [start, tok('1:A', False, False, 'x<1A'),
               tok('1:B', False, False, '23B'),
               tok('1:C', False, True, '45C'),
@@ -592,10 +602,10 @@ class TestStar(RuleTester):
     series = [
       [start, tok('1:X', True, False)],
       [start, tok('1:A', False, True, '<(1aA'),
-              tok('1:A', False, True, 'baA'),
+              tok('2:A', False, True, 'baA'),
               tok('1:B', False, True, 'b23cB'),
-              tok('1:B', False, True, 'dcB'),
-              tok('1:X', True, False, 'd4)>')],
+              tok('2:B', False, True, 'dcB'),
+              tok('3:X', True, False, 'd4)>')],
       [start, tok('1:B', False, True, '<(3cB'),
               tok('1:A', False, True, 'd4)(1aA'),
               tok('1:B', False, True, 'b23cB')],

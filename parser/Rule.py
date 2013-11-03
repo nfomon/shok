@@ -9,9 +9,17 @@ class Rule:
     self.items = items
     self.bad = False
     self.done = False
+    self.evil = False
 
   def MakeParser(self,parent):
     return Parser.Parser(self, parent)
+
+  def __repr__(self):
+    return "{rule %s}" % self.name
+
+def Opt(rule):
+  rule.done = True
+  return rule
 
 def IsRuleDone(x):
   if hasattr(x, 'done'):

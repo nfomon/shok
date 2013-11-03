@@ -139,3 +139,29 @@ beyond the Star.  But I don't think I'll care about that.
 
  - oy I think I tooootally care about that now.  maybe.  hm.  let's
    revisit all the parser logic and update it for correctness.
+
+-----
+2k13-10-17
+
+CmdCodeBlock = [w, '{', Stmt*, w, '}']
+
+I need this to output every single token that is accepted by the Stmt.  That's
+even after the Stmt is done but still accepts another token.  But in that case,
+I can't know that I'm not going to accumulate some tokens and then feed them
+foreward when, say, the Stmt accepts WS but not '}'.
+
+1. Everytime I send a token to the Stmt, I could test if it matches to 'w' as
+well.  If it does, then just buffer the result from the Stmt, otherwise it's ok
+to send it.
+ - a bunch more work to the SeqParser
+ - fails other cases still, like [[A B C]* [A B D] E], which exposes how brutal
+   this backtracking can be.
+ - I think this is a compromise I was trying to achieve at one point..
+
+2. Consider this sequence a special-case, and decide to greedily output
+anything that the Stmt accepts.
+
+OHHHHH wait.  It should be up to the Disps to be in appropriate places, i.e.
+the inner parts need to know not to want to display things that are too early.
+Let Seqs output as soon as they "can", but we'll make our Disp rules stop them
+from actually saying anything wrong.  Does this work??

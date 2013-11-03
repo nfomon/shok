@@ -14,6 +14,8 @@ class TerminalParser(Parser):
       raise Exception("TerminalParser's Terminal must have one rule.item; instead got '%s'" % self.rule.items)
     self.tname = self.rule.items[0]
     self.value = None
+    self.parsedtodone = False # Have we already parsed the token?
+                              # Separate from done because we might be optional
     self.displayValue = False
     if hasattr(self.rule, 'displayValue') and self.rule.displayValue:
       self.displayValue = self.rule.displayValue
@@ -22,12 +24,13 @@ class TerminalParser(Parser):
     logging.debug("%s TerminalParser parsing '%s'" % (self.name, token))
     if self.bad:
       raise Exception("%s TerminalParser already bad" % self.name)
-    if self.done:
+    if self.parsedtodone:
       self.done = False
       self.bad = True
       return ''
     if token.ttype == self.tname:
       self.done = True
+      self.parsedtodone = True
       if token.tvalue != None and token.tvalue != '':
         self.value = token.tvalue
     else:
@@ -53,4 +56,11 @@ class Terminal(Rule):
 
   def MakeParser(self,parent):
     return TerminalParser(self, parent)
+
+# A Terminal that displays the original text (value) verbatim, and not the
+# terminal name.
+class ValueTerminal(Terminal):
+  def __init__(self,name):
+    Terminal.__init__(self, name)
+    self.displayValue = True
 

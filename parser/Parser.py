@@ -11,6 +11,7 @@ class Parser(object):
     self.name = rule.name
     self.bad = self.rule.bad
     self.done = self.rule.done
+    self.evil = self.rule.evil
     if parent:
       self.parent = parent
       self.top = parent.top

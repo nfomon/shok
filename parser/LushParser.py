@@ -4,26 +4,34 @@
 # Parser for a mini language, to experiment with the parser framework.
 
 import MakeRule
+from Rule import Opt, Rule
 from Parser import MakeParser
 from ActionParser import Action
 from OrParser import Or
 from PlusParser import Plus
 from SeqParser import Seq
 from StarParser import Star
-from TerminalParser import Terminal
-from ValueParser import ValueTerminal
+from TerminalParser import Terminal, ValueTerminal
 import logging
 
 class Future(object):
   def __init__(self,name):
     self.name = name
+  def __repr__(self):
+    return 'Future(%s)' % self.name
 
+# most pythonic routine evahr!!11
 def Replace(rule,name,new):
-  logging.debug("REPLACE r=%s i=%s n=%s new=%s" % (rule.name, rule.items, name, new))
-  for i, item in enumerate(rule.items):
-    if isinstance(item, Future):
-      if item.name == name:
-        rule.items[i] = new
+  if isinstance(name, str):
+    logging.debug("REPLACE r=%s i=%s n=%s new=%s" % (rule.name, rule.items, name, new))
+    for i, item in enumerate(rule.items):
+      if isinstance(item, Future):
+        if item.name == name:
+          rule.items[i] = new
+  else:
+    if not isinstance(rule.items[name][0], Future):
+      raise Exception("rule %s tuple at index %s is type %s not Future" % (rule.name, name, type(rule.items[name][0])))
+    rule.items[name] = (new, rule.items[name][1])
 
 # Language token groups
 Keyword = Or('keyword', [
@@ -110,8 +118,8 @@ ws = Plus('ws',
 # wn: optional whitespace preceding a single newline
 wn = Seq('wn', [w, ('NEWL','')])
 
-# nw: a single newline optionally followed by whitespace
-#nw = Seq('nw', [('NEWL',''), (w,'')])
+# nw: a single newline optionally followed by whitespace (unused)
+#nw = Seq('nw', [('NEWL',''), w])
 
 # n: any amount of optional whitespace and newlines.  Greedy!
 n = Star('n',
@@ -131,10 +139,9 @@ Endl = Or('endl', [
 
 # Variable or object property access
 # Currently, property access can only go through an identifier.
-Var = Seq('var',
-  [('ID','(var %s'),
-   (Star('props', (Seq('prop', [w, ('DOT',''), n, ('ID','%s')]),' %s')),'%s)')
-])
+Var = (Seq('var',
+  ['ID', Star('props', Seq('prop', [('DOT',''), n, ('ID',' %s')]))]
+), '(var %s)')
 
 
 # Expressions
@@ -144,6 +151,11 @@ CmdLiteral = Or('cmdliteral', [
   ValueTerminal('FIXED'),
   ValueTerminal('STR'),
   ValueTerminal('ID'),
+])
+
+PathSubToken = Or('pathsubtoken', [
+  Keyword,
+  CmdLiteral,
 ])
 
 PathToken = Or('pathtoken', [
@@ -156,7 +168,7 @@ PathPart = Star('pathpart', PathToken)
 
 Path = (Or('path', [
   Seq('pathstartslash', [('SLASH','/'), PathPart]),
-  #Seq('pathendslash', [PathPart, ('SLASH','/')]),  # TODO
+  Plus('pathendslash', Seq('pathendslashsub', [PathSubToken, ('SLASH','/')])),
   Seq('pathstartdotslash', [('DOT','.'), ('SLASH','/'), PathPart]),
   Seq('pathstartdotdotslash', [('DOT','.'), ('DOT','.'), ('SLASH','/'), PathPart]),
   Seq('pathstarttildeslash', [('TILDE','~'), ('SLASH','/'), PathPart]),
@@ -188,21 +200,31 @@ List = Seq('list',
   [('LBRACKET','(list '), n, Future('ExpList'), n, ('RBRACKET',')')]
 )
 
-#Parens = Seq('parens',
-#  [('LPAREN','(paren '), n, Future('SubExp'), n, ('RPAREN',')')]
-#)
+Parens = Seq('parens',
+  [('LPAREN','(paren '), n, Future('SubExp'), n, ('RPAREN',')')]
+)
 
-# Object literals don't need to push themselves on a stack or anything,
-# since their AST will not come out until at least the whole expression
-# is done.
-# Care is required because there may be an ambiguity between object
-# literals and expblocks.  What do we allow in an object literal?  Just
-# new statements?
+# Object literals
+# Care is required because there could be an ambiguity between object literals
+# and expblocks, depending on what is allowed inside each.
+MemberExt = Or('memberext', [
+  Seq('memberextsemi', [w, ('SEMI',';'), n, Future('ObjectBody')]),
+  Seq('memberextwn', [(wn,';'), n, Future('ObjectBody')]),
+])
 
-#Object = Seq('object',
-#  ['LBRACE', n, ObjectBody, n, 'RBRACE'],
-#  '{obj %s}', [2]
-#)
+Member = Seq('member',
+  [(Future('NewAssign'),' %s'), Opt(MemberExt)]
+)
+
+ObjectBody = Opt(Seq('objectbody',
+  [n, Member]
+))
+Replace(MemberExt.items[0], 'ObjectBody', ObjectBody)
+Replace(MemberExt.items[1], 'ObjectBody', ObjectBody)
+
+Object = Seq('object',
+  [('LBRACE','(object'), n, ObjectBody, w, ('RBRACE','/obj)')]
+)
 
 ####TypeList = Seq('typelist',
 ####  [Future('Type'), Star('typelists',
@@ -240,122 +262,87 @@ List = Seq('list',
 Atom = Or('atom', [
   Literal,
   List,
-  #Parens,
-  #Object,
+  Parens,
+  Object,
 ])
 
-#PrefixExp = Seq('prefix',
-#  [(PrefixOp, n, Future('SubExp')],
-#  '(%s %s)', [0,2]
-#)
-#
-#BinopExp = Seq('binop',
-#  [Atom, w, BinOp, n, Future('SubExp')],
-#  '(%s %s %s)', [2,0,4]
-#)
-#
-#PrefixBinopExp = Seq('prefixbinop',
-#  [PrefixOp, n, Atom, w, BinOp, n, Future('SubExp')],
-#  '(%s (%s %s) %s)', [4,0,2,6]
-#)
-#
-#SubExp = Or('subexp', [
-#  Atom,
-#  PrefixExp,
-#  BinopExp,
-#  PrefixBinopExp,
-#])
+PrefixExp = Seq('prefixexp',
+  [(PrefixOp, '%s '), n]
+)
 
-Exp = (Or('exp', [
-  Atom,
-  #PrefixExp,
-  #BinopExp,
-  #PrefixBinopExp,
-]), '(exp %s)')
+BinopExp = Seq('binopexp',
+  [w, (BinOp,' %s'), n, (Future('SubExp'),' %s')]
+)
 
-#Type = Or('type', [
-#  Atom,
-#  PrefixExp,
-#  BinopExp,
-#  PrefixBinopExp,
-#], '(type %s)')
-#
-#
-## New statements
-#Assign1 = Seq('assign1',
-#  ['ID', w, 'EQUALS', n, Exp],
-#  '%s %s', [0, 4]
-#)
-#
-#Assign2 = Seq('assign2',
-#  ['ID', w, 'EQUALS', n, Type, w, 'EQUALS', n, Exp],
-#  '%s %s %s', [0, 4, 8]
-#)
-#
-## New
-#NewAssign = Or('newassign', [
-#  'ID',
-#  Assign1,
-#  Assign2,
-#], '(init %s)')
-#
-#New = Seq('new',
-#  ['NEW', n, NewAssign,
-#    Star('news', Seq('commanew', [w, 'COMMA', n, NewAssign], ' %s', [3]))],
-#  '(new %s%s);', [2, 3]
-#)
-#
-## Renew
-#Renew = Seq('renew',
-#  ['RENEW', n, Assign1,
-#    Star('renews', Seq('commarenew', [w, 'COMMA', n, Assign1], ' %s', [3]))],
-#  '(renew %s%s);', [2, 3]
-#)
-#
-## Del
-#Del = Seq('del',
-#  ['DEL', n, 'ID',
-#    Star('dels', Seq('commadel', [w, 'COMMA', n, 'ID'], ' %s', [3]))],
-#  '(del %s%s);', [2, 3]
-#)
-#
-#
-#StmtNew = Or('stmtnew', [
-#  New,
-#  Renew,
-#  Del,
-#])
-#
-## IsVar statement
-#StmtIsVar = Seq('isvar',
-#  ['ISVAR', n, 'ID',
-#   Star('isvarprops', Seq('isvarprop', [w, 'DOT', n, 'ID'], ' %s', [3]))],
-#  '(isvar %s%s);', [2, 3]
-#)
-#
-#
-## Assignment statements
-#StmtAssign = Seq('stmtassign',
-#  [Var, w, Or('assignop', [
-#    'EQUALS',
-#    'PLUSEQUALS',
-#    'MINUSEQUALS',
-#    'STAREQUALS',
-#    'SLASHEQUALS',
-#    'PERCENTEQUALS',
-#    'CARATEQUALS',
-#    'PIPEEQUALS',
-#    'AMPEQUALS',
-#    'TILDEEEQUALS',
-#  ]), n, Exp],
-#  '(%s %s %s);', [2, 0, 4]
-#)
+SubExp = Seq('subexp',
+  [(Opt(PrefixExp),'%s'), Atom, Opt(BinopExp)]
+)
+Replace(Parens, 'SubExp', SubExp)
+Replace(BinopExp, 3, SubExp)
+
+Exp = (SubExp, '(exp %s)')
+Type = (SubExp, '(type %s)')
+
+# New statements
+# New
+NewAssign = (Seq('newassign',
+  ['ID', w, Opt(Seq('newtype', [('COLON',' '), n, Type])),
+         w, Opt(Seq('newvalue', [('EQUALS',' '), n, Exp]))]
+), '(init %s)')
+Replace(Member, 0, NewAssign)
+
+New = (Seq('new',
+  [('NEW',''), n, NewAssign,
+  Star('news', Seq('commanew', [w, ('COMMA',' '), n, NewAssign]))
+]), '(new %s)')
+
+# Renew
+Renew = (Seq('renew',
+  [('RENEW',''), n, NewAssign,
+  Star('renews', Seq('commarenew', [w, ('COMMA',' '), n, NewAssign]))
+]), '(renew %s)')
+
+# Del
+Del = (Seq('del',
+  [('DEL',''), n, 'ID',
+  Star('dels', Seq('commadel', [w, ('COMMA',' '), n, 'ID']))
+]), '(del %s)')
+
+StmtNew = Or('stmtnew', [
+  New,
+  Renew,
+  Del,
+])
+
+# IsVar statement
+StmtIsVar = (Seq('isvar',
+  [('ISVAR',''), n, 'ID',
+  Star('isvarprops', Seq('isvarprop', [w, ('DOT',' '), n, 'ID']))]
+), '(isvar %s)')
+
+
+# Assignment statements
+StmtAssign = Seq('stmtassign',
+  [(Var,'(assign %s'), w, (Or('assignop', [
+    'EQUALS',
+    'PLUSEQUALS',
+    'MINUSEQUALS',
+    'STAREQUALS',
+    'SLASHEQUALS',
+    'PERCENTEQUALS',
+    'CARATEQUALS',
+    'PIPEEQUALS',
+    'AMPEQUALS',
+    'TILDEEEQUALS',
+  ]), ' %s '), n, (Exp,'%s)')],
+)
 
 
 # Procedure call statements
 ExpList = Seq('explist',
   [Exp, Star('explists', Seq('commaexp', [w, ('COMMA',' '), n, Exp]))],
 )
+Replace(List, 'ExpList', ExpList)
 
 ## Debate: Allow whitespace after the function name (Var) but before the first
 ## paren?
@@ -404,42 +391,41 @@ ExpList = Seq('explist',
 #
 #
 ## Loop constructs
-Loop = 'LOOP'         # TODO
-LabelLoop = 'SLOOP'   # TODO
+#Loop = 'LOOP'         # TODO
+#LabelLoop = 'SLOOP'   # TODO
 #Repeat = ''
 #While = ''
 #Each = ''
 #
-StmtLoop = Or('stmtloop', [
-  Loop,
-  LabelLoop,
+#StmtLoop = Or('stmtloop', [
+#  Loop,
+#  LabelLoop,
 #  Repeat,
 #  While,
 #  Each,
-])
+#])
 
 
 # Break constructs
 StmtBreak = Or('stmtbreak', [
-  'BREAK',
-  Seq('breaklabel',
-    [('BREAK','break'), ws, ('ID','<label>')]),
-  'CONTINUE',
-#  Seq('continuelabel',
-#    [('CONTINUE','continue'), ws, ('LABEL','<label>')]),
-  'RETURN',
-  #Seq('returnexp',
-  #  [('RETURN','return'), ws, Exp]),
-  #Seq('yield',
-  #  [('YIELD','yield'), ws, Exp]),
+  ('BREAK','break'),
+  #Seq('breaklabel',
+  #  [('BREAK','break'), ws, ('<LABEL>','<label>')]),
+  ('CONTINUE','continue'),
+  #Seq('continuelabel',
+  #  [('CONTINUE','continue'), ws, ('LABEL','<label>')]),
+  Seq('return',
+    [('RETURN','return'), Opt(Seq('returnexp', [(ws,''), (Exp,' %s')]))]),
+  Seq('yield',
+    [('YIELD','yield'), ws, Exp]),
 ])
 
 
 # Statements
 Stmt = Or('stmt', [
-  #StmtNew,
-  #StmtIsVar,
-  #StmtAssign,
+  StmtNew,
+  StmtIsVar,
+  StmtAssign,
   #StmtProcCall,
   #If,
   #Elif,
@@ -447,84 +433,86 @@ Stmt = Or('stmt', [
   #Function,
   #Future('Switch'),
   #Seq('stmtstmtbranch', [StmtBranch, Endl]),
-  StmtLoop,
+  #StmtLoop,
   StmtBreak,
 ])
 
-#CodeBlock = Seq('codeblock',
-#  [('LBRACE','{'), Stmt, ('RBRACE','}')],
-#)
-#
-#BlockOrStmt = Or('blockorstmt', [
-#  Seq('stmtendl', [Stmt, Endl]),
-#  Future('CodeBlock'),
-#])
+ExpBlock = Seq('expblock',
+  [('LBRACE','{'), w, Exp, w, ('RBRACE','}')]
+)
 
 # Blocks
 # A code block may have 0 or more statements.
-#CodeBlockBody = Star('codeblockbody',
-#  Seq('codeblockbodyws', [w, BlockOrStmt]),
-#  ''
-#)
-#
-#CodeBlockStatements = Seq('codeblockstatements',
-#  [Stmt, Star('codeblockstatementsmore', [(End,';'), Stmt])]
-#)
+# We're very careful about where semicolons and newlines are allowed and/or
+# required, including as regards nested blocks.
+StmtExt = Or('stmtext', [
+  Seq('stmtextsemi', [w, ('SEMI',';'), n, Future('CodeBlockBody')]),
+  Seq('stmtextwn', [(wn,';'), n, Future('CodeBlockBody')]),
+])
 
-# A codeblock issued from a commandline requires a newline or semicolon after
-# the end of the block.
-CmdCodeBlock = Seq('cmdcodeblock',
-  [w, ('LBRACE','{'),
-#  Star('cmdcodeblockitems',
-#    Or('cmdcodeblockbody', [
-#      wn,
-#      Seq('cmdcodeblockbodystmt', [w, Stmt, w, Or('e1', [wn, 'SEMI'], '')]),
-#      Seq('cmdcodeblockbodyblock', [w, CodeBlock]),
-#    ]),
-#  ),
-#  Or('cmdcodeblocklast', [
-#    Star('cmdcodeblocklastwn', wn),
-#    Seq('cmdcodeblocklaststmt', [w, Stmt, w, Or('e1', [n, 'SEMI'], '')]),
-#  ]),
-  Star('breaks', [Stmt]),
-  w, ('RBRACE','}')],
+CodeBlockStmt = Seq('codeblockstmt',
+  [Stmt, Opt(StmtExt)]
 )
+
+CodeBlockCodeBlock = Seq('codeblockcodeblock',
+  [Future('CodeBlock'), w, (Opt(Terminal('SEMI')),';'), n, Future('CodeBlockBody')]
+)
+
+CodeBlockItem = Or('codeblockitem', [
+  CodeBlockStmt,
+  CodeBlockCodeBlock,
+])
+
+CodeBlockBody = Opt(Seq('codeblockbody',
+  [n, CodeBlockItem]
+))
+Replace(CodeBlockBody, 'CodeBlockBody', CodeBlockBody)
+Replace(StmtExt.items[0], 'CodeBlockBody', CodeBlockBody)
+Replace(StmtExt.items[1], 'CodeBlockBody', CodeBlockBody)
+Replace(CodeBlockCodeBlock, 'CodeBlockBody', CodeBlockBody)
+
+CodeBlock = Seq('codeblock',
+  [('LBRACE','{'), n, CodeBlockBody, w, ('RBRACE','}')]
+)
+Replace(CodeBlockCodeBlock, 'CodeBlock', CodeBlock)
+
+CmdCodeBlock = CodeBlock
 
 # Program invocation
 
 # Basic building block -- cannot contain an ExpBlock
 # OK to include "not cmdline approved" symbols (operators) -- these will have
-# been parsed out earlier, and asking for their cmdText will fail if we do
-# accidentally catch any.
+# been parsed out earlier, and asking for their cmdText (in the evaluator) will
+# fail if we do accidentally catch any.
 ProgramBasic = Or('programbasic', [
   Keyword,    # These will be output verbatim in both code and cmd mode
   CmdOp,      # Operators spilled out for commands
   CmdLiteral, # Literals spilled out for commands
 ])
 
-ProgramArg = Star('programarg',
-  Or('programarg1', [
+# A not-the-first part of a program (an argument piece, maybe an exp block)
+ProgramExts = Star('programexts',
+  Or('programext', [
     ProgramBasic,
-    Seq('programargexpblock',
-      [('LBRACE','{'), w, Exp, w, ('RBRACE','}')]
-    ),
+    ExpBlock,
     # TODO: redirection, pipes, background-job, etc.
   ])
 )
 
 ProgramArgs = Star('programargs',
-  Seq('wsarg', [ws, ProgramArg]),
+  Seq('wsarg', [(ws,''), (ProgramExts,' %s')]),
 )
 
 # Just the name of a program to invoke, without its arguments.
 # Necessarily starts with a program name (not an ExpBlock; those are
-# handled by CmdBlock).  ProgramArg is allowed to contain ExpBlocks.
+# handled by CmdBlock).  The ProgramArg here is just part of the program name,
+# and is allowed to contain ExpBlocks.
 Program = Seq('program',
-  [ProgramBasic, ProgramArg],
+  [ProgramBasic, ProgramExts],
 )
 
 ExpBlockProgram = Seq('expblockprogram',
-  [w, ('LBRACE', '{'), w, Exp, w, ('RBRACE','}'), ProgramArg, ProgramArgs],
+  [ExpBlock, ProgramExts, ProgramArgs],
 )
 
 # A CmdBlock is when a { occurs at the start of a commandline.  We don't yet
@@ -534,70 +522,29 @@ ExpBlockProgram = Seq('expblockprogram',
 # ExpBlockProgram.
 #
 # An ExpBlockProgram can have programargs follow it, which may include
-# semicolons.  The semicolons will group things within []'s.  We wait until a
-# NEWL to give us the trailing ']'.  CmdCodeBlock may not have anything after
-# the '}', just whitespace and a newline.
-CmdBlock = Seq('cmdblock',
-  [(Or('cmdblockmain', [
-    ExpBlockProgram,
-    CmdCodeBlock,
-    ]), '[%s'),
-    w,
-  ('NEWL', ']'),
+# semicolons.  The semicolons will group commands within []'s.  CmdCodeBlock
+# may not have anything after the '}', until end of command (semicolon or
+# newline).
+CmdBlock = Or('cmdblock', [
+  ExpBlockProgram,
+  CmdCodeBlock,
 ])
 
 ProgramInvocation = Seq('programinvocation',
-  [w, (Program,'[%s'), ProgramArgs, ('NEWL',']')]
+  [Program, ProgramArgs]
 )
 
 CmdLine = Or('cmdline', [
   wn,
-  ProgramInvocation,
-  CmdBlock,
+  Seq('cmdlinemain',
+    [w, (Or('cmd', [ProgramInvocation, CmdBlock]),'[%s'), (End,']')]
+  ),
 ])
-CmdLines = Star('cmdlines', CmdLine)
 
-# Refresh missed rule dependencies
-#Replace(TypeList, 'Type', Type)
-#Replace(TypeList.items[1].items, 'Type', Type)
-##Replace(Signature.items[2], 'Type', Type)
-##Replace(Signature.items[3], 'Type', Type)
-#Replace(MooBlock, 'CodeBlock', CodeBlock)
-#Replace(Function, 'CodeBlock', CodeBlock)
-#Replace(PrefixExp, 'SubExp', SubExp)
-#Replace(BinopExp, 'SubExp', SubExp)
-#Replace(PrefixBinopExp, 'SubExp', SubExp)
-Replace(List, 'ExpList', ExpList)
-#Replace(Parens, 'SubExp', SubExp)
-##Replace(Object, 'Exp', Exp)    # or SubExp ?
-#Replace(IfPred.items[0], 'Stmt', Stmt)
-#Replace(IfPred.items[1], 'CodeBlock', CodeBlock)
-#Replace(ElifPred.items[0], 'Stmt', Stmt)
-#Replace(ElifPred.items[1], 'CodeBlock', CodeBlock)
-#Replace(ElsePred, 'Stmt', Stmt)
-#Replace(ElsePred.items[1], 'CodeBlock', CodeBlock)
-#Replace(BlockOrStmt, 'CodeBlock', CodeBlock)
-#Replace(BlockOrCmdStmt, 'CodeBlock', CodeBlock)
+CmdLines = Star('cmdlines', CmdLine)
 
 
 # Lush
-# The Lush parser holds some "global" state.  It should also probably do
-# something smart the moment it turns bad.
-# The ast string is a buffer consumed by the lush_parser, which resets it to ''
-# after any consumption.
-class Lush(object):
-  def __init__(self):
-    self.ast = ''
-    self.bad = False
-    self.top = self
-    self.parser = MakeParser(CmdLines, self)
-
-  def parse(self,token):
-    disp = self.parser.parse(token)
-    if self.parser.bad:
-      raise Exception("Lush failed to parse token '%s'" % token)
-    self.ast += disp
-
 def LushParser():
-  return Lush()
+  return MakeParser(CmdLines)
 
