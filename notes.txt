@@ -610,3 +610,64 @@ it, and can then keep going.
 This is a bit much to dive into right now, though, if we can get away
 with re-writing the language's use of the parser instead....
 
+-----
+2k13-11-03
+
+Some statements can end in a codeblock:
+if a { new b }
+loop { new c }
+
+The parser currently requires that these statements end in a semicolon
+before they allow a subsequent statement on the same line.  That is,
+we require:
+  if a { new b }; new c
+and disallow:
+  if a { new b } new c
+
+This is asymmetric from plain nested code blocks, which allow:
+  { { new x } new y }
+
+The parser can certainly be re-written to support the former.  It's a
+bit of work, so I don't care to do it now.  I'm not sure what should
+be allowed.
+
+I'm also not sure I like the use of COMMA in branch and loop
+statements:
+  if a, new b; elif c, new d; else new e
+  if a, # disallowed!
+
+We also have an object-literal-expression vs. code-block ambiguity if
+we have:
+  loop { new x }
+  loop 45 times { new x }
+  loop {a}&int times { new x }
+
+Specifically when we get into:
+  loop {a=    # ohnoez have we started an object or an assignment?
+
+I don't have a nice answer to that, and I don't want it to affect the
+decision of whether we have:
+  loop
+  loop n times
+or
+  loop
+  repeat n times
+
+Actually maybe the ambiguity is ok (it's not a real ambiguity, we'll
+definitely figure it out *eventually*!!).  So let's not bother
+resolving it now and just decide what language syntax we want.  The current behaviour is OK.
+
+We're dropping a ')' somehow when we do:
+  loop n times, new z
+  loop n times { new z }
+
+we get:
+[{(loop (times (exp INT:'5') (new (init ID:'z')))}]
+
+I think it's a parser bug, somehow it's not coming to us from the Exp.
+This is likely related to our badly-failing test case!
+Note that we don't get the same problem with the while loop.
+I'm pretty sure we could reorganize the Disps to get it right, but
+let's fix the bug instead.
+And add lots of parser framework test cases!!  pl0x :)
+

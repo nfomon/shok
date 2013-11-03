@@ -107,6 +107,9 @@ class SeqParser(Parser):
     elif wasevil:
       raise Exception("%s SeqParser refuses to pass %s to already evil %s" % (self.name, token, self.active.name))
 
+    if wasdone and (self.name in self.debug):
+      print " - %s wasdone" % self.name
+
     # Parse!
     disp = self.active.parse(token)
 
@@ -155,6 +158,17 @@ class SeqParser(Parser):
         disp += self.parse(token)
       elif self.everdone[self.pos]:
         # we can try to feed forward tokens since last done state
+        if self.name in self.debug:
+          print " - %s might feed forward %s" % (self.name, self.tokenssincedone)
+          print " - a.evil: %s unconfirmed: '%s'" % (self.active.evil, self.unconfirmed)
+        if self.active.evil:
+          # deny!?
+          self.bad = True
+          self.done = False
+          if self.unconfirmed:  # too coarse, but ok for now? NOPE!
+            print "%s WAKKA '%s'" % (self.name, self.unconfirmed)
+            self.evil = True
+          return disp
         self.pos += 1
         self.active = None
         newdisp = ''

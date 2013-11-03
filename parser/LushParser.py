@@ -339,50 +339,69 @@ StmtProcCall = (Seq('stmtproccall',
 
 # Branch constructs
 # If
-IfPred = Or('ifpred', [
-  Seq('ifline', [w, ('COMMA',''), w, Future('Stmt')]),
-  Seq('ifblock', [n, Future('CodeBlock')]),
+BranchPred = Or('branchpred', [
+  Seq('branchline', [w, ('COMMA',''), w, Future('Stmt')]),
+  Seq('branchblock', [n, Future('CodeBlock')]),
 ])
 
-If = Seq('if',
-  [('IF','(if '), n, (Exp,'%s '), IfPred]
-)
+If = (Seq('if',
+  [('IF',''), n, (Exp,'%s '), BranchPred]
+), '(if %s)')
 
 # Elif
-ElifPred = Or('elifpred', [
-  Seq('elifline', [w, ('COMMA',''), w, Future('Stmt')]),
-  Seq('elifblock', [n, Future('CodeBlock')]),
-])
-
-Elif = Seq('elif',
-  [('ELIF','(elif '), n, (Exp,'%s '), ElifPred]
-)
+Elif = (Seq('elif',
+  [('ELIF',''), n, (Exp,'%s '), BranchPred]
+), '(elif %s)')
 
 # Else
 ElsePred = Or('elsepred', [
-  Future('Stmt'),
+  Seq('elseline', [w, Future('Stmt')]),
   Seq('elseblock', [n, Future('CodeBlock')]),
 ])
 
-Else = Seq('else',
-  [('ELSE','(else '), ElsePred]
-)
+Else = (Seq('else',
+  [('ELSE',''), ElsePred]
+), '(else %s)')
 
 
 ## Loop constructs
-#Loop = 'LOOP'         # TODO
+LoopPred = BranchPred
+
+LoopTimes = Seq('looptimes',
+  [w, Exp, w, ('TIMES','')]
+)
+LoopCond = Or('loopcond', [
+  Seq('loopcondtimes', [(LoopTimes,'(times %s) '), LoopPred]),
+  LoopPred
+])
+
+Loop = (Seq('loop',
+  [('LOOP',''), LoopCond]
+), '(loop %s)')
 #LabelLoop = 'SLOOP'   # TODO
-#Repeat = ''
-#While = ''
-#Each = ''
+
+While = (Seq('while',
+  [('WHILE',''), w, Exp, LoopPred]
+), '(while %s)')
+
+#TypedVars = ...
 #
-#StmtLoop = Or('stmtloop', [
-#  Loop,
-#  LabelLoop,
-#  Repeat,
-#  While,
-#  Each,
-#])
+#WhereClause = ...
+#
+#Where = (Seq('where',
+#  [w, ('WHERE',''), WhereClause]
+#), '(where %s)')
+#
+#Each = (Seq('each',
+#  [('EACH',''), w, TypedVars, ('IN',''), n, Exp, Opt(Where), LoopPred]
+#), '(each %s)')
+
+StmtLoop = Or('stmtloop', [
+  Loop,
+  #LabelLoop,
+  While,
+  #Each,
+])
 
 
 # Break constructs
@@ -408,12 +427,11 @@ Stmt = Or('stmt', [
   StmtProcCall,
   #Future('Switch'),
   #Seq('stmtstmtbranch', [StmtBranch, Endl]),
-  #StmtLoop,
+  StmtLoop,
   StmtBreak,
 ])
-Replace(IfPred.items[0], 'Stmt', Stmt)
-Replace(ElifPred.items[0], 'Stmt', Stmt)
-Replace(ElsePred, 'Stmt', Stmt)
+Replace(BranchPred.items[0], 'Stmt', Stmt)
+Replace(ElsePred.items[0], 'Stmt', Stmt)
 
 ExpBlock = Seq('expblock',
   [('LBRACE','{'), w, Exp, w, ('RBRACE','}')]
@@ -474,8 +492,7 @@ CodeBlock = Seq('codeblock',
 )
 Replace(Function[0], 'CodeBlock', CodeBlock)
 Replace(CodeBlockCodeBlock, 'CodeBlock', CodeBlock)
-Replace(IfPred.items[1], 'CodeBlock', CodeBlock)
-Replace(ElifPred.items[1], 'CodeBlock', CodeBlock)
+Replace(BranchPred.items[1], 'CodeBlock', CodeBlock)
 Replace(ElsePred.items[1], 'CodeBlock', CodeBlock)
 
 # Program invocation

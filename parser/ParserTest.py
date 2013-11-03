@@ -186,7 +186,7 @@ class TestSeq(RuleTester):
     series = [
       [init, tok('1:A', False, False, '!a1A'),
              tok('1:B', False, False, '23B'),
-             tok('1:X', True, False, '4')],
+             tok('1:X', True, False, '4b@')],
       [init, tok('1:A', False, False, '!a1A'),
              tok('1:B', False, False, '23B'),
              tok('1:C', False, False, '45C'),
@@ -213,27 +213,29 @@ class TestSeq(RuleTester):
     self.ruleTest(rule, series)
 
   def test_PlusLimited(self):
-    # Old limitation of SeqParser: if one stage is done, but then accepts a
+    # Classic limitation of SeqParser: if one stage is done, but then accepts a
     # token (does not become bad), the SeqParser would not advance even if it
     # would have needed to do so to ultimately parse the whole sequence.
     #
-    # This rule used to be impossible to parse.
+    # This rule would require a SeqParser to be less greedy than we require it
+    # to be, so we won't get this quite right with the regular SeqParser.
+    # Nevertheless its output must be sensible.
     rule = Seq('seq', [
         (Plus('+1',
-          (Seq('p1', [('A','1%s2'), ('B','3%s4'), ('C','5%s6')]),
+          (Seq('s1', [('A','1%s2'), ('B','3%s4'), ('C','5%s6')]),
           'a%sb')), '!%s@'),
         (Plus('+2',
-          (Seq('p2', [('A','1%s2'), ('D','3%s4'), ('E','5%s6')]),
+          (Seq('s2', [('A','7%s8'), ('D','9%s0'), ('E','1%s2')]),
           'c%sd')), ' #%s$')])
     series = [
       [init, tok('1:A', False, False, '!a1A'),
              tok('1:B', False, False, '23B'),
-             tok('1:X', True, False, '4')],
+             tok('1:X', True, False, '4b@')],
       [init, tok('1:A', False, False, '!a1A'),
              tok('1:B', False, False, '23B'),
              tok('1:C', False, False, '45C'),
              tok('1:A', False, False, '6ba1A'),
-             tok('1:D', False, False, '2')],   # Old limitation!
+             tok('1:D', True, False, '2b@')],   # Old limitation!
 #             tok('1:D', False, False, '6b@ #c1A23D'),
 #             tok('1:E', False, True, '45E')],
 #      [init, tok('1:A', False, False, '!a1A'),
@@ -269,7 +271,7 @@ class TestSeq(RuleTester):
     series = [
       [init, tok('1:A', False, False, '<a1A'),
              tok('1:B', False, False, '23B'),
-             tok('1:X', True, False, '4')],
+             tok('1:X', True, False, '4b>')],
       [init, tok('1:A', False, False, '<a1A'),
              tok('1:B', False, False, '23B'),
              tok('1:C', False, False, '45C'),
@@ -498,10 +500,10 @@ class TestPlus(RuleTester):
     series = [
       [init, tok('1:X', True, False)],
       [init, tok('1:A', False, False, 'x<1A'),
-             tok('1:X', True, False, '2')],
+             tok('1:X', True, False, '2>y')],
       [init, tok('1:A', False, False, 'x<1A'),
              tok('1:B', False, False, '23B'),
-             tok('1:X', True, False, '4')],
+             tok('1:X', True, False, '4>y')],
       [init, tok('1:A', False, False, 'x<1A'),
              tok('1:B', False, False, '23B'),
              tok('1:C', False, True, '45C'),
@@ -510,7 +512,7 @@ class TestPlus(RuleTester):
              tok('1:B', False, False, '23B'),
              tok('1:C', False, True, '45C'),
              tok('1:A', False, False, '6><1A'),
-             tok('1:X', True, False, '2')],
+             tok('1:X', True, False, '2>y')],
       [init, tok('1:A', False, False, 'x<1A'),
              tok('1:B', False, False, '23B'),
              tok('1:C', False, True, '45C'),
@@ -569,10 +571,10 @@ class TestStar(RuleTester):
     series = [
       [start, tok('1:X', True, False)],
       [start, tok('1:A', False, False, 'x<1A'),
-              tok('1:X', True, False, '2')],
+              tok('1:X', True, False, '2>y')],
       [start, tok('1:A', False, False, 'x<1A'),
               tok('1:B', False, False, '23B'),
-              tok('1:X', True, False, '4')],
+              tok('1:X', True, False, '4>y')],
       [start, tok('1:A', False, False, 'x<1A'),
               tok('1:B', False, False, '23B'),
               tok('1:C', False, True, '45C'),
@@ -581,7 +583,7 @@ class TestStar(RuleTester):
               tok('1:B', False, False, '23B'),
               tok('1:C', False, True, '45C'),
               tok('1:A', False, False, '6><1A'),
-              tok('1:X', True, False, '2')],
+              tok('1:X', True, False, '2>y')],
       [start, tok('1:A', False, False, 'x<1A'),
               tok('1:B', False, False, '23B'),
               tok('1:C', False, True, '45C'),

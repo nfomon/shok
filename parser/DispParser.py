@@ -24,33 +24,46 @@ class DispParser(Parser):
     self.bad = self.parser.bad
     self.done = self.parser.done
     self.name = self.name % self.parser.name
+    self.debug = []
 
   def parse(self,token):
+    if self.parser.name in self.debug:
+      print "%s parsing %s" % (self.name, token)
     if self.bad:
       raise Exception("%s DispParser: cannot parse '%s'; already bad" % (self.name, token))
     if not self.parser:
       self.parser = MakeParser(self.rule.items[0], self)
-    wasdone = self.parser.done
     disp = self.parser.parse(token)
     self.bad = self.parser.bad
     self.evil = self.parser.evil
     self.done = self.parser.done
     if self.bad:
+      if self.parser.name in self.debug:
+        print "%s went bad" % self.name
       if self.firstparse:
+        if self.parser.name in self.debug:
+          print "%s bad and firstparse" % self.name
         return ''   # deny a bad first parse
-      if wasdone:
-        if self.msg_middle:
-          disp += copy(self.msg_end)
-        else:
-          disp = copy(self.msg_end)
-        self.msg_end = ''
+      if self.parser.name in self.debug:
+        print "%s bad and wasdone" % self.name
+      if self.msg_middle:
+        disp += copy(self.msg_end)
+      else:
+        disp = copy(self.msg_end)
+      self.msg_end = ''
     if self.firstparse:
       if self.msg_middle:
+        if self.parser.name in self.debug:
+          print "%s firstparse yields '%s':'%s'" % (self.name, self.msg_start, disp)
         disp = copy(self.msg_start) + disp
       else:
+        if self.parser.name in self.debug:
+          print "%s firstparse yields '%s'" % (self.name, disp)
         disp = copy(self.msg_start)
       self.msg_start = ''
       self.firstparse = False
+    if self.parser.name in self.debug:
+      print "%s boring yields '%s'" % (self.name, disp)
     return disp
 
   def fakeEnd(self):

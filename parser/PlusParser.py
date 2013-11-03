@@ -22,6 +22,7 @@ class PlusParser(Parser):
 
   def parse(self,token):
     if self.name in self.debug:
+      print
       print "%s parsing %s" % (self.name, token)
     logging.debug("%s PlusParser parsing token '%s'" % (self.name, token))
     if not self.active:
@@ -32,7 +33,11 @@ class PlusParser(Parser):
     wasdone = False
     if self.active.done:
       wasdone = True
+      if self.name in self.debug:
+        print " - wasdone"
     disp = self.active.parse(token)
+    if self.name in self.debug:
+      print " - received '%s'" % disp
     if wasdone and self.active.bad:
       # re-establish
       if self.name in self.debug:

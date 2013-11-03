@@ -41,20 +41,14 @@ Eventually:
 Language Checklist:
 -------------------
 Lists in expressions
-Parens in expressions
-Objects in expressions
 Tuples in expressions
 Operator precedence
-Int literals
 Fixed literals
 Str literals
 Regexp literals
-Path literals
 Label literals
 User-defined operators
-Procedure call
 Method call
-Function definitions
 Switch construct
 Loop
 Labelled Loop
