@@ -226,44 +226,30 @@ Object = Seq('object',
   [('LBRACE','(object'), n, ObjectBody, w, ('RBRACE',')')]
 )
 
-####TypeList = Seq('typelist',
-####  [Future('Type'), Star('typelists',
-####    Seq('commatype', [w, 'COMMA', n, Future('Type')], ' %s', [3]))
-####  ], '%s%s', [0, 1]
-####)
+TypeList = Seq('typelist',
+  [Future('Type'),
+    Star('types', Seq('commatype', [w, ('COMMA',' '), n, Future('Type')]))]
+)
 
-####Signature = Or('signatures', [
-####  TMsg('AT', '-sigat-'),
-#  Seq('sigargs', ['AT', w, TypeList], '(args %s) ', [2]),
-#  Seq('sigret',
-#    ['AT', w, 'ARROW', w, Future('Type')],
-#    '(returns %s) ', [4]),
-#  Seq('sigargsret',
-#    ['AT', w, TypeList, w, 'ARROW', w, Future('Type')],
-#    '(args %s) (returns %s) ', [2, 6]
-#  ),
-####])
+FunctionArgs = Seq('functionargs',
+  [('LPAREN',''), n, TypeList, ('RPAREN','')]
+)
 
-####MooBlock = Seq('mooblock',
-####  [w, Future('CodeBlock')],
-####  '%s', [1]
-####)
-####
-####Function = Seq('function',
-####  [Action(Seq('prefunc', [Signature, w]), PreBlock), Future('CodeBlock')],
-####  '(func %s%s)', [0, 1]
-####)
+FunctionReturn = Seq('functionreturn',
+  [('ARROW',''), n, Future('Type')]
+)
 
-#Function = Seq('function',
-#  [Action(Signature, PreBlock), MooBlock],
-#  '(func %s%s)', [0, 1]
-#)
+Function = (Seq('function',
+  [('AT',''), w, (Opt(FunctionArgs),'(args %s) '), w,
+    (Opt(FunctionReturn),'(returns %s) '), w, Future('CodeBlock')]
+), '(func %s)')
 
 Atom = Or('atom', [
   Literal,
   List,
   Parens,
   Object,
+  Function,
 ])
 
 PrefixExp = Seq('prefixexp',
@@ -282,6 +268,9 @@ Replace(BinopExp, 3, SubExp)
 
 Exp = (SubExp, '(exp %s)')
 Type = (SubExp, '(type %s)')
+Replace(TypeList, 'Type', Type)
+Replace(TypeList.items[1].items, 'Type', Type)
+Replace(FunctionReturn, 'Type', Type)
 
 # New statements
 # New
@@ -340,12 +329,12 @@ StmtAssign = Seq('stmtassign',
 
 # Procedure call statements
 ExpList = Seq('explist',
-  [Exp, Star('explists', Seq('commaexp', [w, ('COMMA',' '), n, Exp]))],
+  [(Exp,' %s'), Star('explists', Seq('commaexp', [w, ('COMMA',' '), n, Exp]))],
 )
 Replace(List, 'ExpList', ExpList)
 
 StmtProcCall = (Seq('stmtproccall',
-  [Var, w, ('LPAREN',' '), n, Opt(ExpList), n, ('RPAREN','')]
+  [Var, w, ('LPAREN',''), n, Opt(ExpList), n, ('RPAREN','')]
 ), '(call %s)')
 
 
@@ -468,6 +457,7 @@ Replace(CodeBlockCodeBlock, 'CodeBlockBody', CodeBlockBody)
 CodeBlock = Seq('codeblock',
   [('LBRACE','{'), n, CodeBlockBody, w, ('RBRACE','}')]
 )
+Replace(Function[0], 'CodeBlock', CodeBlock)
 Replace(CodeBlockCodeBlock, 'CodeBlock', CodeBlock)
 
 # Program invocation
