@@ -344,17 +344,11 @@ ExpList = Seq('explist',
 )
 Replace(List, 'ExpList', ExpList)
 
-## Debate: Allow whitespace after the function name (Var) but before the first
-## paren?
-#StmtProcCall = Or('stmtproccall', [
-#  Seq('proccallargs',
-#    [Var, w, 'LPAREN', n, ExpList, n, 'RPAREN'],
-#    '%s %s', [0, 4]),
-#  Seq('proccallvoid',
-#    [Var, w, 'LPAREN', n, 'RPAREN'])
-#], '(call %s);')
-#
-#
+StmtProcCall = (Seq('stmtproccall',
+  [Var, w, ('LPAREN',' '), n, Opt(ExpList), n, ('RPAREN','')]
+), '(call %s)')
+
+
 ## Branch constructs
 ## If
 #IfPred = Or('ifpred', [
@@ -426,7 +420,7 @@ Stmt = Or('stmt', [
   StmtNew,
   StmtIsVar,
   StmtAssign,
-  #StmtProcCall,
+  StmtProcCall,
   #If,
   #Elif,
   #Else,
@@ -524,5 +518,7 @@ CmdLines = Star('cmdlines', CmdLine)
 
 # Lush
 def LushParser():
-  return MakeParser(CmdLines)
+  parser = MakeParser(CmdLines)
+  parser.neverGoBad = True
+  return parser
 

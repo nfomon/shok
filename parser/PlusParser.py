@@ -17,6 +17,7 @@ class PlusParser(Parser):
     Parser.__init__(self, rule, parent)
     self.active = None
     self.unconfirmed = ''
+    self.neverGoBad = False
     self.debug = []
 
   def parse(self,token):
@@ -42,6 +43,8 @@ class PlusParser(Parser):
       if self.name in self.debug:
         print "%s is re-established" % self.name
         print "%s evil=%s" % (self.name, self.evil)
+      if self.neverGoBad and self.bad:
+        raise Exception("%s StarParser has gone bad (eagerly)" % self.name)
       return disp
     self.bad = self.active.bad
     self.evil = self.evil or self.active.evil
@@ -56,6 +59,8 @@ class PlusParser(Parser):
     if self.bad:
       if self.done:
         raise Exception("Plus noticed another terrible parser was both bad and done")
+      if self.neverGoBad:
+        raise Exception("%s StarParser has gone bad (eagerly)" % self.name)
       if self.unconfirmed:
         self.evil = True
         if self.name in self.debug:
