@@ -223,7 +223,7 @@ Replace(MemberExt.items[0], 'ObjectBody', ObjectBody)
 Replace(MemberExt.items[1], 'ObjectBody', ObjectBody)
 
 Object = Seq('object',
-  [('LBRACE','(object'), n, ObjectBody, w, ('RBRACE','/obj)')]
+  [('LBRACE','(object'), n, ObjectBody, w, ('RBRACE',')')]
 )
 
 ####TypeList = Seq('typelist',
@@ -476,8 +476,6 @@ CodeBlock = Seq('codeblock',
 )
 Replace(CodeBlockCodeBlock, 'CodeBlock', CodeBlock)
 
-CmdCodeBlock = CodeBlock
-
 # Program invocation
 
 # Basic building block -- cannot contain an ExpBlock
@@ -504,31 +502,11 @@ ProgramArgs = Star('programargs',
 )
 
 # Just the name of a program to invoke, without its arguments.
-# Necessarily starts with a program name (not an ExpBlock; those are
-# handled by CmdBlock).  The ProgramArg here is just part of the program name,
-# and is allowed to contain ExpBlocks.
+# Necessarily starts with a program name (not an ExpBlock).  The ProgramArg
+# here is just part of the program name, and is allowed to contain ExpBlocks.
 Program = Seq('program',
   [ProgramBasic, ProgramExts],
 )
-
-ExpBlockProgram = Seq('expblockprogram',
-  [ExpBlock, ProgramExts, ProgramArgs],
-)
-
-# A CmdBlock is when a { occurs at the start of a commandline.  We don't yet
-# know if it's a codeblock (list of statements) or an expression block (single
-# expression which will become (at least the beginning of) the name of a
-# program to invoke).  This specific kind of expression block is an
-# ExpBlockProgram.
-#
-# An ExpBlockProgram can have programargs follow it, which may include
-# semicolons.  The semicolons will group commands within []'s.  CmdCodeBlock
-# may not have anything after the '}', until end of command (semicolon or
-# newline).
-CmdBlock = Or('cmdblock', [
-  ExpBlockProgram,
-  CmdCodeBlock,
-])
 
 ProgramInvocation = Seq('programinvocation',
   [Program, ProgramArgs]
@@ -537,7 +515,7 @@ ProgramInvocation = Seq('programinvocation',
 CmdLine = Or('cmdline', [
   wn,
   Seq('cmdlinemain',
-    [w, (Or('cmd', [ProgramInvocation, CmdBlock]),'[%s'), (End,']')]
+    [w, (Or('cmd', [ProgramInvocation, CodeBlock]),'[%s'), (End,']')]
   ),
 ])
 
