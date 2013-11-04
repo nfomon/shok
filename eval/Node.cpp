@@ -241,13 +241,19 @@ void Node::initNode() {
 }
 
 void Node::replaceChild(Node* oldChild, Node* newChild) {
+  string oldPrint = print();
+  bool replaced = false;
   for (child_mod_iter i = children.begin(); i != children.end(); ++i) {
     if (*i == oldChild) {
       *i = newChild;
+      replaced = true;
       break;
     }
   }
-  log.debug("Replaced " + oldChild->print() + " in " + print() + " with " + newChild->print());
+  if (!replaced) {
+    throw EvalError("Failed to replace " + oldChild->print() + " with " + newChild->print() + " in " + print());
+  }
+  log.debug("Replaced " + oldChild->print() + " in " + oldPrint + " with " + newChild->print() + " to become " + print());
 }
 
 // Called only on nodes that are understood to be parents.

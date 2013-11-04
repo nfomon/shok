@@ -48,6 +48,8 @@ public:
   // Probably shouldn't allow creation of an OrType with no default value?
   Object& newMember(const std::string& varname, std::auto_ptr<Type> type);
 
+  //Function& newSignature(const argspec_list& args, Type* returnType, (void*) builtinCode);
+
   // Does an object get "assigned" to?  I think not!
   //    x = y
   // means the object behind 'x' is destroyed, then 'x' is given a copy of the

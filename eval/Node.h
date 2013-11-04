@@ -68,6 +68,7 @@ public:
   virtual operator std::string() const;
 
 protected:
+  friend class Expression;
   Node(Log&, RootNode*const, const Token&);
 
   typedef std::deque<Node*> child_vec;

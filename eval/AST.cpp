@@ -52,6 +52,7 @@ void AST::insert(const Token& token) {
   if (!m_current) {
     throw EvalError("Inserting node " + n->print() + " returned a deficient current node");
   }
+  m_log.debug("AST: " + print());
 }
 
 void AST::evaluate() {

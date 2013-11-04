@@ -6,6 +6,8 @@
 #include "EvalError.h"
 #include "Function.h"
 
+#include <boost/lexical_cast.hpp>
+
 #include <memory>
 #include <string>
 using std::string;
@@ -17,17 +19,24 @@ using namespace eval;
 // Only do the most minimal of validation here.  We can't trust our children,
 // but it is important that we know how many we have; that won't change.
 void Operator::setup() {
-  switch (children.size()) {
-    case 1: isUnary = true; break;
-    case 2: isBinary = true; break;
-    default: throw EvalError("Operator must have one or two children");
+  if (children.size() != 0) {
+    throw EvalError("Operator must have no children at setup time; instead " + name + " has " + boost::lexical_cast<string>(children.size()));
   }
 }
 
 // Called by Expression::setup() top-down across its Operator tree.
 void Operator::analyzeTree() {
+  analysisSetup();
+  log.debug("Before reordering: " + print());
   reorderOperatorTree();
-  validateOperatorTree();
+  // After reordering, this may not be the top of the Operator tree any longer.
+  // So find the new top, then validate operators top-down from there.
+  Operator* top = this;
+  while(dynamic_cast<Operator*>(top->parent)) {
+    top = dynamic_cast<Operator*>(top->parent);
+  }
+  log.debug("After reordering: " + top->print());
+  top->validateOperatorTree();
 }
 
 void Operator::evaluate() {
@@ -76,7 +85,12 @@ void Operator::validate() {
     throw EvalError("Cannot validate operator " + print() + " before it is setup and reordered");
   }
 
-  if (isUnary) {
+  if (isUnary && isBinary) {
+    throw EvalError("Operator " + print() + " is both unary and binary. What?");
+  } else if (isUnary) {
+    if (children.size() != 1) {
+      throw EvalError("Operator " + print() + " claims to be unary but has " + boost::lexical_cast<string>(children.size()) + " != 1 children");
+    }
     left = dynamic_cast<TypedNode*>(children.at(0));
     if (!left) {
       throw EvalError("Operator " + print() + "'s child must have a Type");
@@ -84,11 +98,16 @@ void Operator::validate() {
       throw EvalError("Cannot validate unary Operator " + print() + " that somehow has a right child");
     }
   } else if (isBinary) {
+    if (children.size() != 2) {
+      throw EvalError("Operator " + print() + " claims to be binary but has " + boost::lexical_cast<string>(children.size()) + " != 2 children");
+    }
     left = dynamic_cast<TypedNode*>(children.at(0));
     right = dynamic_cast<TypedNode*>(children.at(1));
     if (!left || !right) {
       throw EvalError("Operator " + print() + "'s children must have Types");
     }
+  } else {
+    throw EvalError("Operator " + print() + " is neither unary nor binary..!?");
   }
   computeType();
 }
@@ -133,15 +152,30 @@ int Operator::priority() const {
 }
 
 /* private */
+void Operator::analysisSetup() {
+  switch (children.size()) {
+    case 1: isUnary = true; break;
+    case 2: isBinary = true; break;
+    default: throw EvalError("Operator " + print() + " must have one or two children");
+  }
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
+    Operator* op = dynamic_cast<Operator*>(*i);
+    if (op) {
+      op->analysisSetup();
+    }
+  }
+}
 
-// Note: we know that this node and its children have all been setup.
+// Note: we know that this node and its children have all been setup, including
+// analysisSetup().
 void Operator::reorderOperatorTree() {
-  log.debug("reordering " + print());
+  log.debug("reordering " + print() + " with parent " + parent->print());
   if (isReordered) return;
-  if (2 == children.size()) {
+  if (isBinary) {
     Operator* leftOp = dynamic_cast<Operator*>(children.at(0));
     Operator* rightOp = dynamic_cast<Operator*>(children.at(1));
     if (leftOp) {
+      log.debug("parent " + print() + " reordering left " + leftOp->print());
       leftOp->reorderOperatorTree();
     }
     if (rightOp) {
@@ -149,8 +183,13 @@ void Operator::reorderOperatorTree() {
         throw EvalError("Someone's parent is deficient");
       }
       if (rightOp->priority() > priority()) {
+        log.debug("parent " + print() + " reordering right " + rightOp->print());
         rightOp->reorderOperatorTree();
-      } else {
+      }
+      // Careful: our right child might have changed!
+      rightOp = dynamic_cast<Operator*>(children.at(1));
+      if (rightOp->priority() <= priority()) {
+        log.debug("parent " + print() + " shuffling");
         children.pop_back();
         children.push_back(rightOp->children.at(0));
         rightOp->parent = parent;
@@ -158,7 +197,9 @@ void Operator::reorderOperatorTree() {
         rightOp->children.pop_front();
         rightOp->children.push_front(this);
         rightOp->parent->replaceChild(this, rightOp);
+        log.debug("left child is now " + print() + ", now reordering its new parent " + rightOp->print() + " in shuffle");
         rightOp->reorderOperatorTree();
+        log.debug("parent " + print() + " is shuffled");
       }
     }
   }
@@ -198,7 +239,7 @@ void Operator::computeType() {
     }
     m_type.reset(new OrType(*left->getType(), *right->getType()));
   } else if ("AMP" == name) {
-    if (children.size() != 2) {
+    if (!isBinary) {
       throw EvalError("& must be a binary operator");
     }
     m_type.reset(new AndType(*left->getType(), *right->getType()));

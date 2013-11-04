@@ -6,15 +6,16 @@
 
 /* Expression
  *
- * This just wraps an expression, which could be an atom (literal, variable
+ * This wraps an expression.  Each child could be an atom (literal, variable
  * name, etc.) or the top operator of an expression tree.
  *
- * At setup() we reorder the operators (since they will be initially given to
- * the AST in a ridiculous ordering from the parser), then validate them
- * bottom-up.
+ * The operators are given to us by the AST (parser) in a ridiculous and
+ * flattened ordering, so at setup() time we must arrange our children into a
+ * tree and then reorder them for operator precedence.  Then we validate the
+ * operators bottom-up.
  *
- * This single expression may be owned by a command block, in which case the
- * expression is meant to evaluate to an object on which we'll call
+ * This single expression may be owned by an expression block, in which case
+ * the expression is meant to evaluate to an object on which we'll call
  * ->str.escape() and then provide this text as a command-line fragment.
  *
  * The expression's Type is determined at setup() time.
@@ -44,6 +45,8 @@ public:
   Object& getObject() const;
 
 private:
+  void makeOperatorTree();
+  void setParents(Node*);
   // from TypedNode
   virtual void computeType();
 };

@@ -7,12 +7,17 @@
 #include "EvalError.h"
 #include "Token.h"
 
+#include <iostream>
 #include <memory>
 using std::auto_ptr;
 
 using namespace eval;
 
 /* public */
+
+void builtinFoo() {
+  std::cout << "PRINT:WAAAAA" << std::endl;
+}
 
 RootNode::RootNode(Log& log)
   : Node(log, NULL, Token(":ROOT:")),
@@ -27,7 +32,24 @@ RootNode::RootNode(Log& log)
   Object& func = m_scope.newObject("@", auto_ptr<Type>(new BasicType(object)));
   // Test: member function
   Object& foo = object.newMember("foo", std::auto_ptr<Type>(new BasicType(func)));
-  //std::auto_ptr<Function> foofunc(new Function(log, 
+  // It's too tricky to make a code-block for a function that is done exactly
+  // as if it were given by a user.  At least before that mechanism wholly
+  // exists so we can just include it as stdlib code without any builtin
+  // hackery.  Let's have two mechanisms: built-in functions that have actual
+  // C++ code bodies, and non-builtins.
+  //
+  // NO screw that.  Either you're a real function or you're a different
+  // element of the AST, i.e. a new kind of Node.
+  //
+  // A builtin codeblock is a function that returns void, and accepts an
+  // Object& (the Object it's ultimately acting on, i.e. self), and an
+  // object_list of the actually provided arguments.
+  /*
+  argspec_list args;
+  (void*) builtinCode = builtinFoo;
+  Function& foo = foo.newSignature(args, NULL, builtinCode);
+  */
+
   m_scope.commitAll();
 }
 

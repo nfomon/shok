@@ -6,12 +6,13 @@
 
 /* Operators
  *
- * Operator trees are given to us by the parser in a wonky ordering.
- * Consequently at setup() time, we can't trust our children.
- * Expression::setup() wraps the top of the Operator tree, and will call
+ * Expression trees are given to us by the parser in a wonky ordering.
+ * Consequently at setup() time, we won't have any children.
+ * Expression::setup() rearranges us into an Operator tree, then will call
  * analyzeTree() at the root, which will do a top-down reordering of the
- * operators followed by a top-down validate() step where all our "real"
- * setup()-type static analysis (read: error checking) will happen.
+ * operators (for operator precedence) followed by a top-down validate() step
+ * where all our "real" setup()-type static analysis (read: error checking)
+ * will happen.
  *
  * We should split off some of the specific Operators into subclasses of this.
  * But for now it's all here until we're sure of the interface and
@@ -59,15 +60,17 @@ protected:
 
   bool isReordered;
   bool isValidated;
-  bool isUnary;
-  bool isBinary;
+  bool isUnary;   // set by analysisSetup()
+  bool isBinary;  // set by analysisSetup()
 
 private:
+  // Top-down setup when we have the right *number* of children, even if
+  // they're the wrong ones.  Sets isUnary, isBinary.  Called by analyzeTree().
+  void analysisSetup();
   // Reorder tree of operators for our priority-based precedence rules,
   // starting at this.  Called by analyzeTree().
   void reorderOperatorTree();
   // Validate tree of operators, starting at this.  Called by analyzeTree().
-  // This late syntactic analysis is kickstarted by the parent Expression.
   void validateOperatorTree();
 
   // from TypedNode

@@ -52,15 +52,23 @@ void NewInit::setup() {
       break;
     }
 
-    // new x : y -- initial value is the result of the Expression 'y', and our
-    // type is its type
+    // new x : y -- type is 'y', initial value is default value of 'y' (it must
+    // be a BasicType)
+    // new x = y -- initial value is the result of the expression 'y', our type
+    // is its type
     case 2: {
+      m_typeSpec = dynamic_cast<TypeSpec*>(children.at(1));
       m_exp = dynamic_cast<Expression*>(children.at(1));
-      if (!m_exp) {
-        throw EvalError("NewInit child " + children.at(1)->print() + " should have been an Expression");
+      if (m_typeSpec) {
+        m_type = m_typeSpec->getType();
+        if (!dynamic_cast<BasicType*>(m_type.get())) {
+          throw EvalError("NewInit " + print() + " has aggregate type " + m_typeSpec->print() + " but no default value is provided");
+        }
+      } else if (m_exp) {
+        m_type = m_exp->getType();
+      } else {
+        throw EvalError("NewInit " + print() + " has inappropriate child type; expected TypeSpec or Exp");
       }
-      m_type = m_exp->getType();
-      // leave m_typeSpec NULL
       break;
     }
 
