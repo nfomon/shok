@@ -255,14 +255,14 @@ PrefixExp = Seq('prefixexp',
 )
 
 BinopExp = Seq('binopexp',
-  [w, (BinOp,' %s'), n, (Future('SubExp'),' %s')]
+  [(BinOp,' %s'), n, (Future('SubExp'),' %s')]
 )
 
 SubExp = Seq('subexp',
-  [(Opt(PrefixExp),'%s'), Atom, Opt(BinopExp)]
+  [(Opt(PrefixExp),'%s'), Atom, w, Opt(BinopExp)]
 )
 Replace(Parens, 'SubExp', SubExp)
-Replace(BinopExp, 3, SubExp)
+Replace(BinopExp, 2, SubExp)
 
 Exp = (SubExp, '(exp %s)')
 Type = (SubExp, '(type %s)')

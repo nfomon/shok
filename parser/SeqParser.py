@@ -71,7 +71,8 @@ class SeqParser(Parser):
     self.parsers = []   # parsers constructed for each of rule.items
     self.active = None  # main active parser (top of self.parsers)
     self.pos = 0        # position in self.rule.items
-    self.unconfirmed = '' # text we have output since starting or being done
+    self.unconfirmed = '' # text we have output from active since it started
+                          # or was done
     self.activeused = False # have we ever previously returned text from active
     self.everdone = []  # true for each position that was ever done
     self.tokenssincedone = [] # each token observed since the last done state
@@ -79,9 +80,8 @@ class SeqParser(Parser):
     self.debug = []
 
   def parse(self,token):
-    if self.name in self.debug:
-      print
-      print "%s parsing %s at pos=%s" % (self.name, token, self.pos)
+    self.log("")
+    self.log("%s SeqParser parsing %s at pos=%s" % (self.name, token, self.pos))
     if self.pos >= len(self.rule.items):
       self.bad = True
       self.done = False
@@ -106,9 +106,8 @@ class SeqParser(Parser):
       raise Exception("%s SeqParser's active %s is both done and evil at %s" % (self.name, self.active.name, token))
     elif wasevil:
       raise Exception("%s SeqParser refuses to pass %s to already evil %s" % (self.name, token, self.active.name))
-
-    if wasdone and (self.name in self.debug):
-      print " - %s wasdone" % self.name
+    if wasdone:
+      self.log(" - %s wasdone" % self.name)
 
     # Parse!
     disp = self.active.parse(token)
@@ -134,8 +133,7 @@ class SeqParser(Parser):
       else:
         self.done = self.active.done
       logging.info("%s SeqParser received '%s', last state, bad=%s, emits '%s'" % (self.name, token, self.bad, disp))
-      if self.name in self.debug:
-        print "%s in lastpos, now bad=%s, evil=%s, done=%s" % (self.name, self.bad, self.evil, self.done)
+      self.log("%s in lastpos, now bad=%s, evil=%s, done=%s" % (self.name, self.bad, self.evil, self.done))
       if self.done:
         self.unconfirmed = ''
       else:
@@ -145,33 +143,22 @@ class SeqParser(Parser):
       return disp
 
     if self.active.bad:
-      if wasdone:
-        # accept that state as having never parsed this token yet, and go
-        # forward.  We don't even care if it thinks it went evil.
-        self.pos += 1
-        if self.name in self.debug:
-          print "%s active %s wasdone, its bad=%s evil=%s" % (self.name, self.active.name, self.active.bad, self.active.done)
-          print "%s at %s evil=%s reparsing %s with unconfirmed '%s'" % (self.name, self.pos, self.evil, token, self.unconfirmed)
-        self.active = None
-        if self.name in self.debug:
-          print "%s reparsing %s!" % (self.name, token)
-        disp += self.parse(token)
-      elif self.everdone[self.pos]:
+      if self.everdone[self.pos]:
         # we can try to feed forward tokens since last done state
-        if self.name in self.debug:
-          print " - %s might feed forward %s" % (self.name, self.tokenssincedone)
-          print " - a.evil: %s unconfirmed: '%s'" % (self.active.evil, self.unconfirmed)
+        self.log(" - %s might feed forward %s" % (self.name, self.tokenssincedone))
+        self.log(" - a.evil: %s unconfirmed: '%s'" % (self.active.evil, self.unconfirmed))
         if self.active.evil:
-          # deny!?
+          # deny!?  Not strictly necessary, but I don't seem to need not to. 
           self.bad = True
           self.done = False
-          if self.unconfirmed:  # too coarse, but ok for now? NOPE!
-            print "%s WAKKA '%s'" % (self.name, self.unconfirmed)
+          if self.unconfirmed:  # too coarse, but ok for now it seems
             self.evil = True
           return disp
         self.pos += 1
         self.active = None
         newdisp = ''
+        unconfirmed = copy(self.unconfirmed)
+        self.unconfirmed = ''
         tokenssincedone = copy(self.tokenssincedone)
         self.tokenssincedone = []
         for t in tokenssincedone:
@@ -188,8 +175,7 @@ class SeqParser(Parser):
         elif self.active.evil:
           raise Exception("active is evil but no %s.unconfirmed, how is this possible" % self.name)
         # failing above check, let active.evil => self.evil   ?????MAYBE??
-      if self.name in self.debug:
-        print "%s at %s token=%s done=%s bad=%s evil=%s" % (self.name, self.pos, token, self.done, self.bad, self.evil)
+      self.log("%s at %s token=%s done=%s bad=%s evil=%s" % (self.name, self.pos, token, self.done, self.bad, self.evil))
       return disp
 
     if self.active.done:
@@ -207,8 +193,7 @@ class SeqParser(Parser):
         self.unconfirmed += disp
       if self.active.evil:
         raise Exception("Terror")
-      if self.name in self.debug:
-        print "%s done=%s, active %s done=%s unc='%s' disp='%s'" % (self.name, self.done, self.active.name, self.active.done, self.unconfirmed, disp)
+      self.log("%s done=%s, active %s done=%s unc='%s' disp='%s'" % (self.name, self.done, self.active.name, self.active.done, self.unconfirmed, disp))
       return disp
 
     if self.everdone[self.pos]:
@@ -218,8 +203,7 @@ class SeqParser(Parser):
     if self.active.evil:
       raise Exception("Awful")
     self.unconfirmed += disp
-    if self.name in self.debug:
-      print "%s is ok, unconfirmed='%s', disp='%s', done=%s" % (self.name, self.unconfirmed, disp, self.done)
+    self.log("%s is ok, unconfirmed='%s', disp='%s', done=%s" % (self.name, self.unconfirmed, disp, self.done))
     return disp
 
   def fakeEnd(self):
@@ -228,6 +212,10 @@ class SeqParser(Parser):
         raise Exception("no fakeend when active.evil I guess")
       return self.active.fakeEnd()
     return ''
+
+  def log(self,msg):
+    if 'ALL' == self.debug or self.name in self.debug:
+      logging.debug(msg)
 
 class Seq(Rule):
   def MakeParser(self,parent):

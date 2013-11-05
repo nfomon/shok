@@ -52,11 +52,11 @@ class PlusParser(Parser):
         raise Exception("%s StarParser has gone bad (eagerly)" % self.name)
       return disp
     self.bad = self.active.bad
-    self.evil = self.evil or self.active.evil
+    self.evil = self.active.evil
+    self.done = self.active.done
     if self.name in self.debug:
       if self.evil:
         print "%s is evil, unconfirmed='%s'" % (self.name, self.unconfirmed)
-    self.done = self.active.done
     if self.done:
       self.unconfirmed = ''
     else:
