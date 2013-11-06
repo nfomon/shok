@@ -1,12 +1,28 @@
+Hacking radar, in no particular order:
+1. Parser rewrite implies we need to double-check all language features,
+especially any statements, that their ASTs are being constructed appropriately.
+
+2. Create some test built-in functions
+
+
+Known bugs, in no particular priority:
 0. Rename project
 
-1. eval: Node children could be held by an auto_ptr list of sorts, rather than bare pointers.
+1. Operators are evaluated in the wrong order.  Gasp!
+ - Associativity needs to be defined
+ - Remove operator tree construction from Expression, into Operator
+ - Merge operator tree construction and operator reordering into one function
+   that does its job properly, using both precedence and associativity
+    -- shunting-yard or some such
 
-2. Method calls
+2. eval: Node children could be held by an auto_ptr list of sorts, rather than
+bare pointers.
 
-3. Operator method calls
+3. Comments -- not lexed
 
-4. Int literals
+4. Quoted literals e.g. strings -- not lexed
+
+5. Error signalling/synchronization between parser and evaluator
 
 Shell:
 - signals
