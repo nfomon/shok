@@ -230,7 +230,7 @@ TypeList = Seq('typelist',
 )
 
 FunctionArgs = Seq('functionargs',
-  [('LPAREN',''), n, TypeList, ('RPAREN','')]
+  [('LPAREN',''), n, (Opt(TypeList),' %s'), ('RPAREN','')]
 )
 
 FunctionReturn = Seq('functionreturn',
@@ -238,7 +238,7 @@ FunctionReturn = Seq('functionreturn',
 )
 
 Function = (Seq('function',
-  [('AT',''), w, (Opt(FunctionArgs),'(args %s) '), w,
+  [('AT',''), w, (Opt(FunctionArgs),'(args%s) '), w,
     (Opt(FunctionReturn),'(returns %s) '), w, Future('CodeBlock')]
 ), '(func %s)')
 
