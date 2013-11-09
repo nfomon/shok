@@ -24,6 +24,13 @@ bare pointers.
 
 5. Error signalling/synchronization between parser and evaluator
 
+6. Type and Exp need to parse separately: blocks (i.e. object literals and
+function bodies) may not appear in Types.
+
+7. Horrific ambiguity: x=@(){} vs. x=@();{}         :'(
+ -- Since @(...) and @->foo are both *abstracts*, we can make it a syntax error
+to use x=@();  or  x=@->foo;    Yay!
+
 Shell:
 - signals
 - comments
