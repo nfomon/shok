@@ -24,48 +24,31 @@ haiku
 
 quick example
 =============
-Assume `lush:` is the lush prompt.
 
-        lush: cd /home/mike
-        lush: ls animals/
-        Bear  Cow  Duck
+        cd /usr/bin
+        ls
+        { new x = 'hello' }
+        echo {x}
 
-        lush: echo "roar!" > Bear
-        lush: echo "moo!" > Cow
-        lush: echo "quack!" > Duck
-
-        lush: { new animal = 'Duck' }
-        lush: echo {animal}
-        Duck
-
-        lush: cat animals/{animal}
-        quack!
-
-        lush: {
-                  each file f in ./ {
-                      print(f.name ~~ 'says,')
-                      : cat {f}
-                  }
-                  : echo "That's all, folks"
-              }
-        Bear says,
-        roar!
-        Cow says,
-        moo!
-        Duck says,
-        quack!
-        That's all, folks
-
-        lush: exit
+        {
+          new playlist = []
+          each song in ~/music/ {
+            if song.name.startsWith('Raffi') {
+              : mv {song} /media/usb/key/
+            } else {
+              playlist += song
+            }
+          }
+        }
+        mp3blaster {playlist}
 
 command-mode
 ============
-lush starts in command-mode.  Every line is a command, just like 'bash' or
-'cmd.exe'.
+lush starts in command-mode.  Every line is a command, just like in familiar
+shells like 'bash' or 'cmd.exe'.
 
-        lush: cd /home/mike
-        lush: ls animals/
-        Bear  Cow  Duck
+        cd /usr/local/
+        ls bin/
 
 lush inherits many useful features from bash and other interactive shells:
 
@@ -77,12 +60,14 @@ lush inherits many useful features from bash and other interactive shells:
 code-mode
 =========
 The lush scripting language is a statically-typed, prototype-based
-object-oriented programming language.  It is specifically designed for its role as an interactive shell; a secure and friendly user-facing portal to the underlying operating system in a platform-independent manner.  Some features:
+object-oriented programming language.  It is specifically designed for its role
+as an interactive shell; a secure and friendly user-facing portal to the
+underlying operating system in a platform-independent manner.  Some features:
 
  - Native path literals and other filesystem types
- - Native job control types
  - Static type safety
  - Familiar declarative style
- - Shell security-aware string escapes
- - Composable prototypes with multiple inheritance
+ - Security-conscious transitions between language constructs and program
+   invocation
+ - Composable object prototypes with multiple inheritance
 
