@@ -10,9 +10,22 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 using std::string;
+using std::make_pair;
 
 using namespace eval;
+
+/* statics */
+
+bool Operator::CouldBeUnary(const std::string& name) {
+  if ("PLUS" == name || "MINUS" == name) return true;
+  return false;
+}
+
+bool Operator::CouldBeBinary(const std::string& name) {
+  return true;
+}
 
 /* public */
 
@@ -24,25 +37,27 @@ void Operator::setup() {
   }
 }
 
-// Called by Expression::setup() top-down across its Operator tree.
+void Operator::setUnary() {
+  isUnary = true;
+  isBinary = false;
+  isOrderSet = true;
+}
+
+void Operator::setBinary() {
+  isUnary = false;
+  isBinary = true;
+  isOrderSet = true;
+}
+
+// Called by Expression::setup() only at the top of the Operator tree.
 void Operator::analyzeTree() {
-  analysisSetup();
-  log.debug("Before reordering: " + print());
-  reorderOperatorTree();
-  // After reordering, this may not be the top of the Operator tree any longer.
-  // So find the new top, then validate operators top-down from there.
-  Operator* top = this;
-  while(dynamic_cast<Operator*>(top->parent)) {
-    top = dynamic_cast<Operator*>(top->parent);
-  }
-  log.debug("After reordering: " + top->print());
-  top->validateOperatorTree();
+  validateOperatorTree();
 }
 
 void Operator::evaluate() {
   // TODO remove this check once we're confident it can never happen
-  if (!isReordered || !isValidated) {
-    throw EvalError("Cannot evaluate operator '" + name + "' which has not been reordered and validated");
+  if (!isSetup || !isOrderSet || !isValidated) {
+    throw EvalError("Cannot evaluate operator '" + name + "' which has not been setup and validated");
   }
   throw EvalError("Operator '" + name + "' not yet supported for evaluation");
 }
@@ -81,8 +96,10 @@ string Operator::methodName() const {
 /* protected */
 
 void Operator::validate() {
-  if (!isSetup || !isReordered) {
-    throw EvalError("Cannot validate operator " + print() + " before it is setup and reordered");
+  if (!isSetup || !isOrderSet) {
+    throw EvalError("Cannot validate operator " + print() + " before it is setup");
+  } else if (m_left || m_right) {
+    throw EvalError("Operator " + print() + " has children before validation");
   }
 
   if (isUnary && isBinary) {
@@ -91,19 +108,17 @@ void Operator::validate() {
     if (children.size() != 1) {
       throw EvalError("Operator " + print() + " claims to be unary but has " + boost::lexical_cast<string>(children.size()) + " != 1 children");
     }
-    left = dynamic_cast<TypedNode*>(children.at(0));
-    if (!left) {
+    m_left = dynamic_cast<TypedNode*>(children.at(0));
+    if (!m_left) {
       throw EvalError("Operator " + print() + "'s child must have a Type");
-    } else if (right) {
-      throw EvalError("Cannot validate unary Operator " + print() + " that somehow has a right child");
     }
   } else if (isBinary) {
     if (children.size() != 2) {
       throw EvalError("Operator " + print() + " claims to be binary but has " + boost::lexical_cast<string>(children.size()) + " != 2 children");
     }
-    left = dynamic_cast<TypedNode*>(children.at(0));
-    right = dynamic_cast<TypedNode*>(children.at(1));
-    if (!left || !right) {
+    m_left = dynamic_cast<TypedNode*>(children.at(0));
+    m_right = dynamic_cast<TypedNode*>(children.at(1));
+    if (!m_left || !m_right) {
       throw EvalError("Operator " + print() + "'s children must have Types");
     }
   } else {
@@ -112,100 +127,53 @@ void Operator::validate() {
   computeType();
 }
 
-int Operator::priority() const {
-  if (!isSetup) {
+Operator::op_prec Operator::precedence() const {
+  if (!isSetup || !isOrderSet) {
     throw EvalError("Cannot query priority of not-setup operator '" + name + "'");
   }
+  op_prec prec;
+  prec.priority = -1;
+  prec.assoc = LEFT_ASSOC;
   //if ("COMMA_AND" == name)
   //  return 0;
   if ("DOT" == name)
-    return 1;
+    prec.priority = 1;
   if ("OR" == name || "NOR" == name || "XOR" == name || "XNOR" == name)
-    return 2;
+    prec.priority = 2;
   if ("AND" == name)
-    return 3;
+    prec.priority = 3;
   if ("EQ" == name || "NE" == name)
-    return 4;
+    prec.priority = 4;
   if ("LT" == name || "LE" == name || "GT" == name || "GE" == name)
-    return 5;
+    prec.priority = 5;
   if ("USEROP" == name)
-    return 6;
+    prec.priority = 6;
   if ("TILDE" == name || "DOUBLETILDE" == name)
-    return 7;
+    prec.priority = 7;
   if (isBinary && ("PLUS" == name || "MINUS" == name))
-    return 8;
+    prec.priority = 8;
   if ("STAR" == name || "SLASH" == name || "PERCENT" == name)
-    return 9;
+    prec.priority = 9;
   if ("CARAT" == name)
-    return 10;
+    prec.priority = 10;
+    prec.assoc = RIGHT_ASSOC;
   if ("NOT" == name)
-    return 11;
+    prec.priority = 11;
   if (isUnary && ("PLUS" == name || "MINUS" == name))
-    return 12;
+    prec.priority = 12;
   if ("PIPE" == name)
-    return 13;
+    prec.priority = 13;
   if ("AMP" == name)
-    return 14;
+    prec.priority = 14;
   if ("paren" == name)
-    return 15;
-  throw EvalError("Unknown priority for operator '" + name + "'");
+    prec.priority = 15;
+  if (-1 == prec.priority) {
+    throw EvalError("Failed to set priority for Operator " + print());
+  }
+  return prec;
 }
 
 /* private */
-void Operator::analysisSetup() {
-  switch (children.size()) {
-    case 1: isUnary = true; break;
-    case 2: isBinary = true; break;
-    default: throw EvalError("Operator " + print() + " must have one or two children");
-  }
-  for (child_iter i = children.begin(); i != children.end(); ++i) {
-    Operator* op = dynamic_cast<Operator*>(*i);
-    if (op) {
-      op->analysisSetup();
-    }
-  }
-}
-
-// Note: we know that this node and its children have all been setup, including
-// analysisSetup().
-void Operator::reorderOperatorTree() {
-  log.debug("reordering " + print() + " with parent " + parent->print());
-  if (isReordered) return;
-  if (isBinary) {
-    Operator* leftOp = dynamic_cast<Operator*>(children.at(0));
-    Operator* rightOp = dynamic_cast<Operator*>(children.at(1));
-    if (leftOp) {
-      log.debug("parent " + print() + " reordering left " + leftOp->print());
-      leftOp->reorderOperatorTree();
-    }
-    if (rightOp) {
-      if (!parent || !rightOp->parent) {
-        throw EvalError("Someone's parent is deficient");
-      }
-      if (rightOp->priority() > priority()) {
-        log.debug("parent " + print() + " reordering right " + rightOp->print());
-        rightOp->reorderOperatorTree();
-      }
-      // Careful: our right child might have changed!
-      rightOp = dynamic_cast<Operator*>(children.at(1));
-      if (rightOp->priority() <= priority()) {
-        log.debug("parent " + print() + " shuffling");
-        children.pop_back();
-        children.push_back(rightOp->children.at(0));
-        rightOp->parent = parent;
-        parent = rightOp;
-        rightOp->children.pop_front();
-        rightOp->children.push_front(this);
-        rightOp->parent->replaceChild(this, rightOp);
-        log.debug("left child is now " + print() + ", now reordering its new parent " + rightOp->print() + " in shuffle");
-        rightOp->reorderOperatorTree();
-        log.debug("parent " + print() + " is shuffled");
-      }
-    }
-  }
-  log.debug(" - reordered node " + print());
-  isReordered = true;
-}
 
 // Child-first validation
 void Operator::validateOperatorTree() {
@@ -222,8 +190,8 @@ void Operator::validateOperatorTree() {
 // This is responsible for setting m_type.  This is ok to be an OrType of the
 // possible return types of the overloads of the method that will be called.
 void Operator::computeType() {
-  if (!isSetup || !isReordered) {
-    throw EvalError("Cannot compute type of Operator " + print() + " before it is setup, reordered, and validated");
+  if (!isSetup || !isOrderSet || !isValidated) {
+    throw EvalError("Cannot compute type of Operator " + print() + " before it is setup and validated");
   }
 
   // For overloadable operators, see if the operand has implemented a method
@@ -237,12 +205,12 @@ void Operator::computeType() {
     if (!isBinary) {
       throw EvalError("| must be a binary operator");
     }
-    m_type.reset(new OrType(*left->getType(), *right->getType()));
+    m_type.reset(new OrType(*m_left->getType(), *m_right->getType()));
   } else if ("AMP" == name) {
     if (!isBinary) {
       throw EvalError("& must be a binary operator");
     }
-    m_type.reset(new AndType(*left->getType(), *right->getType()));
+    m_type.reset(new AndType(*m_left->getType(), *m_right->getType()));
   } else if ("TILDE" == name || "DOUBLETILDE" == name) {
     if (!isBinary) {
       throw EvalError("| must be a binary operator");
@@ -264,36 +232,36 @@ void Operator::computeType() {
     if ("" == method_name) {
       throw EvalError("Cannot determine Type of unimplemented operator " + print());
     }
-    const Object* methodObject = left->getType()->getMember(method_name);
+    const Object* methodObject = m_left->getType()->getMember(method_name);
     if (!methodObject) {
-      throw EvalError(left->print() + " does not define operator" + name);
+      throw EvalError(m_left->print() + " does not define operator" + name);
     }
     const Function* method = dynamic_cast<const Function*>(methodObject);
     if (!method) {
-      throw EvalError("Somehow, " + method_name + " is a non-function member of " + left->print());
+      throw EvalError("Somehow, " + method_name + " is a non-function member of " + m_left->print());
     }
 
     if (isUnary) {
       type_list args; // Leave empty (no args)
       if (!method->takesArgs(args)) {
-        throw EvalError(left->print() + "." + method_name + " is not defined to take 0 arguments");
+        throw EvalError(m_left->print() + "." + method_name + " is not defined to take 0 arguments");
       }
       m_type = method->getPossibleReturnTypes(args);
       if (!m_type.get()) {
-        throw EvalError(left->print() + "." + method_name + " somehow has no return type");
+        throw EvalError(m_left->print() + "." + method_name + " somehow has no return type");
       }
     } else if (isBinary) {
-      if (!right) {
+      if (!m_right) {
         throw EvalError("Right-hand side of binary " + name + " operator must have a type");
       }
       type_list args;
-      args.push_back(&right->type());
+      args.push_back(&m_right->type());
       if (!method->takesArgs(args)) {
-        throw EvalError(left->print() + "." + method_name + " is not defined to take right-hand side " + right->print() + " of type " + args.at(0)->print());
+        throw EvalError(m_left->print() + "." + method_name + " is not defined to take right-hand side " + m_right->print() + " of type " + args.at(0)->print());
       }
       m_type = method->getPossibleReturnTypes(args);
       if (!m_type.get()) {
-        throw EvalError(left->print() + "." + method_name + " with argument " + right->print() + " somehow has no return type");
+        throw EvalError(m_left->print() + "." + method_name + " with argument " + m_right->print() + " somehow has no return type");
       }
     } else {
       throw EvalError("What IS this crazy operator!?");

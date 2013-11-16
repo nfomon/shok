@@ -8,7 +8,6 @@
 
 #include "Function.h"
 #include "Log.h"
-#include "Signature.h"
 #include "Type.h"
 #include "Variable.h"
 
@@ -29,6 +28,7 @@ private:
   virtual void computeType();
   Function* m_function;
   std::vector<Expression*> m_argexps;
+  type_list m_argtypes;
 };
 
 };

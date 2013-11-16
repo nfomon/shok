@@ -41,7 +41,7 @@ void AST::insert(const Token& token) {
     throw EvalError("Failed to make node for token " + token.name + ":" + token.value);
   }
   try {
-    m_current = Node::insertNode(m_log, m_current, n);
+    m_current = Node::InsertNode(m_log, m_current, n);
   } catch (RecoveredError& e) {
     m_current = e.getRecoveredPosition();
     if (!m_current) {

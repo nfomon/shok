@@ -6,11 +6,17 @@
 
 /* Object
  *
- * Not to be confused with stdlib::object, which is a subtype of Object.  This
- * is our internal Object representation; it has a list of members, and a Type
- * which refers to its parents.
+ * This is our internal Object representation; it has a store of members, and a
+ * Type which refers to its parents.
  *
- * The Object owns its members by way of an internal ObjectStore.
+ * Object is not a Node; it's a thing created by ObjectStores, in blocks or
+ * other Objects.  The Object owns its members by way of its own internal
+ * ObjectStore.
+ *
+ * An Object might be a function, meaning simply that it has at least one
+ * member of type "function builtin".  So any object can *attempt* to be called
+ * like a function, meaning it will look up an appropriate member that has the
+ * codeblock for the provided args.
  */
 
 #include "Log.h"

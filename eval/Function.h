@@ -9,11 +9,17 @@
  * All methods are Functions, and all Functions are methods.  woosh.
  * Also, Functions are Objects.
  *
- * A function may have multiple signatures.  Two signatures on the same
- * function, for now, must have different # arguments.  This will eventually be
- * relaxed to: lining up the arguments, no OR-item from one can be identical to
- * an OR-item of the other.   e.g. @(A|B)&X  <=>  @(C|A)&X  (not allowed)
- * Different overloads may have the same or different return types.
+ * A function may have multiple signatures, but this Function object represents
+ * exactly one of them.  Here we add only a single member to our ObjectStore, a
+ * builtin-Block-type that holds the function body.  When this Function is &'d
+ * together with other Functions or Objects, this will be merged and will
+ * conflict if there's a duplicate builtin-function-taking-compatible-args.
+ *
+ * Two signatures on the same function, for now, must have different #
+ * arguments.  This will eventually be relaxed to: lining up the arguments, no
+ * OR-item from one can be identical to an OR-item of the other.   e.g.
+ * @(A|B)&X  <=>  @(C|A)&X  (not allowed) Different overloads may have the same
+ * or different return types.
  *
  * The function does not take ownership of any Type* or Object* it is given as
  * part of an Arg.  These must and will outlive the Function.
@@ -38,6 +44,7 @@ class Function : public Object {
 public:
   // What is the function's type?  something like @(A)->B  ?  or just @->B?  or
   // just @?
+  // Answer:  @(A) & @->B which both have type @
   Function(Log& log, const std::string& name, std::auto_ptr<Type> type,
            Signature initialSignature);
 
@@ -65,7 +72,7 @@ private:
   typedef signature_list::const_iterator signature_iter;
 
   signature_list m_signatures;
-  Block* m_body;  // ownership of this??
+  Block* m_body;  // ownership of this?? nah make it a legit member!
 };
 
 };

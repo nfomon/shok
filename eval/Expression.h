@@ -22,6 +22,7 @@
  */
 
 #include "Log.h"
+#include "Operator.h"
 #include "RootNode.h"
 #include "Token.h"
 #include "Type.h"
@@ -45,8 +46,7 @@ public:
   Object& getObject() const;
 
 private:
-  void makeOperatorTree();
-  void setParents(Node*);
+  Node* makeOperatorTree(child_vec& nodes, Operator::op_priority p = 0);
   // from TypedNode
   virtual void computeType();
 };

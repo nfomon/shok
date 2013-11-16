@@ -11,7 +11,7 @@
  *
  * The AST uses the MakeNode factory constructor to create the appropriate
  * subclass for a given AST token.  As the AST gets more tokens it calls
- * insertNode which manipulates the node tree and returns the new "current"
+ * InsertNode() which manipulates the node tree and returns the new "current"
  * (insertion) position.
  *
  * Each subclass gets to override init(), setup(), and evaluate().  As much
@@ -38,19 +38,24 @@ class RootNode;
 
 class Node {
 public:
+  // Construct a Node from a Token
   static Node* MakeNode(Log&, RootNode*const root, const Token&);
 
   // Insert a Node n into the tree at the provided "current" position.
   // Called by AST; returns the new current position, the original may
   // have been destroyed.
-  static Node* insertNode(Log&, Node* current, Node*);
+  static Node* InsertNode(Log&, Node* current, Node*);
 
 protected:
-  // Called by insertNode().  When a recoverable error occurs inserting a node,
+  // Called by InsertNode().  When a recoverable error occurs inserting a node,
   // this removes the destructive subtree from the nearest enclosing block, and
   // throws a RecoveredError with the cleaned-up block which the AST will catch
   // and use as the new current position.
-  static void recoverFromError(EvalError& e, Node* problemNode);
+  static void RecoverFromError(EvalError& e, Node* problemNode);
+
+  // Creates an operator tree out of the provided node's flattened children.
+  // We do this during setupNode(), before we setup() an Expression or TypeSpec.
+  static Node* MakeOperatorTree(Node* root);
 
 public:
   virtual ~Node();
@@ -75,7 +80,7 @@ protected:
   typedef child_vec::const_iterator child_iter;
   typedef child_vec::iterator child_mod_iter;
 
-  // This will be called by insertNode() only on parent nodes.
+  // This will be called by InsertNode() only on parent nodes.
   // It calls setupNode() and analyzeNode() on the parent and its children.
   void setupAsParent();
   // Basic, early initialization of a node; used e.g. to initialize parentScope
@@ -84,9 +89,9 @@ protected:
   void setupNode();
   void analyzeNode();
 
-  // called by insertNode()
+  // called by InsertNode()
   void addChild(Node* child);
-  // called rather scandalously by recoverFromError()
+  // called rather scandalously by RecoverFromError()
   void removeChildrenStartingAt(const Node* child);
 
   virtual void init() {}                // early parent-first init pass
@@ -108,7 +113,7 @@ protected:
   RootNode*const root;
   std::string name;
   std::string value;
-  // Set by insertNode()
+  // Set by InsertNode()
   Node* parent;
   child_vec children;
   // Set by init()

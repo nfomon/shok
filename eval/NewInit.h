@@ -6,10 +6,11 @@
 
 /* New statement's variable-initialization helper
  *
- * There are three forms of NewInit statement-fragments:
- *    new x           equivalent to   new x = object = object
- *    new x = y       equivalent to   new x = typeof(y) = y
- *    new x = y = z   equivalent to   new x = y = z
+ * There are four forms of NewInit statement-fragments:
+ *    new x           equivalent to   new x : object = object
+ *    new x : y       equivalent to   new x : y = y
+ *    new x = y       equivalent to   new x : typeof(y) = y
+ *    new x : y = z   equivalent to   new x : y = z
  */
 
 #include "Expression.h"
@@ -54,8 +55,8 @@ private:
   std::string m_varname;
   // child 0: the identifier of the variable being created
   Identifier* m_identifier;
-  // child 1 or 2: the expression that evaluates to the initial value
-  // In the absense of an explicit type specifier, this gives us our type
+  // child 1 or 2: the expression that evaluates to the initial value.
+  // In the absense of an explicit type specifier, this also gives us our type.
   Expression* m_exp;
   // child 1 if there are 2 children: explicit type specifier
   TypeSpec* m_typeSpec;

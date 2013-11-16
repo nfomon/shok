@@ -21,9 +21,18 @@ void Expression::setup() {
     throw EvalError("Expression " + print() + " must have at least one child");
   }
 
-  makeOperatorTree();
-
-  Operator* op = dynamic_cast<Operator*>(children.at(0));
+  log.debug("EXPRESSION about to make tree: " + print());
+  Node* top = makeOperatorTree(children, 0);
+  log.debug("EXPRESSION done making tree: " + print());
+  if (children.size() > 0) {
+    throw EvalError("Failed to parse all operators into an operator tree");
+  }
+  if (!top) {
+    throw EvalError("Expression " + print() + " somehow has no children after making operator tree");
+  }
+  children.push_back(top);
+  top->parent = this;
+  Operator* op = dynamic_cast<Operator*>(top);
   if (op) {
     op->analyzeTree();
   }
@@ -53,126 +62,64 @@ Object& Expression::getObject() const {
     return var->getObject();
   }
   // TODO: Operator
+  // TODO: Object
+  // TODO: Function
   throw EvalError("Expression " + print() + " cannot retrieve Object from unsupported child type " + children.at(0)->print());
 }
 
-void Expression::makeOperatorTree() {
-  log.info("Making operator tree: " + print());
-  Operator* root = NULL;
-  Variable* var = NULL;
-  Operator* unary_op = NULL;  // only prefix unary operators are supported
-  Operator* binary_op = NULL;
-  for (child_iter i = children.begin(); i != children.end(); ++i) {
-    Variable* v = dynamic_cast<Variable*>(*i);
-    Operator* o = dynamic_cast<Operator*>(*i);
-    if (v) {
-      if (var) {
-        throw EvalError("Expression " + print() + " duplicate var");
-      }
-      log.debug(print() + " found var: " + v->print());
-      var = v;
-    } else if (o) {
-      if (o->children.size() != 0) {
-        throw EvalError("Expression " + print() + " has operator child that already has children");
-      }
-      if (binary_op) {
-        if (unary_op) {
-          if (var) {
-            log.debug(print() + " has binary and unary");
-            unary_op->addChild(var);
-            var = NULL;
-            o->addChild(unary_op);
-            unary_op = NULL;
-            binary_op->addChild(o);
-            binary_op = o;
-          } else {
-            throw EvalError("Expression " + print() + " duplicate operator (binary case)");
-          }
-        } else if (var) {
-          log.debug(print() + " has binary and var");
-          o->addChild(var);
-          var = NULL;
-          binary_op->addChild(o);
-          binary_op = o;
-        } else {
-          log.debug(print() + " has binary and no var");
-          unary_op = o;
-        }
-      } else if (unary_op) {
-        if (var) {
-          log.debug(print() + " has unary");
-          unary_op->addChild(var);
-          var = NULL;
-          binary_op = o;
-          binary_op->addChild(unary_op);
-          unary_op = NULL;
-          if (!root) {
-            root = binary_op;
-          }
-        } else {
-          throw EvalError("Expression " + print() + " duplicate operator (unary case)");
-        }
-      } else if (var) {
-        log.debug(print() + " has var, making first binary");
-        binary_op = o;
-        binary_op->addChild(var);
-        var = NULL;
-        if (!root) {
-          root = binary_op;
-        }
-      } else {
-        log.debug(print() + " has nada, making unary");
-        unary_op = o;
-      }
-    } else {
-      throw EvalError("Expression " + print() + " unexpected child type");
+Node* Expression::makeOperatorTree(child_vec& nodes, Operator::op_priority p) {
+  if (0 == nodes.size()) {
+    return NULL;
+  }
+  // prefix
+  Node* top = nodes.front();
+  nodes.pop_front();
+  Variable* var = dynamic_cast<Variable*>(top);
+  Operator* op = dynamic_cast<Operator*>(top);
+  if (var) {
+    log.debug(" = prefix var " + var->print());
+  } else if (op && Operator::CouldBeUnary(op->name)) {
+    log.debug(" = prefix op " + op->print());
+    op->setUnary();
+    Node* operand = makeOperatorTree(nodes, op->precedence().priority);
+    if (!operand) { throw EvalError("a"); }
+    log.debug(" = prefix operand " + operand->print());
+    operand->parent = op;
+    op->addChild(operand);
+    op->setUnary();
+  } else { throw EvalError("b"); }
+  if (0 == nodes.size()) {
+    log.debug(" unary outta nodes!");
+    return top;
+  }
+  // lookahead
+  Node* second = nodes.front();
+  Operator* op2 = dynamic_cast<Operator*>(second);
+  // infix
+  while (op2 && Operator::CouldBeBinary(op2->name)) {
+    log.debug(" = infix op " + op2->print());
+    op2->setBinary();
+    Operator::op_prec infix_prec = op2->precedence();
+    if (p >= infix_prec.priority) {
+      log.debug(" = -> above priority; skipping");
+      break;
     }
-  }
-  // finish up
-  if (!var) {
-    throw EvalError("Expression " + print() + " has dangling operator");
-  }
-  if (binary_op && unary_op) {
-    unary_op->addChild(var);
-    var = NULL;
-    binary_op->addChild(unary_op);
-    unary_op = NULL;
-    if (!root) {
-      root = binary_op;
+    log.debug(" = -> below priority");
+    nodes.pop_front();
+    op2->addChild(top);
+    Node* operand = makeOperatorTree(nodes, infix_prec.priority - (int)infix_prec.assoc);
+    log.debug(" = infix op " + op2->print()  + " operand " + operand->print());
+    if (!operand) { throw EvalError("c"); }
+    op2->addChild(operand);
+    top = op2;
+    if (0 == nodes.size()) {
+      log.debug(" infix op " + op2->print() + " outta nodes!");
+      break;
     }
-  } else if (binary_op) {
-    binary_op->addChild(var);
-    var = NULL;
-    if (!root) {
-      root = binary_op;
-    }
-  } else if (unary_op) {
-    if (root) {
-      throw EvalError("Expression " + print() + " with single unary operator has surprise dangling root node");
-    }
-    unary_op->addChild(var);
-    var = NULL;
-    root = unary_op;
-  } else if (root) {
-    throw EvalError("Expression " + print() + " has surprise dangling root node");
+    second = nodes.front();
+    op2 = dynamic_cast<Operator*>(second);
   }
-  children.clear();
-  if (root) {
-    addChild(root);
-    setParents(root);
-  } else {
-    addChild(var);
-  }
-  if (children.size() != 1) {
-    throw EvalError("Expression " + print() + " made tree but somehow has " + boost::lexical_cast<string>(children.size()) + " children != 1");
-  }
-}
-
-void Expression::setParents(Node* node) {
-  for (child_iter i = node->children.begin(); i != node->children.end(); ++i) {
-    (*i)->parent = node;
-    setParents(*i);
-  }
+  return top;
 }
 
 void Expression::computeType() {

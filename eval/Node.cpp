@@ -73,9 +73,9 @@ Node* Node::MakeNode(Log& log, RootNode*const root, const Token& t) {
   return NULL;    // guard
 }
 
-Node* Node::insertNode(Log& log, Node* current, Node* n) {
+Node* Node::InsertNode(Log& log, Node* current, Node* n) {
   if (!current || !n) {
-    throw EvalError("NULL nodes provided to Node::insertNode()");
+    throw EvalError("NULL nodes provided to Node::InsertNode()");
   }
   Brace* brace = dynamic_cast<Brace*>(n);
 
@@ -152,7 +152,7 @@ Node* Node::insertNode(Log& log, Node* current, Node* n) {
     try {
       op->setupAsParent();
     } catch (EvalError& e) {
-      recoverFromError(e, op);
+      RecoverFromError(e, op);
       throw EvalError(string("Failed to recover from error: ") + e.what());
     }
   } else {
@@ -160,7 +160,7 @@ Node* Node::insertNode(Log& log, Node* current, Node* n) {
     try {
       open->setupAsParent();
     } catch (EvalError& e) {
-      recoverFromError(e, open);
+      RecoverFromError(e, open);
       throw EvalError(string("Failed to recover from error: ") + e.what());
     }
   }
@@ -175,7 +175,7 @@ Node* Node::insertNode(Log& log, Node* current, Node* n) {
 // On success, throws a recoveredError with the new "recoveredPosition" that
 // should be the AST's new current position (the cleaned-up block).
 // On error, throws its own EvalError.
-void Node::recoverFromError(EvalError& e, Node* problemNode) {
+void Node::RecoverFromError(EvalError& e, Node* problemNode) {
   Node* current = problemNode;
   try {
     while (current && current->parent) {
@@ -262,6 +262,23 @@ void Node::setupAsParent() {
   // Note: the node's grandchildren should all already be setup.
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     (*i)->setupNode();
+  }
+  Expression* exp = dynamic_cast<Expression*>(this);
+  TypeSpec* typespec = dynamic_cast<TypeSpec*>(this);
+  if (exp || typespec) {
+    // hm, can we rethink what we're doing?  Maybe there's a more general class
+    // of things that don't want setup() to happen until they are done, that
+    // is, defer setting up the intermediaries.  *ahem* object literal *ahem*.
+    // What about function?  Maybe it really is a bad language design decision
+    // to not let functions be analyzed properly until the expression they're a
+    // part of is analyzed.  Humph...
+    //
+    // I wonder if we can know the precedence of & well enough that we actually
+    // can evaluate ObjLits and Functions as they are typed -- i.e. we can look
+    // back for anything that's already been declared (parent types we know)
+    // and just not allow YET anything whose parent type has not been, um,
+    // typed.
+
   }
   setupNode();
   log.debug("Setup node " + print());

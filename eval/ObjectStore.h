@@ -38,10 +38,9 @@ public:
   void revert(const std::string& varname);
   void revertAll();
 
-  // Lookup an object, deferring up the tree if it's not found locally.
-  // Returns NULL if it does not exist anywhere.
+  // Lookup an object, returning NULL if it is not here.
   Object* getObject(const std::string& varname) const;
-  // Insert a new object, as "pending" until it's either commit or revert
+  // Construct a new object, as "pending" until it's either commit or revert
   Object& newObject(const std::string& varname, std::auto_ptr<Type> type);
   void delObject(const std::string& varname);
 

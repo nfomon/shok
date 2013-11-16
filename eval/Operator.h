@@ -27,49 +27,62 @@
 #include "TypedNode.h"
 
 #include <string>
+#include <utility>
 
 namespace eval {
 
 class Operator : public TypedNode {
 public:
+  static bool CouldBeUnary(const std::string& opName);
+  static bool CouldBeBinary(const std::string& opName);
+
+  typedef int op_priority;
+  enum ASSOC {
+    LEFT_ASSOC = 0,
+    RIGHT_ASSOC = 1,
+  };
+  typedef struct {
+    op_priority priority;
+    ASSOC assoc;
+  } op_prec;
+
   Operator(Log& log, RootNode*const root, const Token& token)
     : TypedNode(log, root, token),
-      isReordered(false),
+      isOrderSet(false),
       isValidated(false),
       isUnary(false),
       isBinary(false),
-      left(NULL),
-      right(NULL) {}
+      m_left(NULL),
+      m_right(NULL) {}
 
   virtual void setup();
+  virtual op_prec precedence() const;
 
-  // Static analysis of a whole operator tree.  Reorders operators to account
-  // for operator precedence rules, and validates the operators bottom-up.
-  // Called by Expression::setup(), which wraps the top of the operator tree.
+  // Sets whether this is a unary or binary operator.  Called by
+  // Node::MakeOperatorTree().
+  void setUnary();
+  void setBinary();
+
+  // Static analysis of a whole operator tree.  Called by
+  // Node::MakeOperatorTree().
   void analyzeTree();
 
   virtual void evaluate();
 
-  // Returns the method name for this operator, e.g. operator+
+  // Returns the internal method name for this operator, e.g. operator+
   // Returns "" if the operator is not overloadable
   std::string methodName() const;
 
 protected:
+  // Setup validation, called by validateOperatorTree().
   virtual void validate();
-  virtual int priority() const;
 
-  bool isReordered;
+  bool isOrderSet;  // set by setUnary() or setBinary()
   bool isValidated;
-  bool isUnary;   // set by analysisSetup()
-  bool isBinary;  // set by analysisSetup()
+  bool isUnary;     // set by analysisSetup()
+  bool isBinary;    // set by analysisSetup()
 
 private:
-  // Top-down setup when we have the right *number* of children, even if
-  // they're the wrong ones.  Sets isUnary, isBinary.  Called by analyzeTree().
-  void analysisSetup();
-  // Reorder tree of operators for our priority-based precedence rules,
-  // starting at this.  Called by analyzeTree().
-  void reorderOperatorTree();
   // Validate tree of operators, starting at this.  Called by analyzeTree().
   void validateOperatorTree();
 
@@ -77,8 +90,8 @@ private:
   virtual void computeType();
 
   // Pointers into children; set by validate(), should not be freed
-  TypedNode* left;
-  TypedNode* right;
+  TypedNode* m_left;
+  TypedNode* m_right;
 };
 
 };

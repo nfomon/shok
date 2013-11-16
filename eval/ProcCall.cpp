@@ -29,17 +29,16 @@ void ProcCall::setup() {
   if (!m_function) {
     throw EvalError("ProcCall cannot call a non-function");
   }
-  type_list argtypes;
   for (child_iter i = children.begin()+1; i != children.end(); ++i) {
     Expression* exp = dynamic_cast<Expression*>(*i);
     if (!exp) {
       throw EvalError("ProcCall args must be Expressions");
     }
     m_argexps.push_back(exp);
-    argtypes.push_back(&exp->type());
+    m_argtypes.push_back(&exp->type());
   }
   // Verify that the function has a signature for these arg types
-  if (!m_function->takesArgs(argtypes)) {
+  if (!m_function->takesArgs(m_argtypes)) {
     throw EvalError("Function " + m_function->print() + " does not accept the provided arguments");
   }
 }
@@ -57,5 +56,5 @@ void ProcCall::evaluate() {
 
 void ProcCall::computeType() {
   // ProcCall type is the return type of the function
-  //m_type.reset(m_signature->getType().duplicate());
+  m_type = m_function->getPossibleReturnTypes(m_argtypes);
 }

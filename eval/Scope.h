@@ -7,7 +7,7 @@
 /* Scope
  *
  * A Scope holds a local namespace of instantiated objects.  Block and RootNode
- * both have of Scope.  The depth tells you its nesting level: depth 0 is the
+ * both have a Scope.  The depth tells you its nesting level: depth 0 is the
  * global scope (held by RootNode).  A scope depth of 1 is fake, for silly
  * implementation reasons relating to how a '{' flips you from command-mode
  * into the global scope.  Thus scope depth 1 just defers down to the global

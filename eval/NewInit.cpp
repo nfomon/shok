@@ -54,12 +54,14 @@ void NewInit::setup() {
 
     // new x : y -- type is 'y', initial value is default value of 'y' (it must
     // be a BasicType)
-    // new x = y -- initial value is the result of the expression 'y', our type
+    // new x = y -- initial value is the type of the expression 'y', our type
     // is its type
     case 2: {
       m_typeSpec = dynamic_cast<TypeSpec*>(children.at(1));
       m_exp = dynamic_cast<Expression*>(children.at(1));
-      if (m_typeSpec) {
+      if (m_typeSpec && m_exp) {
+        throw EvalError("NewInit " + print() + " somehow has child of both TypeSpec and Exp type");
+      } else if (m_typeSpec) {
         m_type = m_typeSpec->getType();
         if (!dynamic_cast<BasicType*>(m_type.get())) {
           throw EvalError("NewInit " + print() + " has aggregate type " + m_typeSpec->print() + " but no default value is provided");
@@ -126,5 +128,10 @@ void NewInit::evaluate() {
   parentScope->commit(m_varname);
   m_isPrepared = false;
   // TODO assign initial value
-  //m_object->assign(m_exp);
+  if (m_exp) {
+    //m_object->assign(m_exp->getObject());
+  } else {
+    // TODO assign clone of default value of the object's type, or has this
+    // already been done??
+  }
 }
