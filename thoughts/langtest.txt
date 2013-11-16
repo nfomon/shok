@@ -1,0 +1,29 @@
+new max = @(a:int, b:int)->int {
+  calledTimes += 1
+  if a > b, return a; return b
+} & @(a:float, b:float)->float {
+  calledTimes += 1
+  if a > b, return a; return b
+} & {
+  calledTimes:int = 0
+}
+# I think we should require the member calledTimes to be declared before its
+# use:
+
+new max = { calledTimes:int = 0 } & @(a:int, b:int)->int {
+  calledTimes += 1
+  if a > b, return a; return b
+}
+
+new lion = {@(a,b)->c { new d }; }    # nope, don't like this route
+
+# digression: disjoint unions... hrrrrm..
+new bear = animal & ferocious & {
+  numCubs:int = 2
+  beartype : new black | new brown | new grizzly = black
+  beartype = | black | brown | grizzly |
+} & @(bt:beartype) {
+  beartype = bt   # hwhrkjahhewkrhakrha
+}
+
+
