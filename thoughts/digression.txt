@@ -1,0 +1,71 @@
+My inheritance is very much "by copy".  Changing the parent, if I'm even
+allowed, would not push that change to the children.  Let's figure out exactly
+what we *can* change on a parent.
+
+One of the powerful, though very dynamic, features of Javascript is that
+changes to a parent *can* ripple down to child inheritors.
+
+new x = {
+  roar = @() { print "Roar" }
+}
+
+new y = x & {
+  roar &= @() { print "FOO" }
+}
+
+[[ DIGRESSION:
+At first I was like, aww the &= there could do 2 things:
+1. Add a new signature to the function, with a new (perhaps more specialized,
+or just a totally different #) set of args.
+2. Replace an existing function signature entirely
+
+But I'm not sure this is a problem.  Note that the "super" call looks like this within the replacement function:
+
+new y = x & {
+  roar &= @() { self->x.roar(); print "FOO" }
+}
+
+We could bandaid in a syntax to be aware of replacing vs. adding a perfectly
+non-conflicting signature, and maybe we should, but I don't think if this is
+necessary that it would be a huge syntactic change.  We need more experience
+before we can make this determination, anyway...
+]]
+
+In the shok model, changes to the *types* of an object (adding new members, changing types of members) are not allowed either in different scope, or after it has ever been subclassed.  The reasons are:
+ - No changing the type: the types of those members on all children would
+   change, we need to have them all by reference, it would be crazy
+ - No adding new members: because what if a child has also added a member with
+   that same name, now we have this crazy conflict (even if they are the same
+   type, it's a semantic one I guess).
+
+Changes to the *value* assignments of the parent object's members do not affect
+the children.  This is an effect of our by-value-copy-everything model, though it couuuld be special-cased to be separate, we still don't want to do that:
+ - A child changing the parent through its members would be crazy, we lose
+   trust in anything; I could break 'int' somewhere, anywhere, and that would
+   be a mess
+ - Changing the parent changing the children... no, it's a strong model break.
+   Suddenly we have these magic one-directional references, where if a child
+   happens to have not changed one of its members, suddenly changing the parent
+   is somehow still allowed to change that on the child.  No.
+
+So no.  I don't see a need for allowing a parent's member to be value-modified
+and passing that down to children, nor allowing a parent's type (set of
+members, member types) to be modified.
+
+What about allowing a parent's members' values to be changed, without passing
+those to children?  Well that's totally fine, if that's done in a place where
+the parent is modifiable.  And yes that does affect the default values of
+things derived from it, so I could do:
+
+new x = {
+  new a:int = 0
+}
+
+new y = x   # y.a == 0
+x.a = 14
+
+new z = x   # z.a == 14
+            # y.a == 0 still !
+
+I have no problem with this.
+

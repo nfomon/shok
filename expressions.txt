@@ -1,0 +1,66 @@
+Our intensely prototypal system would like to have:
+ - all "primitives" are objects (e.g. int, 4, animal, cmd, cmd.run, plus)
+ - objects can "derive" from other objects.  The child has all the same members
+   as its parents, and maybe some new additions or specializations.
+
+This means that any unit of an expression is an object.  And an "object
+literal", i.e. the definition of a new object (or function!), is itself an
+object.  Therefore it should also be able to appear inside an expression.
+
+For example:
+  x = { y='hello'; z=op+(rhs:int)->int {return 3*rhs} } + 5
+
+x :: int == 15
+
+Keeping object literals in mind, we also need a notation for defining new
+objects that derive from others.  I see no reason why on-the-fly
+in-the-middle-of-an-expression object literals shouldn't be derivable as well.
+That is, we might like to do this:
+
+new animal = {
+  age:int = 3
+  triple = op+(rhs:int)->int { return age*rhs }
+}
+
+x = (animal & { age=4 }) + 5
+
+x :: int == 20
+
+That is, we have defined a notation for object inheritance: the operator &,
+which can appear within an arbitrary expression.
+new mammal = animal & hairy
+new x = (mammal & {name = 'george'}) + animal   # (idk why it has a + operator)
+                                                # (or what the new type of x is)
+
+Allowing inheritance with expressions has an important consequence: it appears
+to conflict with a goal of the compiler implementation.
+
+Aside: in C, the following is valid (if undefined or implementation-defined
+behaviour):
+  int x = x + 7
+
+That is, the variable x is allowed to appear in an expression that accompanies
+the statement in which it is defined.
+
+A goal of shok's compiler is that it should be able to perform as much static
+analysis as possible as early as possible upon receiving text from the user, so
+that it can warn about errors as early as possible.  This allows the most
+informative and graceful error-handling in an interactive setting.
+
+This is especially important for object and function literals, where
+potentially large amounts of code will appear as part of an expression.  The question becomes, in a statement like:
+  new x = (7 + animal) & { x : s = 'foo' } + 49
+
+How do we know where 's', used as a type in the object literal, comes from?  Is
+it inherit from whatever the type of (7 + animal) is?  Was a it a local or
+global variable visible in the scope of this statement where x is defined?  Is
+it imported from a module?
+
+In order for the interpreter to determine where 's' comes from (or if it is
+undefined: a syntax error), it needs to have partially evaluated the expression
+in which the object literal appears.  But the expression might not be finished!
+I want to report the error before we even evaluate the trailing "+ 49".
+
+Fortunately, I can hang onto my cake while simultaneously eating that very same
+cake!  Our operator precedence parser is very clever, thanks to Pratt Parsing.
+

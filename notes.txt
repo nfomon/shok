@@ -653,9 +653,9 @@ or
   loop
   repeat n times
 
-Actually maybe the ambiguity is ok (it's not a real ambiguity, we'll
-definitely figure it out *eventually*!!).  So let's not bother
-resolving it now and just decide what language syntax we want.  The current behaviour is OK.
+Actually maybe the ambiguity is ok (it's not a real ambiguity, we'll definitely
+figure it out *eventually*!!).  So let's not bother resolving it now and just
+decide what language syntax we want.  The current behaviour is OK.
 
 We're dropping a ')' somehow when we do:
   loop n times, new z
@@ -670,4 +670,132 @@ Note that we don't get the same problem with the while loop.
 I'm pretty sure we could reorganize the Disps to get it right, but
 let's fix the bug instead.
 And add lots of parser framework test cases!!  pl0x :)
+
+-----
+
+evil should mean "I have emit nonempty text, since the last time I was
+done (or start if never done), and now I've gone bad, therefore I am
+evil".
+
+urk.  seq:  self.unconfirmed is allll the text since the Seq started
+or was last done.  But for WAKKA, I care about only the text since
+*active* was started or last done.  IT has this text, actually, but WE
+don't.  Let's track it ourselves in Seq.  It's just unconfirmed except
+resets when active=None.  It's this text we should compare against
+'disp' at WAKKA-time.
+
+-----
+2k13-11-10
+
+Implementing object literals and functions.  How do they interact with scopes?
+
+Two open questions:
+{ new name:[char] = 'mimi', foo='davis'
+  new animal = { name:str, age:int, foo={foo} }
+  new lion = animal & { foo:name } & @(){name='lolz'} }
+
+{ new s
+  new d = { s }
+  new x = d & { foo=s } & @()->object { return s } }
+
+In `foo=s` does the s refer to the inherited member name or the s in the outer
+scope?  What about the `return s`?
+
+Object literals seem to require referring to things in their parent scope: e.g.
+for imported types.  Functions seem to want to only refer to members of the
+object in which they are contained, unless they are closures (and I kinda want
+those to be explicit; but maybe I can't find a reason for that).
+
+Let's do this for now:
+ObjectLiteral:
+ - Inherits from Scope
+ - When asked for a variable (meaning it wasn't defined in the object itself),
+   it can look up the object's type tree first before deferring to the actual
+   parent scope.
+ - Thus, it is aware of the dependency of an object on its environment --
+   though I don't THINK this matters per se, it's nice to know we can be aware
+   of it if necessary.
+
+Function:
+ - Inherits from Scope
+ - When asked for a variable during setup()/analyze(), it makes a note of the
+   requested var.  We'll
+
+Current flow:
+ - As soon as Nodes are created, initNode() assigns them a parent scope.  Block
+   even overrides its init() so that it can initialize its scope with the
+   scope's parentScope.
+ - setupAsParent() does setupNode() child first (a single layer!)
+ - setupNode() is not recursive.  It does setup(), then analyzeNode().
+ - analyzeNode() currently just does Statement->analyze() on Statements.
+ - The only Statement is New, its analyze() just prepare()s its children, which
+   (tentatively) constructs an object in the parent scope.
+ - This prepare() is a legit analysis step, it's what determines if a name
+   already exists in the immediate scope, and ensures that subsequent
+   statements at setup()-time can know about this new symbol.
+
+`object` and `function` know to NOT allow their children to be setup().  This
+is deferred until their parent Expression is setup().  Specifically, the
+Expression triggers the operator tree analysis (reordering, then validation).
+Validation just does an Operator's computeType(), which for & and | sets m_type
+= new AndType() or OrType().  We should have another step here, I don't think
+it matters if it happens before or after validation so let's do it after for
+now (maybe we want to know our types? though it's probably a waste since type
+validation is an easier way to fail?).  It will do a bottom-up
+ObjectConstruction phase.  This only affects object-literals, functions, and
+&'s.  For objects it does the local setup().  For functions it does the local
+setup(), keeping track of which variables are referenced as externals.  For &'s
+it merges objects, making sure that types align properly, watching for
+collisions, and hopefully diminishing some of its externals as local
+properties.  Somehow the & stores this maybe-partially-completed object.
+
+So:
+ - Object and Function need to be clever Scopes
+ - Node has "defer" bool, Object and Function set it on their children in init()
+ - Node knows not to setup() when defer is true
+ - Expression (and eventually, TypeSpec) need to do more than if (op)
+   op->analyzeTree().  If they have an ObjectLiteral or a Function, they need
+   to run its previously-deferred setup().  If they have an Operator, they need
+   to do a bottom-up ObjectConstruction which will setup
+   ObjectLiterals/Functions, and do an appropriate object-merge for & nodes.
+ - the &-node object-merge should happen at the &'s validate() step I guess.
+
+BREAK: how does multiple-inheritance work again?  Ah, diamond-pattern is fine.
+We just aren't allowed to clash on members that are defined across branches,
+even if they have the same type.
+
+Note: In Operator::validate() we determine and coalesce Operator types.  These
+may in fact depend on the aggregations of &-types and |-types like putting
+together the objects.. OK not so much the objects but like one side might
+entirely consume the other in which case we can just drop the redundant side.
+
+So maybe we want to merge objects before we determine their types?  Just a
+thought..  Well, & needs to be a subclass of Operator, and then it will
+different for & and |.
+
+Operator needs to be cleaned up.  And I don't mean just moving Expression's
+tree-creation into Operator, although certainly that.  We should start
+splitting up Operators into their own Operator subclasses.
+Operator::validate() does stuff that they all need, so it doesn't belong in
+validate() per se, and each subclass must be able to provide its own validate()
+(e.g. & can use this step to merge objects, then discard its children!).
+
+1. Implement Operator Tree construction / reordering properly
+ -- check
+
+2. During Tree construction, call setup() as early as possible on an
+operator/variable
+
+3. During Tree construction, track which &'s are yet known and pass these along
+to anything that might need them
+
+4. Object and Function subclass Scope; have placeholders for where they can
+branch var lookup logic differently.  However, they need to wait until they are
+fully merged before we know where lookups actually go.  So it's not immediately
+clear what role this var lookup logic has.
+
+5. Node deference logic -- Object and Function set defer, Node knows then to
+defer even setup()'ing their children.
+
+6. Upgrade tree-validate() step
 
