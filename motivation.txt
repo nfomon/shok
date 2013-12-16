@@ -10,6 +10,7 @@ There really aren't /that/ many.  I consider the major categories as follows:
   zsh
   fish
   urbit
+  julia's shell-out mechanism
 
 All are interesting and relevant, but shok is exploring a very different set of
 ideas than other shells (with the possible exception of urbit, which is in many
@@ -59,5 +60,5 @@ inconsistent state, where some operations have been applied but not others.
 Alternatively, shok considers it a responsibility to perform as much static
 analysis as possible on a block of code before executing any part of it.  To
 this end, it uses a strong static type system and a reliable memory ownership
-mechanism.  The interpreter also uses "ASAP" parsing to discover errors as
-early as possible.
+mechanism.  To make this experience user-friendly, the interpreter uses a
+technique called "ASAP" parsing to discover errors as early as possible.
