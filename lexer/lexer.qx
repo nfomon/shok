@@ -28,7 +28,7 @@ token {
   NEW; RENEW; DEL; ISVAR; TYPEOF;
 
   // Functions
-  VOID; RETURN; YIELD;
+  VOID; RETURN; YIELD; AT;
 
   // Branch constructs
   IF; ELIF; ELSE;
@@ -102,6 +102,7 @@ mode LUSH :
   "void"    => QUEX_TKN_VOID(LexemeNull);
   "return"  => QUEX_TKN_RETURN(LexemeNull);
   "yield"   => QUEX_TKN_YIELD(LexemeNull);
+  "@"       => QUEX_TKN_AT(LexemeNull);
 
   // Branch constructs
   "if"      => QUEX_TKN_IF(LexemeNull);
