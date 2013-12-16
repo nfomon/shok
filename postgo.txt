@@ -1,0 +1,298 @@
+Woooooowwww.  Broadway people are awesome!
+
+We'll need to clean up the syntax for converting one's immediate self to a
+particular parent vs. arbitrary specially-defined casts, I think.
+
+Covariance vs. Contravariance relates to our observation that a "child
+function" can either restrict the range of its parent, or expand the domain of
+its arguments.
+
+What REALLY is an enum?  How does it relate to ML-style type defs??
+new bool = new true | new false = false     does NOT capture it all!
+
+We will allow a child to restrict a member's domain from the parent.  For
+example:
+
+new exterior
+new skin = exterior
+new feathers = exterior
+new scales = exterior
+renew exterior : skin | feathers | scales = skin
+
+new animal = {
+  ext:exterior
+  setExterior = @(e:exterior) { ext = e }
+}
+
+new duck = animal & {
+  renew ext : feathers         # restricting a member to its subtype
+}
+
+now what happens to duck.setExterior(scales) ??
+
+Approaches:
+
+1. compiler says no: duck is not done until we replace its setExterior with
+something that cannot assign an invalid value to ext
+
+2. nalessi: duck needs a setter for ext that takes any exterior and produces a
+'feathers'.  This appropriate ext setter will be used automatically any time an
+inherited method attempts to set ext... so on duck, ext will always be a
+feathers.  I think this is bad because the inherited methods may not do what
+they intended now that this setter is happening underneath them.  We're sort of
+engaging in a power-struggle here over the member that is being set.
+
+Note that specifically the conversion we need is exterior->feathers.  And we
+could say that this is duck's general feathers setter, or that it is a specific
+conversion exterior->feathers, or that it is the specific conversion that
+duck's inherited @animal.setExterior should use.  Maybe those options give us
+all the safety we need.
+
+3. Go go-y.  duck has a (suppressed?) animal underneath it.  This is like (1),
+except when duck re-implements its setExterior, there's maybe some syntax magic
+that helps it make a call to animal's setExterior (which can go ahead and
+assign evil values to duck.ext internally, like ext=scales), but then duck's
+wrapper does some follow-up code that is allowed to do what it wants so long as
+duck.ext ends up being a feathers when it's done.
+
+hmmm.  duck can always up-cast itself during its reimplementation of
+setExterior.  For example:
+duck = animal & {
+  renew ext : feathers
+  setExterior = @(e:exterior) {
+    duck->animal.setExterior()  # does animal do this in the "context" of self?
+                                # ie. did we really change duck.ext?  If so,
+                                # this is NOT go-like.  If it did, then it does
+                                # not solve our covariance problem.
+    duck.ext = feathers # humph!  sorta like  i:int = (x:float).floor()->int
+  }
+
+Insights from typing.pdf (Bertrand Meyer "Static typing", 1995 OOPSLA):
+ - When we say "type" we are referring to the set of capabilities of an object,
+   not the specifics of what it will do.
+ - (on C++-style unsafe casts) "For one thing, it makes garbage collection, a
+   required component of serious object-oriented computing, very difficult if
+   not impossible."
+ - Claim that Eiffel invented "type-safe downcasting" (x := y, or x is void)
+ - ANCHORING
+
+4. ANCHORING (thank you Eiffel!)
+
+  new animal = {
+    ext:exterior
+    setExterior = @(e:ext) { ext = e }
+  }
+
+  new duck = animal & {
+    renew ext : feathers
+  }
+
+Note that:
+  animal.setExterior :: @(e:ext) where ext :: exterior
+  duck.setExterior :: @(e:ext) where ext :: feathers
+
+WOW!!!!  waaaait....... I don't get it.  Doesn't this break something?  If I
+have an animal, I no longer have a guarantee about what I can do with it....
+BOOOO!  :[
+
+-----
+I'm starting to like nalessi's way.  Here's an example syntax:
+
+  new animal = {
+    ext:exterior
+    setExterior = @(e:exterior) { ext = e }
+  }
+
+  new duck = animal & {
+    renew ext : feathers & set(e:exterior) {
+      assert(e is a feathers)
+    }
+  }
+
+That is, duck's ext setter will throw an exception if we ever try to assign it
+a not-feathers.
+
+An alternate syntax for the above:
+  new duck = animal & {
+    renew ext : exterior?($ is a feathers)    # runtime check
+  }
+
+Concerns:
+1. exceptions -- can I avoid thems?  This subtyping seems necessarily risky..
+2. function return values -- does this mess up how they can be used anywhere?
+3. expanding function domains, covariance/contravariance, I'm still missing
+something
+4. what does go-style composition *really* do?  think...
+5. are we not losing some meaning here??  does animal's implementor have to
+worry about this setter?
+
+Does 'abstract' save the day?  Nevermind setters for now, what if we just
+require that the base class makes abstract setters (and/or abstract
+potentially-evil methods) for the things a child might want to restrict?  It
+means the parent has to know what things children might reasonably want to
+restrict.  Their other choices are setter-override, or composition, I guess.
+
+  abstract animal = {
+    ext:exterior     # v----------------- anchor to member
+    setExterior = @(e:ext) { ext = e }
+  } # abstract because the anchor 'ext' will refer to the CHILD's member type!
+
+  new duck = animal & {
+    renew ext : feathers
+  }
+
+We MIGHT want to either suggest or require:
+  new duck = animal & {
+    renew ext : feathers renews setExterior
+  }
+
+or perhaps:
+  new duck = animal & {
+    renew ext : feathers
+    renew setExterior
+  }
+
+What we're doing is saying that any user of animal can only call setExterior to
+provide an exterior supported by that animal's implementation.  This puts the
+burden of correctness on the user of animal, but they know what the contract is
+(unlike the runtime-exception setter case).  Awesome!!
+
+Since 'animal' is now an abstract, it means we can't just create animals.  This
+is illegal:
+  new x = animal
+
+This is an abstract:
+  abstract x = animal
+
+This is ok:
+  new x : animal = duck
+
+Cool!
+
+In summary, we have three mechanisms:
+1. make animal abstract, with an anchor on types that children need to restrict
+2. children have a restricted member but its setter accepts a wider scope, thus
+fixing it up at runtime.  Inherited methods will implicitly use this setter,
+which is a it dangerous.
+3. inherit animal, restrict the member, have an internal animal, forward all
+offending methods (compiler helps you find them) to the internal animal,
+retrieve all members set by each method back to the object but fixing them to
+handle any restrictions.  Yikes.  We might need a syntax to help with this.
+Alternatively, maybe we can construct a higher-order something that allows us
+to create those forwarders.  Doubt it, but let's try?
+
+new forward = @(t)->r:t {
+  r = t & { forward_t:t }
+  each m:member in r.internal.members {
+    if m is an @ {    # this check might be wrong; resort to m.is_method maybe
+      r.internal.assign(m,
+        @(m.function.args)->m.function.return {
+          # Retrieve any members that might have been assigned in this call
+          # Note that the function could change itself, and what were functions
+          # and what were not might have been changed around!
+          each mem in r.internal.members {
+            # ...
+          }
+          r.forward_t.internal.call(m.name, m.function.args)
+        }
+      )
+    } else {
+      r.internal.assign(m, r.forward_t.internal.members[m.name])
+    }
+  }
+}
+
+[ASIDE: WHAT IF:
+  new x = {
+    foo = @() {
+      self.foo = @() { print "HELLO" }
+    }
+  }
+OMG THAT'S AMAZING
+]
+
+so then:
+  new duck = forward(animal) & {
+    ext:feathers
+    # compiler... uhohs?  duck.setExterior has in its type
+    #     with(self.ext:exterior) because it assigns to self.ext
+    setExterior = @(e:exterior) {
+      forward_animal.setExterior(e)
+      # MY responsibility now, to pull relevant state changes from that call
+      ext = feathers      # ha! take that!!
+    }
+    # phew, we're ok now!  setExterior :: @(exterior) with (self.ext:feathers)
+                                       :: @(exterior) with (self.ext:exterior)
+  }
+
+Note that duck :: @forward(animal) :: animal
+
+Of course I still need to prove that the 'internal' stuff from forward(t) are
+implementable.
+
+-----
+
+Well, that's fine then.  I think I've solved my covariance-contravariance
+issues.
+
+Let's re-clarify: within a method, any assignment to vars that go through
+(implicit) self, means that our method has an (implicit) with clause: with
+(foo:bar) if we assign to self.foo under the expectation that foo has type bar,
+etc.  By default, the method has with (X) where X was the name of self at the
+time.  (It's not with (self) because I think that might get inherited wrong?)
+
+You can even go ahead and add your own with() on methods where you contravarian
+(I like that word!) your self members up.  But I'm not sure that makes any
+sense.  Maybe that becomes useful if we're defining a trait?  What is a trait?
+Then maybe that notation is not useful and just the trait is defining a
+less-restrictive type for its member than maybe your actual implementors will
+have.
+
+We should think deeper into that.  For now let's pursue:
+- traits
+- multiple inheritance: should we just have separate forwards?
+
+-----
+Traits: http://scg.unibe.ch/archive/papers/Scha03aTraits.pdf
+
+DO WANT.  Thinking about "adaptors", whether trait-acceptance is really
+inheritance if it is adapted crazy, re-using a trait for multiple things in the
+same object, a `uses(x)` syntax and/or `=>` operator or otherwise how
+forwarding/inheritance are the same and different, etc.
+
+Supposedly traits can't have state variables.  I want to allow them but they're
+really just a nice syntax for setter/getter adaptors which might point down to
+an underlying state variable in the inheriting object OR maybe just even its
+own setter- and getter-like methods which could do anything it wants.
+
+Seems like it would be really cool to implement algorithms as trait-methods and
+you can give it whatever primitives you want to operate on.  Can we make
+generics out of this?  Try out some numerical algorithms?
+
+-----
+
+Current thoughts:
+Keep &-style inheritance of abstracts.  Allow a syntax for wiring up delegates
+and/or forwards (not really sure which).
+
+new duck = animal & adapts(talky:talker) {
+  speak = @()->str {
+    return "quack" ~~ talky.speak()
+  }
+} & {
+  # more duck stuff
+}
+
+Thinking about:
+ - with(self.stuff)
+ - different inheritance chains and what happens when they name-conflict /
+   diamond-pattern
+ - is there actually a nice refactoring / safety boost from forwards instead of
+   delegation with self, or if our no-references outlook fails w/ delegates
+ - re-think through all the complications that come with restricting a state
+   variable in a subtype or implementor
+ - trait as interface?
+ - what is the POINT of all this?  Do we really want it to be easy to make
+   subtypes that act nothing like the partial-abstract that they're
+   implementing?
+

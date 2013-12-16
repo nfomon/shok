@@ -1,0 +1,9 @@
+#!/bin/shok
+
+{
+  new ShokParser = Parser & {
+    neverGoBad = True       # inherited
+    new = @()->self {
+    }
+  }
+}

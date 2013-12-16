@@ -1,0 +1,42 @@
+#!/bin/shok
+
+{
+  class LexToken = {
+    readonly (
+      colno:int
+      ttype:str
+      tvalue:str
+    )
+    new = @(tokenstr:str)->self {
+      new t = tokenstr.split(':')
+      if t.size < 2 or t.size > 3 {
+        throw error("invalid token:" ~~ t)
+      }
+      colno = t[0]
+      ttype = t[1]
+      if t.size == 3, tvalue = t[2]
+    }
+  }
+
+  new NewlineToken = LexToken.new('0:NEWL')
+}
+
+
+  new x = {
+    name:str
+    age:int
+    _size:int
+  }
+OR
+  new x = {
+    const name:str, age:int       # does const even do anything anymore!?
+                                  # Roughly the same as readonly, I think!!?!?
+    readonly size:int     # nice!
+  }
+
+        foo.size() < 4 or foo.size() > 7
+
+        foo_size < 4 or foo._size > 7
+
+        I reject them both!!
+

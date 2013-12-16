@@ -1,0 +1,25 @@
+#!/bin/shok
+
+{
+  include tiny_lexer_st
+
+  const PROGRAM_NAME = "shok_lexer"
+
+  if sys.args.size() != 1 {
+    print "usage:" ~~ PROGRAM_NAME ~ nl
+    exit(1)
+  }
+
+  new token = quex.Token
+  new qlex = quex.tiny_lexer_st($QUEX_TYPE_CHARACTER(0x0), 0)
+
+  new line_number = 0
+  new num_tokens = 0
+  token = qlex.token_p_switch(token)
+
+  while (!stdin.done()) {
+    qlex.buffer_fill_region_prepare()
+    qlex.bufferstdin.getline(
+  ..... boring
+  }
+}

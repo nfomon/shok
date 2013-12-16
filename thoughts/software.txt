@@ -1,0 +1,41 @@
+I clearly have no idea how to write software using my "static prototypes"
+nonsense.  Let's reeeeally try actually using it and see if we can grok how a
+reasonable system should actually work.
+
+Maybe 'int' is not an int.  When *is* that pattern useful?
+
+abstract Int = {
+  value:os.int
+  op+ = @(rhs:Int)->Int { return os.int.plus(value, rhs) }
+  op() = @(i:int_literal)->int { value = i }
+}
+
+Constructors are nice because they parameterize which things need to be
+provided in order to get a complete object.  Just &'ing stuff in, you don't
+know what you need to provide without looking at the abstract.
+
+But remember: it is discouraged to have both a constructor and be a function.
+Maybe *constructor* is different than *make a real object out of an abstract*??
+Not really sure...
+
+abstract Drawable = {
+  draw : @()
+  x:int, y:int
+}
+
+abstract Window = Drawable & {
+  name:str
+  colour:Colour
+}
+
+new Colour = {
+  r:int, g:int, b:int
+}
+
+and if I don't like that:
+new Colour = {
+  R:int, G:int, B:int
+  new = @(r:int, g:int, b:int)->self { R=r; G=g; B=b; }
+}
+new x = Colour        # disallowed?
+new x = Colour(0,0,0) # ok

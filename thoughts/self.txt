@@ -1,0 +1,10 @@
+Let's get consistent reasoning re: self / base, abstract / class.
+
+Need:
+
+
+Maybe not need:
+
+
+No need:
+class -- 'abstract' subsumes that.

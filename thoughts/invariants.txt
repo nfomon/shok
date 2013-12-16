@@ -1,0 +1,238 @@
+So I'm thinking about prototypes, new and op(), abstracts vs. objects, and I'm
+wondering about this "constructor" thing.
+
+An abstract might want to "suggest" which members need to get values for it to
+be a real object.  Also, classes are used to model a set of state that is
+"maintained", and its constructors give you consistent "first values".  Just
+because I have an int, and int CAN be zero, doesn't mean that this int is
+allowed to be zero, or that it's ok for it to be zero irrespective of the
+other values in the object.
+
+A class is a convenient way to maintain a collection of state together, and
+this depends on people not just copying the class in some state and flipping
+around its members blindly.  Hence: required explicit constructors, object
+permissioning.
+
+I haven't been thinking about a permissions model at all yet.  js doesn't have
+one, and uses convention.
+
+I kind of like the idea of restricting writes, but anyone can always read
+members.
+
+One idea is that an object should lay out its invariants in the types of its
+members, with (runtime!) type restrictions.  This seems to be a limited,
+though convenient, form of setter-function.  This lets an object quickly
+capture some sets of invariants, and maybe prevents people from creating
+invalid objects.  BUT it does NOT cover invariant relationships between
+members.  Also, the object's invariants may be tricky to specify as a matter
+of *state*, but are simply *maintained* by the object's methods.
+
+So that's maybe nice but toooo limiting.
+
+Here's a model:
+ - "inheritance" with & is really extending-forwarding, the go way.
+  -- isn't that a lie in the case of abstracts?
+ - private members which can only be set via methods. no "protected" needed
+   because "inheritance" is just forwarding.
+ - how and when to require constructor?  runtime type restrictions kind of suck!
+
+I think go got wrong: duck interfaces
+I think go got right: inheritance by forwarding and wrapping (very trait-like)
+  -- though they do it kinda wrong (conflicts are errors at point of usage)
+
+Let's try where nouns use op() for constructor.
+And vars starting with _ are public-read, private-set.  That might interfere
+with other valid uses of "properties", which might just amount to
+state-variables inherited from abstracts (traits).  Need to practice that.
+
+How to "disallow" use of the prototype?  This is the fundamental question!
+OK, here's a pattern if you absolutely insist!
+abstract animal = {
+  name:str ? $_size > 0
+  age:int ? $_value >= 0
+} & @(n:name, a:age)->animal {
+  name = n
+  age = a
+}
+
+abstract x = animal
+typeof x    # x :: animal
+
+foo(x)    # invalid: cannot pass x, it is abstract
+          # though maybe a function could declare that it takes an abstract..
+
+new y = animal    # nope, animal is abstract
+new z = animal & { name = 'mittens', age=4 }      # fine... I guess??
+new kitty = animal('mittens', 4)                  # better
+new mittens = animal($n='mittens', $a=4)          # best?
+typeof mittens    # mittens :: @animal($n:'mittens', $a:4)
+                            :: @animal($n:$name, $a:$age)
+                            :: animal
+
+new stray = mittens('mitty', 1)                   # uhhhh..... k?
+typeof stray      # stray :: @mittens('mitty', 1)
+                          :: @mittens($name, $age)
+                          :: animal
+
+if animal.op()(name,age).return was a self (meaning it would have to be
+defined inside the animal's {}'s), then:
+typeof stray      # stray :: @mittens('mitty', 1)
+                          :: @mittens($name, $age)
+                          :: mittens
+
+The way that forward would be implemented is that:
+mittens = {
+  ...
+  op() = @(n:name, a:age)->mittens {
+    _animal = _animal(n, a)     # do we need the return val here?  YES!
+    return self
+  }
+}
+
+That is, we get the covariance of return type correct.  NOOO WE DOOOOON'T
+.... ok now we do.  What about return types of constructors?  hrmm.  Can we
+"refresh" an object by re-running its constructor -- is that cool?  It would
+leave behind all the state it didn't care to explicitly set?  yikes.
+Constructors are nice for the safety that default values are necessarily set
+to their defaults :)
+AH so no we can't.  Constructor:
+ - copies self into a new instance
+ - lets you rearrange that new instance
+ - returns that new instance
+If you ignore the return type, that's your problem, the original is still just
+the original.  UNLESS it wanted to do something like:
+  new x = { y=0; op() = @()->r:self { y += 1 }
+where x.y increments each time x() is called, even though x() returns a new
+copy of what x was before the increment.
+  x(); x()
+  new q = x()
+  print x.y ~~ q.y      # 3 2
+
+If animal had some interesting state to maintain, ...
+
+
+
+
+
+
+an error philosophy:
+ - static checks are better than runtime checks
+ - runtime checks are better than no checks
+ - checks should be easy
+
+
+==============================
+AFTER watching https://www.destroyallsoftware.com/talks/boundaries:
+
+Suppose an object's methods do NOT modify the object's state.  What?  Right!
+An object is a composite of:
+ - state variables
+ - functions that can read, but NOT write, to those state variables, and
+   return whatever they want, including perhaps a modified version of the
+   object
+
+The functions internally can keep whatever state they want, for the purposes
+of the computation!
+
+abstract animal = {
+  name:str    ? $_size > 0
+  age:int     ? $_value >= 0
+  op() = @(n:name, a:age)->self {   # original animal is untouched
+    name=n
+    age=a
+  }
+}
+
+new mittens = animal('mittens', 4)
+mittens('foo', 5)   # no effect
+new stray = mittens('mitty', 1)   # ok, what did this return?
+typeof stray        # stray :: @mittens('mitty', 1)
+                    #       :: @mittens($name, $age)
+                    #       :: mittens
+
+if we had used 'animal' in abstract animal, then stray :: ... :: animal
+if we had defined 'animal' as follows:
+abstract animal = { ... } & @(n:name, a:age)->animal {
+  new a = animal & {name=n, age=a}
+  return a
+}
+then stray :: ... :: animal
+
+What has actually changed?
+If methods can't modify the object's state (they can either return a new
+version of the object OR they can return you something computed from its
+state), that is, methods are externally pure, then:
+I think we don't need to worry about all that forwarding nonsense?? setters,
+etc... it all just goes away maybe?  YES I THINK SO
+
+Things we might have:
+1. bare state-variable objects (structs).  easy-peasey
+2. objects that namespace some related functions
+3. objects that store state and functions that return more information,
+possibly based on that state (1 and 2)
+4. objects that record state and functions that return an object in a
+different, maybe "updated" state.
+
+Some objects have "forbidden" states.  Want objects to start in a correct
+state, and that stay in a correct state.
+1. As much as possible, the type of a member should restrict its state.
+2. Maaaaaybe "setters" which can validate state after an attempt to set
+3. Constructor function to setup good state
+
+Setters:
+ - welp, our methods don't actually change the original.  But they DO update a
+   modified version.  It's not clear that "setter" is the right context for
+   that.  They'd rather just update all the vars how they want them, subject
+   only to type restrictions.  Also, the method should allow a SELF-IMPOSED
+   RESTRICTION (contract) on what updates to members it will allow.
+ - Externally, someone can still set any member.  Right?  So what are THEIR
+   restrictions?
+ - Any user should be able to update any public state variable as long as it
+   stays within the type restriction.  So if a var represents more complex
+   state, it should be private, and only updateable via methods.
+
+Cool.  Now what about CONSTRUCTORS?  How do we START with correct state?
+First note that public "state vars" should be TYPE-RESTRICTED to appropriate
+settings.  Since the outside world is allowed to set them however they see
+fit!  So if '' is a valid animal name, then so be it!
+
+MAYBE: AUTOMATIC CONSTRUCTOR FOR PUBLIC STATE VARS !!??  (go basically does
+this).  Alternatively, we just suggest that classes have a nice constructor
+that the user COULD use, although we've already decided that this would be
+optional since the public state vars are type-restricted to allowable values
+(and indeed, a valid combination!).
+
+Second: we actually DO HAVE CLASSES.  If the "default" state is abstract, but
+it has a function that returns self?  YOU BET THAT'S A CLASS BABY.  Wait,
+maybe.  It might return an.. abstract?  no that makes no sense.  We can only
+call the function if it's been implemented, in which case it's also returning
+an implementation (I think?? do we allow returns of abstracts? I don't see why
+not....).  OK well if we're calling it then it's clearly a real object by now,
+meaning we have to have a real version already. hum.
+
+Our ACTUAL PROBLEM: How do I get an object out of an abstract?  One is to & in
+the requisite stuff to get it complete.  The OTHER is that I want functions
+somewhere that give you completed versions of the abstract.  And it would be
+nice if those were wrapped up in the namespace with the abstract too -- but
+then they're stuck in the generated objects forever!!!  Well and that's ok,
+given an object it's nice to know how to create brand new ones, although watch
+out that the "new one" MIGHT (???) not have ALL the members as the one you're
+"not really copying" since you're not copying it and it might be a child that
+has grown or even restricted itself in the meantime????
+
+We can use "new" for this purpose.  If you have an abstract but want to create
+it, maybe 'new' gets a pass and is callable on the abstract?  Or is it really
+a creation function that goes away, i.e. it's an artifact of the abstract?
+I'm ok with that too maybe!!
+
+Crazy getters:  suppose that a member can be declared as either
+  new foo = { x }
+meaning that foo.x is a publicly readable and writable variable, or
+  new foo = { _x }
+meaning that from the outside, we can read:
+  foo.x()
+and from the inside, we can read and write to foo._x .
+hmmm that precludes a different public x(), maybe wrong/messy.
+also is there ever a use for truly private members?  (I kinda think no,
+although they should be hidden!)
+

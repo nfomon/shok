@@ -1,0 +1,18 @@
+new x = {
+
+  abstract Animal = {
+  }
+
+  abstract Duck = {
+  }
+
+  abstract Dancer = {
+  }
+
+  new sprite = {
+  }
+
+  new wally = Duck.new('wally', 7) & {
+  }
+
+}

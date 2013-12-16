@@ -1,0 +1,322 @@
+new x = A()
+
+Is that a constructor for A?  Or just a function call?  Here's the difference:
+
+new A = @() {
+  # function
+}
+
+new A = @()->self {
+  # constructor
+}
+
+new A = {
+  x
+  op()->self {
+    x = 'hello'
+  }
+} & @() {           // NOPE
+} & @(foo)->int {   // OK!  Now  A :: @()->self & @(foo)->int :: @->self|int
+}
+
+Instead of  new A = { op()->self {} }
+I might like:
+            new A = { @()->self {} }
+
+That is,
+  new x = @(a)->b { ... }
+
+is equivalent to:
+  new x = { @(a)->b { ... } }
+
+But what happens as a consequence?
+new A = {
+  @(a)->b { return b }
+
+  op+ = @(rhs:self)->self { return self }
+
+  roar = @()->str { return 'ROAR' }
+}
+
+I don't like that.  I prefer the old way, then?
+  new x = { op() = @(a)->b { ... } }
+
+Sure, ya.
+
+WAIT.  If op() = @()->self  is special (it constructs a new context and then
+executes the body), then is anything that returns 'self' special??
+
+And what is   new x = @()->self { ... }     # what does this do ??
+
+self, it should be noted, is a reference.  already kind of yikes...
+
+-----
+Suppose that 'self' in a method signature always means "a brand new copy of me
+(created before the method is run)".  Then:
+
+new A = @(a:self)->b:self {
+  # nothing here
+}
+
+a :: A  in a funny way.
+b :: A  is returned, that is, A() yields a brand new A
+new x = A     # x :: A
+new y = A()   # error
+new y = A(A)  # y :: @A(A)->A :: @A & @->A A
+new z = A(A())    # z :: @A(@A())->A :: @A(A) :: @A & @->A :: @
+
+Nevermind, that was totally magic.  The magic is, what is the context in which
+this function is run?  What is the "self"?  Why would it be some magical new
+self -- has to be just because the return type is self.  yeeks.
+
+OR do we want the constructor to have to run in the context of the parent?
+i.e. it's just a member function on the object that happens to return a new
+object?  So we can't refer to self members, we have to talk about 'b' in the
+above example.... uhhh hmmmmmmmmm...
+
+... RIGHT!
+
+new A = @()->b:int {
+  b = 4
+  # we don't need an explicit return statement!  Already know that b is returned
+}
+
+new A = @()->b:self {
+  # b :: @A()->self :: A
+  # no explicit return is needed; return value b is named, so it's automatic
+}
+
+new A = @()->int {
+  # need an explicit return here
+  return 4
+}
+
+new A = @()->self {
+  # THIS is magic.  It is as if we did:  new A = @()->self:self
+  # We do not need to make an explcit copy and explicitly return it.
+  # If we wanted to do that, we could have given it a name in the signature.
+  # Instead, NOW we are a real "constructor"-like thing, where the original A
+  # is inaccessible to us (except through its identifier, A).  We are operating
+  # in a new instance context, ie. self inside the block refers to this new
+  # one.  AND it is implicitly returned at the end.
+}
+
+The only thing left to figure out, is what object 'self' refers to in different
+situations.  (e.g. method in an object, function in a function, ...)
+
+Let's try to resolve that now.
+
+{
+  new q = 45
+  new max = @(a:int, b:int)->int {
+    self.log("MAX!")      # is this an error?
+                          # .... why should it be?  we MIGHT have a log member..
+    print q               # what about this??
+    if a > b, return a; return b
+  } with (q) & { log:Log }
+  # TANGENT: log Log convention, rrrrk....  Int int... :/
+}
+
+new animal = {
+  name:str
+  speak = @() {
+    print "Hello, my name is " ~ name
+  } with (name)  # ????? why would this not be necessary?
+}
+
+with() being necessary to pull into a function, should not depend on whether
+we're deep within a nested function / object or not.  Soo.. either a function
+can always just grab anything it wants to get a magic copy of it at
+construction time (? is this REALLY all that bad? it's what we want with
+imports..) OR we don't need to pull in members of the most immediate object
+we're defined in (but this excludes OUR OWN object somehow? mrrrrf?) .... OR
+(what?  require 'with' to pull anything?  even other members??)
+
+Suppose we abolish 'with' entirely.  What's the problem?  That this is unclear:
+{ new x = 'hello'
+  new foo = @() {
+    return x
+  }
+  x = 'goodbye'
+  print foo()     # prints "hello"
+}
+
+Here are some rules:
+Object literals:  Within an object literal you can refer to anything that has a
+name, including names that have already been defined within this literal.  You
+can use the term 'self' to refer to the object itself, but if the object is
+being defined and assigned to a name, you CANNOT refer to itself by that name
+(since we don't know for sure that it's the object that is being assigned and
+not something else; although eventually a smarter compiler could be
+optimistic).
+{
+  import date
+  new q, r
+  new a = {
+    w : q = r
+    x : self
+    y : a           # error: a is yet undefined
+    z : self|null = self    # an error only at a later stage of analysis
+  }
+}
+
+Functions:
+ -- Do I want the pythonic "thou shalt use self" thingy?? Or can I just look up
+members up the chain??
+ -- it might depend on self vs $ ... what was up with that?
+ -- remember  $../foo   ??????  I don't like that "nesting depth" thing.  It'd
+be nicer to just refer to upwards things by name.  year vs. self->date.year.
+
+The python-style may fail because 'self' means strictly 'me this function and
+MY members if any' rather than 'the object on which I am a method'.
+
+How would straight-up lookup work?
+
+First note that @ does NOT define self: only object-literal {}'s.  So these are
+all identical:
+  new x = { op() = @()->self {} }
+  new x = { op() = @()->s:self {return s} }   # even this return is optional..
+  new x = @()->self {}
+  new x = @()->s:self {return s}              # even this return is optional..
+
+:::  NO!!!!  Refer to selftest.txt instead!!!
+
+Those examples are weak, because 'self' was only used in the signature and not
+in the function body.  But it's not defined there either.  So in a method,
+'self' is just a name provided by the object literal in which the function is
+most closely enclosed.  To that end, it can be used to refer to the object's
+actual members, though it is not required.  Consider:
+{ new A = {
+    x
+    y = @()->int {
+      x = 7
+      new x = 5       # masks self.x
+      x = 14          # my local x
+      x += self.x     # cool
+      return self.x   # wait, is this type-ok?  ... eventually?
+    } & { x }         # aaaah what now!?  we'll need a mechanism to block this!!
+  }
+}
+
+Let's try that again:
+{ new A = {
+    x = 1
+    y = { x=2 } & @() { print x ~~ self.x }
+  }
+  A.y()   # prints "2 1"
+}
+
+Wow that can be confusing.  But I think it's ok.  Let's look up that $ business
+to see if we've missed some lovely nuance.
+
+Variable lookup order for a method (function defined in an object):
+ - method's local context: args and pre-built return value, closest local var
+ - known members of the method-object (has weird consequences if #!DEFER is
+   used, as showcased in the "aaaah what now!?" case above)
+ - parents of the method, up the inheritance chain
+ - 
+
+So where do I need to use with()?
+1. functions in actual code block:
+{
+  : echo "hello"
+  new x = 'moo'
+  new B = @() {}
+  {
+    B = @() with(x) {   # this with(x) is required
+      print x
+    }
+  }
+  x = 'lolz'
+  B()   # moo
+}
+
+2. functions in functions:
+{ new A = @() {
+    new x
+    new B = @() with(x) {
+      print x
+    }
+  }
+}
+
+
+Now what about bound vs unbound methods?
+
+-----
+
+There's a BIG difference between:
+  new A = { x = @()->A {} }
+vs.
+  new B = { y = @()->self {} }
+
+as evidenced by:
+  new a = A & { one }
+  new b = B & { two }
+
+new Ax = A.x()    # Ax :: @A.x() :: A
+new By = B.y()    # By :: @B.y() :: B
+new ax = a.x()    # ax :: @a.x() :: A
+new bx = b.x()    # bx :: @b.x() :: b   # We get the child!  The real "self"!
+
+
+A 'with' and the function's args cannot fight over the same member name, even
+though an arg could mask a name from outside.  It's just not clear who should
+win in a fight, so don't let them fight.
+
+-----
+
+Here's a strange one.  Suppose a function inherits from another function:
+{
+  new max = @(a:num,b:num)->num {
+    if a > b, return a; return b
+  }
+  new floorMax = @(a:num,b:num)->int {
+    if a > b, return a->int($floor); return b->int($floor)
+  }
+}
+
+Is floorMax able to refer to its parents, the way we could do this:
+{ new date = { year:int, month:int, day:int }
+  new weirddate = date & { year:5
+                           silly = @() { print self->date.year + year }
+                         }
+}
+
+oh great gizzards, can weirddate do that?  How can we allow inheritance??  How
+can we run a method inherit from a parent when our child members may have been
+restricted??
+
+uhm.. we could static-analysis ensure that a child cannot restrict a member in
+a way that a member might not be cool with that, without also replacing that
+member (perhaps by wrapping the parent's method, and truncating the result).
+Hah that means the parent's method will "temporarily" consider the method to be
+in the unrestricted domain for a while during its execution, but none of the
+child method's evaluation is allowed to do the same.  Thaaaaat's pretty hacky.
+No that can't even work:  we can't let the child "see" the wrong type as set in
+the parent, so that it could fix a broken result.....
+
+OK..  let's think about member-restrictions more.
+ - it makes perfect sense when replacing a function body with a more
+   restrictive function body.  Riiiight?  What if we just append on
+   something... ya that's like extending it, adding new specializations or
+   extending the allowed range.  We're adding *more* to the child or changing
+   existing method behaviours.
+
+Let's try an example:
+
+new date = {year:int; month:int; day:int}
+new datetime = date & {hour:int; min:int; sec:int}
+
+new logline = {
+  timestamp:date
+  msg:str = 'log'
+}
+
+new fastlogline = {
+  timestamp:datetime
+  msg = 'fastlog'
+}
+
+.... uhhhh....
+

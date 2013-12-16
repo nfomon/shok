@@ -1,0 +1,56 @@
+val:
+
+n1 = 4
+n2 = n1       # makes a copy of n1.  n2 <- 4
+n1 = 8        # makes a copy of 8 into n1
+
+print n1 ~~ n2    # 8 4
+
+
+ref:
+
+n1 = 4
+n2 = n1       # n2 <- n1 <- 4
+n1 = 8        # n2 <- n1 <- 8
+
+SPARKel tells us:  try with refs being const, but movable.
+ - A.x :: R*, then A must be abstract.
+ - A.x :: R*|null, still abstract.
+ - A.x :: R*|null = null, OK not abstract!
+
+Let's build our tree.  Static first:
+{
+  new n1 = node.new(4)
+  new n2 = node.new(7)
+
+  n1.child = n2*
+  n2.parent = n1*
+}
+
+hmmm.  maybe that's ok.  What happens under a strategy of just: null everything
+out??  We require null-checks on stuff anyway, sooo... what's the problem?
+
+new n1 = node.new(4)            # [1, 0xA, node:4]
+new nref : node*|null = n1      # [1, 0xA]
+{
+  new n2 = node.new(7)          # [2, 0xB, node:7]
+  nref = n2                     # [2, 0xB]
+}                               # n2 is destroyed: [0, 0xB, null]
+
+nref asplodes.                  # all locks+keys tells us is that this is a
+It should turn into null !!     # runtime error, by way of keeping n2's null ???
+
+The mistake is that nref must be either:
+ - const        (I must refer to something with lifetime >= mine)
+ - nullable     (How does the compiler know how to find all the refs to nullify?)
+
+Trying to enable "automatic nullifying".  How?
+
+
+
+
+(Fun looking up https://dl.acm.org/citation.cfm?id=1148
+http://www.computingreviews.com/review/review_review.cfm?review_id=108804 which
+sounds like it's just a Locks-and-keys method where locks are statically
+allocated in a .... what? static hashtable? idk.
+https://en.wikipedia.org/wiki/Locks-and-keys)

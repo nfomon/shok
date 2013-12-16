@@ -1,0 +1,97 @@
+#!/bin/shok
+
+{
+  # naive dynamic-array-backed implementation
+
+  new deque = {
+    const node = {
+      value : int
+      next : node*|null = null
+      prev : node*|null = null
+    }
+
+    nodes : [node] = []   # consider as a dumb but dynamic (auto-growing) array
+
+    first : node*|null = null
+    last : node*|null = null
+    length : int
+
+    push_back = @(n:node) {
+      # copy elements forward
+      nodes.size += 1     # member mutation is cool?  also, a setter!?
+      # vv OH NOEZ I used "node" as a variable of type "node".  sigh.
+      each node in nodes[$size-1 .. 1] {    # this gets into iterators, slices...
+        node = nodes[node.i-1]              # ... i.e. this is nontrivial...
+      }
+      # alternatively, here's a nice trick!  Can this work !!??
+      nodes[1..$size] = nodes[0..$size-1]   # again, requires slice thinking
+      # let's just be conservative for now:
+      # vv OH NOEZ I just used "i" as a variable... is THAT ok !!??
+      each i in nodes.size-1 .. 1 {
+        nodes[i] = nodes[i-1]               # yep, a copy
+      }
+      last = nodes[$size-1]*
+      nodes[0] = n
+      first = nodes[0]*     # GOTCHA!!  Yikes.... aaaaaa.  unless..... errrk...
+      first = nodes[0]* = n   # ????? REALLY???? ewwwww.  and wrong.
+      first = (nodes[0] = n)*   # ok that's not wrong it's just ugly
+                                # and assignment is an expression again, wtf!?
+    }
+  }
+}
+
+
+# wait..  why is it not ok to return a ref?  Is it safe to do this from a
+# method?  Can we know in the method that it's returning a ref specifically to
+# a member of the object on which it's a method?
+
+new A = {
+  x
+  Q = {
+    qx
+    qfoo = @()->object* { return qx* }
+    qbar = @()->object* with(x) { return x }    # what does this 'with' do ??
+  }
+  foo = @()->object* {
+    new y
+    new lolz : object* = y*
+    if 4 > 3, return lolz
+    return x*
+  }
+}
+
+new cat : object*|null = null
+if (3>4) {
+  cat = A.foo()   # this is ok
+  # (assume equivalent cat1, cat2, cat3, cat4)
+} else {
+  B = A
+  cat1 = B.foo()  # this must be disallowed.  which is easy enough because B.foo()
+                  # won't be returning anything that isn't a member of B
+  cat2 = B.Q.qfoo()   # also a member of B, so no good
+  cat3 = B.Q.qbar()   # Not sure if on B or B.Q...... either way, no good!
+  QQ = B.Q
+  cat4 = QQ.qfoo()    # nope
+  cat5 = QQ.qbar()    # nope, and what??
+}
+
+# It looks to me that we *can* know which ref returns are ok and which are not.
+# Furthermore, the return site *can* know how long that ref will last for.  We
+# have scope depth info right in the type system!  And implicit at that.
+
+####
+# OK so one cool thing we can do is say that [] access tends to return a
+# special slice object which has a bunch of info pertaining to how a thing
+# might be stored inside that data structure.   oyyyyy.  and then our type
+# system also allows us to have overlapping member-names on an object if they
+# are inherit from different things, and they don't "compete" per se, you have
+# to consider the object in the sense of a particular type (at the exclusion of
+# the other) to be able to see them.  yep yep that's preeeeetty terrible, tho
+# also maybe powerful.  It feels very "dynamic", you can just discover things
+# in an object and more or less make it up.  Has rough edge-cases.
+
+# Screw that.  Instead, how do we do slices and stuff?  Need to look at D/go...
+
+# Anyway, how do we put a thing in a datastructure and then get a reference to
+# it?  Or if that's bad, how do we get a reference to it and then put it in the
+# datastructure?  Do those have to be simultaneous? hmm..

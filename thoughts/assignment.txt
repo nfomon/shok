@@ -1,0 +1,127 @@
+http://stackoverflow.com/questions/35988/c-like-structures-in-python exposes
+awesomeness in python:
+
+        class Sample:
+          name = ''
+          average = 0.0
+          values = None # list cannot be initialized here!
+
+
+        s1 = Sample()
+        s1.name = "sample 1"
+        s1.values = []
+        s1.values.append(1)
+        s1.values.append(2)
+
+Why must Samples.values = None ???    Check this out:
+
+        class Sample:
+          values = []
+
+        s1 = Sample()
+        s1.values.append(4)
+        print Sample.values   # [4]
+
+We just modified the class!!
+
+-----
+
+R has assignment operators: =, <-, ->, superassignment <<-, ->>.
+
+The distinction between = and <- seems nearly irrelevant, and some people argue
+that one or the other should typically be used.
+
+R does NOT have pointers nor references.  Assignment is by value, arguments are
+copy-by-value.  Functions return lists of stuff all the time, and it *is*
+annoying.
+
+The way that linked datastructures are constructed is often by hacking together
+a huge matrix, where "links" are indices to other rows of the matrix.  Wow!!
+See "The Art of R Programming" for a clear example.
+
+-----
+Let's read more of Scott M. Pike's work on assignment, and his references.
+
+Thoughts while reading "Traditional Assignment Considered Harmful":
+http://www.cse.ohio-state.edu/rsrg/documents/2009/09PHABKW.pdf
+
+- His focus is specifically "imperative languages".  What about functional??
+- He cares about "efficiency for value types, and (...) modular reasoning for
+  reference types".
+
+"Exploration of the complete design space for data-movement primitives supports
+the following conclu- sions: (1) traditional assignment is fundamentally
+flawed, and (2) any other data-movement primitive would be better."
+ -- Hilarious!!
+
+This is OOPSLA 2009, so when he says "Virtually all modern software systems
+have been engineered with this data-movement primitive in mind." I assume he
+knows what he's saying.
+
+What is aliasing? -- fascinating!  Especially re: "strict aliasing", where ISO
+C denies pointers of different types to refer to the same memory addresses, but
+many projects reject this like Linux kernel (for optimizations), and python 2
+for its reference counting system.  What is THAT about I wonder...
+http://en.wikipedia.org/wiki/Aliasing_%28computing%29
+
+I should mention aliasing in my article.  With explicit obvious references,
+it's clear exactly when and where aliasing COULD be occurring.  This frees much
+burden I think.
+
+"It is true that the reasoning problems created by aliasing could, in
+principle, be avoided by requiring that all reference types should refer to
+immutable objects. This would be tantamount to mandat- ing pure functional
+programming in a nominally imperative language, and to our knowledge no one is
+seriously propos- ing this as a solution."
+ -- WOW!!!!
+
+He considers value and reference types to be both always available to the
+programmer.  I think that's the core flaw, that unrestricted references are
+totally an allowable thing, hence the fear of aliasing.
+
+He DOES notice that assignment change is related to the language's idiomatic
+subtyping facilities.
+
+Looking for this:
+Scott M. Pike, Wayne D. Heym, Bruce Adcock, Derek Bronish, Jason Kirschenbaum,
+and Bruce W. Weide. A systematic anal- ysis of assignment primitives. Technical
+Report OSU-CISRC- 8/09-TR39, Department of Computer Science, The Ohio State
+University, Columbus, OH, August 2009.
+ --- oh, this is basically the same thing as "considered harmful".
+
+Maybe refer to these citations:
+
+James Noble, Jan Vitek, Doug Lea, and Paulo Sergio Almeida.  Aliasing in object
+oriented systems. In ECOOP ’99 Workshops, volume 1743 of Lecture Notes in
+Computer Science, pages 136– 163. Springer-Verlag, 1999.
+
+Naftaly H. Minsky. Towards alias-free pointers. In Proceedings of ECOOP ’96,
+volume 1098 of Lecture Notes in Computer Science, pages 189–209.
+Springer-Verlag, 1996.
+
+Barbara H. Liskov and Jeannette M. Wing. A behavioral notion of subtyping. ACM
+Trans. on Programming Languages and Systems (TOPLAS), 16(6):1811–1841, 1994.
+
+R. B. Kieburtz. Programming without pointer variables. ACM SIG- PLAN Notices,
+11(3S):95–107, March 1976.
+
+Laurie J. Hendren and Guang R. Gao. Designing programming lan- guages for the
+analyzability of pointer data structures. Computer Languages, 19(2):119–134,
+April 1993.  Michael Hind.  Pointer analysis: Haven’t we solved this problem
+yet?  In 2001 ACM SIGPLAN-SIGSOFT Work- shop on Program Analysis for Software
+Tools and En- gineering (PASTE’01), Snowbird, UT, June 2001.  URL
+http://www.research.ibm.com/people/h/hind/ paste01.ps.
+
+Manuel F ̈ahndrich and Robert DeLine. Adoption and focus: prac- tical linear
+types for imperative programming. In Proceedings of PLDI 2002, pages 13–24. ACM
+Press, 2002. ISBN 1-58113- 463-0.
+
+Henry G. Baker. “Use-once” variables and linear objects: storage management,
+reflection and multi-threading. ACM SIGPLAN Notices, 30(1):45–52, 1995. ISSN
+0362-1340.
+
+-----
+
+I'm really expecting my restricted-references to NOT work somehow, otherwise
+all these classic papers would have figured it out......
+
