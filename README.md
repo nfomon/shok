@@ -11,24 +11,18 @@ lush is in its early stages of initial development.  It has the framework for a 
 todo
 ====
 
-0. LICENSE
+1. Interpreter directives (pragmas)
 
-1. Run basic commands with synchronous I/O to the shell
+2. Some basic objects and literals
 
-2. Interpreter directives (pragmas)
+3. Basic expressions and statements
 
-3. Some basic objects and literals
+4. Basic shell features: I/O redirection, pipes, simple history
 
-4. Basic expressions and statements
+5. Unicode
 
-5. Basic shell features: I/O redirection, pipes, simple history
+6. Programming language
 
-6. Memory model
+7. Concurrency model
 
-7. Unicode
-
-8. Programming language
-
-9. Concurrency model
-
-10. ...
+8. ...
