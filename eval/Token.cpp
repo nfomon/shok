@@ -28,7 +28,7 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
   bool inValue = false;
   for (int i=0; i < ast.length(); ++i) {
     char c = ast[i];
-    //log.debug(" - tokenizing char '" + string(1, c) + "'");
+    log.debug(" - tokenizing char '" + string(1, c) + "'");
     switch (mode) {
     case MODE_NONE:
       if (inToken || inValue) {
@@ -74,8 +74,7 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
           current.name = "cmd";
         }
         inValue = true;
-        current.value += c;
-      }
+        current.value += c; }
       break;
     case MODE_CODE:
       if (escape && inValue) {
@@ -159,7 +158,10 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
     }
   }
   if (inToken) {
-    throw EvalError("Line ended with incomplete token");
+    v.push_back(current);
+    current = Token();
+    inToken = false;
+    inValue = false;
   }
   return v;
 }
