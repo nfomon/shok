@@ -3,7 +3,7 @@
 
 shok is a cross-platform non-POSIX interactive command shell.  Similar to sh
 and DOS, it allows the user to invoke programs and script their execution.
-shok provides a secure, platform-agnostic, and user-friendly programming
+shok will provide a secure, platform-agnostic, and user-friendly programming
 language that is designed to facilitate filesystem interaction and system
 management.
 
@@ -35,11 +35,11 @@ A command shell is a program that lets the user run other programs.  It also
 provides a programming language for scripting the invocation of programs and
 some interactions between them.
 
-Most command shells have lousy scripting languages, in part because their
-syntax needs to disguise itself around (or make itself a part of) the shell's
-default action: running programs.  Alternatively, programming languages
-typically provide an ability to invoke external programs, but are cumbersome or
-impossible to use as an interactive shell.
+Most command shells have lousy scripting languages, in part because the
+programming syntax needs to disguise itself around (or make itself a part of)
+the shell's default action: running programs.  Alternatively, programming
+languages typically provide an ability to invoke external programs, but are
+cumbersome or impossible to use as an interactive shell.
 
 shok takes a novel approach to minimize this trade-off.  It provides a natural
 syntax for switching between the command shell and a fully-featured programming
@@ -50,7 +50,7 @@ In haiku form:
   { write code in curly braces }
      : colon runs commands
 
-Example:
+Example:      (list results in gray!)
 
   # just a normal shell
   cd /media/usb_key
@@ -61,6 +61,7 @@ Example:
   touch {authors_file}    # access the variable from the command-line
   echo I have {4*3} hearts: { '<3 '.repeat(12) }    # expressions as program arguments
   {
+      new cutoff_date = date(2013, 4, 17)
       each f:file in ~/research/ {    # loop over files in a directory (path literal)
           if f.modification_time >= cutoff_date {
               print("copying " ~ f ~ " to usb key")
@@ -76,8 +77,8 @@ This example demonstrates:
    can be accessed from any subsequent {}'s.
  - From the shell, {}'s can pull a variable or expression from the language
    onto a command-line.
- - Retrieving a value this way is safe -- it can never be interpreted as shell
-   code!
+ - Retrieving a value this way is safe -- the value could never be interpreted
+   as shell code!
  - Within the programming language, a : at the start of a line makes it a
    command-line.
  - Nothing is executed until the last block is closed, and there are no syntax
@@ -92,7 +93,7 @@ Other features:
  - Object oriented programming with "static prototypes"
  - Strongly, statically-typed and compilable language: prevent errors *before*
    destructive program invocations can occur.
- - Lexically-scoped, copy-by-value memory model: No pointers, no garbage
-   collection, deterministic semantics.  Safe programming with controlled
-   mutation and ownership.
+ - Lexically-scoped, copy-by-value memory model: No garbage collection,
+   deterministic semantics.  Safe programming with controlled mutation and
+   ownership, references are explicit and restricted to ensure safety.
 
