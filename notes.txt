@@ -692,7 +692,10 @@ Implementing object literals and functions.  How do they interact with scopes?
 Two open questions:
 { new name:[char] = 'mimi', foo='davis'
   new animal = { name:str, age:int, foo={foo} }
-  new lion = animal & { foo:name } & @(){name='lolz'} }
+  new lion = animal & { foo:name } & @(){name='lolz'} } # side note: does foo
+                                                        # need to set a new
+                                    # default value?  or is it 'name', thus
+                                    # overriding the parent's default of {foo}?
 
 { new s
   new d = { s }
@@ -705,6 +708,15 @@ Object literals seem to require referring to things in their parent scope: e.g.
 for imported types.  Functions seem to want to only refer to members of the
 object in which they are contained, unless they are closures (and I kinda want
 those to be explicit; but maybe I can't find a reason for that).
+
+---
+FUTURE BREAK: (2013-11-16) Refer to the "funarg problem".  Here I'm concerned
+with the funarg problem.  Let's go with: functions need to use `with(x,y)`
+construct to pull variables *by value* into their "closure" (not really a
+closure because copy by value!)  This isn't *quite* unique; ML does this but
+all values are immutable; PHP does this and lets you choose if it's by value or
+by reference; etc.
+---
 
 Let's do this for now:
 ObjectLiteral:
@@ -783,11 +795,7 @@ validate() per se, and each subclass must be able to provide its own validate()
 1. Implement Operator Tree construction / reordering properly
  -- check
 
-2. During Tree construction, call setup() as early as possible on an
-operator/variable
-
-3. During Tree construction, track which &'s are yet known and pass these along
-to anything that might need them
+...
 
 4. Object and Function subclass Scope; have placeholders for where they can
 branch var lookup logic differently.  However, they need to wait until they are
@@ -796,6 +804,4 @@ clear what role this var lookup logic has.
 
 5. Node deference logic -- Object and Function set defer, Node knows then to
 defer even setup()'ing their children.
-
-6. Upgrade tree-validate() step
 
