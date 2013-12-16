@@ -31,12 +31,22 @@
 
 namespace eval {
 
+class OperatorParser;
+
 class Operator : public TypedNode {
 public:
-  static bool CouldBeUnary(const std::string& opName);
-  static bool CouldBeBinary(const std::string& opName);
+  friend class OperatorParser;
+
+  static op_precedence Precedence(ARITY arity);
+
+  enum ARITY {
+    ARITY_UNKNOWN,
+    PREFIX,
+    INFIX,
+  };
 
   typedef int op_priority;
+  static const NO_PRIORITY = -1;
   enum ASSOC {
     LEFT_ASSOC = 0,
     RIGHT_ASSOC = 1,
@@ -44,28 +54,27 @@ public:
   typedef struct {
     op_priority priority;
     ASSOC assoc;
-  } op_prec;
+  } op_precedence;
 
   Operator(Log& log, RootNode*const root, const Token& token)
     : TypedNode(log, root, token),
       isOrderSet(false),
       isValidated(false),
-      isUnary(false),
-      isBinary(false),
+      m_arity(ARITY_UNKNOWN),
       m_left(NULL),
       m_right(NULL) {}
 
   virtual void setup();
-  virtual op_prec precedence() const;
 
-  // Sets whether this is a unary or binary operator.  Called by
-  // Node::MakeOperatorTree().
-  void setUnary();
-  void setBinary();
+  bool couldBePrefix() const;
+  bool couldBeInfix() const;
+  void setPrefix();
+  void setInfix();
+  bool isPrefix() const;
+  bool isInfix() const;
 
-  // Static analysis of a whole operator tree.  Called by
-  // Node::MakeOperatorTree().
-  void analyzeTree();
+  void setupLeft();
+  void setupRight();
 
   virtual void evaluate();
 
@@ -74,22 +83,14 @@ public:
   std::string methodName() const;
 
 protected:
-  // Setup validation, called by validateOperatorTree().
-  virtual void validate();
-
-  bool isOrderSet;  // set by setUnary() or setBinary()
-  bool isValidated;
-  bool isUnary;     // set by analysisSetup()
-  bool isBinary;    // set by analysisSetup()
+  ARITY m_arity;    // set by setPrefix() or setInfix()
 
 private:
-  // Validate tree of operators, starting at this.  Called by analyzeTree().
-  void validateOperatorTree();
-
   // from TypedNode
   virtual void computeType();
 
-  // Pointers into children; set by validate(), should not be freed
+  // Pointers into children; set by OperatorParser before setup().  These
+  // should never be freed.
   TypedNode* m_left;
   TypedNode* m_right;
 };

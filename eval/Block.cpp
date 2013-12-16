@@ -14,8 +14,8 @@ using namespace eval;
 Block::~Block() {
 }
 
-void Block::init() {
-  m_scope.init(parentScope);
+void Block::initScope(Node* scopeParent) {
+  m_scope.init(scopeParent);
 }
 
 void Block::setup() {

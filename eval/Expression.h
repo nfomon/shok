@@ -23,6 +23,7 @@
 
 #include "Log.h"
 #include "Operator.h"
+#include "OperatorParser.h"
 #include "RootNode.h"
 #include "Token.h"
 #include "Type.h"
@@ -32,10 +33,11 @@
 
 namespace eval {
 
-class Expression : public TypedNode {
+class Expression : public TypedNode, public OperatorParser {
 public:
   Expression(Log& log, RootNode*const root, const Token& token)
-    : TypedNode(log, root, token) {}
+    : TypedNode(log, root, token),
+      OperatorParser(log) {}
   virtual void setup();
   virtual void evaluate();
   virtual std::string cmdText() const;
@@ -46,7 +48,6 @@ public:
   Object& getObject() const;
 
 private:
-  Node* makeOperatorTree(child_vec& nodes, Operator::op_priority p = 0);
   // from TypedNode
   virtual void computeType();
 };

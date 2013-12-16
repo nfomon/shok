@@ -31,7 +31,7 @@ public:
       m_exp(NULL) {}
   ~Block();
 
-  virtual void init();
+  virtual void initScope(Node* scopeParent);
   virtual void setup();
   virtual void evaluate();
   virtual std::string cmdText() const;

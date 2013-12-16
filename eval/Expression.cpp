@@ -17,26 +17,9 @@ using std::vector;
 using namespace eval;
 
 void Expression::setup() {
-  if (children.size() < 1) {
-    throw EvalError("Expression " + print() + " must have at least one child");
+  if (children.size() != 1) {
+    throw EvalError("Expression " + print() + " must have exactly one child");
   }
-
-  log.debug("EXPRESSION about to make tree: " + print());
-  Node* top = makeOperatorTree(children, 0);
-  log.debug("EXPRESSION done making tree: " + print());
-  if (children.size() > 0) {
-    throw EvalError("Failed to parse all operators into an operator tree");
-  }
-  if (!top) {
-    throw EvalError("Expression " + print() + " somehow has no children after making operator tree");
-  }
-  children.push_back(top);
-  top->parent = this;
-  Operator* op = dynamic_cast<Operator*>(top);
-  if (op) {
-    op->analyzeTree();
-  }
-  log.info("Expression " + print() + " has analyzed its tree");
   computeType();
 }
 

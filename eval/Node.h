@@ -14,13 +14,12 @@
  * InsertNode() which manipulates the node tree and returns the new "current"
  * (insertion) position.
  *
- * Each subclass gets to override init(), setup(), and evaluate().  As much
- * static analysis / error checking as possible should happen in setup().
+ * Each subclass gets to override initScope(), setup(), and evaluate().  As
+ * much static analysis / error checking as possible should happen in setup().
  * evaluate() should be able to assume the Node is in as correct a state as
- * possible and just run the code.  init() is only used in special
- * circumstances as a very early member initialization; it is performed
- * top-down the tree but so early that the parent-child relationships aren't
- * fully realized yet.
+ * possible and just run the code.  initScope() is a very early initialization
+ * of enclosing scopes; the node may not have a real parent or any children
+ * yet.
  */
 
 #include "Log.h"
@@ -84,7 +83,7 @@ protected:
   // It calls setupNode() and analyzeNode() on the parent and its children.
   void setupAsParent();
   // Basic, early initialization of a node; used e.g. to initialize parentScope
-  void initNode();
+  void initScopeNode(Node* scopeParent);
   // Validate properties regarding the node's children
   void setupNode();
   void analyzeNode();
@@ -94,7 +93,7 @@ protected:
   // called rather scandalously by RecoverFromError()
   void removeChildrenStartingAt(const Node* child);
 
-  virtual void init() {}                // early parent-first init pass
+  virtual void initScope(Node* scopeParent) {}    // early scope init
   virtual void setup() = 0;             // child-first setup/analysis
   virtual void evaluate() = 0;          // child-first code execution
   virtual void cleanup(bool error) {}   // child-first cleanup
@@ -116,7 +115,7 @@ protected:
   // Set by InsertNode()
   Node* parent;
   child_vec children;
-  // Set by init()
+  // Set by initScope()
   Scope* parentScope;   // nearest enclosing scope (execution context)
 };
 

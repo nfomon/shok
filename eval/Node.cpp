@@ -15,6 +15,7 @@
 #include "New.h"
 #include "NewInit.h"
 #include "Operator.h"
+#include "OperatorParser.h"
 #include "ProcCall.h"
 #include "RootNode.h"
 #include "TypeSpec.h"
@@ -81,9 +82,53 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
 
   // Neither an open nor a closing brace; add as a child of current
   if (!brace) {
-    n->parent = current;
-    current->addChild(n);
-    n->initNode();
+    n->initScopeNode(current);
+    OperatorParser* oP = dynamic_cast<OperatorParser*>(current->children.at(0));
+    if (oP) {
+      oP->insertNode(n);
+    } else {
+      n->parent = current;
+      current->addChild(n);
+    }
+
+    // Some nodes employ Pratt parsing, which allows children nodes to be
+    // setup() before the parent is complete.  Check if that's the case here.
+
+    // If current's first child is an Expression or TypeSpec:
+    //  - don't insert the current node
+    //  - instead, call InsertExpressionNode() which we implement here on Node
+    //  - that uses a ... static stack.... uhhhhh..... sure?  and tracks all
+    //  the nodes and makes them a tree
+    //  - when we hit the closing brace of current, we FinalizeExpressionNode()
+    //  or some such.  This pulls out the tree, giving us the root, which
+    //  becomes the single child of the Expression (the first child of
+    //  current).
+
+    // That should juuuuust... work.
+
+    // Note that InsertNode will recurse into nodes (say, vars, and functions)
+    // that are alongside the Expression.  We need to be quite stateless about
+    // when we are PrattParsing something, and multiple of these PrattParsers
+    // can be on-the-go at the same time.
+
+    // Let's find a way to encapsulate the Expression's PrattParsingness and
+    // shove it onto that Exp/TypeSpec node.
+
+    // Within the Pratt parsing, anytime we finish up an operator, perform the
+    // operator's setupAsParent() or whatever.  Actually, BinaryOperators might
+    // have to be craaazy, with a setupLeft() and setupRight().  During
+    // setupLeft(), an operator (*ahem* like &) may determine something about
+    // its left branch that any random thing that happens on its right side
+    // might need to know.  So it can shove this info into the PrattParsingness
+    // object, and this data should get passed down the initNode() of
+    // everything we parse until we bubble up and finally call the setupRight()
+    // on this operator (followed by its own setupNode(), naturally!).
+
+    // wheeeeeee!
+
+    // What if we don't know about Exp/TS, we just notice when we find our
+    // first Operator at some level, whoah, Pratt parse this guy!  hmm..
+
     return current;   // stay
   }
 
@@ -91,7 +136,7 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
   if (brace->isOpen()) {
     n->parent = current;
     current->addChild(n);
-    n->initNode();
+    n->initScopeNode(current);
     return n;         // descend
   }
 
@@ -221,23 +266,24 @@ Node::~Node() {
   }
 }
 
-// This is a very early initialization.  We have a parent, but it may not be
-// our "final" parent; e.g. it may be an irrelevant open-paren that will be
-// eliminated from the tree by the time we call setupNode().  However, we *can*
-// trust/use the parent to pass some data members down that we want to
-// initialize on all nodes.  We even allow nodes to (carefully!) override their
-// own init() for their own purposes (e.g. initialize child scopes).
-void Node::initNode() {
-  if (!parent) {
-    throw EvalError("Cannot init the root node");
+// This is a very early scope initialization.  We don't necessarily have a Node
+// parent, and even if we do it may not be trustworthy.  Instead, use the
+// provided scopeParent to be something we can use as the parent scope (and if
+// it does not itself define the scope, then our parent scope is its parent
+// scope).  We even allow nodes to (carefully!) override their own initScope()
+// in case they have a real scope as a member that needs to be initialized.
+void Node::initScopeNode(Node* scopeParent) {
+  if (this == root) {
+    throw EvalError("Cannot init scope for the root node");
+  } else if (!scopeParent) {
+    throw EvalError("Cannot init " + print() + " scope with no scope parent");
   }
-  parentScope = parent->getScope();
+  parentScope = scopeParent->getScope();
   if (!parentScope) {
-    parentScope = parent->getParentScope();
+    parentScope = scopeParent->getParentScope();
   }
-  init();
+  initScope(scopeParent);
   isInit = true;
-  //log.debug(" - init node " + print());
 }
 
 void Node::replaceChild(Node* oldChild, Node* newChild) {
@@ -278,7 +324,8 @@ void Node::setupAsParent() {
     // back for anything that's already been declared (parent types we know)
     // and just not allow YET anything whose parent type has not been, um,
     // typed.
-
+    // PRATT PARSING TO THE RESCUE!! but we will add hax to detect where this
+    // might be needed, up in InsertNode()....
   }
   setupNode();
   log.debug("Setup node " + print());
