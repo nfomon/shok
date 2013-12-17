@@ -1,2 +1,0 @@
-Mentioned by the guy who did that cool "so you want to write an interpreter" or
-whatever talk

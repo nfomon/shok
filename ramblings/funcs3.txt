@@ -1,6 +1,0 @@
-A block is a list containing:
- - list of code statements
- - maybe some convenience stuff / accessors
- - an operator() that just executes its statements
-
-A function is a block where you define the ()
