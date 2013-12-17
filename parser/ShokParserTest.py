@@ -1,17 +1,17 @@
-# Copyright (C) 2013 Michael Biggs.  See the LICENSE file at the top-level
-# directory of this distribution and at http://lush-shell.org/copyright.html
+# Copyright (C) 2013 Michael Biggs.  See the COPYING file at the top-level
+# directory of this distribution and at http://shok.io/code/copyright.html
 
 import unittest
-from LushParser import LushParser
+from ShokParser import ShokParser
 from LexToken import LexToken
 
-class LushTester(unittest.TestCase):
-  def lushTestAll(self,tests):
+class ShokTester(unittest.TestCase):
+  def shokTestAll(self,tests):
     for test in tests:
-      self.lushTest(test[0], test[1])
+      self.shokTest(test[0], test[1])
 
-  def lushTest(self,inp,out,bad=False,incomplete=False):
-    parser = LushParser()
+  def shokTest(self,inp,out,bad=False,incomplete=False):
+    parser = ShokParser()
     for word in inp.split():
       tok = '1:%s' % word
       parser.parse(LexToken(tok))
@@ -23,9 +23,9 @@ class LushTester(unittest.TestCase):
       return
     self.assertEqual(parser.ast, out)
 
-class TestCmdLine(LushTester):
+class TestCmdLine(ShokTester):
   def test_Cmd(self):
-    self.lushTestAll([
+    self.shokTestAll([
       ("ID:'ls' NEWL",
         "[ls]"),
       ("WS ID:'ls' WS MINUS ID:'al' WS ID:'foo.txt' WS NEWL",
@@ -33,7 +33,7 @@ class TestCmdLine(LushTester):
     ])
 
   def test_ExpBlock(self):
-    self.lushTestAll([
+    self.shokTestAll([
       ("LBRACE ID:'foo' RBRACE WS ID:'lolz' NEWL",
         "[{(exp ID:'foo')} lolz]"),
       ("LBRACE ID:'foo' WS RBRACE WS ID:'one' WS LBRACE ID:'two' RBRACE NEWL",
@@ -43,7 +43,7 @@ class TestCmdLine(LushTester):
     ])
 
   def test_CodeBlock(self):
-    self.lushTestAll([
+    self.shokTestAll([
       ("WS LBRACE WS NEWL WS NEWL NEWL WS NEWL WS RBRACE WS NEWL",
         "[{}]"),
     ])

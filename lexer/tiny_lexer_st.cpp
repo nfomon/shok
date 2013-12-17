@@ -1,7 +1,7 @@
 #include "tiny_lexer_st"
 #include <quex/code_base/analyzer/C-adaptions.h>
 QUEX_NAMESPACE_MAIN_OPEN
-/* Global */QUEX_NAME(Mode)  QUEX_NAME(LUSH);
+/* Global */QUEX_NAME(Mode)  QUEX_NAME(SHOK);
 #ifndef __QUEX_INDICATOR_DUMPED_TOKEN_ID_DEFINED
     static QUEX_TYPE_TOKEN_ID    QUEX_NAME_TOKEN(DumpedTokenIdObject);
 #endif
@@ -9,28 +9,28 @@ QUEX_NAMESPACE_MAIN_OPEN
 #define __self_result_token_id    QUEX_NAME_TOKEN(DumpedTokenIdObject)
 
 void
-QUEX_NAME(LUSH_on_entry)(QUEX_TYPE_ANALYZER* me, const QUEX_NAME(Mode)* FromMode) {
+QUEX_NAME(SHOK_on_entry)(QUEX_TYPE_ANALYZER* me, const QUEX_NAME(Mode)* FromMode) {
     (void)me;
     (void)FromMode;
 #   ifdef QUEX_OPTION_RUNTIME_MODE_TRANSITION_CHECK
-    QUEX_NAME(LUSH).has_entry_from(FromMode);
+    QUEX_NAME(SHOK).has_entry_from(FromMode);
 #   endif
 
 }
 
 void
-QUEX_NAME(LUSH_on_exit)(QUEX_TYPE_ANALYZER* me, const QUEX_NAME(Mode)* ToMode)  {
+QUEX_NAME(SHOK_on_exit)(QUEX_TYPE_ANALYZER* me, const QUEX_NAME(Mode)* ToMode)  {
     (void)me;
     (void)ToMode;
 #   ifdef QUEX_OPTION_RUNTIME_MODE_TRANSITION_CHECK
-    QUEX_NAME(LUSH).has_exit_to(ToMode);
+    QUEX_NAME(SHOK).has_exit_to(ToMode);
 #   endif
 
 }
 
 #if defined(QUEX_OPTION_INDENTATION_TRIGGER) 
 void
-QUEX_NAME(LUSH_on_indentation)(QUEX_TYPE_ANALYZER*    me, 
+QUEX_NAME(SHOK_on_indentation)(QUEX_TYPE_ANALYZER*    me, 
                                         QUEX_TYPE_INDENTATION  Indentation, 
                                         QUEX_TYPE_CHARACTER*   Begin) {
     (void)me;
@@ -42,17 +42,17 @@ QUEX_NAME(LUSH_on_indentation)(QUEX_TYPE_ANALYZER*    me,
 
 #ifdef QUEX_OPTION_RUNTIME_MODE_TRANSITION_CHECK
 bool
-QUEX_NAME(LUSH_has_base)(const QUEX_NAME(Mode)* Mode) {
+QUEX_NAME(SHOK_has_base)(const QUEX_NAME(Mode)* Mode) {
     (void)Mode;
     return false;
 }
 bool
-QUEX_NAME(LUSH_has_entry_from)(const QUEX_NAME(Mode)* Mode) {
+QUEX_NAME(SHOK_has_entry_from)(const QUEX_NAME(Mode)* Mode) {
     (void)Mode;
     return true; /* default */
 }
 bool
-QUEX_NAME(LUSH_has_exit_to)(const QUEX_NAME(Mode)* Mode) {
+QUEX_NAME(SHOK_has_exit_to)(const QUEX_NAME(Mode)* Mode) {
     (void)Mode;
     return false;
 }
@@ -70,7 +70,7 @@ QUEX_TYPE_CHARACTER  QUEX_LEXEME_NULL_IN_ITS_NAMESPACE = (QUEX_TYPE_CHARACTER)0;
 #ifdef      __QUEX_OPTION_COUNTER
 #    define __QUEX_COUNT_VOID(ME, BEGIN, END) \
             do {                              \
-                QUEX_NAME(LUSH_counter)((ME), (BEGIN), (END));     \
+                QUEX_NAME(SHOK_counter)((ME), (BEGIN), (END));     \
                 __quex_debug_counter();       \
             } while(0)
 #else
@@ -78,7 +78,7 @@ QUEX_TYPE_CHARACTER  QUEX_LEXEME_NULL_IN_ITS_NAMESPACE = (QUEX_TYPE_CHARACTER)0;
 #endif
 #ifdef __QUEX_OPTION_COUNTER
 static void
-QUEX_NAME(LUSH_counter)(QUEX_TYPE_ANALYZER* me, const QUEX_TYPE_CHARACTER* LexemeBegin, const QUEX_TYPE_CHARACTER* LexemeEnd)
+QUEX_NAME(SHOK_counter)(QUEX_TYPE_ANALYZER* me, const QUEX_TYPE_CHARACTER* LexemeBegin, const QUEX_TYPE_CHARACTER* LexemeEnd)
 {
 #   define self (*me)
     const QUEX_TYPE_CHARACTER* iterator    = (const QUEX_TYPE_CHARACTER*)0;
@@ -131,7 +131,7 @@ __QUEX_IF_COUNT_COLUMNS_ADD((size_t)((iterator - reference_p)));
 #include <quex/code_base/temporary_macros_on>
 
 __QUEX_TYPE_ANALYZER_RETURN_VALUE  
-QUEX_NAME(LUSH_analyzer_function)(QUEX_TYPE_ANALYZER* me) 
+QUEX_NAME(SHOK_analyzer_function)(QUEX_TYPE_ANALYZER* me) 
 {
     /* NOTE: Different modes correspond to different analyzer functions. The 
      *       analyzer functions are all located inside the main class as static
@@ -153,7 +153,7 @@ QUEX_NAME(LUSH_analyzer_function)(QUEX_TYPE_ANALYZER* me)
     QUEX_TYPE_GOTO_LABEL           target_state_index             = QUEX_GOTO_LABEL_VOID;
 #   ifndef QUEX_OPTION_COMPUTED_GOTOS
 #   endif /* QUEX_OPTION_COMPUTED_GOTOS */
-#   define LUSH    (QUEX_NAME(LUSH))
+#   define SHOK    (QUEX_NAME(SHOK))
 
     /* Post context positions do not have to be reset or initialized. If a state
      * is reached which is associated with 'end of post context' it is clear what
@@ -10515,7 +10515,7 @@ __STATE_ROUTER:
     (void)QUEX_LEXEME_NULL;
     (void)QUEX_NAME_TOKEN(DumpedTokenIdObject);
     QUEX_ERROR_EXIT("Unreachable code has been reached.\n");
-#   undef LUSH
+#   undef SHOK
 #   undef self
 }
 #include <quex/code_base/temporary_macros_off>

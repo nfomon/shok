@@ -1,5 +1,5 @@
-# Copyright (C) 2013 Michael Biggs.  See the LICENSE file at the top-level
-# directory of this distribution and at http://lush-shell.org/copyright.html
+# Copyright (C) 2013 Michael Biggs.  See the COPYING file at the top-level
+# directory of this distribution and at http://shok.io/code/copyright.html
 
 # Parser for a mini language, to experiment with the parser framework.
 
@@ -541,8 +541,8 @@ CmdLine = Or('cmdline', [
 CmdLines = Star('cmdlines', CmdLine)
 
 
-# Lush
-def LushParser():
+# Shok
+def ShokParser():
   parser = MakeParser(CmdLines)
   parser.neverGoBad = True
   return parser

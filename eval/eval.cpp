@@ -1,7 +1,7 @@
-// Copyright (C) 2013 Michael Biggs.  See the LICENSE file at the top-level
-// directory of this distribution and at http://lush-shell.org/copyright.html
+// Copyright (C) 2013 Michael Biggs.  See the COPYING file at the top-level
+// directory of this distribution and at http://shok.io/code/copyright.html
 
-/* Lush abstract syntax tree evaluator
+/* shok abstract syntax tree evaluator
  *
  * Reads lines of specially-formatted AST text input from stdin, performs
  * static analysis to ensure it specifies a valid program, and emits text on
@@ -27,7 +27,7 @@ using std::string;
 using namespace eval;
 
 namespace {
-  const string PROGRAM_NAME = "lush_eval";
+  const string PROGRAM_NAME = "shok_eval";
 };
 
 int main(int argc, char *argv[]) {

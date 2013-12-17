@@ -1,5 +1,5 @@
-# Copyright (C) 2013 Michael Biggs.  See the LICENSE file at the top-level
-# directory of this distribution and at http://lush-shell.org/copyright.html
+# Copyright (C) 2013 Michael Biggs.  See the COPYING file at the top-level
+# directory of this distribution and at http://shok.io/code/copyright.html
 
 # Tokens that come from the Lexer are either pairs or tuples:
 #   colno:type

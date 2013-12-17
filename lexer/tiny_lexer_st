@@ -66,17 +66,17 @@ QUEX_NAMESPACE_TOKEN_CLOSE
 QUEX_NAMESPACE_MAIN_OPEN 
 
 enum {
-    QUEX_NAME(ModeID_LUSH) = 0
+    QUEX_NAME(ModeID_SHOK) = 0
 };
 
-        extern QUEX_NAME(Mode)  QUEX_NAME(LUSH);
+        extern QUEX_NAME(Mode)  QUEX_NAME(SHOK);
 
 
-extern     __QUEX_TYPE_ANALYZER_RETURN_VALUE QUEX_NAME(LUSH_analyzer_function)(QUEX_TYPE_ANALYZER*);
+extern     __QUEX_TYPE_ANALYZER_RETURN_VALUE QUEX_NAME(SHOK_analyzer_function)(QUEX_TYPE_ANALYZER*);
 #ifdef QUEX_OPTION_RUNTIME_MODE_TRANSITION_CHECK
-extern     bool QUEX_NAME(LUSH_has_base)(const QUEX_NAME(Mode)*);
-extern     bool QUEX_NAME(LUSH_has_entry_from)(const QUEX_NAME(Mode)*);
-extern     bool QUEX_NAME(LUSH_has_exit_to)(const QUEX_NAME(Mode)*);
+extern     bool QUEX_NAME(SHOK_has_base)(const QUEX_NAME(Mode)*);
+extern     bool QUEX_NAME(SHOK_has_entry_from)(const QUEX_NAME(Mode)*);
+extern     bool QUEX_NAME(SHOK_has_exit_to)(const QUEX_NAME(Mode)*);
 #endif
 
 
@@ -324,11 +324,11 @@ private:
     QUEX_NAME(reset)(QUEX_TYPE_ANALYZER*, InputHandleT*, const char*);
 
     /* (*) All Modes are Friends ___________________________________________________*/
-    friend     __QUEX_TYPE_ANALYZER_RETURN_VALUE QUEX_NAME(LUSH_analyzer_function)(QUEX_TYPE_ANALYZER*);
+    friend     __QUEX_TYPE_ANALYZER_RETURN_VALUE QUEX_NAME(SHOK_analyzer_function)(QUEX_TYPE_ANALYZER*);
 #ifdef QUEX_OPTION_RUNTIME_MODE_TRANSITION_CHECK
-    friend     bool QUEX_NAME(LUSH_has_base)(const QUEX_NAME(Mode)*);
-    friend     bool QUEX_NAME(LUSH_has_entry_from)(const QUEX_NAME(Mode)*);
-    friend     bool QUEX_NAME(LUSH_has_exit_to)(const QUEX_NAME(Mode)*);
+    friend     bool QUEX_NAME(SHOK_has_base)(const QUEX_NAME(Mode)*);
+    friend     bool QUEX_NAME(SHOK_has_entry_from)(const QUEX_NAME(Mode)*);
+    friend     bool QUEX_NAME(SHOK_has_exit_to)(const QUEX_NAME(Mode)*);
 #endif
 
   
@@ -367,23 +367,23 @@ QUEX_NAME(constructor_core)(QUEX_TYPE_ANALYZER*    me,
                             size_t                 BufferMemorySize,
                             QUEX_TYPE_CHARACTER*   BufferEndOfFileP)
 {
-    __quex_assert(QUEX_NAME(ModeID_LUSH) < 1);
+    __quex_assert(QUEX_NAME(ModeID_SHOK) < 1);
 
-     QUEX_NAME(LUSH).id   = QUEX_NAME(ModeID_LUSH);
-     QUEX_NAME(LUSH).name = "LUSH";
-     QUEX_NAME(LUSH).analyzer_function = QUEX_NAME(LUSH_analyzer_function);
+     QUEX_NAME(SHOK).id   = QUEX_NAME(ModeID_SHOK);
+     QUEX_NAME(SHOK).name = "SHOK";
+     QUEX_NAME(SHOK).analyzer_function = QUEX_NAME(SHOK_analyzer_function);
 #    if      defined(QUEX_OPTION_INDENTATION_TRIGGER) \
         && ! defined(QUEX_OPTION_INDENTATION_DEFAULT_HANDLER)
-     QUEX_NAME(LUSH).on_indentation = QUEX_NAME(Mode_on_indentation_null_function);
+     QUEX_NAME(SHOK).on_indentation = QUEX_NAME(Mode_on_indentation_null_function);
 #    endif
-     QUEX_NAME(LUSH).on_entry       = QUEX_NAME(Mode_on_entry_exit_null_function);
-     QUEX_NAME(LUSH).on_exit        = QUEX_NAME(Mode_on_entry_exit_null_function);
+     QUEX_NAME(SHOK).on_entry       = QUEX_NAME(Mode_on_entry_exit_null_function);
+     QUEX_NAME(SHOK).on_exit        = QUEX_NAME(Mode_on_entry_exit_null_function);
 #    if      defined(QUEX_OPTION_RUNTIME_MODE_TRANSITION_CHECK)
-     QUEX_NAME(LUSH).has_base       = QUEX_NAME(LUSH_has_base);
-     QUEX_NAME(LUSH).has_entry_from = QUEX_NAME(LUSH_has_entry_from);
-     QUEX_NAME(LUSH).has_exit_to    = QUEX_NAME(LUSH_has_exit_to);
+     QUEX_NAME(SHOK).has_base       = QUEX_NAME(SHOK_has_base);
+     QUEX_NAME(SHOK).has_entry_from = QUEX_NAME(SHOK_has_entry_from);
+     QUEX_NAME(SHOK).has_exit_to    = QUEX_NAME(SHOK_has_exit_to);
 #    endif
-        me->mode_db[QUEX_NAME(ModeID_LUSH)] = &(QUEX_NAME(LUSH));
+        me->mode_db[QUEX_NAME(ModeID_SHOK)] = &(QUEX_NAME(SHOK));
 
 
     QUEX_NAME(construct_basic)(me, input_handle,

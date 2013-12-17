@@ -1,15 +1,17 @@
-// Copyright (C) 2013 Michael Biggs.  See the LICENSE file at the top-level
-// directory of this distribution and at http://lush-shell.org/copyright.html
+// Copyright (C) 2013 Michael Biggs.  See the COPYING file at the top-level
+// directory of this distribution and at http://shok.io/code/copyright.html
 
-/* lush command shell
+/* shok command shell
  *
- * WARNING: This is insecure software.  There are security
- * vulnerabilities, and this software may easily produce undesired
- * behaviour, using full permissions of the caller.  Do NOT use this on
- * a system where integrity matters, and do NOT run this program from
- * an account that has permission to do anything at all dangerous.
+ * WARNING: This is incomplete and insecure software.  There are security
+ * vulnerabilities, and this software may easily produce undesired behaviour,
+ * using full permissions of the caller.  Do NOT use this on a system where
+ * integrity matters, and do NOT run this program from an account that has
+ * permission to do anything at all dangerous.
  *
- * This is a work in (the early stages of) progress.
+ * This is a work in (the early stages of) progress.  The project aspires to
+ * someday be suitable for secure system administration and other purposes;
+ * however, that is yet a longtime coming.
  */
 
 #include "Proc.h"
@@ -30,8 +32,8 @@ using std::string;
 using std::vector;
 
 namespace {
-  const string PROGRAM_NAME = "lush";
-  const string PROMPT = "lush: ";
+  const string PROGRAM_NAME = "shok";
+  const string PROMPT = "shok: ";
 };
 
 string runBuiltin_cd(const vector<string>& args) {
@@ -132,13 +134,13 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  Proc lexer("./lush_lexer");
+  Proc lexer("./shok_lexer");
   lexer.run();
 
-  Proc parser("./lush_parser");
+  Proc parser("./shok_parser");
   parser.run();
 
-  Proc eval("./lush_eval");
+  Proc eval("./shok_eval");
   eval.run();
 
   cout << PROMPT;

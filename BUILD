@@ -1,4 +1,4 @@
-The lush interpreter has the following build dependencies:
+The shok interpreter has the following build dependencies:
 
  - Quex 0.64.7
    http://quex.org

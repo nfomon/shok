@@ -1,14 +1,12 @@
-#!/usr/bin/env python
-#
-# Copyright (C) 2013 Michael Biggs.  See the LICENSE file at the top-level
-# directory of this distribution and at http://lush-shell.org/copyright.html
+# Copyright (C) 2013 Michael Biggs.  See the COPYING file at the top-level
+# directory of this distribution and at http://shok.io/code/copyright.html
 
 import logging
 logging.basicConfig(filename='parser.log',filemode='w',level=logging.WARNING)
 import sys
 import traceback as tb
 from LexToken import LexToken, NewlineToken
-from LushParser import LushParser
+from ShokParser import ShokParser
 
 
 # We may be writing to a pipe, so be careful not to print anything unless we're
@@ -26,7 +24,7 @@ def main():
     parse()
 
 def Restart():
-  return LushParser()
+  return ShokParser()
 
 def parse():
   parser = Restart()

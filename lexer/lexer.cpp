@@ -1,5 +1,5 @@
-// Copyright (C) 2013 Michael Biggs.  See the LICENSE file at the top-level
-// directory of this distribution and at http://lush-shell.org/copyright.html
+// Copyright (C) 2013 Michael Biggs.  See the COPYING file at the top-level
+// directory of this distribution and at http://shok.io/code/copyright.html
 
 #include "tiny_lexer_st"
 
@@ -9,7 +9,7 @@
 using namespace std;
 
 namespace {
-  const string PROGRAM_NAME = "lush_lexer";
+  const string PROGRAM_NAME = "shok_lexer";
 }
 
 int main(int argc, char* argv[]) {
