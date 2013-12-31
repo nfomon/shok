@@ -43,8 +43,10 @@ public:
 
 private:
   Log& m_log;
-  bool m_infixing = false;
-  std::vector<std::pair<Node*,Operator::op_priority> > m_stack;
+  bool m_infixing;
+  typedef std::pair<Node*,Operator::op_priority> stack_pair;
+  typedef std::vector<stack_pair> stack_vec;
+  stack_vec m_stack;
 };
 
 };

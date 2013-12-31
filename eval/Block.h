@@ -15,8 +15,9 @@
 #include "Expression.h"
 #include "Log.h"
 #include "RootNode.h"
-#include "Token.h"
+#include "Scope.h"
 //#include "Statement.h"
+#include "Token.h"
 #include "Variable.h"
 
 #include <map>
@@ -31,7 +32,7 @@ public:
       m_exp(NULL) {}
   ~Block();
 
-  virtual void initScope(Node* scopeParent);
+  virtual void initScope(Scope* scopeParent);
   virtual void setup();
   virtual void evaluate();
   virtual std::string cmdText() const;

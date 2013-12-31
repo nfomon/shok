@@ -28,7 +28,7 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
   bool inValue = false;
   for (int i=0; i < ast.length(); ++i) {
     char c = ast[i];
-    log.debug(" - tokenizing char '" + string(1, c) + "'");
+    //log.debug(" - tokenizing char '" + string(1, c) + "'");
     switch (mode) {
     case MODE_NONE:
       if (inToken || inValue) {

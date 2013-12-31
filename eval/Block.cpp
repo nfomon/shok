@@ -5,6 +5,7 @@
 
 #include "EvalError.h"
 #include "Expression.h"
+#include "Scope.h"
 
 #include <string>
 using std::string;
@@ -14,7 +15,7 @@ using namespace eval;
 Block::~Block() {
 }
 
-void Block::initScope(Node* scopeParent) {
+void Block::initScope(Scope* scopeParent) {
   m_scope.init(scopeParent);
 }
 

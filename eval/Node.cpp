@@ -82,53 +82,30 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
 
   // Neither an open nor a closing brace; add as a child of current
   if (!brace) {
-    n->initScopeNode(current);
-    OperatorParser* oP = dynamic_cast<OperatorParser*>(current->children.at(0));
-    if (oP) {
-      oP->insertNode(n);
-    } else {
+    // Some nodes employ Pratt parsing, which allows children nodes to be
+    // setup() before the parent is complete.  Check if that's the case here,
+    // i.e. if current is an OperatorParser.  Then:
+    //  - Don't insert the current node.
+    //  - Instead, call oP->insertNode(), which will own the inserted node.
+    //  - When we hit the closing brace of current, we must call
+    //    oP->finalizeParse().  This gives us the root of the operator-tree,
+    //    which must become the first and only child of current.
+    // Here we deal with non-brace children of an oP.  But we could also have
+    // children that start with opening braces.  We should do everything with
+    // them, then once the irrelevant(I think always) closing brace matches, we
+    // insertNode() it into the oP.
+    n->initScopeNode(current);    // Whether we have an oP or not.
+    OperatorParser* oP = NULL;
+    if (current->children.size() > 0) {
+      oP = dynamic_cast<OperatorParser*>(current->children.at(0));
+      if (oP) {
+        oP->insertNode(n);
+      }
+    }
+    if (!oP) {
       n->parent = current;
       current->addChild(n);
     }
-
-    // Some nodes employ Pratt parsing, which allows children nodes to be
-    // setup() before the parent is complete.  Check if that's the case here.
-
-    // If current's first child is an Expression or TypeSpec:
-    //  - don't insert the current node
-    //  - instead, call InsertExpressionNode() which we implement here on Node
-    //  - that uses a ... static stack.... uhhhhh..... sure?  and tracks all
-    //  the nodes and makes them a tree
-    //  - when we hit the closing brace of current, we FinalizeExpressionNode()
-    //  or some such.  This pulls out the tree, giving us the root, which
-    //  becomes the single child of the Expression (the first child of
-    //  current).
-
-    // That should juuuuust... work.
-
-    // Note that InsertNode will recurse into nodes (say, vars, and functions)
-    // that are alongside the Expression.  We need to be quite stateless about
-    // when we are PrattParsing something, and multiple of these PrattParsers
-    // can be on-the-go at the same time.
-
-    // Let's find a way to encapsulate the Expression's PrattParsingness and
-    // shove it onto that Exp/TypeSpec node.
-
-    // Within the Pratt parsing, anytime we finish up an operator, perform the
-    // operator's setupAsParent() or whatever.  Actually, BinaryOperators might
-    // have to be craaazy, with a setupLeft() and setupRight().  During
-    // setupLeft(), an operator (*ahem* like &) may determine something about
-    // its left branch that any random thing that happens on its right side
-    // might need to know.  So it can shove this info into the PrattParsingness
-    // object, and this data should get passed down the initNode() of
-    // everything we parse until we bubble up and finally call the setupRight()
-    // on this operator (followed by its own setupNode(), naturally!).
-
-    // wheeeeeee!
-
-    // What if we don't know about Exp/TS, we just notice when we find our
-    // first Operator at some level, whoah, Pratt parse this guy!  hmm..
-
     return current;   // stay
   }
 
@@ -147,7 +124,11 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
   // they represent nothing.  Instead, their first child (operator) will take
   // over the "parent" spot; its children (operands) will remain as the
   // operator's children.
-  // current should be the open brace/paren to match against
+  // current should be the open brace/paren to match against.
+  //
+  // If the newly-taken-over "parent" spot is at a tree level that starts with
+  // an OperatorParser, they should be positions 1 and 0 in the grandparent's
+  // children list, respectively, and we will insertNode ourselves into the oP.
   if (!current->parent) {
     throw EvalError("Cannot move above root node " + current->name);
   }
@@ -160,6 +141,14 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
     throw EvalError("Incorrect brace/paren match: '" + open->name + "' against '" + n->name + "'");
   }
   Node* parent = current->parent;
+
+  if (parent->children.size() > 0) { 
+    OperatorParser* oP = dynamic_cast<OperatorParser*>(current->children.at(0));
+    if (oP) { 
+      Node* opTop = oP->finalizeParse();
+      current->addChild(opTop);
+    } 
+  } 
 
   // Parentheses: these are now useless.  We promote the first child (there
   // must be at least one child!) into the parent (paren) spot; it is the
@@ -193,6 +182,17 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
       }
     }
     delete open;
+
+    // if the parent's first child is not us, and it's an operatorParser, then
+    // we have some cleanup to do.  oP->insertNode(op).  Got that?
+    if (2 == op->parent->children.size()) {
+      OperatorParser* oP = dynamic_cast<OperatorParser*>(op->parent->children.at(0));
+      if (oP) {
+        op->parent->children.pop_back();
+        oP->insertNode(op);
+      }
+    }
+
     // Errors from setupAsParent are recoverable
     try {
       op->setupAsParent();
@@ -282,7 +282,7 @@ void Node::initScopeNode(Node* scopeParent) {
   if (!parentScope) {
     parentScope = scopeParent->getParentScope();
   }
-  initScope(scopeParent);
+  initScope(parentScope);
   isInit = true;
 }
 
@@ -308,24 +308,6 @@ void Node::setupAsParent() {
   // Note: the node's grandchildren should all already be setup.
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     (*i)->setupNode();
-  }
-  Expression* exp = dynamic_cast<Expression*>(this);
-  TypeSpec* typespec = dynamic_cast<TypeSpec*>(this);
-  if (exp || typespec) {
-    // hm, can we rethink what we're doing?  Maybe there's a more general class
-    // of things that don't want setup() to happen until they are done, that
-    // is, defer setting up the intermediaries.  *ahem* object literal *ahem*.
-    // What about function?  Maybe it really is a bad language design decision
-    // to not let functions be analyzed properly until the expression they're a
-    // part of is analyzed.  Humph...
-    //
-    // I wonder if we can know the precedence of & well enough that we actually
-    // can evaluate ObjLits and Functions as they are typed -- i.e. we can look
-    // back for anything that's already been declared (parent types we know)
-    // and just not allow YET anything whose parent type has not been, um,
-    // typed.
-    // PRATT PARSING TO THE RESCUE!! but we will add hax to detect where this
-    // might be needed, up in InsertNode()....
   }
   setupNode();
   log.debug("Setup node " + print());

@@ -17,9 +17,6 @@ void TypeSpec::setup() {
   }
 
   Operator* op = dynamic_cast<Operator*>(children.at(0));
-  if (op) {
-    op->analyzeTree();
-  }
   computeType();
 }
 

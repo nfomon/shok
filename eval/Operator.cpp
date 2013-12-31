@@ -16,10 +16,64 @@ using std::string;
 
 using namespace eval;
 
-/* statics */
+/* public */
 
-Operator::op_precedence Operator::Precedence(ARITY arity) {
-  if (UNKNOWN_ARITY == arity) {
+// OperatorParser will call this after all children have been setup with
+// setupLeft() and/or setupRight().
+void Operator::setup() {
+  if (!isPartiallySetup || !m_type.get()) {
+    throw EvalError("Cannot setup Operator " + print() + " that has not been partially-setup");
+  } else if (isSetup) {
+    throw EvalError("Cannot setup Operator " + print() + " that has already been setup");
+  }
+  switch (m_arity) {
+    case PREFIX:
+      if (children.size() != 1) {
+        throw EvalError("Prefix Operator " + print() + " must have one child");
+      }
+      break;
+    case INFIX:
+      if (children.size() != 2) {
+        throw EvalError("Infix Operator " + print() + " must have 2 children");
+      }
+      break;
+    default: throw EvalError("Cannot setup " + print() + " with unknown arity");
+  }
+}
+
+bool Operator::couldBePrefix() const {
+  if ("PLUS" == name || "MINUS" == name) return true;
+  return false;
+}
+
+bool Operator::couldBeInfix() const {
+  return true;
+}
+
+void Operator::setPrefix() {
+  m_arity = PREFIX;
+}
+
+void Operator::setInfix() {
+  m_arity = INFIX;
+}
+
+bool Operator::isPrefix() const {
+  if (ARITY_UNKNOWN == m_arity) {
+    throw EvalError("Cannot request isPrefix of " + print() + " with unassigned arity");
+  }
+  return PREFIX == m_arity;
+}
+
+bool Operator::isInfix() const {
+  if (ARITY_UNKNOWN == m_arity) {
+    throw EvalError("Cannot request isInfix of " + print() + " with unassigned arity");
+  }
+  return INFIX == m_arity;
+}
+
+Operator::op_precedence Operator::precedence(ARITY arity) {
+  if (ARITY_UNKNOWN == arity) {
     throw EvalError("Cannot check unknown-arity precedence of " + print());
   }
   op_precedence prec;
@@ -64,63 +118,21 @@ Operator::op_precedence Operator::Precedence(ARITY arity) {
   return prec;
 }
 
-/* public */
-
-// OperatorParser will call this after each child has been setup with
-// setupLeft() and/or setupRight().
-void Operator::setup() {
-  switch (m_arity) {
-    case PREFIX:
-      if (children.size() != 1) {
-        throw EvalError("Prefix Operator " + print() + " must have one child");
-      }
-      break;
-    case INFIX:
-      if (children.size() != 2) {
-        throw EvalError("Infix Operator " + print() + " must have 2 children");
-      }
-      break;
-    default: throw EvalError("Cannot setup " + print() " + with unknown arity");
-  }
-}
-
-bool Operator::couldBePrefix() const {
-  if ("PLUS" == name || "MINUS" == name) return true;
-  return false;
-}
-
-bool Operator::couldBeInfix() const {
-  return true;
-}
-
-void Operator::setPrefix() {
-  m_arity = PREFIX;
-}
-
-void Operator::setInfix() {
-  m_arity = INFIX;
-}
-
-bool Operator::isPrefix() const {
-  if (ARITY_UNKNOWN == m_arity) {
-    throw EvalError("Cannot request isPrefix of " + print() + " with unassigned arity");
-  }
-  return PREFIX == m_arity;
-}
-
-bool Operator::isInfix() const {
-  if (ARITY_UNKNOWN == m_arity) {
-    throw EvalError("Cannot request isInfix of " + print() + " with unassigned arity");
-  }
-  return INFIX == m_arity;
-}
-
 void Operator::setupLeft() {
   if (ARITY_UNKNOWN == m_arity) {
     throw EvalError("Cannot call setupLeft() on unknown-arity " + print());
+  } else if (isPartiallySetup) {
+    throw EvalError("Cannot call setupLeft() on " + print() + " that is already partially-setup");
+  } else if (children.size() != 1) {
+    throw EvalError("Cannot setupLeft() on " + print() + " that does not have exactly one child");
+  }
+  m_left = dynamic_cast<TypedNode*>(children.at(0));
+  if (!m_left) {
+    throw EvalError("Cannot setupLeft() on " + print() + " whose child is not a TypedNode");
   }
   // ...
   if (INFIX != m_arity) {
+    isPartiallySetup = true;
     computeType();
   }
 }
@@ -130,8 +142,18 @@ void Operator::setupRight() {
     throw EvalError("Cannot call setupRight() on unknown-arity " + print());
   } else if (m_arity != INFIX) {
     throw EvalError("Cannot call setupRight() on non-infix " + print());
+  } else if (isPartiallySetup) {
+    throw EvalError("Cannot call setupRight() on " + print() + " that is already partially-setup");
+  } else if (children.size() != 2) {
+    throw EvalError("Cannot setupRight() on " + print() + " that does not have two children");
+  }
+  m_left = dynamic_cast<TypedNode*>(children.at(0));
+  m_right = dynamic_cast<TypedNode*>(children.at(1));
+  if (!m_left || !m_right) {
+    throw EvalError("Cannot setupRight() on " + print() + " whose children are not TypedNodes");
   }
   // ...
+  isPartiallySetup = true;
   computeType();
 }
 
@@ -178,9 +200,13 @@ string Operator::methodName() const {
 
 // This is responsible for setting m_type.  This is ok to be an OrType of the
 // possible return types of the overloads of the method that will be called.
+// This is called before setup(), by setupLeft() for prefix and setupRight()
+// for infix operators.
 void Operator::computeType() {
-  if (!isSetup || (ARITY_UNKNOWN == m_arity)) {
+  if (!isPartiallySetup || (ARITY_UNKNOWN == m_arity)) {
     throw EvalError("Cannot compute type of Operator " + print() + " before it is setup and validated");
+  } else if (m_type.get()) {
+    throw EvalError("Cannot compute type of Operator " + print() + " that already has a type");
   }
 
   // For overloadable operators, see if the operand has implemented a method
@@ -191,17 +217,17 @@ void Operator::computeType() {
   // Note that some operators require specific types of their operands, or
   // other special evaluations (e.g. ~ performs a ->str on its operands).
   if ("PIPE" == name) {
-    if (!isBinary) {
+    if (!isInfix()) {
       throw EvalError("| must be a binary operator");
     }
     m_type.reset(new OrType(*m_left->getType(), *m_right->getType()));
   } else if ("AMP" == name) {
-    if (!isBinary) {
+    if (!isInfix()) {
       throw EvalError("& must be a binary operator");
     }
     m_type.reset(new AndType(*m_left->getType(), *m_right->getType()));
   } else if ("TILDE" == name || "DOUBLETILDE" == name) {
-    if (!isBinary) {
+    if (!isInfix()) {
       throw EvalError("| must be a binary operator");
     }
     // TODO: get this directly from the global scope
@@ -230,7 +256,7 @@ void Operator::computeType() {
       throw EvalError("Somehow, " + method_name + " is a non-function member of " + m_left->print());
     }
 
-    if (isUnary) {
+    if (isPrefix()) {
       type_list args; // Leave empty (no args)
       if (!method->takesArgs(args)) {
         throw EvalError(m_left->print() + "." + method_name + " is not defined to take 0 arguments");
@@ -239,7 +265,7 @@ void Operator::computeType() {
       if (!m_type.get()) {
         throw EvalError(m_left->print() + "." + method_name + " somehow has no return type");
       }
-    } else if (isBinary) {
+    } else if (isInfix()) {
       if (!m_right) {
         throw EvalError("Right-hand side of binary " + name + " operator must have a type");
       }

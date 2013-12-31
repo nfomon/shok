@@ -32,6 +32,7 @@ RootNode::RootNode(Log& log)
   Object& func = m_scope.newObject("@", auto_ptr<Type>(new BasicType(object)));
   // Test: member function
   Object& foo = object.newMember("foo", std::auto_ptr<Type>(new BasicType(func)));
+  //Object& plus = object.newMember("operator+", std::auto_ptr<Type>(new BasicType(func)));
   // It's too tricky to make a code-block for a function that is done exactly
   // as if it were given by a user.  At least before that mechanism wholly
   // exists so we can just include it as stdlib code without any builtin

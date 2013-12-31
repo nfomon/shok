@@ -7,16 +7,21 @@
 /* Operators
  *
  * Expression trees are given to us by the parser in a wonky ordering.
- * Consequently at setup() time, we won't have any children.
- * Expression::setup() rearranges us into an Operator tree, then will call
- * analyzeTree() at the root, which will do a top-down reordering of the
- * operators (for operator precedence) followed by a top-down validate() step
- * where all our "real" setup()-type static analysis (read: error checking)
- * will happen.
+ * Consequently, Operators are created and setup carefully by some parent
+ * acting as an OperatorParser.  It will use setupLeft() and setupRight()
+ * before calling setup().
  *
  * We should split off some of the specific Operators into subclasses of this.
  * But for now it's all here until we're sure of the interface and
  * responsibilities.
+ *
+ * NOTE:  During setupLeft(), an operator (*ahem* like &) may determine
+ * something about its left branch that any random thing that happens on its
+ * right side might need to know.  So it can shove this info into some
+ * PrattParsingness object, and this data should get passed down the initNode()
+ * of everything we parse until we bubble up and finally call the setupRight()
+ * on this operator (followed by its own setup(), naturally!).  We can do that
+ * (with the refactoring involved) when we implement &.
  */
 
 #include "Log.h"
@@ -37,8 +42,6 @@ class Operator : public TypedNode {
 public:
   friend class OperatorParser;
 
-  static op_precedence Precedence(ARITY arity);
-
   enum ARITY {
     ARITY_UNKNOWN,
     PREFIX,
@@ -46,7 +49,7 @@ public:
   };
 
   typedef int op_priority;
-  static const NO_PRIORITY = -1;
+  static const int NO_PRIORITY = -1;
   enum ASSOC {
     LEFT_ASSOC = 0,
     RIGHT_ASSOC = 1,
@@ -58,11 +61,10 @@ public:
 
   Operator(Log& log, RootNode*const root, const Token& token)
     : TypedNode(log, root, token),
-      isOrderSet(false),
-      isValidated(false),
       m_arity(ARITY_UNKNOWN),
       m_left(NULL),
-      m_right(NULL) {}
+      m_right(NULL),
+      isPartiallySetup(false) {}
 
   virtual void setup();
 
@@ -72,6 +74,7 @@ public:
   void setInfix();
   bool isPrefix() const;
   bool isInfix() const;
+  op_precedence precedence(ARITY arity);
 
   void setupLeft();
   void setupRight();
@@ -84,13 +87,15 @@ public:
 
 protected:
   ARITY m_arity;    // set by setPrefix() or setInfix()
+  // set by setupLeft() or setupRight(), whichever is last for this operator
+  bool isPartiallySetup;
 
 private:
   // from TypedNode
   virtual void computeType();
 
-  // Pointers into children; set by OperatorParser before setup().  These
-  // should never be freed.
+  // Pointers into children; set by setupLeft() and setupRight().  These should
+  // never be freed.
   TypedNode* m_left;
   TypedNode* m_right;
 };

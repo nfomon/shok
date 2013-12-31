@@ -72,7 +72,7 @@ public:
   virtual operator std::string() const;
 
 protected:
-  friend class Expression;
+  friend class OperatorParser;
   Node(Log&, RootNode*const, const Token&);
 
   typedef std::deque<Node*> child_vec;
@@ -93,7 +93,7 @@ protected:
   // called rather scandalously by RecoverFromError()
   void removeChildrenStartingAt(const Node* child);
 
-  virtual void initScope(Node* scopeParent) {}    // early scope init
+  virtual void initScope(Scope* scopeParent) {}    // early scope init
   virtual void setup() = 0;             // child-first setup/analysis
   virtual void evaluate() = 0;          // child-first code execution
   virtual void cleanup(bool error) {}   // child-first cleanup
