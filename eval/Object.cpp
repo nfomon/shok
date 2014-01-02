@@ -14,7 +14,8 @@ Object::Object(Log& log, const string& name, auto_ptr<Type> type)
   : m_log(log),
     m_objectStore(new ObjectStore(log)),
     m_name(name),
-    m_type(type) {
+    m_type(type),
+    m_isAbstract(false) {
 }
 
 Object* Object::getMember(const string& name) const {
@@ -48,3 +49,48 @@ void Object::assign(const Expression* value) {
   m_log.warning("Object assignment is unimplemented");
 }
 */
+
+bool Object::takesArgs(const type_list& args) const {
+  // TODO
+  /*
+  for (signature_iter i = m_signatures.begin(); i != m_signatures.end(); ++i) {
+    if (i->areArgsCompatible(args)) {
+      return true;
+    }
+  }
+  */
+  return false;
+}
+
+auto_ptr<Type> Object::getPossibleReturnTypes(const type_list& args) const {
+  if (!takesArgs(args)) {
+    throw EvalError("Function " + print() + " does not take these args");
+  }
+  auto_ptr<Type> returnTypes(NULL);
+  // TODO
+  /*
+  for (signature_iter i = m_signatures.begin(); i != m_signatures.end(); ++i) {
+    if (i->areArgsCompatible(args)) {
+      returnTypes.reset(i->getReturnType());
+      return returnTypes;
+      // *
+      if (!returnTypes.get()) {
+        returnTypes.reset(i->getReturnType()->duplicate());
+      } else {
+        Type* rt = i->getReturnType(); //...  void??  uhhh...
+        if (!rt) {
+          throw EvalError("Void-returning functions not yet supported");
+        }
+        returnTypes.reset(OrUnion(*returnTypes.get(), *i->getReturnType()));
+      }
+      // *
+    }
+  }
+  */
+  return returnTypes;
+}
+
+auto_ptr<Object> Object::call(const object_list& args) const {
+  // TODO
+  return auto_ptr<Object>(NULL);
+}

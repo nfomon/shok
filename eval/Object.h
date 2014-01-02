@@ -15,8 +15,8 @@
  *
  * An Object might be a function, meaning simply that it has at least one
  * member of type "function builtin".  So any object can *attempt* to be called
- * like a function, meaning it will look up an appropriate member that has the
- * codeblock for the provided args.
+ * like a function, meaning it will look up an appropriate member (a Function)
+ * that has the codeblock for the provided args.
  */
 
 #include "Log.h"
@@ -26,6 +26,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace eval {
 
@@ -35,10 +36,18 @@ class Type;
 
 class Object {
 public:
+  // List of types that a function caller will provide
+  typedef std::vector<const Type*> type_list;
+  typedef type_list::const_iterator type_iter;
+  // List of actual Object* function arguments provided by a caller
+  typedef std::vector<Object*> object_list;
+  typedef object_list::const_iterator object_iter;
+
   Object(Log& log, const std::string& name, std::auto_ptr<Type> type);
 
   virtual ~Object() {}
 
+  std::string getName() const { return m_name; }
   std::string print() const { return m_name; }
   const Type& getType() const {
     if (!m_type.get()) {
@@ -51,10 +60,9 @@ public:
   Object* getMember(const std::string& name) const;
   std::auto_ptr<Type> getMemberType(const std::string& name) const;
   // TODO should an initial value (object) be required?  by auto_ptr I guess?
-  // Probably shouldn't allow creation of an OrType with no default value?
+  // Probably shouldn't allow creation of an OrType with no default value,
+  // unless this is an abstract.
   Object& newMember(const std::string& varname, std::auto_ptr<Type> type);
-
-  //Function& newSignature(const argspec_list& args, Type* returnType, (void*) builtinCode);
 
   // Does an object get "assigned" to?  I think not!
   //    x = y
@@ -67,6 +75,13 @@ public:
   // to support some operation to enable this.
   //void assign(const std::string& name, Object* value);
 
+  // Function
+  bool isFunction() const { return false; }   // TODO
+  // bool isFunction() const { return m_signatures.empty(); }
+  bool takesArgs(const type_list& args) const;
+  std::auto_ptr<Type> getPossibleReturnTypes(const type_list& args) const;
+  std::auto_ptr<Object> call(const object_list& args) const;
+
 protected:
   Log& m_log;
   // This is an auto_ptr only to resolve a circular type dependency that
@@ -74,6 +89,11 @@ protected:
   std::auto_ptr<ObjectStore> m_objectStore;
   std::string m_name;
   std::auto_ptr<Type> m_type;
+  // An abstract is an object with any non-Function Signatures, and/or any
+  // OrType members that do not also have an initial value.
+  bool m_isAbstract;
+  // Function signatures; TODO
+  //typedef std::vector<Signature> m_signatures;
 };
 
 };

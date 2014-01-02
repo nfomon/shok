@@ -25,46 +25,11 @@
 #include <limits.h>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace eval {
 
 class Object;
-
-/* A measure of how compatible two types are. */
-/*
-class TypeScore {
-public:
-  TypeScore(bool isCompatible, unsigned int score = 0)
-    : m_isCompatible(isCompatible), m_score(score) {}
-
-  bool isCompatible() const { return m_isCompatible; }
-
-  bool isBetterThan(const TypeScore& rhs) const {
-    if (!m_isCompatible || !rhs.isCompatible) {
-      throw EvalError("Cannot compare incompatible TypeScores");
-    }
-    return m_score < rhs.m_score;
-  }
-
-  TypeScore operator+(const TypeScore& rhs) {
-    return operator+(rhs.m_score);
-  }
-
-  TypeScore operator+(unsigned int amount) {
-    if (UINT_MAX == m_score ||
-        UINT_MAX == amount ||
-        UINT_MAX - m_score < amount ||
-        UINT_MAX - amount < m_score) {
-      throw EvalError("TypeScore overflow :(");
-    }
-    return TypeScore(true, m_score + amount);
-  }
-
-private:
-  bool m_isCompatible;
-  unsigned int m_score;
-};
-*/
 
 // Pure virtual base class
 class Type {
@@ -89,20 +54,9 @@ public:
   // Checks if the provided Type is a compatible subtype of this Type
   virtual bool isCompatible(const Type& rhs) const = 0;
 
-  /*
-  virtual bool isCompatible(const Type& rhs) const {
-    return compatibilityScore(rhs).isCompatible();
-  }
-  */
-  // Returns a score relating how compatible the two types are.  The lower the
-  // score, the closer in compatibility it is.
-  /*
-  virtual TypeScore compatibilityScore(
-    const Type& rhs, TypeScore initialScore = 0) const = 0;
-  */
-
   // Returns a duplicate of the Type.  Caller takes ownership.
   virtual std::auto_ptr<Type> duplicate() const = 0;
+  virtual std::string getName() const = 0;
   virtual std::string print() const = 0;
   virtual bool isNull() const { return false; }
 };
@@ -114,11 +68,8 @@ public:
   virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
-  /*
-  virtual TypeScore compatibilityScore(
-    const Type& rhs, TypeScore initialScore = 0) const;
-  */
   virtual std::auto_ptr<Type> duplicate() const;
+  virtual std::string getName() const;
   virtual std::string print() const;
   virtual bool isNull() const { return true; }
 };
@@ -132,11 +83,8 @@ public:
   virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
-  /*
-  virtual TypeScore compatibilityScore(
-    const Type& rhs, TypeScore initialScore = 0) const;
-  */
   virtual std::auto_ptr<Type> duplicate() const;
+  virtual std::string getName() const;
   virtual std::string print() const;
 private:
   const Object& m_object;
@@ -147,16 +95,15 @@ class AndType : public Type {
 public:
   AndType(const Type& left, const Type& right)
     : m_left(left.duplicate()), m_right(right.duplicate()) {}
+  AndType(std::auto_ptr<Type> left, std::auto_ptr<Type> right)
+    : m_left(left), m_right(right) {}
   const Type& left() const { return *m_left.get(); }    // must exist
   const Type& right() const { return *m_right.get(); }  // must exist
   virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
-  /*
-  virtual TypeScore compatibilityScore(
-    const Type& rhs, TypeScore initialScore = 0) const;
-  */
   virtual std::auto_ptr<Type> duplicate() const;
+  virtual std::string getName() const;
   virtual std::string print() const;
 private:
   std::auto_ptr<Type> m_left;
@@ -176,11 +123,8 @@ public:
   virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
-  /*
-  virtual TypeScore compatibilityScore(
-    const Type& rhs, TypeScore initialScore = 0) const;
-  */
   virtual std::auto_ptr<Type> duplicate() const;
+  virtual std::string getName() const;
   virtual std::string print() const;
 private:
   std::auto_ptr<Type> m_left;

@@ -24,6 +24,10 @@ void TypeSpec::setup() {
 void TypeSpec::evaluate() {
 }
 
+string TypeSpec::getTypeName() const {
+  return m_type->getName();
+}
+
 void TypeSpec::computeType() {
   // Extract the type of our expression tree, then delete all its nodes; they
   // are irrelevant, we don't want to actually evaluate them as if they were

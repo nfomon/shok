@@ -3,6 +3,9 @@
 
 #include "Function.h"
 
+#include "Args.h"
+#include "EvalError.h"
+
 #include <memory>
 #include <string>
 using std::auto_ptr;
@@ -10,12 +13,85 @@ using std::string;
 
 using namespace eval;
 
-Function::Function(Log& log, const string& name, auto_ptr<Type> type,
-                   Signature initialSignature)
-  : Object(log, name, type) {
-  m_signatures.push_back(initialSignature);
+void Function::setup() {
+  if (children.size() > 2) {
+    throw EvalError("Function " + print() + " must have <= 2 children");
+  }
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
+    if (m_body) {
+      throw EvalError("Function " + print() + " setup found children after the function body");
+    }
+    if (!m_args) {
+      m_args = dynamic_cast<Args*>(*i);
+      if (m_args) continue;
+    }
+    if (!m_returns) {
+      m_returns = dynamic_cast<Returns*>(*i);
+      if (m_returns) continue;
+    }
+    if (!m_body) {
+      m_body = dynamic_cast<Block*>(*i);
+    }
+  }
+  computeType();
 }
 
+void Function::evaluate() {
+}
+
+void Function::computeType() {
+  if (m_type.get()) {
+    throw EvalError("Cannot compute type of Function " + print() + " that already has a type");
+  }
+  const Object* p_function = parentScope->getObject("@");
+  if (!p_function) {
+    throw EvalError("Cannot find the @ object.");
+  }
+  const Object& function = *p_function;
+  // Lookup or construct @(type1,type2,...) parent type
+  if (m_args) {
+    string function_args_name;
+    Args::args_vec args = m_args->getArgs();
+    for (Args::args_iter i = args.begin(); i != args.end(); ++i) {
+      if (function_args_name.empty()) {
+        function_args_name = "@(" + (*i)->getName();
+      } else {
+        function_args_name += "," + (*i)->getName();
+      }
+    }
+    function_args_name += ")";
+    const Object* function_args = parentScope->getObject(function_args_name);
+    if (!function_args) {
+      auto_ptr<Type> funcType(new BasicType(function));
+      function_args = &parentScope->newObject(function_args_name, funcType);
+    }
+    m_type.reset(new BasicType(*function_args));
+  }
+  // Lookup or construct @->(return type) parent type
+  if (m_returns) {
+    string function_returns_name = "@->" + m_returns->getName();
+    const Object* function_returns = parentScope->getObject(function_returns_name);
+    if (!function_returns) {
+      auto_ptr<Type> funcType(new BasicType(function));
+      function_returns = &parentScope->newObject(function_returns_name, funcType);
+    }
+    Type* argsType = m_type.get();
+    if (argsType) {
+      auto_ptr<Type> returnType(new BasicType(*function_returns));
+      m_type.reset(new AndType(m_type, returnType));
+    } else {
+      m_type.reset(new BasicType(*function_returns));
+    }
+  }
+  // With no args or return type, our parent is just @
+  if (!m_args && !m_returns) {
+    m_type.reset(new BasicType(function));
+  } else if (!m_type.get()) {
+    throw EvalError("Function " + print() + " failed to compute a type for itself");
+  }
+}
+
+/*
 void Function::addSignature(Signature signature) {
   // Disallow exact matches of arg lists
   // For now: signatures must not have same # arguments
@@ -26,45 +102,7 @@ void Function::addSignature(Signature signature) {
   }
   m_signatures.push_back(signature);
 }
-
-bool Function::takesArgs(const type_list& args) const {
-  for (signature_iter i = m_signatures.begin(); i != m_signatures.end(); ++i) {
-    if (i->areArgsCompatible(args)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-auto_ptr<Type> Function::getPossibleReturnTypes(const type_list& args) const {
-  if (!takesArgs(args)) {
-    throw EvalError("Function " + print() + " does not take these args");
-  }
-  auto_ptr<Type> returnTypes(NULL);
-  for (signature_iter i = m_signatures.begin(); i != m_signatures.end(); ++i) {
-    if (i->areArgsCompatible(args)) {
-      returnTypes.reset(i->getReturnType());
-      return returnTypes;
-      /*
-      if (!returnTypes.get()) {
-        returnTypes.reset(i->getReturnType()->duplicate());
-      } else {
-        Type* rt = i->getReturnType(); //...  void??  uhhh...
-        if (!rt) {
-          throw EvalError("Void-returning functions not yet supported");
-        }
-        returnTypes.reset(OrUnion(*returnTypes.get(), *i->getReturnType()));
-      }
-      */
-    }
-  }
-  return returnTypes;
-}
-
-auto_ptr<Object> Function::call(const object_list& args) const {
-  // TODO
-  return auto_ptr<Object>(NULL);
-}
+*/
 
 
 /*

@@ -8,6 +8,7 @@
 
 #include "Function.h"
 #include "Log.h"
+#include "Object.h"
 #include "Type.h"
 #include "Variable.h"
 
@@ -19,16 +20,17 @@ namespace eval {
 class ProcCall : public TypedNode {
 public:
   ProcCall(Log& log, RootNode*const root, const Token& token)
-    : TypedNode(log, root, token) {}
+    : TypedNode(log, root, token),
+      m_object(NULL) {}
   virtual void setup();
   virtual void evaluate();
 
 private:
   // from TypedNode
   virtual void computeType();
-  Function* m_function;
+  Object* m_object;
   std::vector<Expression*> m_argexps;
-  type_list m_argtypes;
+  Object::type_list m_argtypes;
 };
 
 };

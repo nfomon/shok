@@ -24,9 +24,8 @@ void ProcCall::setup() {
   if (!var) {
     throw EvalError("ProcCall first child must be a Variable");
   }
-  Object& object = var->getObject();
-  m_function = dynamic_cast<Function*>(&object);
-  if (!m_function) {
+  m_object = &var->getObject();
+  if (!m_object->isFunction()) {
     throw EvalError("ProcCall cannot call a non-function");
   }
   for (child_iter i = children.begin()+1; i != children.end(); ++i) {
@@ -38,23 +37,23 @@ void ProcCall::setup() {
     m_argtypes.push_back(&exp->type());
   }
   // Verify that the function has a signature for these arg types
-  if (!m_function->takesArgs(m_argtypes)) {
-    throw EvalError("Function " + m_function->print() + " does not accept the provided arguments");
+  if (!m_object->takesArgs(m_argtypes)) {
+    throw EvalError("Function " + m_object->print() + " does not accept the provided arguments");
   }
 }
 
 void ProcCall::evaluate() {
   // The expressions of m_argexps have all been evaluated.  Call the
   // function on their resulting objects.
-  object_list args;
+  Object::object_list args;
   for (vector<Expression*>::const_iterator i = m_argexps.begin();
        i != m_argexps.end(); ++i) {
     args.push_back(&(*i)->getObject());
   }
-  auto_ptr<Object> ret = m_function->call(args);
+  auto_ptr<Object> ret = m_object->call(args);
 }
 
 void ProcCall::computeType() {
   // ProcCall type is the return type of the function
-  m_type = m_function->getPossibleReturnTypes(m_argtypes);
+  m_type = m_object->getPossibleReturnTypes(m_argtypes);
 }

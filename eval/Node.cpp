@@ -70,6 +70,8 @@ Node* Node::MakeNode(Log& log, RootNode*const root, const Token& t) {
     return new ProcCall(log, root, t);
   if ("isvar" == t.name)
     return new IsVar(log, root, t);
+  if ("func" == t.name)
+    return new Function(log, root, t);
   throw EvalError("Unsupported token " + t.print());
   return NULL;    // guard
 }

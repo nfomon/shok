@@ -33,6 +33,8 @@ public:
   virtual void setup();
   virtual void evaluate();
 
+  std::string getTypeName() const;
+
 private:
   // from TypedNode
   virtual void computeType();

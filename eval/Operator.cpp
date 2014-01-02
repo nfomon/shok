@@ -247,17 +247,15 @@ void Operator::computeType() {
     if ("" == method_name) {
       throw EvalError("Cannot determine Type of unimplemented operator " + print());
     }
-    const Object* methodObject = m_left->getType()->getMember(method_name);
-    if (!methodObject) {
-      throw EvalError(m_left->print() + " does not define operator" + name);
-    }
-    const Function* method = dynamic_cast<const Function*>(methodObject);
+    const Object* method = m_left->getType()->getMember(method_name);
     if (!method) {
+      throw EvalError(m_left->print() + " does not define operator" + name);
+    } else if (!method->isFunction()) {
       throw EvalError("Somehow, " + method_name + " is a non-function member of " + m_left->print());
     }
 
     if (isPrefix()) {
-      type_list args; // Leave empty (no args)
+      Object::type_list args;   // Leave empty (no args)
       if (!method->takesArgs(args)) {
         throw EvalError(m_left->print() + "." + method_name + " is not defined to take 0 arguments");
       }
@@ -269,7 +267,7 @@ void Operator::computeType() {
       if (!m_right) {
         throw EvalError("Right-hand side of binary " + name + " operator must have a type");
       }
-      type_list args;
+      Object::type_list args;
       args.push_back(&m_right->type());
       if (!method->takesArgs(args)) {
         throw EvalError(m_left->print() + "." + method_name + " is not defined to take right-hand side " + m_right->print() + " of type " + args.at(0)->print());

@@ -34,6 +34,10 @@ auto_ptr<Type> NullType::duplicate() const {
   throw EvalError("Cannot duplicate the root type");
 }
 
+string NullType::getName() const {
+  return "<no type>";
+}
+
 string NullType::print() const {
   return "<no type>";
 }
@@ -100,6 +104,10 @@ TypeScore BasicType::compatibilityScore(const Type& rhs,
 
 auto_ptr<Type> BasicType::duplicate() const {
   return auto_ptr<Type>(new BasicType(m_object));
+}
+
+string BasicType::getName() const {
+  return m_object.getName();
 }
 
 string BasicType::print() const {
@@ -178,6 +186,21 @@ auto_ptr<Type> AndType::duplicate() const {
     throw EvalError("Cannot duplicate deficient AndType " + print());
   }
   return auto_ptr<Type>(new AndType(*m_left.get(), *m_right.get()));
+}
+
+string AndType::getName() const {
+  string name;
+  if (dynamic_cast<BasicType*>(m_left.get())) {
+    name = m_left->getName() + "&";
+  } else {
+    name = "(" + m_left->getName() + ")&";
+  }
+  if (dynamic_cast<BasicType*>(m_right.get())) {
+    name += m_right->getName();
+  } else {
+    name += "(" + m_right->getName() + ")";
+  }
+  return name;
 }
 
 string AndType::print() const {
@@ -263,6 +286,21 @@ auto_ptr<Type> OrType::duplicate() const {
     throw EvalError("Cannot duplicate deficient OrType " + print());
   }
   return auto_ptr<Type>(new OrType(*m_left.get(), *m_right.get()));
+}
+
+string OrType::getName() const {
+  string name;
+  if (dynamic_cast<BasicType*>(m_left.get())) {
+    name = m_left->getName() + "|";
+  } else {
+    name = "(" + m_left->getName() + ")|";
+  }
+  if (dynamic_cast<BasicType*>(m_right.get())) {
+    name += m_right->getName();
+  } else {
+    name += "(" + m_right->getName() + ")";
+  }
+  return name;
 }
 
 string OrType::print() const {

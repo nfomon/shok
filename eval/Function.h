@@ -6,14 +6,12 @@
 
 /* Function
  *
- * All methods are Functions, and all Functions are methods.  woosh.
- * Also, Functions are Objects.
- *
- * A function may have multiple signatures, but this Function object represents
- * exactly one of them.  Here we add only a single member to our ObjectStore, a
- * builtin-Block-type that holds the function body.  When this Function is &'d
- * together with other Functions or Objects, this will be merged and will
- * conflict if there's a duplicate builtin-function-taking-compatible-args.
+ * Function represents a single function signature possibly with a body.  (If
+ * there's no body, then it's an abstract.)  Function has/owns/creates an
+ * Object which will have a single function member for this signature.  When a
+ * Function is &'d with another Function or Object, these function-members will
+ * either merge in the ObjectStore, or conflict if there's a duplicate
+ * builtin-function-taking-compatible-args.
  *
  * Two signatures on the same function, for now, must have different #
  * arguments.  This will eventually be relaxed to: lining up the arguments, no
@@ -28,51 +26,37 @@
  * it actually should have a void object that presently does not exist...
  */
 
+#include "Args.h"
+#include "Block.h"
 #include "Log.h"
-#include "Signature.h"
-#include "Type.h"
-#include "Variable.h"
+#include "Returns.h"
+#include "Token.h"
+#include "TypedNode.h"
 
-#include <memory>
 #include <string>
 
 namespace eval {
 
 class Block;
 
-class Function : public Object {
+class Function : public TypedNode {
 public:
-  // What is the function's type?  something like @(A)->B  ?  or just @->B?  or
-  // just @?
-  // Answer:  @(A) & @->B which both have type @
-  Function(Log& log, const std::string& name, std::auto_ptr<Type> type,
-           Signature initialSignature);
+  Function(Log& log, RootNode*const root, const Token& token)
+    : TypedNode(log, root, token),
+      m_args(NULL),
+      m_returns(NULL),
+      m_body(NULL) {}
 
-  void addSignature(Signature signature);
-
-  bool takesArgs(const type_list& args) const;
-
-  // Returns the best-match signature for the given arg-type list, or NULL if
-  // it doesn't match
-  // Who wants to call this and why??  We should give them what they actually
-  // want, which I doubt is a Signature...  for now it's just Operator wants
-  // the possible return type(s) for the best matching signature.
-  // ... whatever just do this for now
-  // Wait, if we're only providing rhs types (which could be from say
-  // @()->A|B), then we may not have a single best signature.  If the possible
-  // return types are requested, then we'll need to find all the possible
-  // best-matching signatures and get their return-type OR-union.
-  //const Signature* getSignature(const type_list& args) const;
-  std::auto_ptr<Type> getPossibleReturnTypes(const type_list& args) const;
-
-  std::auto_ptr<Object> call(const object_list& args) const;
+  virtual void setup();
+  virtual void evaluate();
 
 private:
-  typedef std::vector<Signature> signature_list;
-  typedef signature_list::const_iterator signature_iter;
+  // from TypedNode
+  virtual void computeType();
 
-  signature_list m_signatures;
-  Block* m_body;  // ownership of this?? nah make it a legit member!
+  Args* m_args;
+  Returns* m_returns;
+  Block* m_body;
 };
 
 };

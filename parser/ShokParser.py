@@ -224,13 +224,17 @@ Object = Seq('object',
   [('LBRACE','(object'), n, ObjectBody, w, ('RBRACE',')')]
 )
 
-TypeList = Seq('typelist',
-  [Future('Type'),
-    Star('types', Seq('commatype', [w, ('COMMA',' '), n, Future('Type')]))]
+Arg = (Or('arg', [
+  Future('Type'),
+  Seq('namedarg', ['ID', w, ('COLON',' '), n, Future('Type')]),
+]), '(arg %s)')
+
+ArgList = Seq('arglist',
+  [Arg, Star('types', Seq('commatype', [w, ('COMMA',' '), n, Arg]))]
 )
 
 FunctionArgs = Seq('functionargs',
-  [('LPAREN',''), n, (Opt(TypeList),' %s'), ('RPAREN','')]
+  [('LPAREN',''), n, (Opt(ArgList),' %s'), ('RPAREN','')]
 )
 
 FunctionReturn = Seq('functionreturn',
@@ -266,8 +270,8 @@ Replace(BinopExp, 2, SubExp)
 
 Exp = (SubExp, '(exp %s)')
 Type = (SubExp, '(type %s)')
-Replace(TypeList, 'Type', Type)
-Replace(TypeList.items[1].items, 'Type', Type)
+Replace(Arg[0], 'Type', Type)
+Replace(Arg[0].items[1], 'Type', Type)
 Replace(FunctionReturn, 'Type', Type)
 
 
