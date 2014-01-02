@@ -3,12 +3,15 @@
 
 #include "Node.h"
 
+#include "Arg.h"
+#include "Args.h"
 #include "Block.h"
 #include "Brace.h"
 #include "Command.h"
 #include "CommandFragment.h"
 #include "EvalError.h"
 #include "Expression.h"
+#include "Function.h"
 #include "Identifier.h"
 #include "IsVar.h"
 #include "Log.h"
@@ -17,6 +20,7 @@
 #include "Operator.h"
 #include "OperatorParser.h"
 #include "ProcCall.h"
+#include "Returns.h"
 #include "RootNode.h"
 #include "TypeSpec.h"
 #include "Variable.h"
@@ -72,6 +76,12 @@ Node* Node::MakeNode(Log& log, RootNode*const root, const Token& t) {
     return new IsVar(log, root, t);
   if ("func" == t.name)
     return new Function(log, root, t);
+  if ("args" == t.name)
+    return new Args(log, root, t);
+  if ("arg" == t.name)
+    return new Arg(log, root, t);
+  if ("returns" == t.name)
+    return new Returns(log, root, t);
   throw EvalError("Unsupported token " + t.print());
   return NULL;    // guard
 }
@@ -144,7 +154,7 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
   }
   Node* parent = current->parent;
 
-  if (parent->children.size() > 0) { 
+  if (current->children.size() > 0) { 
     OperatorParser* oP = dynamic_cast<OperatorParser*>(current->children.at(0));
     if (oP) { 
       Node* opTop = oP->finalizeParse();
