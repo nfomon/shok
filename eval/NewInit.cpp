@@ -63,8 +63,8 @@ void NewInit::setup() {
         throw EvalError("NewInit " + print() + " somehow has child of both TypeSpec and Exp type");
       } else if (m_typeSpec) {
         m_type = m_typeSpec->getType();
-        if (!dynamic_cast<BasicType*>(m_type.get())) {
-          throw EvalError("NewInit " + print() + " has aggregate type " + m_typeSpec->print() + " but no default value is provided");
+        if (dynamic_cast<OrType*>(m_type.get())) {
+          throw EvalError("NewInit " + print() + " has OrType " + m_typeSpec->print() + " but no default value is provided");
         }
       } else if (m_exp) {
         m_type = m_exp->getType();
