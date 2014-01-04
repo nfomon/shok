@@ -19,6 +19,10 @@ void Block::initScope(Scope* scopeParent) {
   m_scope.init(scopeParent);
 }
 
+void Block::initScope(Scope* scopeParent, Function* function) {
+  m_scope.init(scopeParent, function);
+}
+
 void Block::setup() {
   Brace::setup();
 
@@ -31,10 +35,10 @@ void Block::setup() {
   }
 }
 
-// We don't actually have to do anything here.  Nodes are evaluated
-// child-first.  Our child is either a single Expression, or a list of
-// statements, which will be evaluated automatically.
+// Our children have already been evaluated.  This evaluation time is what
+// occurs at the closing }.  We destroy all objects in this scope.
 void Block::evaluate() {
+  m_scope.reset();
 }
 
 string Block::cmdText() const {

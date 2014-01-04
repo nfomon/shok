@@ -18,7 +18,7 @@ NewInit::~NewInit() {
   // Be paranoid here since this is regarding error conditions.
   if (m_isPrepared && parentScope && m_varname != "" &&
       parentScope->getObject(m_varname)) {
-    parentScope->revert(m_varname);
+    parentScope->revert(m_changeId);
   }
 }
 
@@ -113,7 +113,7 @@ void NewInit::prepare() {
   // Object just so we don't have to look it up again in evaluate() when we may
   // want to assign an initial value.  We pass along the auto_ptr to m_type; we
   // don't need it anymore, and this saves a copy.
-  m_object = &parentScope->newObject(m_varname, m_type);
+  m_changeId = parentScope->newObject(m_varname, m_type);
   m_isPrepared = true;
 }
 
@@ -122,14 +122,12 @@ void NewInit::evaluate() {
   // TODO: remove this when we are confident it can't happen
   if (!m_isPrepared) {
     throw EvalError("Cannot evaluate NewInit node until it has been prepared");
-  } else if (!m_object) {
-    throw EvalError("Cannot evaluate NewInit with deficient Object");
   }
-  parentScope->commit(m_varname);
+  parentScope->commit(m_changeId);
   m_isPrepared = false;
   // TODO assign initial value
   if (m_exp) {
-    //m_object->assign(m_exp->getObject());
+    //parentScope->assign(m_varname, m_exp->getObject());
   } else {
     // TODO assign clone of default value of the object's type, or has this
     // already been done??

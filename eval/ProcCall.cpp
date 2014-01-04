@@ -31,29 +31,28 @@ void ProcCall::setup() {
   for (child_iter i = children.begin()+1; i != children.end(); ++i) {
     Expression* exp = dynamic_cast<Expression*>(*i);
     if (!exp) {
-      throw EvalError("ProcCall args must be Expressions");
+      throw EvalError("ProcCall params must be Expressions");
     }
-    m_argexps.push_back(exp);
-    m_argtypes.push_back(&exp->type());
+    m_paramexps.push_back(exp);
+    m_paramtypes.push_back(&exp->type());
   }
-  // Verify that the function has a signature for these arg types
-  if (!m_object->takesArgs(m_argtypes)) {
-    throw EvalError("Function " + m_object->print() + " does not accept the provided arguments");
+  // Verify that the function has a signature for these param types
+  if (!m_object->takesArgs(m_paramtypes)) {
+    throw EvalError("Function " + m_object->print() + " does not accept the provided parameters");
   }
 }
 
 void ProcCall::evaluate() {
-  // The expressions of m_argexps have all been evaluated.  Call the
-  // function on their resulting objects.
-  Object::object_list args;
-  for (vector<Expression*>::const_iterator i = m_argexps.begin();
-       i != m_argexps.end(); ++i) {
-    args.push_back(&(*i)->getObject());
+  // The expressions of m_paramexps have all been evaluated.  Call the function
+  // on their resulting objects.
+  param_vec params;
+  for (exp_iter i = m_paramexps.begin(); i != m_paramexps.end(); ++i) {
+    params.push_back(&(*i)->getObject());
   }
-  auto_ptr<Object> ret = m_object->call(args);
+  auto_ptr<Object> ret = m_object->call(params);
 }
 
 void ProcCall::computeType() {
   // ProcCall type is the return type of the function
-  m_type = m_object->getPossibleReturnTypes(m_argtypes);
+  m_type = m_object->getPossibleReturnTypes(m_paramtypes);
 }

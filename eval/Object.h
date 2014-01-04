@@ -16,11 +16,11 @@
  * An Object might be a function, meaning simply that it has at least one
  * member of type "function builtin".  So any object can *attempt* to be called
  * like a function, meaning it will look up an appropriate member (a Function)
- * that has the codeblock for the provided args.
+ * that has the codeblock for the provided parameters.
  */
 
+#include "Common.h"
 #include "Log.h"
-#include "ObjectStore.h"
 #include "Type.h"
 
 #include <map>
@@ -36,25 +36,18 @@ class Type;
 
 class Object {
 public:
-  // List of types that a function caller will provide
-  typedef std::vector<const Type*> type_list;
-  typedef type_list::const_iterator type_iter;
-  // List of actual Object* function arguments provided by a caller
-  typedef std::vector<Object*> object_list;
-  typedef object_list::const_iterator object_iter;
-
   Object(Log& log, const std::string& name, std::auto_ptr<Type> type);
-
-  virtual ~Object() {}
+  ~Object() {}
 
   std::string getName() const { return m_name; }
   std::string print() const { return m_name; }
-  const Type& getType() const {
-    if (!m_type.get()) {
-      throw EvalError("Object " + print() + " does not appear to have a Type");
-    }
-    return *m_type.get();
-  }
+  const Type& getType() const;
+
+  void reset();
+  void commit(change_id id);
+  void commitAll();
+  void revert(change_id id);
+  void revertAll();
 
   // Retrieve a member, deferring to the parent type(s) if it's not found.
   Object* getMember(const std::string& name) const;
@@ -62,7 +55,7 @@ public:
   // TODO should an initial value (object) be required?  by auto_ptr I guess?
   // Probably shouldn't allow creation of an OrType with no default value,
   // unless this is an abstract.
-  Object& newMember(const std::string& varname, std::auto_ptr<Type> type);
+  change_id newMember(const std::string& varname, std::auto_ptr<Type> type);
 
   // Does an object get "assigned" to?  I think not!
   //    x = y
@@ -73,16 +66,20 @@ public:
   // Now we're thinking about the Object acting as a Scope, an ownership home
   // for the variable being retrieved and modified (replaced).  So we'll have
   // to support some operation to enable this.
-  //void assign(const std::string& name, Object* value);
+  void assignMember(const std::string& name, Object* value);
 
   // Function
   bool isFunction() const { return false; }   // TODO
   // bool isFunction() const { return m_signatures.empty(); }
-  bool takesArgs(const type_list& args) const;
-  std::auto_ptr<Type> getPossibleReturnTypes(const type_list& args) const;
-  std::auto_ptr<Object> call(const object_list& args) const;
+  bool takesArgs(const paramtype_vec& params) const;
+  std::auto_ptr<Type> getPossibleReturnTypes(const paramtype_vec& params) const;
+  std::auto_ptr<Object> call(const param_vec& params) const;
 
-protected:
+  // Constructor/destructor functions.
+  void construct();
+  void destruct();
+
+private:
   Log& m_log;
   // This is an auto_ptr only to resolve a circular type dependency that
   // prevents us from keeping it by value  :/

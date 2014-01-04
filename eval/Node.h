@@ -33,6 +33,7 @@ namespace eval {
 
 class Block;
 class EvalError;
+class Function;
 class RootNode;
 
 class Node {
@@ -78,6 +79,7 @@ protected:
   typedef std::deque<Node*> child_vec;
   typedef child_vec::const_iterator child_iter;
   typedef child_vec::iterator child_mod_iter;
+  typedef child_vec::const_reverse_iterator child_rev_iter;
 
   // This will be called by InsertNode() only on parent nodes.
   // It calls setupNode() and analyzeNode() on the parent and its children.
@@ -94,6 +96,8 @@ protected:
   void removeChildrenStartingAt(const Node* child);
 
   virtual void initScope(Scope* scopeParent) {}    // early scope init
+  virtual void initScope(Scope* scopeParent, Function* function) {}
+  //virtual void initScope(Scope* scopeParent, ObjectLiteral* object) {}
   virtual void setup() = 0;             // child-first setup/analysis
   virtual void evaluate() = 0;          // child-first code execution
   virtual void cleanup(bool error) {}   // child-first cleanup

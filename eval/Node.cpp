@@ -232,6 +232,10 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
 // On success, throws a recoveredError with the new "recoveredPosition" that
 // should be the AST's new current position (the cleaned-up block).
 // On error, throws its own EvalError.
+//
+// TODO we don't want the nearest enclosing *block*, because block includes
+// object and function literals, which we don't want to catch here, I don't
+// think.
 void Node::RecoverFromError(EvalError& e, Node* problemNode) {
   Node* current = problemNode;
   try {
@@ -273,7 +277,7 @@ Node::Node(Log& log, RootNode*const root, const Token& token)
 
 Node::~Node() {
   log.debug("Destroying node " + name);
-  for (child_iter i = children.begin(); i != children.end(); ++i) {
+  for (child_rev_iter i = children.rbegin(); i != children.rend(); ++i) {
     delete *i;
   }
 }
@@ -284,6 +288,11 @@ Node::~Node() {
 // it does not itself define the scope, then our parent scope is its parent
 // scope).  We even allow nodes to (carefully!) override their own initScope()
 // in case they have a real scope as a member that needs to be initialized.
+//
+// Secondly, if we're initializing a scope, we check if scopeParent's first
+// child is 'function' or 'object', in which case the block's scope
+// initialization needs to be aware that it's a function or object -- they have
+// special scoping rules.
 void Node::initScopeNode(Node* scopeParent) {
   if (this == root) {
     throw EvalError("Cannot init scope for the root node");
@@ -294,7 +303,20 @@ void Node::initScopeNode(Node* scopeParent) {
   if (!parentScope) {
     parentScope = scopeParent->getParentScope();
   }
-  initScope(parentScope);
+  if (scopeParent->children.size() > 1) {
+    // TODO check for ObjectLiteral as well
+    Function* function = dynamic_cast<Function*>(scopeParent->children.at(0));
+    //ObjectLiteral* object = dynamic_cast<ObjectLiteral*>(scopeParent->children.at(0));
+    if (function) {
+      initScope(parentScope, function);
+    // } else if (object) {
+    //   initScope(parentScope, object);
+    } else {
+      initScope(parentScope);
+    }
+  } else {
+    initScope(parentScope);
+  }
   isInit = true;
 }
 

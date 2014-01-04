@@ -20,7 +20,7 @@
  * elements between operators.
  *
  * Specifically, we employ Pratt (aka TDOP: Top-Down Operator Precedence
- * parsing) to let us setup() nodes as quickly as possible.
+ * parsing) to let us setupNode() nodes as quickly as possible.
  */
 
 #include "Log.h"

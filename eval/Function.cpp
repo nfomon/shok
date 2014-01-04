@@ -14,12 +14,12 @@ using std::string;
 using namespace eval;
 
 void Function::setup() {
-  if (children.size() > 2) {
+  if (children.size() > 3) {
     throw EvalError("Function " + print() + " must have <= 2 children");
   }
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     if (m_body) {
-      throw EvalError("Function " + print() + " setup found children after the function body");
+      throw EvalError("Function " + print() + " setup found child " + (*i)->print() + " after the function body");
     }
     if (!m_args) {
       m_args = dynamic_cast<Args*>(*i);
@@ -37,6 +37,14 @@ void Function::setup() {
 }
 
 void Function::evaluate() {
+  if (m_argsChangeId != ObjectStore::NO_CHANGE) {
+    parentScope->commit(m_argsChangeId);
+    m_argsChangeId = ObjectStore::NO_CHANGE;
+  }
+  if (m_returnsChangeId != ObjectStore::NO_CHANGE) {
+    parentScope->commit(m_returnsChangeId);
+    m_returnsChangeId = ObjectStore::NO_CHANGE;
+  }
 }
 
 void Function::computeType() {
@@ -52,9 +60,12 @@ void Function::computeType() {
   if (m_args) {
     string function_args_name;
     Args::args_vec args = m_args->getArgs();
+    function_args_name = "@(";
+    bool firstArg = true;
     for (Args::args_iter i = args.begin(); i != args.end(); ++i) {
-      if (function_args_name.empty()) {
-        function_args_name = "@(" + (*i)->getName();
+      if (firstArg) {
+        function_args_name = (*i)->getName();
+        firstArg = false;
       } else {
         function_args_name += "," + (*i)->getName();
       }
@@ -63,7 +74,11 @@ void Function::computeType() {
     const Object* function_args = parentScope->getObject(function_args_name);
     if (!function_args) {
       auto_ptr<Type> funcType(new BasicType(function));
-      function_args = &parentScope->newObject(function_args_name, funcType);
+      if (m_argsChangeId != ObjectStore::NO_CHANGE) {
+        throw EvalError("a");
+      }
+      m_argsChangeId = parentScope->newObject(function_args_name, funcType);
+      function_args = parentScope->getObject(function_args_name);
     }
     m_type.reset(new BasicType(*function_args));
   }
@@ -73,7 +88,11 @@ void Function::computeType() {
     const Object* function_returns = parentScope->getObject(function_returns_name);
     if (!function_returns) {
       auto_ptr<Type> funcType(new BasicType(function));
-      function_returns = &parentScope->newObject(function_returns_name, funcType);
+      if (m_returnsChangeId != ObjectStore::NO_CHANGE) {
+        throw EvalError("b");
+      }
+      m_returnsChangeId = parentScope->newObject(function_returns_name, funcType);
+      function_returns = parentScope->getObject(function_returns_name);
     }
     Type* argsType = m_type.get();
     if (argsType) {

@@ -255,11 +255,11 @@ void Operator::computeType() {
     }
 
     if (isPrefix()) {
-      Object::type_list args;   // Leave empty (no args)
-      if (!method->takesArgs(args)) {
+      paramtype_vec params;   // Leave empty (no params)
+      if (!method->takesArgs(params)) {
         throw EvalError(m_left->print() + "." + method_name + " is not defined to take 0 arguments");
       }
-      m_type = method->getPossibleReturnTypes(args);
+      m_type = method->getPossibleReturnTypes(params);
       if (!m_type.get()) {
         throw EvalError(m_left->print() + "." + method_name + " somehow has no return type");
       }
@@ -267,12 +267,12 @@ void Operator::computeType() {
       if (!m_right) {
         throw EvalError("Right-hand side of binary " + name + " operator must have a type");
       }
-      Object::type_list args;
-      args.push_back(&m_right->type());
-      if (!method->takesArgs(args)) {
-        throw EvalError(m_left->print() + "." + method_name + " is not defined to take right-hand side " + m_right->print() + " of type " + args.at(0)->print());
+      paramtype_vec params;
+      params.push_back(&m_right->type());
+      if (!method->takesArgs(params)) {
+        throw EvalError(m_left->print() + "." + method_name + " is not defined to take right-hand side " + m_right->print() + " of type " + params.at(0)->print());
       }
-      m_type = method->getPossibleReturnTypes(args);
+      m_type = method->getPossibleReturnTypes(params);
       if (!m_type.get()) {
         throw EvalError(m_left->print() + "." + method_name + " with argument " + m_right->print() + " somehow has no return type");
       }

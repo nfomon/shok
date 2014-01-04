@@ -45,7 +45,9 @@ public:
     : TypedNode(log, root, token),
       m_args(NULL),
       m_returns(NULL),
-      m_body(NULL) {}
+      m_body(NULL),
+      m_argsChangeId(ObjectStore::NO_CHANGE),
+      m_returnsChangeId(ObjectStore::NO_CHANGE) {}
 
   virtual void setup();
   virtual void evaluate();
@@ -57,6 +59,9 @@ private:
   Args* m_args;
   Returns* m_returns;
   Block* m_body;
+
+  change_id m_argsChangeId;
+  change_id m_returnsChangeId;
 };
 
 };

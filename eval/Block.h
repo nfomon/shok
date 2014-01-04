@@ -33,6 +33,7 @@ public:
   ~Block();
 
   virtual void initScope(Scope* scopeParent);
+  virtual void initScope(Scope* scopeParent, Function* function);
   virtual void setup();
   virtual void evaluate();
   virtual std::string cmdText() const;

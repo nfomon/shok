@@ -17,6 +17,7 @@
 #include "Identifier.h"
 #include "Log.h"
 #include "Node.h"
+#include "ObjectStore.h"
 #include "RootNode.h"
 #include "Scope.h"
 #include "Token.h"
@@ -31,6 +32,7 @@ public:
   NewInit(Log& log, RootNode*const root, const Token& token)
     : Node(log, root, token),
       m_isPrepared(false),
+      m_changeId(ObjectStore::NO_CHANGE),
       m_identifier(NULL),
       m_exp(NULL),
       m_typeSpec(NULL),
@@ -39,9 +41,9 @@ public:
   ~NewInit();
 
   virtual void setup();
-  // Prepare our scope to include the new variable (analysis step).
-  // This is called by an analysis step kickstarted by our parent New, after
-  // its setup() is completed.
+  // Prepare the scope to include the new variable.  This is called by an
+  // analysis step kickstarted by our parent New, after its setup() is
+  // completed.
   // We could do this same work at setup() time but it seems nicer to let the
   // New statement finish its setup() validation beforehand.  Here we actually
   // perform the object creation, but mark it as "pending" in the Scope until
@@ -52,6 +54,7 @@ public:
 
 private:
   bool m_isPrepared;
+  change_id m_changeId;
   std::string m_varname;
   // child 0: the identifier of the variable being created
   Identifier* m_identifier;

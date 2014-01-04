@@ -68,7 +68,7 @@ void OperatorParser::insertNode(Node* node) {
       } else {
         throw EvalError("Operator parse of " + node->print() + " found unknown arity");
       }
-      stackOp->setup();
+      stackOp->setupNode();
       tmp = stackOp;
       m_stack.pop_back();
     }
@@ -111,7 +111,7 @@ Node* OperatorParser::finalizeParse() {
   // on up the stack.
   Node* tmp = stackTop;
   m_stack.pop_back();
-  stackTop->setup();
+  stackTop->setupNode();
 
   while (!m_stack.empty()) {
     stack_pair top = m_stack.back(); // peek, don't pop
@@ -133,7 +133,7 @@ Node* OperatorParser::finalizeParse() {
     } else {
       throw EvalError("Finalizing parse found unknown arity");
     }
-    stackOp->setup();
+    stackOp->setupNode();
     tmp = stackOp;
     m_stack.pop_back();
   }

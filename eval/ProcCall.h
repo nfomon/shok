@@ -6,6 +6,7 @@
 
 /* ProcCall (the calling of a function/procedure/method) */
 
+#include "Common.h"
 #include "Function.h"
 #include "Log.h"
 #include "Object.h"
@@ -29,8 +30,10 @@ private:
   // from TypedNode
   virtual void computeType();
   Object* m_object;
-  std::vector<Expression*> m_argexps;
-  Object::type_list m_argtypes;
+  typedef std::vector<Expression*> exp_vec;
+  typedef exp_vec::const_iterator exp_iter;
+  exp_vec m_paramexps;
+  paramtype_vec m_paramtypes;
 };
 
 };

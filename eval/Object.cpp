@@ -3,6 +3,8 @@
 
 #include "Object.h"
 
+#include "ObjectStore.h"
+
 #include <memory>
 #include <string>
 using std::auto_ptr;
@@ -16,6 +18,39 @@ Object::Object(Log& log, const string& name, auto_ptr<Type> type)
     m_name(name),
     m_type(type),
     m_isAbstract(false) {
+}
+
+const Type& Object::getType() const {
+  if (!m_type.get()) {
+    throw EvalError("Object " + print() + " does not appear to have a Type");
+  }
+  return *m_type.get();
+}
+
+// Clears all members from the object
+void Object::reset() {
+  m_log.debug("Resetting object " + print());
+  m_objectStore->reset();
+}
+
+// Commit (confirm) a pending member into the object
+void Object::commit(change_id id) {
+  m_objectStore->commit(id);
+}
+
+// Commit all pending-commit members
+void Object::commitAll() {
+  m_objectStore->commitAll();
+}
+
+// Revert a pending-commit member
+void Object::revert(change_id id) {
+  m_objectStore->revert(id);
+}
+
+// Revert all pending-commit members
+void Object::revertAll() {
+  m_objectStore->revertAll();
 }
 
 Object* Object::getMember(const string& name) const {
@@ -40,7 +75,7 @@ auto_ptr<Type> Object::getMemberType(const string& name) const {
   return m_type->getMemberType(name);
 }
 
-Object& Object::newMember(const string& varname, auto_ptr<Type> type) {
+change_id Object::newMember(const string& varname, auto_ptr<Type> type) {
   return m_objectStore->newObject(varname, type);
 }
 
@@ -50,11 +85,11 @@ void Object::assign(const Expression* value) {
 }
 */
 
-bool Object::takesArgs(const type_list& args) const {
+bool Object::takesArgs(const paramtype_vec& params) const {
   // TODO
   /*
   for (signature_iter i = m_signatures.begin(); i != m_signatures.end(); ++i) {
-    if (i->areArgsCompatible(args)) {
+    if (i->areArgsCompatible(params)) {
       return true;
     }
   }
@@ -62,15 +97,15 @@ bool Object::takesArgs(const type_list& args) const {
   return false;
 }
 
-auto_ptr<Type> Object::getPossibleReturnTypes(const type_list& args) const {
-  if (!takesArgs(args)) {
-    throw EvalError("Function " + print() + " does not take these args");
+auto_ptr<Type> Object::getPossibleReturnTypes(const paramtype_vec& params) const {
+  if (!takesArgs(params)) {
+    throw EvalError("Function " + print() + " does not take these parameters");
   }
   auto_ptr<Type> returnTypes(NULL);
   // TODO
   /*
   for (signature_iter i = m_signatures.begin(); i != m_signatures.end(); ++i) {
-    if (i->areArgsCompatible(args)) {
+    if (i->areArgsCompatible(params)) {
       returnTypes.reset(i->getReturnType());
       return returnTypes;
       // *
@@ -90,7 +125,19 @@ auto_ptr<Type> Object::getPossibleReturnTypes(const type_list& args) const {
   return returnTypes;
 }
 
-auto_ptr<Object> Object::call(const object_list& args) const {
+auto_ptr<Object> Object::call(const param_vec& params) const {
   // TODO
   return auto_ptr<Object>(NULL);
+}
+
+void Object::construct() {
+  //m_log.debug("Constructing children of " + print());
+  // TODO: Construct children
+  m_log.info("Object " + print() + ": constructor called");
+}
+
+void Object::destruct() {
+  m_log.info("Object " + print() + ": destructor called");
+  //m_log.debug("Destroying children of " + print());
+  // TODO: Destroy children
 }
