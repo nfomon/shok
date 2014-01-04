@@ -98,6 +98,7 @@ protected:
   virtual void initScope(Scope* scopeParent) {}    // early scope init
   virtual void initScope(Scope* scopeParent, Function* function) {}
   //virtual void initScope(Scope* scopeParent, ObjectLiteral* object) {}
+  virtual void initChild(Node* child) {}  // early parent setup for new child
   virtual void setup() = 0;             // child-first setup/analysis
   virtual void evaluate() = 0;          // child-first code execution
   virtual void cleanup(bool error) {}   // child-first cleanup

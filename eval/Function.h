@@ -49,6 +49,7 @@ public:
       m_argsChangeId(ObjectStore::NO_CHANGE),
       m_returnsChangeId(ObjectStore::NO_CHANGE) {}
 
+  virtual void initChild(Node* child);
   virtual void setup();
   virtual void evaluate();
 

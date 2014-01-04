@@ -13,27 +13,44 @@ using std::string;
 
 using namespace eval;
 
+// Determine the Function's type before we look into its { child scope
+void Function::initChild(Node* child) {
+  if (m_args || m_returns || m_body) {
+    throw EvalError("Function " + print() + " initChild has args, returns, or body before initChild of '{'");
+  }
+  m_body = dynamic_cast<Block*>(child);
+  if (!m_body) return;
+  if (1 == children.size()) {
+    m_args = dynamic_cast<Args*>(children.at(0));
+    if (!m_args) {
+      m_returns = dynamic_cast<Returns*>(children.at(0));
+      if (!m_returns) {
+        throw EvalError("Function " + print() + " initChild found first child is neither args nor returns");
+      }
+    }
+  } else if (2 == children.size()) {
+    m_args = dynamic_cast<Args*>(children.at(0));
+    if (!m_args) {
+      throw EvalError("Function " + print() + " initChild first child is not args");
+    }
+    m_returns = dynamic_cast<Returns*>(children.at(1));
+    if (!m_returns) {
+      throw EvalError("Function " + print() + " initChild second child is not returns");
+    }
+  }
+  computeType();
+}
+
 void Function::setup() {
   if (children.size() > 3) {
     throw EvalError("Function " + print() + " must have <= 2 children");
   }
-  for (child_iter i = children.begin(); i != children.end(); ++i) {
-    if (m_body) {
-      throw EvalError("Function " + print() + " setup found child " + (*i)->print() + " after the function body");
-    }
-    if (!m_args) {
-      m_args = dynamic_cast<Args*>(*i);
-      if (m_args) continue;
-    }
-    if (!m_returns) {
-      m_returns = dynamic_cast<Returns*>(*i);
-      if (m_returns) continue;
-    }
-    if (!m_body) {
-      m_body = dynamic_cast<Block*>(*i);
+  if (children.size() > 0) {
+    Block* lastBlock = dynamic_cast<Block*>(children.back());
+    if (lastBlock != m_body) {   // both null or both same block
+      throw EvalError("Setup of Function " + print() + " found block disagreement against its initChild");
     }
   }
-  computeType();
 }
 
 void Function::evaluate() {
@@ -55,6 +72,7 @@ void Function::computeType() {
   if (!p_function) {
     throw EvalError("Cannot find the @ object.");
   }
+  log.debug("Computing type of function " + print());
   const Object& function = *p_function;
   // Lookup or construct @(type1,type2,...) parent type
   if (m_args) {

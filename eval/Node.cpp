@@ -112,6 +112,8 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
       oP = dynamic_cast<OperatorParser*>(current->children.at(0));
       if (oP) {
         oP->insertNode(n);
+      } else {
+        current->children.at(0)->initChild(n);
       }
     }
     if (!oP) {
@@ -122,9 +124,13 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
   }
 
   // Open brace: descend into current; new nodes will be its children
+  // Note the hack: for the { child of Function
   if (brace->isOpen()) {
     n->parent = current;
     current->addChild(n);
+    if (current->children.size() > 0) {
+      current->children.at(0)->initChild(n);
+    }
     n->initScopeNode(current);
     return n;         // descend
   }
@@ -159,6 +165,7 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
     if (oP) { 
       Node* opTop = oP->finalizeParse();
       current->addChild(opTop);
+      current->initChild(n);
     } 
   } 
 
@@ -296,8 +303,6 @@ Node::~Node() {
 void Node::initScopeNode(Node* scopeParent) {
   if (this == root) {
     throw EvalError("Cannot init scope for the root node");
-  } else if (!scopeParent) {
-    throw EvalError("Cannot init " + print() + " scope with no scope parent");
   }
   parentScope = scopeParent->getScope();
   if (!parentScope) {
