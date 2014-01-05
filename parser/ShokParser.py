@@ -312,6 +312,10 @@ StmtIsVar = (Seq('isvar',
   Star('isvarprops', Seq('isvarprop', [w, ('DOT',' '), n, 'ID']))]
 ), '(isvar %s)')
 
+# Typeof statement
+StmtTypeof = Seq('typeof',
+  [('TYPEOF','(typeof '), n, (Exp,'%s)')]
+)
 
 # Assignment statements
 StmtAssign = Seq('stmtassign',
@@ -427,6 +431,7 @@ StmtBreak = Or('stmtbreak', [
 Stmt = Or('stmt', [
   StmtNew,
   StmtIsVar,
+  StmtTypeof,
   StmtAssign,
   StmtProcCall,
   #Future('Switch'),
