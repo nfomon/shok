@@ -53,5 +53,5 @@ void Variable::computeType() {
   if (!m_object) {
     throw EvalError("Failed to find object behind Variable " + print());
   }
-  m_type.reset(new BasicType(*m_object));
+  m_type.reset(new BasicType(log, *m_object));
 }

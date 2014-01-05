@@ -20,7 +20,6 @@
 
 #include "EvalError.h"
 #include "Log.h"
-#include "Object.h"
 
 #include <limits.h>
 #include <memory>
@@ -34,6 +33,8 @@ class Object;
 // Pure virtual base class
 class Type {
 public:
+  Type(Log& log)
+    : m_log(log) {}
   virtual ~Type() {}
 
   // Query our underlying object(s) for a member.
@@ -59,12 +60,15 @@ public:
   virtual std::string getName() const = 0;
   virtual std::string print() const = 0;
   virtual bool isNull() const { return false; }
+
+protected:
+  Log& m_log;
 };
 
 // NullType is the Type of stdlib::object, the root of all objects.
 class NullType : public Type {
 public:
-  NullType() {}
+  NullType(Log& log) : Type(log) {}
   virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
@@ -78,8 +82,8 @@ public:
 // BasicType of its Object, whereas an Object's Type represents its parents.
 class BasicType : public Type {
 public:
-  BasicType(const Object& o)
-    : m_object(o) {}
+  BasicType(Log& log, const Object& o)
+    : Type(log), m_object(o) {}
   virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
@@ -93,10 +97,10 @@ private:
 // AndType:  a&b
 class AndType : public Type {
 public:
-  AndType(const Type& left, const Type& right)
-    : m_left(left.duplicate()), m_right(right.duplicate()) {}
-  AndType(std::auto_ptr<Type> left, std::auto_ptr<Type> right)
-    : m_left(left), m_right(right) {}
+  AndType(Log& log, const Type& left, const Type& right)
+    : Type(log), m_left(left.duplicate()), m_right(right.duplicate()) {}
+  AndType(Log& log, std::auto_ptr<Type> left, std::auto_ptr<Type> right)
+    : Type(log), m_left(left), m_right(right) {}
   const Type& left() const { return *m_left.get(); }    // must exist
   const Type& right() const { return *m_right.get(); }  // must exist
   virtual Object* getMember(const std::string& name) const;
@@ -114,10 +118,10 @@ private:
 class OrType : public Type {
 public:
   // Perform the best |-union of two Types
-  static std::auto_ptr<Type> OrUnion(const Type& a, const Type& b);
+  static std::auto_ptr<Type> OrUnion(Log& log, const Type& a, const Type& b);
 
-  OrType(const Type& left, const Type& right)
-    : m_left(left.duplicate()), m_right(right.duplicate()) {}
+  OrType(Log& log, const Type& left, const Type& right)
+    : Type(log), m_left(left.duplicate()), m_right(right.duplicate()) {}
   const Type& left() const { return *m_left.get(); }
   const Type& right() const { return *m_right.get(); }
   virtual Object* getMember(const std::string& name) const;

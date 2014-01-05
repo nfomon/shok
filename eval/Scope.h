@@ -55,17 +55,17 @@ public:
   void init(Scope* parentScope, Function* parentFunction);
   //void init(Scope* parentScope, ObjectLiteral* parentObject);
   void reset();
-  void commit(change_id id);
+  void commitFirst();
   void commitAll();
-  void revert(change_id id);
+  void revertLast();
   void revertAll();
 
   // Lookup an object, deferring up the tree if it's not found locally.
   // Returns NULL if it does not exist anywhere.
   Object* getObject(const std::string& varname) const;
   // Insert a new object, as "pending" until it's either commit or revert
-  change_id newObject(const std::string& varname, std::auto_ptr<Type> type);
-  change_id delObject(const std::string& varname);
+  Object& newObject(const std::string& varname, std::auto_ptr<Type> type);
+  void delObject(const std::string& varname);
   void replaceObject(const std::string& varname, std::auto_ptr<Object> newObject);
 
 private:

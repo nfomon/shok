@@ -6,8 +6,10 @@
 #include "EvalError.h"
 #include "TypeSpec.h"
 
+#include <memory>
 #include <string>
 #include <vector>
+using std::auto_ptr;
 using std::string;
 using std::vector;
 
@@ -29,7 +31,14 @@ void Returns::evaluate() {
 
 string Returns::getName() const {
   if (!isSetup || !m_typeSpec) {
-    throw EvalError("Cannot get name of Function-Returns "  + print() + " that has not been setup");
+    throw EvalError("Cannot get name of Function-Returns "  + print() + " that has not been setup or is missing typespec");
   }
   return m_typeSpec->getTypeName();
+}
+
+auto_ptr<Type> Returns::getType() const {
+  if (!isSetup || !m_typeSpec) {
+    throw EvalError("Cannot get type of Function-Returns "  + print() + " that has not been setup or is missing typespec");
+  }
+  return m_typeSpec->getType();
 }

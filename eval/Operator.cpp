@@ -220,12 +220,12 @@ void Operator::computeType() {
     if (!isInfix()) {
       throw EvalError("| must be a binary operator");
     }
-    m_type.reset(new OrType(*m_left->getType(), *m_right->getType()));
+    m_type.reset(new OrType(log, *m_left->getType(), *m_right->getType()));
   } else if ("AMP" == name) {
     if (!isInfix()) {
       throw EvalError("& must be a binary operator");
     }
-    m_type.reset(new AndType(*m_left->getType(), *m_right->getType()));
+    m_type.reset(new AndType(log, *m_left->getType(), *m_right->getType()));
   } else if ("TILDE" == name || "DOUBLETILDE" == name) {
     if (!isInfix()) {
       throw EvalError("| must be a binary operator");
@@ -235,7 +235,7 @@ void Operator::computeType() {
     if (!str) {
       throw EvalError("Cannot use ~ or ~~ operator until str is defined");
     }
-    m_type.reset(new BasicType(*str));
+    m_type.reset(new BasicType(log, *str));
     // TODO more custom ~ and ~~ logic goes here or above
     throw EvalError("~ and ~~ operators are not yet implemented");
   } else {

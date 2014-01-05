@@ -10,6 +10,7 @@
  */
 
 #include "Arg.h"
+#include "Common.h"
 #include "Log.h"
 #include "RootNode.h"
 #include "Token.h"
@@ -25,12 +26,10 @@ public:
   virtual void setup();
   virtual void evaluate();
 
-  typedef std::vector<Arg*> args_vec;
-  typedef args_vec::const_iterator args_iter;
-  args_vec getArgs() const;    // would rather provide iterators. meh.
+  const arg_vec& getArgs() const;
 
 private:
-  args_vec m_args;
+  arg_vec m_args;
 };
 
 };

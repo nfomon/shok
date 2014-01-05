@@ -4,6 +4,7 @@
 #include "ObjectStore.h"
 
 #include "EvalError.h"
+#include "Object.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -37,27 +38,22 @@ void ObjectStore::reset() {
 }
 
 // Commit (confirm) the oldest pending change to the store
-void ObjectStore::commit(change_id id) {
+void ObjectStore::commitFirst() {
   if (m_changeset.empty()) {
-    throw EvalError("Cannot commit changeset ID " + boost::lexical_cast<string>(id) + "; no changes pending");
-  } else if (NO_CHANGE == id) {
-    throw EvalError("Cannot commit the no-change changeset ID");
+    throw EvalError("Cannot commit first of changeset; no changes pending");
   }
   ObjectChange oc = m_changeset.front();
-  if (oc.id != id) {
-    throw EvalError("Commit changeset ID " + boost::lexical_cast<string>(id) + " does not match front of changeset " + boost::lexical_cast<string>(oc.id));
-  }
   object_iter o = m_objects.find(oc.varname);
   if (m_objects.end() == o) {
     throw EvalError("Cannot commit " + oc.varname + "; object missing");
   }
   switch (oc.type) {
     case OBJECT_ADD: {
-      m_log.debug("Commit " + boost::lexical_cast<string>(id) + ": addition of " + oc.varname);
+      m_log.debug("Commit: addition of " + oc.varname);
       o->second->construct();
     } break;
     case OBJECT_DELETE: {
-      m_log.debug("Commit " + boost::lexical_cast<string>(id) + ": deletion of " + oc.varname);
+      m_log.debug("Commit: deletion of " + oc.varname);
       if (!oc.oldObject) {
         throw EvalError("Cannot commit deletion of " + oc.varname + "; old object missing from changeset");
       }
@@ -83,29 +79,24 @@ void ObjectStore::commit(change_id id) {
 // Commit all pending-commit objects
 void ObjectStore::commitAll() {
   m_log.debug("Committing all changes");
-  for (changeset_iter i = m_changeset.begin(); i != m_changeset.end(); ++i) {
-    commit(i->id);
+  for (int i=0; i < m_changeset.size(); ++i) {
+    commitFirst();
   }
 }
 
 // Revert the newest pending-commit change from the store
-void ObjectStore::revert(change_id id) {
+void ObjectStore::revertLast() {
   if (m_changeset.empty()) {
-    throw EvalError("Cannot revert changeset ID " + boost::lexical_cast<string>(id) + "; no changes pending");
-  } else if (NO_CHANGE == id) {
-    throw EvalError("Cannot revert the no-change changeset ID");
+    throw EvalError("Cannot revert last of changeset; no changes pending");
   }
   ObjectChange oc = m_changeset.back();
-  if (oc.id != id) {
-    throw EvalError("Revert changeset ID " + boost::lexical_cast<string>(id) + " does not match back of changeset " + boost::lexical_cast<string>(oc.id));
-  }
   object_mod_iter o = m_objects.find(oc.varname);
   if (m_objects.end() == o) {
     throw EvalError("Cannot revert " + oc.varname + "; object missing");
   }
   switch (oc.type) {
     case OBJECT_ADD: {
-      m_log.debug("Revert " + boost::lexical_cast<string>(id) + ": addition of " + oc.varname);
+      m_log.debug("Revert: addition of " + oc.varname);
       // The add to revert should be the last element of m_ordering
       if (m_ordering.empty()) {
         throw EvalError("Cannot revert addition of " + oc.varname + "; object is missing from ordering");
@@ -120,7 +111,7 @@ void ObjectStore::revert(change_id id) {
       m_objects.erase(o);
     } break;
     case OBJECT_DELETE: {
-      m_log.debug("Revert " + boost::lexical_cast<string>(id) + ": deletion of " + oc.varname);
+      m_log.debug("Revert: deletion of " + oc.varname);
       if (!oc.oldObject) {
         throw EvalError("Cannot revert deletion of " + oc.varname + "; old object missing from changeset");
       }
@@ -148,8 +139,8 @@ void ObjectStore::revert(change_id id) {
 
 // Revert all pending-commit objects
 void ObjectStore::revertAll() {
-  for (changeset_rev_iter i = m_changeset.rbegin(); i != m_changeset.rend(); ++i) {
-    revert(i->id);
+  for (int i=0; i < m_changeset.size(); ++i) {
+    revertLast();
   }
 }
 
@@ -159,7 +150,7 @@ Object* ObjectStore::getObject(const string& varname) const {
   return NULL;
 }
 
-change_id ObjectStore::newObject(const string& varname, auto_ptr<Type> type) {
+Object& ObjectStore::newObject(const string& varname, auto_ptr<Type> type) {
   // An object name collision should have already been detected, but repeat
   // this now until we're confident about that
   if (getObject(varname)) {
@@ -176,18 +167,18 @@ change_id ObjectStore::newObject(const string& varname, auto_ptr<Type> type) {
   }
   ordering_pair orp(varname, false);
   m_ordering.push_back(orp);
-  ObjectChange oc(m_lastId, varname, OBJECT_ADD);
+  ObjectChange oc(varname, OBJECT_ADD);
   m_changeset.push_back(oc);
-  return oc.id;
+  return *op.second;
 }
 
-change_id ObjectStore::delObject(const string& varname) {
+void ObjectStore::delObject(const string& varname) {
   m_log.info("Deleting object " + varname);
   object_mod_iter o = m_objects.find(varname);
   if (m_objects.end() == o) {
     throw EvalError("Cannot delete variable " + varname + "; does not exist in this store");
   }
-  ObjectChange oc(m_lastId, varname, OBJECT_DELETE, o->second);
+  ObjectChange oc(varname, OBJECT_DELETE, o->second);
   bool found = false;
   for (ordering_mod_iter i = m_ordering.begin(); i != m_ordering.end(); ++i) {
     if ((varname == i->first) && !i->second) {
@@ -201,7 +192,6 @@ change_id ObjectStore::delObject(const string& varname) {
   }
   m_objects.erase(o);
   m_changeset.push_back(oc);
-  return oc.id;
 }
 
 void ObjectStore::replaceObject(const string& varname, auto_ptr<Object> newObject) {

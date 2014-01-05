@@ -16,9 +16,7 @@
 #include "Log.h"
 #include "RootNode.h"
 #include "Scope.h"
-//#include "Statement.h"
 #include "Token.h"
-#include "Variable.h"
 
 #include <map>
 
@@ -29,7 +27,8 @@ public:
   Block(Log& log, RootNode*const root, const Token& token)
     : Brace(log, root, token, true),
       m_scope(log),
-      m_exp(NULL) {}
+      m_exp(NULL),
+      m_isDeferred(false) {}
   ~Block();
 
   virtual void initScope(Scope* scopeParent);
@@ -40,10 +39,14 @@ public:
 
   bool isCodeBlock() const { return !m_exp; }
   virtual Scope* getScope() { return &m_scope; }
+  void defer() { m_isDeferred = true; }
+  void ready() { m_isDeferred = false; }
+  bool isDeferred() const { return m_isDeferred; }
 
 private:
   Expression* m_exp;
   Scope m_scope;
+  bool m_isDeferred;
 };
 
 };

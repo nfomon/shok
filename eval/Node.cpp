@@ -283,10 +283,14 @@ Node::Node(Log& log, RootNode*const root, const Token& token)
 }
 
 Node::~Node() {
-  log.debug("Destroying node " + name);
+  log.debug("Destroying node " + print());
   for (child_rev_iter i = children.rbegin(); i != children.rend(); ++i) {
+    //log.debug("    - node " + name + " destroying child " + (*i)->print());
+    string childprint = (*i)->print();
     delete *i;
+    //log.debug("    - node " + name + " done destroying child " + childprint);
   }
+  //log.debug(" - done destroying node " + name);
 }
 
 // This is a very early scope initialization.  We don't necessarily have a Node
@@ -390,6 +394,14 @@ void Node::evaluateNode() {
     if (root == parent && root != NULL) return;
     throw EvalError("Node " + print() + " cannot be evaluated until init, setup, and analyzed");
   }
+
+  // Skip deferred blocks
+  Block* block = dynamic_cast<Block*>(this);
+  if (block && block->isDeferred()) {
+    log.debug("Not evaluating deferred block " + block->print());
+    return;
+  }
+
   // Evaluate nodes children-first
   for (child_iter i = children.begin(); i != children.end(); ++i) {   
     (*i)->evaluateNode();

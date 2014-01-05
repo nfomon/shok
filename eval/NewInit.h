@@ -32,7 +32,6 @@ public:
   NewInit(Log& log, RootNode*const root, const Token& token)
     : Node(log, root, token),
       m_isPrepared(false),
-      m_changeId(ObjectStore::NO_CHANGE),
       m_identifier(NULL),
       m_exp(NULL),
       m_typeSpec(NULL),
@@ -54,7 +53,6 @@ public:
 
 private:
   bool m_isPrepared;
-  change_id m_changeId;
   std::string m_varname;
   // child 0: the identifier of the variable being created
   Identifier* m_identifier;

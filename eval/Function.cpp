@@ -51,25 +51,45 @@ void Function::setup() {
       throw EvalError("Setup of Function " + print() + " found block disagreement against its initChild");
     }
   }
+  if (m_body) {
+    m_body->defer();
+  }
 }
 
 void Function::evaluate() {
-  if (m_argsChangeId != ObjectStore::NO_CHANGE) {
-    parentScope->commit(m_argsChangeId);
-    m_argsChangeId = ObjectStore::NO_CHANGE;
+  if (m_preparedArgs) {
+    parentScope->commitFirst();
+    m_preparedArgs = false;
   }
-  if (m_returnsChangeId != ObjectStore::NO_CHANGE) {
-    parentScope->commit(m_returnsChangeId);
-    m_returnsChangeId = ObjectStore::NO_CHANGE;
+  if (m_preparedReturns) {
+    parentScope->commitFirst();
+    m_preparedReturns = false;
   }
 }
 
-auto_ptr<Object> Function::makeObject(const string& newName) const {
+auto_ptr<Object> Function::makeObject(const string& newName) {
   if (!isSetup || !isEvaluated) {
     throw EvalError("Cannot make object from Function " + print() + " before it is setup and evaluated");
+  } else if (m_isObjectified) {
+    throw EvalError("Cannot make object from Function " + print() + " that has already been made into an object");
   }
   auto_ptr<Object> o(new Object(log, newName, getType()));
-  // TODO add members
+  const arg_vec* args = NULL;
+  if (m_args) {
+    args = &m_args->getArgs();
+  }
+  auto_ptr<Type> returnType(NULL);
+  if (m_returns) {
+    returnType = m_returns->getType();
+  }
+  // Carefully transfer body (code block) to the function object
+  auto_ptr<Block> body(m_body);
+  m_body = NULL;
+  children.pop_back();
+  log.debug("Creating method object for Function " + print());
+  o->newMethod(args, returnType, body);
+  log.debug("methodness done");
+  m_isObjectified = true;
   return o;
 }
 
@@ -86,10 +106,10 @@ void Function::computeType() {
   // Lookup or construct @(type1,type2,...) parent type
   if (m_args) {
     string function_args_name;
-    Args::args_vec args = m_args->getArgs();
+    const arg_vec& args = m_args->getArgs();
     function_args_name = "@(";
     bool firstArg = true;
-    for (Args::args_iter i = args.begin(); i != args.end(); ++i) {
+    for (arg_iter i = args.begin(); i != args.end(); ++i) {
       if (firstArg) {
         function_args_name = (*i)->getName();
         firstArg = false;
@@ -100,41 +120,42 @@ void Function::computeType() {
     function_args_name += ")";
     const Object* function_args = parentScope->getObject(function_args_name);
     if (!function_args) {
-      auto_ptr<Type> funcType(new BasicType(function));
-      if (m_argsChangeId != ObjectStore::NO_CHANGE) {
-        throw EvalError("a");
+      auto_ptr<Type> funcType(new BasicType(log, function));
+      if (m_preparedArgs) {
+        throw EvalError("Cannot construct args type for Function " + print() + "; already have an args pending commit");
       }
-      m_argsChangeId = parentScope->newObject(function_args_name, funcType);
-      function_args = parentScope->getObject(function_args_name);
+      m_preparedArgs = true;
+      function_args = &parentScope->newObject(function_args_name, funcType);
     }
-    m_type.reset(new BasicType(*function_args));
+    m_type.reset(new BasicType(log, *function_args));
   }
   // Lookup or construct @->(return type) parent type
   if (m_returns) {
     string function_returns_name = "@->" + m_returns->getName();
     const Object* function_returns = parentScope->getObject(function_returns_name);
     if (!function_returns) {
-      auto_ptr<Type> funcType(new BasicType(function));
-      if (m_returnsChangeId != ObjectStore::NO_CHANGE) {
-        throw EvalError("b");
+      auto_ptr<Type> funcType(new BasicType(log, function));
+      if (m_preparedReturns) {
+        throw EvalError("Cannot construct return type for Function " + print() + "; already have a returns pending commit");
       }
-      m_returnsChangeId = parentScope->newObject(function_returns_name, funcType);
-      function_returns = parentScope->getObject(function_returns_name);
+      m_preparedReturns = true;
+      function_returns = &parentScope->newObject(function_returns_name, funcType);
     }
     Type* argsType = m_type.get();
     if (argsType) {
-      auto_ptr<Type> returnType(new BasicType(*function_returns));
-      m_type.reset(new AndType(m_type, returnType));
+      auto_ptr<Type> returnType(new BasicType(log, *function_returns));
+      m_type.reset(new AndType(log, m_type, returnType));
     } else {
-      m_type.reset(new BasicType(*function_returns));
+      m_type.reset(new BasicType(log, *function_returns));
     }
   }
   // With no args or return type, our parent is just @
   if (!m_args && !m_returns) {
-    m_type.reset(new BasicType(function));
+    m_type.reset(new BasicType(log, function));
   } else if (!m_type.get()) {
     throw EvalError("Function " + print() + " failed to compute a type for itself");
   }
+  log.info("Type of Function " + print() + ": " + m_type->print());
 }
 
 /*

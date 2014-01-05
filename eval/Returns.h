@@ -25,6 +25,7 @@ public:
   virtual void evaluate();
 
   std::string getName() const;
+  std::auto_ptr<Type> getType() const;
 
 private:
   TypeSpec* m_typeSpec;

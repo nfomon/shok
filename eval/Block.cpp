@@ -13,6 +13,8 @@ using std::string;
 using namespace eval;
 
 Block::~Block() {
+  log.debug("Destroying Block " + print());
+  m_scope.reset();
 }
 
 void Block::initScope(Scope* scopeParent) {

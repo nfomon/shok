@@ -7,8 +7,10 @@
 #include "Identifier.h"
 #include "TypeSpec.h"
 
+#include <memory>
 #include <string>
 #include <vector>
+using std::auto_ptr;
 using std::string;
 using std::vector;
 
@@ -42,4 +44,12 @@ string Arg::getName() const {
     throw EvalError("Cannot get name of Arg " + print() + " before it is setup");
   }
   return m_argname;
+}
+
+auto_ptr<Type> Arg::getType() const {
+  return m_typeSpec->getType();
+}
+
+auto_ptr<ArgSpec> Arg::getSpec() const {
+  return auto_ptr<ArgSpec>(new ArgSpec(getName(), getType()));
 }

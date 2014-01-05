@@ -4,6 +4,7 @@
 #include "Args.h"
 
 #include "Arg.h"
+#include "Common.h"
 #include "EvalError.h"
 
 #include <string>
@@ -27,7 +28,7 @@ void Args::setup() {
 void Args::evaluate() {
 }
 
-Args::args_vec Args::getArgs() const {
+const arg_vec& Args::getArgs() const {
   if (!isSetup) {
     throw EvalError("Cannot get args from Args " + print() + " before it is setup");
   }

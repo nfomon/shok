@@ -27,16 +27,16 @@ RootNode::RootNode(Log& log)
   isAnalyzed = true;
 
   // Insert default objects (standard library)
-  m_scope.newObject("object", auto_ptr<Type>(new NullType()));
+  m_scope.newObject("object", auto_ptr<Type>(new NullType(log)));
   Object* object = m_scope.getObject("object");
   if (!object) throw EvalError("RootNode is missing: object");
   //object.newMember("foo", std::auto_ptr<Type>(new BasicType(object))); // test
-  m_scope.newObject("@", auto_ptr<Type>(new BasicType(*object)));
+  m_scope.newObject("@", auto_ptr<Type>(new BasicType(log, *object)));
   Object* func = m_scope.getObject("@");
   if (!func) throw EvalError("RootNode is missing: @");
   // Test: member function
-  object->newMember("foo", std::auto_ptr<Type>(new BasicType(*func)));
-  //Object& plus = object.newMember("operator+", std::auto_ptr<Type>(new BasicType(func)));
+  object->newMember("foo", std::auto_ptr<Type>(new BasicType(log, *func)));
+  //Object& plus = object.newMember("operator+", std::auto_ptr<Type>(new BasicType(log, func)));
   // It's too tricky to make a code-block for a function that is done exactly
   // as if it were given by a user.  At least before that mechanism wholly
   // exists so we can just include it as stdlib code without any builtin

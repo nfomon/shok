@@ -3,6 +3,8 @@
 
 #include "Type.h"
 
+#include "Object.h"
+
 #include <algorithm>
 #include <string>
 using std::auto_ptr;
@@ -103,7 +105,7 @@ TypeScore BasicType::compatibilityScore(const Type& rhs,
 */
 
 auto_ptr<Type> BasicType::duplicate() const {
-  return auto_ptr<Type>(new BasicType(m_object));
+  return auto_ptr<Type>(new BasicType(m_log, m_object));
 }
 
 string BasicType::getName() const {
@@ -185,7 +187,7 @@ auto_ptr<Type> AndType::duplicate() const {
   if (!m_left.get() || !m_right.get()) {
     throw EvalError("Cannot duplicate deficient AndType " + print());
   }
-  return auto_ptr<Type>(new AndType(*m_left.get(), *m_right.get()));
+  return auto_ptr<Type>(new AndType(m_log, *m_left.get(), *m_right.get()));
 }
 
 string AndType::getName() const {
@@ -209,10 +211,10 @@ string AndType::print() const {
 
 /* OrType */
 
-auto_ptr<Type> OrType::OrUnion(const Type& a, const Type& b) {
+auto_ptr<Type> OrType::OrUnion(Log& log, const Type& a, const Type& b) {
   if (a.isCompatible(b)) return a.duplicate();
   if (b.isCompatible(a)) return b.duplicate();
-  return auto_ptr<Type>(new OrType(a, b));
+  return auto_ptr<Type>(new OrType(log, a, b));
 }
 
 Object* OrType::getMember(const string& name) const {
@@ -231,7 +233,7 @@ auto_ptr<Type> OrType::getMemberType(const string& name) const {
   if (!leftType.get() || !rightType.get()) {
     throw EvalError("A child of OrType " + print() + " has a deficient Type.");
   }
-  return OrUnion(*leftType.get(), *rightType.get());
+  return OrUnion(m_log, *leftType.get(), *rightType.get());
 }
 
 bool OrType::isCompatible(const Type& rhs) const {
@@ -285,7 +287,7 @@ auto_ptr<Type> OrType::duplicate() const {
   if (!m_left.get() || !m_right.get()) {
     throw EvalError("Cannot duplicate deficient OrType " + print());
   }
-  return auto_ptr<Type>(new OrType(*m_left.get(), *m_right.get()));
+  return auto_ptr<Type>(new OrType(m_log, *m_left.get(), *m_right.get()));
 }
 
 string OrType::getName() const {

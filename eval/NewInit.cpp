@@ -16,9 +16,9 @@ using namespace eval;
 NewInit::~NewInit() {
   // Revert our object if we've partially created it.
   // Be paranoid here since this is regarding error conditions.
-  if (m_isPrepared && parentScope && m_varname != "" &&
-      parentScope->getObject(m_varname)) {
-    parentScope->revert(m_changeId);
+  if (m_isPrepared && parentScope && m_varname != "") {
+    log.debug("Destroying NewInit " + print() + " -- reverting change");
+    parentScope->revertLast();
   }
 }
 
@@ -44,7 +44,7 @@ void NewInit::setup() {
       if (!object) {
         throw EvalError("Cannot find the object object.  Uhoh.");
       }
-      m_type.reset(new BasicType(*object));
+      m_type.reset(new BasicType(log, *object));
       // leave m_typeSpec NULL
       // leave m_exp NULL
       break;
@@ -109,7 +109,7 @@ void NewInit::prepare() {
 
   // Construct the object in our parent scope.  We pass along the auto_ptr to
   // m_type; we don't need it anymore, and this saves a copy.
-  m_changeId = parentScope->newObject(m_varname, m_type);
+  parentScope->newObject(m_varname, m_type);
   m_isPrepared = true;
 }
 
@@ -118,7 +118,7 @@ void NewInit::evaluate() {
   if (!m_isPrepared) {
     throw EvalError("Cannot evaluate NewInit " + print() + " until it has been prepared");
   }
-  parentScope->commit(m_changeId);
+  parentScope->commitFirst();
   if (m_exp) {
     parentScope->replaceObject(m_varname, m_exp->getObject(m_varname));
   } else {

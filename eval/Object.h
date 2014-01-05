@@ -21,6 +21,7 @@
 
 #include "Common.h"
 #include "Log.h"
+#include "Method.h"
 #include "Type.h"
 
 #include <map>
@@ -37,16 +38,16 @@ class Type;
 class Object {
 public:
   Object(Log& log, const std::string& name, std::auto_ptr<Type> type);
-  ~Object() {}
+  ~Object();
 
   std::string getName() const { return m_name; }
   std::string print() const { return m_name; }
   const Type& getType() const;
 
   void reset();
-  void commit(change_id id);
+  void commitFirst();
   void commitAll();
-  void revert(change_id id);
+  void revertLast();
   void revertAll();
 
   // Retrieve a member, deferring to the parent type(s) if it's not found.
@@ -55,7 +56,10 @@ public:
   // TODO should an initial value (object) be required?  by auto_ptr I guess?
   // Probably shouldn't allow creation of an OrType with no default value,
   // unless this is an abstract.
-  change_id newMember(const std::string& varname, std::auto_ptr<Type> type);
+  Object& newMember(const std::string& varname, std::auto_ptr<Type> type);
+  void newMethod(const arg_vec* args,
+                 std::auto_ptr<Type> returnType,
+                 std::auto_ptr<Block> body);
 
   // Does an object get "assigned" to?  I think not!
   //    x = y
@@ -66,11 +70,10 @@ public:
   // Now we're thinking about the Object acting as a Scope, an ownership home
   // for the variable being retrieved and modified (replaced).  So we'll have
   // to support some operation to enable this.
-  void assignMember(const std::string& name, Object* value);
+  //void assignMember(const std::string& name, Object* value);
 
   // Function
-  bool isFunction() const { return false; }   // TODO
-  // bool isFunction() const { return m_signatures.empty(); }
+  bool isFunction() const { return !m_methods.empty(); }
   bool takesArgs(const paramtype_vec& params) const;
   std::auto_ptr<Type> getPossibleReturnTypes(const paramtype_vec& params) const;
   std::auto_ptr<Object> call(const param_vec& params) const;
@@ -81,6 +84,9 @@ public:
   std::auto_ptr<Object> clone(const std::string& newName) const;
 
 private:
+  typedef std::vector<Method*> method_vec;
+  typedef method_vec::const_iterator method_iter;
+
   Log& m_log;
   // This is an auto_ptr only to resolve a circular type dependency that
   // prevents us from keeping it by value  :/
@@ -90,8 +96,7 @@ private:
   // An abstract is an object with any non-Function Signatures, and/or any
   // OrType members that do not also have an initial value.
   bool m_isAbstract;
-  // Function signatures; TODO
-  //typedef std::vector<Signature> m_signatures;
+  method_vec m_methods;
 };
 
 };

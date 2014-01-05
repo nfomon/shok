@@ -11,13 +11,6 @@
  * and has commit/revert logic on new additions.  Scope and Object each have an
  * ObjectStore internally backing their members.
  *
- * newObject, replaceObject, and deleteObject all return a change_id.  This is
- * *only* an error-prevention mechanism; if we trust the rest of the codebase
- * works properly, then we could just use m_changeset.begin() instead of a
- * change_id that we assert always refers to the beginning of
- * m_changeset.begin().  I think this is an important extra layer of
- * verification, at least for now.
- *
  * newObject and deleteObject operations are the only "necessary" ones, for our
  * purpose of allowing "hey that object doesn't exist yet!" error checking
  * before evaluation-time.  But since the ObjectStore owns the memory of its
@@ -43,29 +36,24 @@ namespace eval {
 class Object;
 class Type;
 
-typedef int change_id;
-
 class ObjectStore {
 public:
-  static const change_id NO_CHANGE = -1;
-
   ObjectStore(Log& log)
-    : m_log(log),
-      m_lastId(0) {}
+    : m_log(log) {}
   ~ObjectStore();
 
   void reset();
-  void commit(change_id id);
+  void commitFirst();
   void commitAll();
-  void revert(change_id id);
+  void revertLast();
   void revertAll();
 
   // Lookup an object, returning NULL if it is not here.
   Object* getObject(const std::string& varname) const;
   // Construct a new object, as "pending" until it's either commit or revert
-  change_id newObject(const std::string& varname, std::auto_ptr<Type> type);
+  Object& newObject(const std::string& varname, std::auto_ptr<Type> type);
   // Delete an object.  Calls the object's destructor when commit.
-  change_id delObject(const std::string& varname);
+  void delObject(const std::string& varname);
   // Replace an object.  This should happen at evaluation time; no commit or
   // revert!  It just happens.  The destructor and constructor are called.
   void replaceObject(const std::string& varname, std::auto_ptr<Object> newObject);
@@ -94,23 +82,14 @@ private:
 
   // TODO 6am engineering fail!
   struct ObjectChange {
-    ObjectChange(change_id& lastId, std::string varname, ChangeType type,
-                 Object* oldObject = NULL, bool newId = true)
+    ObjectChange(std::string varname, ChangeType type, Object* oldObject = NULL)
       : varname(varname), type(type), oldObject(oldObject) {
       if (OBJECT_ADD == type && oldObject) {
         throw EvalError("Cannot create ADD ObjectChange for " + varname + " with an old object");
       } else if (OBJECT_DELETE == type && !oldObject) {
         throw EvalError("Cannot create DELETE ObjectChange for " + varname + " without an old object");
       }
-      id = lastId;
-      if (newId) {
-        ++lastId;
-        if (INT_MAX == lastId || lastId < 0) {
-          lastId = 0;
-        }
-      }
     }
-    change_id id;
     std::string varname;
     Object* oldObject;
     ChangeType type;
@@ -118,8 +97,6 @@ private:
   typedef std::deque<ObjectChange> changeset_vec;
   typedef changeset_vec::const_iterator changeset_iter;
   typedef changeset_vec::const_reverse_iterator changeset_rev_iter;
-
-  change_id m_lastId;
 
   Log& m_log;
   // The store of objects.  Eager: includes the latest uncommit changeset

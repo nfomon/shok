@@ -20,6 +20,12 @@ Object::Object(Log& log, const string& name, auto_ptr<Type> type)
     m_isAbstract(false) {
 }
 
+Object::~Object() {
+  for (method_iter i = m_methods.begin(); i != m_methods.end(); ++i) {
+    delete *i;
+  }
+}
+
 const Type& Object::getType() const {
   if (!m_type.get()) {
     throw EvalError("Object " + print() + " does not appear to have a Type");
@@ -34,8 +40,8 @@ void Object::reset() {
 }
 
 // Commit (confirm) a pending member into the object
-void Object::commit(change_id id) {
-  m_objectStore->commit(id);
+void Object::commitFirst() {
+  m_objectStore->commitFirst();
 }
 
 // Commit all pending-commit members
@@ -44,8 +50,8 @@ void Object::commitAll() {
 }
 
 // Revert a pending-commit member
-void Object::revert(change_id id) {
-  m_objectStore->revert(id);
+void Object::revertLast() {
+  m_objectStore->revertLast();
 }
 
 // Revert all pending-commit members
@@ -75,15 +81,16 @@ auto_ptr<Type> Object::getMemberType(const string& name) const {
   return m_type->getMemberType(name);
 }
 
-change_id Object::newMember(const string& varname, auto_ptr<Type> type) {
+Object& Object::newMember(const string& varname, auto_ptr<Type> type) {
   return m_objectStore->newObject(varname, type);
 }
 
-/*
-void Object::assign(const Expression* value) {
-  m_log.warning("Object assignment is unimplemented");
+void Object::newMethod(const arg_vec* args,
+                       auto_ptr<Type> returnType,
+                       auto_ptr<Block> body) {
+  // TODO: verify that the method does not conflict or overlap with another
+  m_methods.push_back(new Method(args, returnType, body));
 }
-*/
 
 bool Object::takesArgs(const paramtype_vec& params) const {
   // TODO
@@ -116,7 +123,7 @@ auto_ptr<Type> Object::getPossibleReturnTypes(const paramtype_vec& params) const
         if (!rt) {
           throw EvalError("Void-returning functions not yet supported");
         }
-        returnTypes.reset(OrUnion(*returnTypes.get(), *i->getReturnType()));
+        returnTypes.reset(OrUnion(m_log, *returnTypes.get(), *i->getReturnType()));
       }
       // *
     }

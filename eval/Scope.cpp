@@ -8,7 +8,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-#include <string>
+#include <memory>
 #include <string>
 using std::auto_ptr;
 using std::string;
@@ -16,8 +16,8 @@ using std::string;
 using namespace eval;
 
 Scope::~Scope() {
-  m_log.info("Destroying scope at depth " +
-             boost::lexical_cast<string>(m_depth));
+  m_log.info("Destroying " + string(m_function ? "function " : "") +
+             "scope at depth " + boost::lexical_cast<string>(m_depth));
 }
 
 // Remains the root scope if this is never called
@@ -55,13 +55,13 @@ void Scope::reset() {
 }
 
 // Commit (confirm) a pending object into the scope
-void Scope::commit(change_id id) {
+void Scope::commitFirst() {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
-    return m_parentScope->commit(id);
+    return m_parentScope->commitFirst();
   }
-  m_objectStore.commit(id);
+  m_objectStore.commitFirst();
 }
 
 // Commit all pending-commit objects
@@ -75,13 +75,13 @@ void Scope::commitAll() {
 }
 
 // Revert a pending-commit object
-void Scope::revert(change_id id) {
+void Scope::revertLast() {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
-    return m_parentScope->revert(id);
+    return m_parentScope->revertLast();
   }
-  m_objectStore.revert(id);
+  m_objectStore.revertLast();
 }
 
 // Revert all pending-commit objects
@@ -95,6 +95,7 @@ void Scope::revertAll() {
 }
 
 Object* Scope::getObject(const string& varname) const {
+  m_log.debug(string(m_function ? "Function " : "") + "Scope at depth " + boost::lexical_cast<string>(m_depth) + " attempting to get object " + varname);
   Object* o = m_objectStore.getObject(varname);
   if (o) return o;
   if (m_function) {
@@ -106,7 +107,7 @@ Object* Scope::getObject(const string& varname) const {
   return m_parentScope->getObject(varname);
 }
 
-change_id Scope::newObject(const string& varname, auto_ptr<Type> type) {
+Object& Scope::newObject(const string& varname, auto_ptr<Type> type) {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
@@ -115,7 +116,7 @@ change_id Scope::newObject(const string& varname, auto_ptr<Type> type) {
   return m_objectStore.newObject(varname, type);
 }
 
-change_id Scope::delObject(const string& varname) {
+void Scope::delObject(const string& varname) {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }

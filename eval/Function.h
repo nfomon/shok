@@ -47,14 +47,18 @@ public:
       m_args(NULL),
       m_returns(NULL),
       m_body(NULL),
-      m_argsChangeId(ObjectStore::NO_CHANGE),
-      m_returnsChangeId(ObjectStore::NO_CHANGE) {}
+      m_preparedArgs(false),
+      m_preparedReturns(false),
+      m_isObjectified(false) {}
 
   virtual void initChild(Node* child);
   virtual void setup();
   virtual void evaluate();
 
-  std::auto_ptr<Object> makeObject(const std::string& newName) const;
+  // Make an Object out of this Function.  Transfers ownership of m_body.
+  // This can only happen once!  TODO: also transfer ownership of m_args and
+  // m_returns, instead of copying them.
+  std::auto_ptr<Object> makeObject(const std::string& newName);
 
 private:
   // from TypedNode
@@ -64,8 +68,9 @@ private:
   Returns* m_returns;
   Block* m_body;
 
-  change_id m_argsChangeId;
-  change_id m_returnsChangeId;
+  bool m_preparedArgs;
+  bool m_preparedReturns;
+  bool m_isObjectified;   // set by makeObject()
 };
 
 };

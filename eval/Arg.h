@@ -13,11 +13,13 @@
  * but with no name.
  */
 
+#include "ArgSpec.h"
 #include "Log.h"
 #include "RootNode.h"
 #include "Token.h"
 #include "TypeSpec.h"
 
+#include <memory>
 #include <string>
 
 namespace eval {
@@ -30,7 +32,10 @@ public:
   virtual void setup();
   virtual void evaluate();
 
+  // If the arg is unnamed, returns the empty string
   std::string getName() const;
+  std::auto_ptr<Type> getType() const;
+  std::auto_ptr<ArgSpec> getSpec() const;
 
 private:
   std::string m_argname;  // provided by first child, if two children

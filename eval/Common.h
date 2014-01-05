@@ -12,6 +12,8 @@
 
 namespace eval {
 
+class Arg;
+class ArgSpec;
 class Object;
 class Type;
 
@@ -27,6 +29,13 @@ typedef std::vector<Object*> param_vec;
 typedef param_vec::const_iterator param_iter;
 typedef param_vec::iterator param_mod_iter;
 
+// The function's specification of the arguments it accepts
+typedef std::vector<ArgSpec*> argspec_vec;
+typedef argspec_vec::const_iterator argspec_iter;
+
+// A list of Arg nodes that hold function argument specifications
+typedef std::vector<Arg*> arg_vec;
+typedef arg_vec::const_iterator arg_iter;
 };
 
 #endif // _Common_h_
