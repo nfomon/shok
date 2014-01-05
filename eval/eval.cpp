@@ -28,7 +28,7 @@ using namespace eval;
 
 namespace {
   const string PROGRAM_NAME = "shok_eval";
-};
+}
 
 int main(int argc, char *argv[]) {
   if (argc < 1 || argc > 2) {
