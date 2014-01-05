@@ -314,7 +314,7 @@ StmtIsVar = (Seq('isvar',
 
 # Typeof statement
 StmtTypeof = Seq('typeof',
-  [('TYPEOF','(typeof '), n, (Exp,'%s)')]
+  [('TYPEOF','(typeof '), n, (Type,'%s)')]
 )
 
 # Assignment statements
