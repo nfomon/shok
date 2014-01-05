@@ -26,6 +26,6 @@ std::string rtrim_space(std::string s) {
   return "";
 }
 
-};
+}
 
 #endif // _Util_h_

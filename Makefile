@@ -20,8 +20,8 @@ else
   CCFLAG_ASSERTS=-DQUEX_OPTION_ASSERTS_DISABLED
 endif
 
-COMPILER = g++ -ggdb -Wall -pedantic
-CC = $(COMPILER) -I./ -I$(QUEX_PATH) $(CCFLAG_ASSERTS) \
+CC = g++ -ggdb -Wall -pedantic
+QUEXCC = $(CC) -I./ -I$(QUEX_PATH) $(CCFLAG_ASSERTS) \
      # -DQUEX_OPTION_DEBUG_SHOW
      # -DQUEX_OPTION_ASSERTS_DISABLED
      # -DQUEX_OPTION_ASSERTS_WARNING_MESSAGE_DISABLED
@@ -32,7 +32,7 @@ LD = $(COMPILER)
 all: shok_lexer shok_parser shok_eval shok
 
 shok_lexer: lexer/lexer.cpp lexer/tiny_lexer_st.cpp
-	$(CC) -o $@ $^
+	$(QUEXCC) -o $@ $^
 
 lexer/tiny_lexer_st.cpp: lexer/lexer.qx $(QUEX_CORE)
 	quex -i lexer/lexer.qx --engine tiny_lexer_st \
@@ -44,10 +44,10 @@ shok_parser: parser/shok_parser.py
 	ln -s parser/shok_parser.py shok_parser
 
 shok_eval: eval/*.h eval/*.cpp
-	g++ -Iutil eval/*.cpp -o shok_eval
+	$(CC) -Iutil eval/*.cpp -o shok_eval
 
 shok: util/Proc.h util/Util.h shell/shell.cpp
-	g++ -Iutil shell/shell.cpp -lboost_iostreams -o shok
+	$(CC) -Iutil shell/shell.cpp -lboost_iostreams -o shok
 
 tidy: lexer shok
 	rm -f lexer/tiny_lexer_st* lexer/test_lexer parser/*.pyc eval/*.o shell/file_descriptor.o shell/shell.o parser.log eval.log

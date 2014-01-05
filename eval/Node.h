@@ -108,12 +108,6 @@ protected:
   virtual Scope* getScope() { return NULL; }              // local scope
   Scope* getParentScope() const { return parentScope; }   // enclosing scope
 
-  // State flags
-  bool isInit;
-  bool isSetup;
-  bool isAnalyzed;
-  bool isEvaluated;
-
   // Set by constructor
   Log& log;
   RootNode*const root;
@@ -124,8 +118,14 @@ protected:
   child_vec children;
   // Set by initScope() and cancelParentScope()
   Scope* parentScope;   // nearest enclosing scope (execution context)
+
+  // State flags
+  bool isInit;
+  bool isSetup;
+  bool isAnalyzed;
+  bool isEvaluated;
 };
 
-};
+}
 
 #endif // _Node_h_

@@ -16,7 +16,6 @@ void TypeSpec::setup() {
     throw EvalError("TypeSpec must wrap a single expression fragment");
   }
 
-  Operator* op = dynamic_cast<Operator*>(children.at(0));
   computeType();
 }
 

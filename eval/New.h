@@ -27,6 +27,6 @@ public:
 private:
 };
 
-};
+}
 
 #endif // _New_h_

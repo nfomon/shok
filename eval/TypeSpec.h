@@ -40,6 +40,6 @@ private:
   virtual void computeType();
 };
 
-};
+}
 
 #endif // _TypeSpec_h_

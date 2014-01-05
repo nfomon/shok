@@ -79,7 +79,7 @@ void ObjectStore::commitFirst() {
 // Commit all pending-commit objects
 void ObjectStore::commitAll() {
   m_log.debug("Committing all changes");
-  for (int i=0; i < m_changeset.size(); ++i) {
+  for (size_t i=0; i < m_changeset.size(); ++i) {
     commitFirst();
   }
 }
@@ -139,7 +139,7 @@ void ObjectStore::revertLast() {
 
 // Revert all pending-commit objects
 void ObjectStore::revertAll() {
-  for (int i=0; i < m_changeset.size(); ++i) {
+  for (size_t i=0; i < m_changeset.size(); ++i) {
     revertLast();
   }
 }

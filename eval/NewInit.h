@@ -70,6 +70,6 @@ private:
   const Object* m_object;
 };
 
-};
+}
 
 #endif // _NewInit_h_

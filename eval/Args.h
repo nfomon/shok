@@ -32,6 +32,6 @@ private:
   arg_vec m_args;
 };
 
-};
+}
 
 #endif // _Args_h_

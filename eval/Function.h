@@ -73,6 +73,6 @@ private:
   bool m_isObjectified;   // set by makeObject()
 };
 
-};
+}
 
 #endif // _Function_h_

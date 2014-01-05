@@ -65,7 +65,7 @@ public:
 private:
   enum ChangeType {
     OBJECT_ADD,
-    OBJECT_DELETE,
+    OBJECT_DELETE
   };
 
   typedef std::map<std::string,Object*> object_map;
@@ -91,8 +91,8 @@ private:
       }
     }
     std::string varname;
-    Object* oldObject;
     ChangeType type;
+    Object* oldObject;
   };
   typedef std::deque<ObjectChange> changeset_vec;
   typedef changeset_vec::const_iterator changeset_iter;
@@ -109,6 +109,6 @@ private:
   changeset_vec m_changeset;
 };
 
-};
+}
 
 #endif // _ObjectStore_h_

@@ -38,6 +38,6 @@ protected:
   std::auto_ptr<Type> m_type;
 };
 
-};
+}
 
 #endif // _TypedNode_h_

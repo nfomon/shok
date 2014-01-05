@@ -135,6 +135,6 @@ private:
   std::auto_ptr<Type> m_right;
 };
 
-};
+}
 
 #endif // _Type_h_

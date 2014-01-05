@@ -39,6 +39,6 @@ private:
   LEVEL m_level;
 };
 
-};
+}
 
 #endif // _Log_h_

@@ -25,6 +25,6 @@ public:
   virtual void evaluate();
 };
 
-};
+}
 
 #endif // _Command_h_

@@ -31,6 +31,6 @@ public:
 private:
 };
 
-};
+}
 
 #endif // _Identifier_h_

@@ -34,7 +34,7 @@ using std::vector;
 namespace {
   const string PROGRAM_NAME = "shok";
   const string PROMPT = "shok: ";
-};
+}
 
 string runBuiltin_cd(const vector<string>& args) {
   std::string dir;

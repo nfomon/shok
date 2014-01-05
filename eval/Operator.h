@@ -45,14 +45,14 @@ public:
   enum ARITY {
     ARITY_UNKNOWN,
     PREFIX,
-    INFIX,
+    INFIX
   };
 
   typedef int op_priority;
   static const int NO_PRIORITY = -1;
   enum ASSOC {
     LEFT_ASSOC = 0,
-    RIGHT_ASSOC = 1,
+    RIGHT_ASSOC = 1
   };
   typedef struct {
     op_priority priority;
@@ -87,8 +87,6 @@ public:
 
 protected:
   ARITY m_arity;    // set by setPrefix() or setInfix()
-  // set by setupLeft() or setupRight(), whichever is last for this operator
-  bool isPartiallySetup;
 
 private:
   // from TypedNode
@@ -98,8 +96,12 @@ private:
   // never be freed.
   TypedNode* m_left;
   TypedNode* m_right;
+
+protected:
+  // set by setupLeft() or setupRight(), whichever is last for this operator
+  bool isPartiallySetup;
 };
 
-};
+}
 
 #endif // _Operator_h_

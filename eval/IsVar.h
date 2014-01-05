@@ -29,6 +29,6 @@ public:
 private:
 };
 
-};
+}
 
 #endif // _IsVar_h_

@@ -24,6 +24,6 @@ public:
   virtual std::string cmdText() const;
 };
 
-};
+}
 
 #endif // _CommandFragment_h_

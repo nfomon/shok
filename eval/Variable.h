@@ -40,6 +40,6 @@ private:
   Object* m_object;
 };
 
-};
+}
 
 #endif // _Variable_h_

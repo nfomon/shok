@@ -31,6 +31,6 @@ private:
   TypeSpec* m_typeSpec;
 };
 
-};
+}
 
 #endif // _Returns_h_

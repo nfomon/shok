@@ -43,6 +43,6 @@ private:
   std::auto_ptr<Block> m_body;
 };
 
-};
+}
 
 #endif // _Method_h_

@@ -24,10 +24,8 @@ public:
     : Node(log, root, token) {}
 
   virtual void analyze() = 0;
-
-protected:
 };
 
-};
+}
 
 #endif // _Statement_h_

@@ -45,6 +45,7 @@ class Proc {
 public:
   Proc(const std::string& name)
     : name(name),
+      pid(-1),
       cmd(name),
       pipechat(true),
       env(environ) {}
@@ -118,11 +119,11 @@ public:
   // Enables in/out pipes for communication between the parent and the child's
   // stdin/stdout.  Default: true.  If false, the child inherits the parent's
   // stdin/stdout (sketchy).
-  bool pipechat;
   pid_t pid;
   std::string cmd;      // command for child to invoke; defaults to name
   std::vector<std::string> args;  // args for the command
   std::vector<std::string> path;  // PATH to search if cmd does not contain a /
+  bool pipechat;
   char** env;
   // Streams only used by parent
   io::stream<io::file_descriptor_source> in;

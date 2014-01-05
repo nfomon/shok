@@ -36,6 +36,7 @@ typedef argspec_vec::const_iterator argspec_iter;
 // A list of Arg nodes that hold function argument specifications
 typedef std::vector<Arg*> arg_vec;
 typedef arg_vec::const_iterator arg_iter;
-};
+
+}
 
 #endif // _Common_h_

@@ -42,6 +42,6 @@ private:
   TypeSpec* m_typeSpec;   // last child
 };
 
-};
+}
 
 #endif // _Arg_h_

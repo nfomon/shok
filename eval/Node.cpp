@@ -274,12 +274,12 @@ Node::Node(Log& log, RootNode*const root, const Token& token)
     root(root),
     name(token.name),
     value(token.value),
+    parent(NULL),
+    parentScope(NULL),
     isInit(false),
     isSetup(false),
     isAnalyzed(false),
-    isEvaluated(false),
-    parent(NULL),
-    parentScope(NULL) {
+    isEvaluated(false) {
 }
 
 Node::~Node() {

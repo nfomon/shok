@@ -49,6 +49,6 @@ private:
   stack_vec m_stack;
 };
 
-};
+}
 
 #endif // _OperatorParser_h_

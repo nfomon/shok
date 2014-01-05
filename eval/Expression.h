@@ -51,6 +51,6 @@ private:
   virtual void computeType();
 };
 
-};
+}
 
 #endif // _Expression_h_

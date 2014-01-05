@@ -99,6 +99,6 @@ private:
   method_vec m_methods;
 };
 
-};
+}
 
 #endif // _Object_h_

@@ -36,6 +36,6 @@ private:
   paramtype_vec m_paramtypes;
 };
 
-};
+}
 
 #endif // _ProcCall_h_

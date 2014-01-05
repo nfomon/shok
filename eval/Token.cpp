@@ -26,7 +26,7 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
   bool escape = false;    // only \ escape is supported
   bool inToken = false;
   bool inValue = false;
-  for (int i=0; i < ast.length(); ++i) {
+  for (size_t i=0; i < ast.length(); ++i) {
     char c = ast[i];
     //log.debug(" - tokenizing char '" + string(1, c) + "'");
     switch (mode) {

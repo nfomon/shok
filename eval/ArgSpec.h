@@ -28,6 +28,6 @@ private:
   std::auto_ptr<Type> m_type;
 };
 
-};
+}
 
 #endif // _ArgSpec_h_

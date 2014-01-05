@@ -46,7 +46,7 @@ auto_ptr<Object> Expression::getObject(const string& newName) const {
     throw EvalError("Cannot get object from defective Expression " + print() + " with no children");
   }
   Variable* var = dynamic_cast<Variable*>(children.at(0));
-  Operator* op = dynamic_cast<Operator*>(children.at(0));
+  //Operator* op = dynamic_cast<Operator*>(children.at(0));
   Function* function = dynamic_cast<Function*>(children.at(0));
   //ObjectLiteral* function = dynamic_cast<ObjectLiteral*>(children.at(0)); // TODO
   if (var) {

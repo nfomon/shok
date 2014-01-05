@@ -36,13 +36,13 @@ private:
   enum MODE {
     MODE_NONE,
     MODE_CMD,
-    MODE_CODE,
+    MODE_CODE
   };
 
   MODE mode;
   int codeDepth;
 };
 
-};
+}
 
 #endif // _Token_h_

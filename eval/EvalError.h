@@ -43,6 +43,6 @@ private:
   Node* m_recoveredPosition;
 };
 
-};
+}
 
 #endif // _EvalError_h_

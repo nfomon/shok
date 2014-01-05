@@ -31,6 +31,6 @@ private:
   bool m_isOpen;
 };
 
-};
+}
 
 #endif // _Brace_h_

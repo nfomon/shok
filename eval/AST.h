@@ -36,6 +36,6 @@ private:
   Node* m_current;
 };
 
-};
+}
 
 #endif // _AST_h_

@@ -78,6 +78,6 @@ private:
   int m_depth;              // 0 at root (global). 1 is special: defers to root
 };
 
-};
+}
 
 #endif // _Scope_h_

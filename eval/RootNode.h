@@ -33,6 +33,6 @@ private:
   Scope m_scope;
 };
 
-};
+}
 
 #endif // _RootNode_h_

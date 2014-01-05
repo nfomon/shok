@@ -61,6 +61,6 @@ private:
   bool m_isDeferred;
 };
 
-};
+}
 
 #endif // _Block_h_

@@ -21,7 +21,7 @@ void IsVar::setup() {
   Object* current = NULL;
   bool found = true;
   string missingName;
-  int i = 0;
+  size_t i = 0;
   for (; i < children.size(); ++i) {
     Identifier* ident = dynamic_cast<Identifier*>(children.at(i));
     if (!ident) {
