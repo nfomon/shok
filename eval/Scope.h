@@ -66,6 +66,7 @@ public:
   // Insert a new object, as "pending" until it's either commit or revert
   change_id newObject(const std::string& varname, std::auto_ptr<Type> type);
   change_id delObject(const std::string& varname);
+  void replaceObject(const std::string& varname, std::auto_ptr<Object> newObject);
 
 private:
   Log& m_log;

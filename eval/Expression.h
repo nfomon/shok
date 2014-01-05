@@ -29,6 +29,7 @@
 #include "Type.h"
 #include "TypedNode.h"
 
+#include <memory>
 #include <string>
 
 namespace eval {
@@ -42,10 +43,8 @@ public:
   virtual void evaluate();
   virtual std::string cmdText() const;
 
-  // Get the resulting Object after this Expression has been evaluated.
-  // Note that this Object& will not stick around for long!  It has not been
-  // saved to a scope.
-  Object& getObject() const;
+  // Get the Object resulting from the expression's evaluation.
+  std::auto_ptr<Object> getObject(const std::string& newName) const;
 
 private:
   // from TypedNode

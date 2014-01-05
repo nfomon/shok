@@ -78,6 +78,7 @@ public:
   // Constructor/destructor functions.
   void construct();
   void destruct();
+  std::auto_ptr<Object> clone(const std::string& newName) const;
 
 private:
   Log& m_log;

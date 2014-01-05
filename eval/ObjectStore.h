@@ -64,13 +64,13 @@ public:
   Object* getObject(const std::string& varname) const;
   // Construct a new object, as "pending" until it's either commit or revert
   change_id newObject(const std::string& varname, std::auto_ptr<Type> type);
-  // Replace an object.  Calls the destructor of the old object when commit.
-  /*
-  change_id replaceObject(const std::string& varname,
-                     std::auto_ptr<Object> newObject);
-  */
   // Delete an object.  Calls the object's destructor when commit.
   change_id delObject(const std::string& varname);
+  // Replace an object.  This should happen at evaluation time; no commit or
+  // revert!  It just happens.  The destructor and constructor are called.
+  void replaceObject(const std::string& varname, std::auto_ptr<Object> newObject);
+
+  std::auto_ptr<ObjectStore> duplicate() const;
 
   size_t size() const { return m_objects.size(); }
 

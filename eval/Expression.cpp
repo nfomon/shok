@@ -4,13 +4,16 @@
 #include "Expression.h"
 
 #include "EvalError.h"
+#include "Function.h"
 #include "Operator.h"
 #include "Variable.h"
 
 #include <boost/lexical_cast.hpp>
 
+#include <memory>
 #include <string>
 #include <vector>
+using std::auto_ptr;
 using std::string;
 using std::vector;
 
@@ -36,19 +39,23 @@ string Expression::cmdText() const {
   return "Expression__cmdText unimplemented";
 }
 
-Object& Expression::getObject() const {
+auto_ptr<Object> Expression::getObject(const string& newName) const {
   if (!isEvaluated) {
     throw EvalError("Cannot get object from Expression " + print() + " before its evaluation");
   } else if (0 == children.size()) {
     throw EvalError("Cannot get object from defective Expression " + print() + " with no children");
   }
   Variable* var = dynamic_cast<Variable*>(children.at(0));
+  Operator* op = dynamic_cast<Operator*>(children.at(0));
+  Function* function = dynamic_cast<Function*>(children.at(0));
+  //ObjectLiteral* function = dynamic_cast<ObjectLiteral*>(children.at(0)); // TODO
   if (var) {
-    return var->getObject();
+    auto_ptr<Object> tmp = var->getObject().clone(newName);
+    return tmp;
+  // } else if (op) {   // TODO
+  } else if (function) {
+    return function->makeObject(newName);
   }
-  // TODO: Operator
-  // TODO: Object
-  // TODO: Function
   throw EvalError("Expression " + print() + " cannot retrieve Object from unsupported child type " + children.at(0)->print());
 }
 

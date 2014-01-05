@@ -64,6 +64,15 @@ void Function::evaluate() {
   }
 }
 
+auto_ptr<Object> Function::makeObject(const string& newName) const {
+  if (!isSetup || !isEvaluated) {
+    throw EvalError("Cannot make object from Function " + print() + " before it is setup and evaluated");
+  }
+  auto_ptr<Object> o(new Object(log, newName, getType()));
+  // TODO add members
+  return o;
+}
+
 void Function::computeType() {
   if (m_type.get()) {
     throw EvalError("Cannot compute type of Function " + print() + " that already has a type");

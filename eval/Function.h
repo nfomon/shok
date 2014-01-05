@@ -33,6 +33,7 @@
 #include "Token.h"
 #include "TypedNode.h"
 
+#include <memory>
 #include <string>
 
 namespace eval {
@@ -52,6 +53,8 @@ public:
   virtual void initChild(Node* child);
   virtual void setup();
   virtual void evaluate();
+
+  std::auto_ptr<Object> makeObject(const std::string& newName) const;
 
 private:
   // from TypedNode

@@ -123,3 +123,12 @@ change_id Scope::delObject(const string& varname) {
   }
   return m_objectStore.delObject(varname);
 }
+
+void Scope::replaceObject(const string& varname, std::auto_ptr<Object> newObject) {
+  // depth of 1 is fake; it just defers up to the root scope
+  if (1 == m_depth) {
+    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
+    return m_parentScope->replaceObject(varname, newObject);
+  }
+  return m_objectStore.replaceObject(varname, newObject);
+}

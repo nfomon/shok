@@ -25,11 +25,9 @@ NewInit::~NewInit() {
 void NewInit::setup() {
   if (!parentScope) {
     throw EvalError("Cannot setup NewInit " + print() + " with no parent scope");
-  }
-  if (children.size() < 1 || children.size() > 3) {
+  } else if (children.size() < 1 || children.size() > 3) {
     throw EvalError("NewInit node must have 1, 2, or 3 children");
-  }
-  if (m_identifier || m_exp || m_typeSpec || m_type.get()) {
+  } else if (m_identifier || m_exp || m_typeSpec || m_type.get()) {
     throw EvalError("NewInit node " + print() + " is already partially setup");
   }
   m_identifier = dynamic_cast<Identifier*>(children.at(0));
@@ -109,27 +107,22 @@ void NewInit::prepare() {
     throw EvalError("Cannot prepare NewInit " + print() + " which has not determined the new object's Type");
   }
 
-  // Construct the object in our parent scope.  We keep a reference to the
-  // Object just so we don't have to look it up again in evaluate() when we may
-  // want to assign an initial value.  We pass along the auto_ptr to m_type; we
-  // don't need it anymore, and this saves a copy.
+  // Construct the object in our parent scope.  We pass along the auto_ptr to
+  // m_type; we don't need it anymore, and this saves a copy.
   m_changeId = parentScope->newObject(m_varname, m_type);
   m_isPrepared = true;
 }
 
 // Commit the new object to our enclosing scope, and assign its initial value
 void NewInit::evaluate() {
-  // TODO: remove this when we are confident it can't happen
   if (!m_isPrepared) {
-    throw EvalError("Cannot evaluate NewInit node until it has been prepared");
+    throw EvalError("Cannot evaluate NewInit " + print() + " until it has been prepared");
   }
   parentScope->commit(m_changeId);
-  m_isPrepared = false;
-  // TODO assign initial value
   if (m_exp) {
-    //parentScope->assign(m_varname, m_exp->getObject());
+    parentScope->replaceObject(m_varname, m_exp->getObject(m_varname));
   } else {
-    // TODO assign clone of default value of the object's type, or has this
-    // already been done??
+    // TODO assign clone of the object's type
   }
+  m_isPrepared = false;
 }

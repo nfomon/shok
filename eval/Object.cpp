@@ -127,7 +127,17 @@ auto_ptr<Type> Object::getPossibleReturnTypes(const paramtype_vec& params) const
 
 auto_ptr<Object> Object::call(const param_vec& params) const {
   // TODO
+  // ...
+  // We own the params, so make sure we delete them!
+  for (param_iter i = params.begin(); i != params.end(); ++i) {
+    delete *i;
+  }
   return auto_ptr<Object>(NULL);
+/*
+  try {
+  } catch (...) {
+  }
+*/
 }
 
 void Object::construct() {
@@ -140,4 +150,12 @@ void Object::destruct() {
   m_log.info("Object " + print() + ": destructor called");
   //m_log.debug("Destroying children of " + print());
   // TODO: Destroy children
+}
+
+auto_ptr<Object> Object::clone(const string& newName) const {
+  m_log.info("Cloning object " + print() + " into " + newName);
+  auto_ptr<Object> o(new Object(m_log, newName, m_type->duplicate()));
+  o->m_objectStore = m_objectStore->duplicate();
+  o->m_isAbstract = m_isAbstract;
+  return o;
 }

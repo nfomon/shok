@@ -44,10 +44,13 @@ void ProcCall::setup() {
 
 void ProcCall::evaluate() {
   // The expressions of m_paramexps have all been evaluated.  Call the function
-  // on their resulting objects.
+  // on their resulting objects.  The object being called gets ownership of the
+  // params.
   param_vec params;
   for (exp_iter i = m_paramexps.begin(); i != m_paramexps.end(); ++i) {
-    params.push_back(&(*i)->getObject());
+    // TODO: ask the object for the argument names it wants to use (on the
+    // specific signature we're calling)
+    params.push_back((*i)->getObject("(some arg)").release());
   }
   auto_ptr<Object> ret = m_object->call(params);
 }

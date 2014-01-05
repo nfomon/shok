@@ -181,29 +181,6 @@ change_id ObjectStore::newObject(const string& varname, auto_ptr<Type> type) {
   return oc.id;
 }
 
-/*
-change_id ObjectStore::replaceObject(const string& varname,
-                                     auto_ptr<Object> newObject) {
-  m_log.info("Replacing object " + varname);
-  object_mod_iter o = m_objects.find(varname);
-  if (m_objects.end() == o) {
-    throw EvalError("Cannot replace variable " + varname + "; does not exist in this store");
-  }
-  ObjectChange oc(m_lastId, varname, OBJECT_DELETE, o->second);
-  m_objects.erase(o);
-  m_changeset.push_back(oc);
-
-  object_pair op(varname, newObject.release());
-  m_objects.insert(op);
-  ObjectChange oc2(m_lastId, varname, OBJECT_ADD, NULL, false);
-  m_changeset.push_back(oc2);
-  if (oc2.id != oc.id) {
-    throw EvalError("Cannot replace object with two changes that have different IDs");
-  }
-  return oc.id;
-}
-*/
-
 change_id ObjectStore::delObject(const string& varname) {
   m_log.info("Deleting object " + varname);
   object_mod_iter o = m_objects.find(varname);
@@ -225,4 +202,35 @@ change_id ObjectStore::delObject(const string& varname) {
   m_objects.erase(o);
   m_changeset.push_back(oc);
   return oc.id;
+}
+
+void ObjectStore::replaceObject(const string& varname, auto_ptr<Object> newObject) {
+  m_log.info("Replacing object " + varname);
+  object_mod_iter o = m_objects.find(varname);
+  if (m_objects.end() == o) {
+    throw EvalError("Cannot replace variable " + varname + "; does not exist in this store");
+  } else if (!o->second) {
+    throw EvalError("Cannot replace variable " + varname + "; found deficient object in the store");
+  } else if (!newObject.get()) {
+    throw EvalError("Cannot replace variable " + varname + " with no newObject");
+  }
+  if (varname != newObject->getName()) {
+    m_log.warning("Replacing ObjectStore name " + varname + " with object that thinks its name is " + newObject->getName());
+  }
+  o->second->destruct();
+  delete o->second;
+  o->second = newObject.release();
+}
+
+auto_ptr<ObjectStore> ObjectStore::duplicate() const {
+  m_log.debug("Duplicating object store");
+  auto_ptr<ObjectStore> os(new ObjectStore(m_log));
+  for (object_iter i = m_objects.begin(); i != m_objects.end(); ++i) {
+    os->newObject(i->first, i->second->getType().duplicate());
+  }
+  os->commitAll();
+  for (object_iter i = m_objects.begin(); i != m_objects.end(); ++i) {
+    os->replaceObject(i->first, i->second->clone(i->first));
+  }
+  return os;
 }
