@@ -13,9 +13,12 @@
 
 #include "Brace.h"
 #include "Expression.h"
+#include "Function.h"
 #include "Log.h"
+//#include "ObjectLiteral.h"
 #include "RootNode.h"
 #include "Scope.h"
+#include "Statement.h"
 #include "Token.h"
 
 #include <map>
@@ -28,11 +31,14 @@ public:
     : Brace(log, root, token, true),
       m_scope(log),
       m_exp(NULL),
+      m_function(NULL),
+      //m_object(NULL),
       m_isDeferred(false) {}
   ~Block();
 
   virtual void initScope(Scope* scopeParent);
   virtual void initScope(Scope* scopeParent, Function* function);
+  //virtual void initScope(Scope* scopeParent, ObjectLiteral* object);
   virtual void setup();
   virtual void evaluate();
   virtual std::string cmdText() const;
@@ -44,8 +50,14 @@ public:
   bool isDeferred() const { return m_isDeferred; }
 
 private:
-  Expression* m_exp;
+  typedef std::vector<Statement*> statement_vec;
+  typedef statement_vec::const_iterator statement_iter;
+
   Scope m_scope;
+  Expression* m_exp;            // Set if this is an expression block
+  statement_vec m_statements;   // Only used by code-block
+  Function* m_function;         // Set if this is a function's block
+  //ObjectLiteral* m_object;      // Set if this is an object literal's block
   bool m_isDeferred;
 };
 

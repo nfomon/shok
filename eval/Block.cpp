@@ -14,6 +14,9 @@ using namespace eval;
 
 Block::~Block() {
   log.debug("Destroying Block " + print());
+  for (statement_iter i = m_statements.begin(); i != m_statements.end(); ++i) {
+    (*i)->cancelParentScopeNode();
+  }
   m_scope.reset();
 }
 
@@ -22,8 +25,16 @@ void Block::initScope(Scope* scopeParent) {
 }
 
 void Block::initScope(Scope* scopeParent, Function* function) {
+  m_function = function;
   m_scope.init(scopeParent, function);
 }
+
+/*
+void Block::initScope(Scope* scopeParent, ObjectLiteral* object) {
+  m_object = object;
+  m_scope.init(scopeParent, object);
+}
+*/
 
 void Block::setup() {
   Brace::setup();
@@ -34,6 +45,15 @@ void Block::setup() {
   // Determine if we're a code block or an expression block
   if (1 == children.size()) {
     m_exp = dynamic_cast<Expression*>(children.front());
+  }
+  if (!m_exp) {
+    for (child_iter i = children.begin(); i != children.end(); ++i) {
+      Statement* statement = dynamic_cast<Statement*>(*i);
+      if (!statement) {
+        throw EvalError("Code-Block " + print() + " has non-Statement child " + (*i)->print());
+      }
+      m_statements.push_back(statement);
+    }
   }
 }
 

@@ -149,14 +149,14 @@ auto_ptr<Object> Object::call(const param_vec& params) const {
 
 void Object::construct() {
   //m_log.debug("Constructing children of " + print());
-  // TODO: Construct children
+  // TODO: Construct children?
   m_log.info("Object " + print() + ": constructor called");
 }
 
 void Object::destruct() {
   m_log.info("Object " + print() + ": destructor called");
   //m_log.debug("Destroying children of " + print());
-  // TODO: Destroy children
+  // TODO: Destroy children?
 }
 
 auto_ptr<Object> Object::clone(const string& newName) const {

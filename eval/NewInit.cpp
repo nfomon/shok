@@ -17,7 +17,7 @@ NewInit::~NewInit() {
   // Revert our object if we've partially created it.
   // Be paranoid here since this is regarding error conditions.
   if (m_isPrepared && parentScope && m_varname != "") {
-    log.debug("Destroying NewInit " + print() + " -- reverting change");
+    log.debug("Destroying NewInit " + print() + ": reverting " + m_varname);
     parentScope->revertLast();
   }
 }

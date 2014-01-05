@@ -64,6 +64,8 @@ public:
   void replaceChild(Node* oldChild, Node* newChild);
   // Evaluate the node!  Public because it's called by AST on the root node.
   void evaluateNode();
+  // Wipe out the node's parentScope; it is being destroyed.
+  void cancelParentScopeNode();
 
   std::string getName() const { return name; }
   std::string getValue() const { return value; }
@@ -74,12 +76,12 @@ public:
 
 protected:
   friend class OperatorParser;
-  Node(Log&, RootNode*const, const Token&);
-
   typedef std::deque<Node*> child_vec;
   typedef child_vec::const_iterator child_iter;
   typedef child_vec::iterator child_mod_iter;
   typedef child_vec::const_reverse_iterator child_rev_iter;
+
+  Node(Log&, RootNode*const, const Token&);
 
   // This will be called by InsertNode() only on parent nodes.
   // It calls setupNode() and analyzeNode() on the parent and its children.
@@ -94,17 +96,17 @@ protected:
   void addChild(Node* child);
   // called rather scandalously by RecoverFromError()
   void removeChildrenStartingAt(const Node* child);
+  // called by cancelParentScopeNode()
+  void cancelParentScope() { parentScope = NULL; }
 
   virtual void initScope(Scope* scopeParent) {}    // early scope init
   virtual void initScope(Scope* scopeParent, Function* function) {}
   //virtual void initScope(Scope* scopeParent, ObjectLiteral* object) {}
   virtual void initChild(Node* child) {}  // early parent setup for new child
-  virtual void setup() = 0;             // child-first setup/analysis
-  virtual void evaluate() = 0;          // child-first code execution
-  virtual void cleanup(bool error) {}   // child-first cleanup
+  virtual void setup() = 0;               // child-first setup/analysis
+  virtual void evaluate() = 0;            // child-first code execution
   virtual Scope* getScope() { return NULL; }              // local scope
   Scope* getParentScope() const { return parentScope; }   // enclosing scope
-  void setParentScope(Scope* scope) { parentScope = scope; }
 
   // State flags
   bool isInit;
@@ -120,7 +122,7 @@ protected:
   // Set by InsertNode()
   Node* parent;
   child_vec children;
-  // Set by initScope()
+  // Set by initScope() and cancelParentScope()
   Scope* parentScope;   // nearest enclosing scope (execution context)
 };
 

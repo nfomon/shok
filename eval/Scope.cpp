@@ -95,7 +95,7 @@ void Scope::revertAll() {
 }
 
 Object* Scope::getObject(const string& varname) const {
-  m_log.debug(string(m_function ? "Function " : "") + "Scope at depth " + boost::lexical_cast<string>(m_depth) + " attempting to get object " + varname);
+  m_log.debug(string(m_function ? "Function " : "") + "Scope at depth " + boost::lexical_cast<string>(m_depth) + " retrieving object " + varname);
   Object* o = m_objectStore.getObject(varname);
   if (o) return o;
   if (m_function) {

@@ -329,6 +329,17 @@ void Node::initScopeNode(Node* scopeParent) {
   isInit = true;
 }
 
+// Wipe out all parentScope pointers down the tree; the tree is being
+// destroyed, and this notifies Nodes not to try and cleanup (revert) changes
+// they've made to their scope.  The cleanup will be done by the enclosing
+// scope's owner instead.
+void Node::cancelParentScopeNode() {
+  cancelParentScope();
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
+    (*i)->cancelParentScope();
+  }
+}
+
 void Node::replaceChild(Node* oldChild, Node* newChild) {
   string oldPrint = print();
   bool replaced = false;
