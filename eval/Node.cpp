@@ -112,13 +112,14 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
       oP = dynamic_cast<OperatorParser*>(current->children.at(0));
       if (oP) {
         oP->insertNode(n);
-      } else {
-        current->children.at(0)->initChild(n);
       }
     }
     if (!oP) {
       n->parent = current;
       current->addChild(n);
+      if (current->children.size() > 1) {
+        current->children.at(0)->initChild(n);
+      }
     }
     return current;   // stay
   }
@@ -128,7 +129,7 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
   if (brace->isOpen()) {
     n->parent = current;
     current->addChild(n);
-    if (current->children.size() > 0) {
+    if (!brace->isIrrelevant() && current->children.size() > 1) {
       current->children.at(0)->initChild(n);
     }
     n->initScopeNode(current);
@@ -160,12 +161,13 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
   }
   Node* parent = current->parent;
 
+  // Before we clamp up the current braces, if our primary child was an
+  // OperatorParser, finalize its parse.  It's done.
   if (current->children.size() > 0) { 
     OperatorParser* oP = dynamic_cast<OperatorParser*>(current->children.at(0));
     if (oP) { 
       Node* opTop = oP->finalizeParse();
       current->addChild(opTop);
-      current->initChild(n);
     } 
   } 
 
@@ -179,7 +181,7 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
     }
     Node* op = open->children.front();    // "operator" becomes the parent
     open->children.pop_front();
-    op->parent = open->parent;
+    op->parent = parent;
     // a '({' cannot appear in the input.  Note that actual parentheses in
     // expressions are not given to us as a bare '(' brace.
     if (op->children.size() != 0) {
@@ -193,8 +195,8 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
       (*i)->parent = op;
     }
     // Replace parent's child of 'open' with 'op'
-    for (Node::child_mod_iter i = op->parent->children.begin();
-         i != op->parent->children.end(); ++i) {
+    for (Node::child_mod_iter i = parent->children.begin();
+         i != parent->children.end(); ++i) {
       if (*i == open) {
         *i = op;
         break;    // a node must only appear once in the AST
@@ -204,12 +206,18 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
 
     // if the parent's first child is not us, and it's an operatorParser, then
     // we have some cleanup to do.  oP->insertNode(op).  Got that?
-    if (2 == op->parent->children.size()) {
-      OperatorParser* oP = dynamic_cast<OperatorParser*>(op->parent->children.at(0));
+    if (2 == parent->children.size()) {
+      OperatorParser* oP = dynamic_cast<OperatorParser*>(parent->children.at(0));
       if (oP) {
-        op->parent->children.pop_back();
+        parent->children.pop_back();
         oP->insertNode(op);
       }
+    }
+
+    // Now that we've moved up into the parent's spot, tell our new primary
+    // sibling about us.
+    if (parent->children.size() > 1) {
+      parent->children.at(0)->initChild(op);
     }
 
     // Errors from setupAsParent are recoverable

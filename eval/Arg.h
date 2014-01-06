@@ -35,6 +35,7 @@ public:
   // If the arg is unnamed, returns the empty string
   std::string getName() const;
   std::auto_ptr<Type> getType() const;
+  const Type& type() const;
   std::auto_ptr<ArgSpec> getSpec() const;
 
 private:

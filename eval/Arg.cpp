@@ -50,6 +50,10 @@ auto_ptr<Type> Arg::getType() const {
   return m_typeSpec->getType();
 }
 
+const Type& Arg::type() const {
+  return m_typeSpec->type();
+}
+
 auto_ptr<ArgSpec> Arg::getSpec() const {
   return auto_ptr<ArgSpec>(new ArgSpec(getName(), getType()));
 }

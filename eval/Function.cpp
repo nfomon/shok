@@ -15,44 +15,39 @@ using namespace eval;
 
 // Determine the Function's type before we look into its { child scope
 void Function::initChild(Node* child) {
-  if (m_args || m_returns || m_body) {
-    throw EvalError("Function " + print() + " initChild has args, returns, or body before initChild of '{'");
+  log.debug("Function " + print() + " initChild " + child->print());
+  Args* args = dynamic_cast<Args*>(child);
+  Returns* returns = dynamic_cast<Returns*>(child);
+  Block* body = dynamic_cast<Block*>(child);
+  if (!args && !returns && !body) {
+    throw EvalError("Function " + print() + " initChild " + child->print() + " child is inappropriate");
+  } else if ((args && returns) || (args && body) || (returns && body)) {
+    throw EvalError("Function " + print() + " initChild " + child->print() + " child fits multiple child types");
+  } else if ((args && m_args) || (returns && m_returns) || (body && m_body)) {
+    throw EvalError("Function " + print() + " initChild " + child->print() + " already has that child");
+  } else if (args && (m_returns || m_body)) {
+    throw EvalError("Function " + print() + " initChild " + child->print() + " cannot set args when it already has returns or body");
+  } else if (returns && m_body) {
+    throw EvalError("Function " + print() + " initChild " + child->print() + " cannot set returns when it already has body");
   }
-  m_body = dynamic_cast<Block*>(child);
-  if (!m_body) return;
-  if (1 == children.size()) {
-    m_args = dynamic_cast<Args*>(children.at(0));
-    if (!m_args) {
-      m_returns = dynamic_cast<Returns*>(children.at(0));
-      if (!m_returns) {
-        throw EvalError("Function " + print() + " initChild found first child is neither args nor returns");
-      }
-    }
-  } else if (2 == children.size()) {
-    m_args = dynamic_cast<Args*>(children.at(0));
-    if (!m_args) {
-      throw EvalError("Function " + print() + " initChild first child is not args");
-    }
-    m_returns = dynamic_cast<Returns*>(children.at(1));
-    if (!m_returns) {
-      throw EvalError("Function " + print() + " initChild second child is not returns");
-    }
+  if (args) {
+    m_args = args;
+  } else if (returns) {
+    m_returns = returns;
+  } else if (body) {
+    m_body = body;
+    computeType();
   }
-  computeType();
 }
 
 void Function::setup() {
   if (children.size() > 3) {
     throw EvalError("Function " + print() + " must have <= 2 children");
   }
-  if (children.size() > 0) {
-    Block* lastBlock = dynamic_cast<Block*>(children.back());
-    if (lastBlock != m_body) {   // both null or both same block
-      throw EvalError("Setup of Function " + print() + " found block disagreement against its initChild");
-    }
-  }
   if (m_body) {
     m_body->defer();
+  } else {
+    computeType();
   }
 }
 
@@ -111,10 +106,10 @@ void Function::computeType() {
     bool firstArg = true;
     for (arg_iter i = args.begin(); i != args.end(); ++i) {
       if (firstArg) {
-        function_args_name = (*i)->getName();
+        function_args_name += (*i)->type().getName();
         firstArg = false;
       } else {
-        function_args_name += "," + (*i)->getName();
+        function_args_name += "," + (*i)->type().getName();
       }
     }
     function_args_name += ")";
@@ -155,7 +150,7 @@ void Function::computeType() {
   } else if (!m_type.get()) {
     throw EvalError("Function " + print() + " failed to compute a type for itself");
   }
-  log.info("Type of Function " + print() + ": " + m_type->print());
+  log.info("Type of Function " + print() + ": " + m_type->print() + " -- " + m_type->getName());
 }
 
 /*
