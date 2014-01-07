@@ -54,6 +54,7 @@ void IsVar::setup() {
   cout << "PRINT:" << msg << endl;
 }
 
-// Nothing to do here
+// As an "instant" Statement, we should never even get to this stage
 void IsVar::evaluate() {
+  throw EvalError("Cannot evaluate instant statement " + print());
 }

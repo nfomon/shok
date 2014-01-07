@@ -8,7 +8,9 @@
 #include "Scope.h"
 
 #include <string>
+#include <vector>
 using std::string;
+using std::vector;
 
 using namespace eval;
 
@@ -47,12 +49,24 @@ void Block::setup() {
     m_exp = dynamic_cast<Expression*>(children.front());
   }
   if (!m_exp) {
-    for (child_iter i = children.begin(); i != children.end(); ++i) {
+    vector<child_mod_iter> instants;
+    for (child_mod_iter i = children.begin(); i != children.end(); ++i) {
       Statement* statement = dynamic_cast<Statement*>(*i);
       if (!statement) {
         throw EvalError("Code-Block " + print() + " has non-Statement child " + (*i)->print());
       }
-      m_statements.push_back(statement);
+      // "Instant" statements are builtins that have already been evaluated,
+      // and can be discarded.
+      if (statement->isInstant()) {
+        instants.push_back(i);
+      } else {
+        m_statements.push_back(statement);
+      }
+    }
+    for (vector<child_mod_iter>::const_iterator i = instants.begin();
+         i != instants.end(); ++i) {
+      delete **i;
+      children.erase(*i);
     }
   }
 }

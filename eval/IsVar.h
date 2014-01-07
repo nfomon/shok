@@ -13,18 +13,20 @@
 
 #include "Log.h"
 #include "RootNode.h"
+#include "Statement.h"
 #include "Token.h"
 
 #include <string>
 
 namespace eval {
 
-class IsVar : public Node {
+class IsVar : public Statement {
 public:
   IsVar(Log& log, RootNode*const root, const Token& token)
-    : Node(log, root, token) {}
+    : Statement(log, root, token) {}
   virtual void setup();
   virtual void evaluate();
+  virtual bool isInstant() const { return true; }
 
 private:
 };

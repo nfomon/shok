@@ -23,7 +23,8 @@ public:
   Statement(Log& log, RootNode*const root, const Token& token)
     : Node(log, root, token) {}
 
-  virtual void analyze() = 0;
+  virtual void analyze() {}
+  virtual bool isInstant() const { return false; }
 };
 
 }
