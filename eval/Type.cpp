@@ -107,12 +107,7 @@ string FunctionArgsType::getName() const {
 }
 
 string FunctionArgsType::print() const {
-  string s = "(function taking args (";
-  for (argspec_iter i = m_args.begin(); i != m_args.end(); ++i) {
-    s += (*i)->print();
-  }
-  s += ")";
-  return s;
+  return getName();
 }
 
 /* FunctionReturnsType */
@@ -138,7 +133,7 @@ string FunctionReturnsType::getName() const {
 }
 
 string FunctionReturnsType::print() const {
-  return "(function returning " + m_returns->print() + ")";
+  return getName();
 }
 
 /* BasicType */
