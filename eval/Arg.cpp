@@ -55,5 +55,5 @@ const Type& Arg::type() const {
 }
 
 auto_ptr<ArgSpec> Arg::getSpec() const {
-  return auto_ptr<ArgSpec>(new ArgSpec(getName(), getType()));
+  return auto_ptr<ArgSpec>(new ArgSpec(getName(), *getType().release()));
 }

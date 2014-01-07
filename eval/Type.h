@@ -18,6 +18,7 @@
  * yet determined, so some of the lookup rules may not be stable/trustworthy.
  */
 
+#include "Common.h"
 #include "EvalError.h"
 #include "Log.h"
 
@@ -76,6 +77,41 @@ public:
   virtual std::string getName() const;
   virtual std::string print() const;
   virtual bool isNull() const { return true; }
+};
+
+// Builtin type representing a function that takes certain arguments
+class FunctionArgsType : public Type {
+public:
+  FunctionArgsType(Log& log, const Object& froot, const arg_vec& args);
+  FunctionArgsType(Log& log, const Object& froot, const argspec_vec& args);
+  virtual ~FunctionArgsType();
+  virtual Object* getMember(const std::string& name) const;
+  virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
+  virtual bool isCompatible(const Type& rhs) const;
+  virtual std::auto_ptr<Type> duplicate() const;
+  virtual std::string getName() const;
+  virtual std::string print() const;
+private:
+  const Object& m_function;   // @
+  argspec_vec m_args;
+};
+
+// Builtin type representing a function with a specific return type
+class FunctionReturnsType : public Type {
+public:
+  FunctionReturnsType(Log& log,
+                      const Object& froot,
+                      std::auto_ptr<Type> returns)
+    : Type(log), m_function(froot), m_returns(returns) {}
+  virtual Object* getMember(const std::string& name) const;
+  virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
+  virtual bool isCompatible(const Type& rhs) const;
+  virtual std::auto_ptr<Type> duplicate() const;
+  virtual std::string getName() const;
+  virtual std::string print() const;
+private:
+  const Object& m_function;   // @
+  std::auto_ptr<Type> m_returns;
 };
 
 // A BasicType wraps a single Object.  Note that a Variable's Type will be the

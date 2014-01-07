@@ -6,7 +6,6 @@
 
 /* Method: arguments, return type, and code body.  Owned by Object.  */
 
-#include "ArgSpec.h"
 #include "Common.h"
 #include "Log.h"
 #include "Type.h"

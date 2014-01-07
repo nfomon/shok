@@ -3,6 +3,7 @@
 
 #include "Type.h"
 
+#include "Arg.h"
 #include "Object.h"
 
 #include <algorithm>
@@ -42,6 +43,102 @@ string NullType::getName() const {
 
 string NullType::print() const {
   return "<no type>";
+}
+
+/* FunctionArgsType */
+
+FunctionArgsType::FunctionArgsType(Log& log,
+                                   const Object& froot,
+                                   const arg_vec& args)
+  : Type(log), m_function(froot) {
+  for (arg_iter i = args.begin(); i != args.end(); ++i) {
+    m_args.push_back(new ArgSpec((*i)->getName(), *(*i)->getType().release()));
+  }
+}
+
+FunctionArgsType::FunctionArgsType(Log& log,
+                                   const Object& froot,
+                                   const argspec_vec& args)
+  : Type(log), m_function(froot) {
+  for (argspec_iter i = args.begin(); i != args.end(); ++i) {
+    m_args.push_back((*i)->duplicate().release());
+  }
+}
+
+FunctionArgsType::~FunctionArgsType() {
+  for (argspec_iter i = m_args.begin(); i != m_args.end(); ++i) {
+    delete *i;
+  }
+}
+
+Object* FunctionArgsType::getMember(const string& name) const {
+  return m_function.getMember(name);
+}
+
+auto_ptr<Type> FunctionArgsType::getMemberType(const string& name) const {
+  return m_function.getMemberType(name);
+}
+
+bool FunctionArgsType::isCompatible(const Type& rhs) const {
+  throw EvalError("FunctionArgsType::isCompatible(const Type&) is unimplemented");
+}
+
+auto_ptr<Type> FunctionArgsType::duplicate() const {
+  argspec_vec new_args;
+  for (argspec_iter i = m_args.begin(); i != m_args.end(); ++i) {
+    new_args.push_back((*i)->duplicate().release());
+  }
+  return auto_ptr<Type>(new FunctionArgsType(m_log, m_function, new_args));
+}
+
+string FunctionArgsType::getName() const {
+  string s = "@(";
+  bool first = true;
+  for (argspec_iter i = m_args.begin(); i != m_args.end(); ++i) {
+    if (first) {
+      s += (*i)->type().getName();
+      first = false;
+    } else {
+      s += "," + (*i)->type().getName();
+    }
+  }
+  s += ")";
+  return s;
+}
+
+string FunctionArgsType::print() const {
+  string s = "(function taking args (";
+  for (argspec_iter i = m_args.begin(); i != m_args.end(); ++i) {
+    s += (*i)->print();
+  }
+  s += ")";
+  return s;
+}
+
+/* FunctionReturnsType */
+
+Object* FunctionReturnsType::getMember(const string& name) const {
+  return m_function.getMember(name);
+}
+
+auto_ptr<Type> FunctionReturnsType::getMemberType(const string& name) const {
+  return m_function.getMemberType(name);
+}
+
+bool FunctionReturnsType::isCompatible(const Type& rhs) const {
+  throw EvalError("FunctionReturnsType::isCompatible(const Type&) is unimplemented");
+}
+
+auto_ptr<Type> FunctionReturnsType::duplicate() const {
+  return auto_ptr<Type>(new FunctionReturnsType(m_log, m_function, m_returns->duplicate()));
+}
+
+string FunctionReturnsType::getName() const {
+  return "@->" + m_returns->getName();
+}
+
+string FunctionReturnsType::print() const {
+  return "(function returning " + m_returns->print() + ")";
 }
 
 /* BasicType */

@@ -98,50 +98,17 @@ void Function::computeType() {
   }
   log.debug("Computing type of function " + print());
   const Object& function = *p_function;
-  // Lookup or construct @(type1,type2,...) parent type
+  // Set builtin-function-type @(type1,type2,...) as a parent type
   if (m_args) {
-    string function_args_name;
-    const arg_vec& args = m_args->getArgs();
-    function_args_name = "@(";
-    bool firstArg = true;
-    for (arg_iter i = args.begin(); i != args.end(); ++i) {
-      if (firstArg) {
-        function_args_name += (*i)->type().getName();
-        firstArg = false;
-      } else {
-        function_args_name += "," + (*i)->type().getName();
-      }
-    }
-    function_args_name += ")";
-    const Object* function_args = parentScope->getObject(function_args_name);
-    if (!function_args) {
-      auto_ptr<Type> funcType(new BasicType(log, function));
-      if (m_preparedArgs) {
-        throw EvalError("Cannot construct args type for Function " + print() + "; already have an args pending commit");
-      }
-      m_preparedArgs = true;
-      function_args = &parentScope->newObject(function_args_name, funcType);
-    }
-    m_type.reset(new BasicType(log, *function_args));
+    m_type.reset(new FunctionArgsType(log, function, m_args->getArgs()));
   }
-  // Lookup or construct @->(return type) parent type
+  // Set builtin-function-type @->return_type as a parent type
   if (m_returns) {
-    string function_returns_name = "@->" + m_returns->getName();
-    const Object* function_returns = parentScope->getObject(function_returns_name);
-    if (!function_returns) {
-      auto_ptr<Type> funcType(new BasicType(log, function));
-      if (m_preparedReturns) {
-        throw EvalError("Cannot construct return type for Function " + print() + "; already have a returns pending commit");
-      }
-      m_preparedReturns = true;
-      function_returns = &parentScope->newObject(function_returns_name, funcType);
-    }
-    Type* argsType = m_type.get();
-    if (argsType) {
-      auto_ptr<Type> returnType(new BasicType(log, *function_returns));
+    auto_ptr<Type> returnType(new FunctionReturnsType(log, function, m_returns->getType()));
+    if (m_type.get()) {
       m_type.reset(new AndType(log, m_type, returnType));
     } else {
-      m_type.reset(new BasicType(log, *function_returns));
+      m_type = returnType;
     }
   }
   // With no args or return type, our parent is just @

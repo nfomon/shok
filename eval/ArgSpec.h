@@ -17,15 +17,27 @@ namespace eval {
 class ArgSpec {
 public:
   ArgSpec(const std::string& name,
-          std::auto_ptr<Type> type)
+          Type& type)
           //Object* defaultValue,
           //bool optional = false)
     : m_name(name),
       m_type(type) {}
 
+  std::auto_ptr<ArgSpec> duplicate() const {
+    return std::auto_ptr<ArgSpec>(new ArgSpec(m_name, *m_type.duplicate().release()));
+  }
+
+  const Type& type() const {
+    return m_type;
+  }
+
+  std::string print() const {
+    return "(argspec:" + m_name + ":" + m_type.print();
+  }
+
 private:
   std::string m_name;
-  std::auto_ptr<Type> m_type;
+  Type& m_type;
 };
 
 }
