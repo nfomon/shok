@@ -21,7 +21,7 @@ public:
 
 private:
   typedef std::vector<Object*> stdlib_vec;
-  typedef object_vec::const_iterator stdlib_iter;
+  typedef stdlib_vec::const_iterator stdlib_iter;
 
   Log& m_log;
   Scope& m_scope;
