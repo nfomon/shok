@@ -35,8 +35,7 @@ public:
       m_identifier(NULL),
       m_exp(NULL),
       m_typeSpec(NULL),
-      m_type(NULL),
-      m_object(NULL) {}
+      m_type(NULL) {}
   ~NewInit();
 
   virtual void setup();
@@ -64,10 +63,6 @@ private:
   // Type of the new variable.  Provided by m_typeSpec if it exists, otherwise
   // by the type of m_exp if it exists, otherwise stdlib::object.
   std::auto_ptr<Type> m_type;
-  // The new Object that was created.  Set by Scope::newObject(), and used to
-  // perform the initial value assignment during evaluate().  We do not have
-  // ownership, we just hang onto this so we don't have to look it up again.
-  const Object* m_object;
 };
 
 }

@@ -21,8 +21,8 @@
  */
 
 #include "Common.h"
+#include "EvalError.h"
 #include "Log.h"
-#include "Type.h"
 
 #include <deque>
 #include <limits>
@@ -34,7 +34,6 @@
 namespace eval {
 
 class Object;
-class Type;
 
 class ObjectStore {
 public:
@@ -51,27 +50,31 @@ public:
   // Lookup an object, returning NULL if it is not here.
   Object* getObject(const std::string& varname) const;
   // Construct a new object, as "pending" until it's either commit or revert
-  Object& newObject(const std::string& varname, std::auto_ptr<Type> type);
+  void newObject(const std::string& varname, std::auto_ptr<Type> type);
   // Delete an object.  Calls the object's destructor when commit.
   void delObject(const std::string& varname);
-  // Replace an object.  This should happen at evaluation time; no commit or
-  // revert!  It just happens.  The destructor and constructor are called.
-  void replaceObject(const std::string& varname, std::auto_ptr<Object> newObject);
+  // Initialize a new'd object with its first value.  (evaluation-time)
+  void initObject(const std::string& varname, std::auto_ptr<Object> newObject);
+  // Assign a new value to an object.  (evaluation-time)
+  void replaceObject(const std::string& varname,
+                     std::auto_ptr<Object> newObject);
 
   std::auto_ptr<ObjectStore> duplicate() const;
 
-  size_t size() const { return m_objects.size(); }
+  size_t size() const { return m_symbols.size(); }
 
 private:
-  enum ChangeType {
-    OBJECT_ADD,
-    OBJECT_DELETE
+  struct Symbol {
+    Symbol(std::auto_ptr<Type> type)
+      : type(type) {}
+    std::auto_ptr<Type> type;
+    std::auto_ptr<Object> object;
   };
 
-  typedef std::map<std::string,Object*> object_map;
-  typedef std::pair<std::string,Object*> object_pair;
-  typedef object_map::const_iterator object_iter;
-  typedef object_map::iterator object_mod_iter;
+  typedef std::map<std::string,Symbol*> symbol_map;
+  typedef std::pair<std::string,Symbol*> symbol_pair;
+  typedef symbol_map::const_iterator symbol_iter;
+  typedef symbol_map::iterator symbol_mod_iter;
 
   typedef std::pair<std::string,bool> ordering_pair;
   typedef std::deque<ordering_pair> order_vec;
@@ -80,27 +83,36 @@ private:
   typedef order_vec::const_reverse_iterator ordering_rev_iter;
   typedef order_vec::reverse_iterator ordering_rev_mod_iter;
 
-  // TODO 6am engineering fail!
-  struct ObjectChange {
-    ObjectChange(std::string varname, ChangeType type, Object* oldObject = NULL)
-      : varname(varname), type(type), oldObject(oldObject) {
-      if (OBJECT_ADD == type && oldObject) {
-        throw EvalError("Cannot create ADD ObjectChange for " + varname + " with an old object");
-      } else if (OBJECT_DELETE == type && !oldObject) {
-        throw EvalError("Cannot create DELETE ObjectChange for " + varname + " without an old object");
-      }
-    }
+  struct SymbolChange {
+    SymbolChange(const std::string& varname)
+      : varname(varname) {}
+    virtual ~SymbolChange() {}
     std::string varname;
-    ChangeType type;
-    Object* oldObject;
   };
-  typedef std::deque<ObjectChange> changeset_vec;
+  struct AddSymbol : public SymbolChange {
+    AddSymbol(const std::string& varname)
+      : SymbolChange(varname) {}
+    virtual ~AddSymbol() {}
+  };
+  struct DelSymbol : public SymbolChange {
+    DelSymbol(const std::string& varname,
+              std::auto_ptr<Type> oldType,
+              std::auto_ptr<Object> oldObject)
+      : SymbolChange(varname), oldType(oldType), oldObject(oldObject) {
+    }
+    virtual ~DelSymbol() {}
+    std::auto_ptr<Type> oldType;
+    std::auto_ptr<Object> oldObject;
+  };
+
+  typedef std::deque<SymbolChange*> changeset_vec;
   typedef changeset_vec::const_iterator changeset_iter;
   typedef changeset_vec::const_reverse_iterator changeset_rev_iter;
 
   Log& m_log;
-  // The store of objects.  Eager: includes the latest uncommit changeset
-  object_map m_objects;
+  // The store of symbols (typed objects).
+  // Eager: includes the latest uncommit changeset
+  symbol_map m_symbols;
   // The object names in the order in which they are constructed (hence the
   // reverse order in which they should be deleted).  The flag indicates if the
   // object is pending deletion; used to help commit/revert deletions.

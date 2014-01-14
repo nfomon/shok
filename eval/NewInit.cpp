@@ -96,6 +96,9 @@ void NewInit::setup() {
     default:
       throw EvalError("NewInit node must have 1, 2, or 3 children");
   }
+  if (!m_type.get()) {
+    throw EvalError("NewInit " + print() + " failed to determine a type during setup()");
+  }
 }
 
 void NewInit::prepare() {
@@ -107,9 +110,9 @@ void NewInit::prepare() {
     throw EvalError("Cannot prepare NewInit " + print() + " which has not determined the new object's Type");
   }
 
-  // Construct the object in our parent scope.  We pass along the auto_ptr to
-  // m_type; we don't need it anymore, and this saves a copy.
-  parentScope->newObject(m_varname, m_type);
+  // Construct the object in our parent scope
+  // TODO don't duplicate the type here; just retrieve it if we need to use it
+  parentScope->newObject(m_varname, m_type->duplicate());
   m_isPrepared = true;
 }
 
@@ -117,12 +120,14 @@ void NewInit::prepare() {
 void NewInit::evaluate() {
   if (!m_isPrepared) {
     throw EvalError("Cannot evaluate NewInit " + print() + " until it has been prepared");
+  } else if (!m_type.get()) {
+    throw EvalError("Cannot evaluate NewInit " + print() + " that has no type");
+  }
+  if (m_exp) {
+    parentScope->initObject(m_varname, m_exp->getObject(m_varname));
+  } else {
+    parentScope->initObject(m_varname, m_type->getDefaultObject(m_varname));
   }
   parentScope->commitFirst();
-  if (m_exp) {
-    parentScope->replaceObject(m_varname, m_exp->getObject(m_varname));
-  } else {
-    // TODO assign clone of the object's type
-  }
   m_isPrepared = false;
 }

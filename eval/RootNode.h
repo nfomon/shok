@@ -9,8 +9,7 @@
 #include "Log.h"
 #include "Node.h"
 #include "Scope.h"
-
-#include <set>
+#include "StdLib.h"
 
 namespace eval {
 
@@ -31,6 +30,7 @@ protected:
 private:
   void clearChildren(bool onlyEvaluatedChildren = false);
   Scope m_scope;
+  StdLib m_stdlib;
 };
 
 }

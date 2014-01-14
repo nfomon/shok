@@ -29,7 +29,6 @@
 #include "Log.h"
 #include "Object.h"
 #include "ObjectStore.h"
-#include "Type.h"
 
 #include <map>
 #include <memory>
@@ -64,8 +63,9 @@ public:
   // Returns NULL if it does not exist anywhere.
   Object* getObject(const std::string& varname) const;
   // Insert a new object, as "pending" until it's either commit or revert
-  Object& newObject(const std::string& varname, std::auto_ptr<Type> type);
+  void newObject(const std::string& varname, std::auto_ptr<Type> type);
   void delObject(const std::string& varname);
+  void initObject(const std::string& varname, std::auto_ptr<Object> newObject);
   void replaceObject(const std::string& varname, std::auto_ptr<Object> newObject);
 
 private:

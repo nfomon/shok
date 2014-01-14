@@ -37,12 +37,13 @@ class Type;
 
 class Object {
 public:
-  Object(Log& log, const std::string& name, std::auto_ptr<Type> type);
+  Object(Log& log, const std::string& name, std::auto_ptr<Type> parentType);
   ~Object();
 
   std::string getName() const { return m_name; }
   std::string print() const { return m_name; }
-  const Type& getType() const;
+  std::auto_ptr<Type> getType() const;
+  const Type& type() const;
 
   void reset();
   void commitFirst();
@@ -53,10 +54,8 @@ public:
   // Retrieve a member, deferring to the parent type(s) if it's not found.
   Object* getMember(const std::string& name) const;
   std::auto_ptr<Type> getMemberType(const std::string& name) const;
-  // TODO should an initial value (object) be required?  by auto_ptr I guess?
-  // Probably shouldn't allow creation of an OrType with no default value,
-  // unless this is an abstract.
-  Object& newMember(const std::string& varname, std::auto_ptr<Type> type);
+  void newMember(const std::string& varname, std::auto_ptr<Type> type);
+  // TODO initMember, replaceMember, delMember
   void newMethod(const arg_vec* args,
                  std::auto_ptr<Type> returnType,
                  std::auto_ptr<Block> body);
@@ -88,8 +87,8 @@ private:
   typedef method_vec::const_iterator method_iter;
 
   Log& m_log;
-  // This is an auto_ptr only to resolve a circular type dependency that
-  // prevents us from keeping it by value  :/
+  // m_objectStore and m_type are auto_ptrs only to resolve a circular type
+  // dependency that prevents us from keeping them by value  :/
   std::auto_ptr<ObjectStore> m_objectStore;
   std::string m_name;
   std::auto_ptr<Type> m_type;

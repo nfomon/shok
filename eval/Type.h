@@ -56,6 +56,11 @@ public:
   // Checks if the provided Type is a compatible subtype of this Type
   virtual bool isCompatible(const Type& rhs) const = 0;
 
+  // Create the default Object for this Type.  Used for assignment when no
+  // alternate default value is provided.  OrType will return NULL.
+  virtual std::auto_ptr<Object> getDefaultObject(
+      const std::string& newName) const = 0;
+
   // Returns a duplicate of the Type.  Caller takes ownership.
   virtual std::auto_ptr<Type> duplicate() const = 0;
   virtual std::string getName() const = 0;
@@ -66,13 +71,15 @@ protected:
   Log& m_log;
 };
 
-// NullType is the Type of stdlib::object, the root of all objects.
+// NullType is the Type of std.object, the root of all objects.
 class NullType : public Type {
 public:
   NullType(Log& log) : Type(log) {}
   virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
+  virtual std::auto_ptr<Object> getDefaultObject(
+      const std::string& newName) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;
@@ -88,6 +95,8 @@ public:
   virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
+  virtual std::auto_ptr<Object> getDefaultObject(
+      const std::string& newName) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;
@@ -106,6 +115,8 @@ public:
   virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
+  virtual std::auto_ptr<Object> getDefaultObject(
+      const std::string& newName) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;
@@ -123,6 +134,8 @@ public:
   virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
+  virtual std::auto_ptr<Object> getDefaultObject(
+      const std::string& newName) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;
@@ -142,6 +155,8 @@ public:
   virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
+  virtual std::auto_ptr<Object> getDefaultObject(
+      const std::string& newName) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;
@@ -163,6 +178,8 @@ public:
   virtual Object* getMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual bool isCompatible(const Type& rhs) const;
+  virtual std::auto_ptr<Object> getDefaultObject(
+      const std::string& newName) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;

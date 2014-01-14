@@ -33,8 +33,13 @@ TypeScore NullType::compatibilityScore(const Type& rhs, TypeScore score) const {
 }
 */
 
+auto_ptr<Object> NullType::getDefaultObject(
+    const string& newName) const {
+  throw EvalError("Cannot get default object from the root type");
+}
+
 auto_ptr<Type> NullType::duplicate() const {
-  throw EvalError("Cannot duplicate the root type");
+  return auto_ptr<Type>(new NullType(m_log));
 }
 
 string NullType::getName() const {
@@ -83,6 +88,11 @@ bool FunctionArgsType::isCompatible(const Type& rhs) const {
   throw EvalError("FunctionArgsType::isCompatible(const Type&) is unimplemented");
 }
 
+auto_ptr<Object> FunctionArgsType::getDefaultObject(
+    const string& newName) const {
+  throw EvalError("Cannot get default object from FunctionArgs type");
+}
+
 auto_ptr<Type> FunctionArgsType::duplicate() const {
   argspec_vec new_args;
   for (argspec_iter i = m_args.begin(); i != m_args.end(); ++i) {
@@ -124,8 +134,15 @@ bool FunctionReturnsType::isCompatible(const Type& rhs) const {
   throw EvalError("FunctionReturnsType::isCompatible(const Type&) is unimplemented");
 }
 
+auto_ptr<Object> FunctionReturnsType::getDefaultObject(
+    const string& newName) const {
+  throw EvalError("Cannot get default object from FunctionReturns type");
+}
+
 auto_ptr<Type> FunctionReturnsType::duplicate() const {
-  return auto_ptr<Type>(new FunctionReturnsType(m_log, m_function, m_returns->duplicate()));
+  return auto_ptr<Type>(new FunctionReturnsType(m_log,
+                                                m_function,
+                                                m_returns->duplicate()));
 }
 
 string FunctionReturnsType::getName() const {
@@ -147,7 +164,7 @@ auto_ptr<Type> BasicType::getMemberType(const string& name) const {
   if (!member) {
     return auto_ptr<Type>(NULL);
   }
-  return member->getType().duplicate();
+  return member->getType();
 }
 
 bool BasicType::isCompatible(const Type& rhs) const {
@@ -163,8 +180,7 @@ bool BasicType::isCompatible(const Type& rhs) const {
   const OrType* orType = dynamic_cast<const OrType*>(&rhs);
   if (basicType) {
     if (&basicType->m_object == &m_object) return true;
-    if (basicType->m_object.getType().isNull()) return false;
-    return basicType->m_object.getType().isCompatible(rhs);
+    return basicType->m_object.type().isCompatible(rhs);
   } else if (andType) {
     return andType->left().isCompatible(rhs) ||
            andType->right().isCompatible(rhs);
@@ -187,7 +203,7 @@ TypeScore BasicType::compatibilityScore(const Type& rhs,
   const AndType* andType = dynamic_cast<AndType*>(&rhs);
   if (basicType) {
     if (&basicType->m_object == &m_object) return score;
-    return compatibilityScore(basicType->m_object.getType(), score+1);
+    return compatibilityScore(basicType->m_object.type(), score+1);
   } else if (andType) {
     return std::min(compatibilityScore(andType->left(), score+1),
                     compatibilityScore(andType->right(), score+1));
@@ -195,6 +211,10 @@ TypeScore BasicType::compatibilityScore(const Type& rhs,
   return TypeScore(false);
 }
 */
+
+auto_ptr<Object> BasicType::getDefaultObject(const string& newName) const {
+  return m_object.clone(newName);
+}
 
 auto_ptr<Type> BasicType::duplicate() const {
   return auto_ptr<Type>(new BasicType(m_log, m_object));
@@ -274,6 +294,11 @@ TypeScore AndType::compatibilityScore(const Type& rhs, TypeScore score) const {
   return TypeScore(false);
 }
 */
+
+auto_ptr<Object> AndType::getDefaultObject(const string& newName) const {
+  // TODO: Merge the objects
+  throw EvalError("AndType::getDefaultObject() is unimplemented");
+}
 
 auto_ptr<Type> AndType::duplicate() const {
   if (!m_left.get() || !m_right.get()) {
@@ -374,6 +399,10 @@ TypeScore OrType::compatibilityScore(const Type& rhs, TypeScore score) const {
   return TYPE_INCOMPATIBLE;
 }
 */
+
+auto_ptr<Object> OrType::getDefaultObject(const string& newName) const {
+  throw EvalError("Cannot get default object from OrType " + print());
+}
 
 auto_ptr<Type> OrType::duplicate() const {
   if (!m_left.get() || !m_right.get()) {

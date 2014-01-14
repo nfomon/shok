@@ -12,11 +12,11 @@ using std::string;
 
 using namespace eval;
 
-Object::Object(Log& log, const string& name, auto_ptr<Type> type)
+Object::Object(Log& log, const string& name, auto_ptr<Type> parentType)
   : m_log(log),
     m_objectStore(new ObjectStore(log)),
     m_name(name),
-    m_type(type),
+    m_type(parentType),
     m_isAbstract(false) {
 }
 
@@ -26,11 +26,18 @@ Object::~Object() {
   }
 }
 
-const Type& Object::getType() const {
+auto_ptr<Type> Object::getType() const {
   if (!m_type.get()) {
     throw EvalError("Object " + print() + " does not appear to have a Type");
   }
-  return *m_type.get();
+  return m_type->duplicate();
+}
+
+const Type& Object::type() const {
+  if (!m_type.get()) {
+    throw EvalError("Object " + print() + " does not appear to have a Type");
+  }
+  return *m_type;
 }
 
 // Clears all members from the object
@@ -77,11 +84,11 @@ auto_ptr<Type> Object::getMemberType(const string& name) const {
     throw EvalError("Cannot get type of member " + name + " of Object " + print() + " that has no type");
   }
   const Object* o = m_objectStore->getObject(name);
-  if (o) return auto_ptr<Type>(o->getType().duplicate());
+  if (o) return o->getType();
   return m_type->getMemberType(name);
 }
 
-Object& Object::newMember(const string& varname, auto_ptr<Type> type) {
+void Object::newMember(const string& varname, auto_ptr<Type> type) {
   return m_objectStore->newObject(varname, type);
 }
 
@@ -161,7 +168,12 @@ void Object::destruct() {
 
 auto_ptr<Object> Object::clone(const string& newName) const {
   m_log.info("Cloning object " + print() + " into " + newName);
-  auto_ptr<Object> o(new Object(m_log, newName, m_type->duplicate()));
+  auto_ptr<Object> o;
+  if (!m_type.get()) {
+    o = auto_ptr<Object>(new Object(m_log, newName, auto_ptr<Type>(new NullType(m_log))));
+  } else {
+    o = auto_ptr<Object>(new Object(m_log, newName, m_type->duplicate()));
+  }
   o->m_objectStore = m_objectStore->duplicate();
   o->m_isAbstract = m_isAbstract;
   return o;

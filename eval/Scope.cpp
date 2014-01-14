@@ -107,7 +107,7 @@ Object* Scope::getObject(const string& varname) const {
   return m_parentScope->getObject(varname);
 }
 
-Object& Scope::newObject(const string& varname, auto_ptr<Type> type) {
+void Scope::newObject(const string& varname, auto_ptr<Type> type) {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
@@ -125,7 +125,16 @@ void Scope::delObject(const string& varname) {
   return m_objectStore.delObject(varname);
 }
 
-void Scope::replaceObject(const string& varname, std::auto_ptr<Object> newObject) {
+void Scope::initObject(const string& varname, auto_ptr<Object> newObject) {
+  // depth of 1 is fake; it just defers up to the root scope
+  if (1 == m_depth) {
+    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
+    return m_parentScope->initObject(varname, newObject);
+  }
+  return m_objectStore.initObject(varname, newObject);
+}
+
+void Scope::replaceObject(const string& varname, auto_ptr<Object> newObject) {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
