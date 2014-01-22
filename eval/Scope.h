@@ -14,21 +14,22 @@
  * scope.  Thus scope depth 1 just defers down to the global scope, and depth 2
  * really represents the first nested scope level.
  *
- * A Scope is backed by an ObjectStore, and merely implements the parent-scope
- * and scope-depth logic on top of it.  An ObjectStore only knows what's in its
- * store; a Scope knows that if an object can't be found in its store then it
+ * A Scope is backed by a SymbolTable, and merely implements the parent-scope
+ * and scope-depth logic on top of it.  A SymbolTable only knows what's in its
+ * table; a Scope knows that if a symbol can't be found in its table then it
  * should defer up a parentScope chain until it finds it or doesn't.
  *
- * newObject() creates a new Object in the scope, but it is marked as "pending"
+ * newSymbol() creates a new Symbol in the scope, but it is marked as "pending"
  * until it is finally either commit() or revert().  This allows any
  * setup/analysis stages to track the Object and its Type but lets us abort in
- * case of error.  All of this is handled by the underlying ObjectStore.
+ * case of error.  All of this is handled by the underlying SymbolTable.
  */
 
 #include "Common.h"
 #include "Log.h"
 #include "Object.h"
-#include "ObjectStore.h"
+#include "SymbolTable.h"
+#include "Symbol.h"
 
 #include <map>
 #include <memory>
@@ -44,7 +45,7 @@ public:
   Scope(Log& log)
     : m_log(log),
       m_isInit(false),
-      m_objectStore(log),
+      m_symbolTable(log),
       m_parentScope(NULL),
       m_function(NULL),
       m_depth(0) {}
@@ -59,19 +60,19 @@ public:
   void revertLast();
   void revertAll();
 
-  // Lookup an object, deferring up the tree if it's not found locally.
+  // Lookup a symbol, deferring up the tree if it's not found locally.
   // Returns NULL if it does not exist anywhere.
-  Object* getObject(const std::string& varname) const;
-  // Insert a new object, as "pending" until it's either commit or revert
-  void newObject(const std::string& varname, std::auto_ptr<Type> type);
-  void delObject(const std::string& varname);
-  void initObject(const std::string& varname, std::auto_ptr<Object> newObject);
+  Symbol* getSymbol(const std::string& varname) const;
+  // Insert a new symbol, as "pending" until it's either commit or revert
+  Symbol& newSymbol(const std::string& varname, std::auto_ptr<Type> type);
+  void delSymbol(const std::string& varname);
+  void initSymbol(const std::string& varname, std::auto_ptr<Object> newObject);
   void replaceObject(const std::string& varname, std::auto_ptr<Object> newObject);
 
 private:
   Log& m_log;
   bool m_isInit;
-  ObjectStore m_objectStore;
+  SymbolTable m_symbolTable;
   Scope* m_parentScope;     // NULL for the root scope (held by RootNode)
   Function* m_function;     // set if this is a function's block-scope
   //ObjectLiteral* m_object;  // set if this is an object literal's block-scope

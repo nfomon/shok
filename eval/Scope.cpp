@@ -51,7 +51,7 @@ void Scope::init(Scope* parentScope, Function* parentFunction) {
 void Scope::reset() {
   m_log.debug("Resetting scope at depth " +
               boost::lexical_cast<string>(m_depth));
-  m_objectStore.reset();
+  m_symbolTable.reset();
 }
 
 // Commit (confirm) a pending object into the scope
@@ -61,7 +61,7 @@ void Scope::commitFirst() {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
     return m_parentScope->commitFirst();
   }
-  m_objectStore.commitFirst();
+  m_symbolTable.commitFirst();
 }
 
 // Commit all pending-commit objects
@@ -71,7 +71,7 @@ void Scope::commitAll() {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
     return m_parentScope->commitAll();
   }
-  m_objectStore.commitAll();
+  m_symbolTable.commitAll();
 }
 
 // Revert a pending-commit object
@@ -81,7 +81,7 @@ void Scope::revertLast() {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
     return m_parentScope->revertLast();
   }
-  m_objectStore.revertLast();
+  m_symbolTable.revertLast();
 }
 
 // Revert all pending-commit objects
@@ -91,47 +91,51 @@ void Scope::revertAll() {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
     return m_parentScope->revertAll();
   }
-  m_objectStore.revertAll();
+  m_symbolTable.revertAll();
 }
 
-Object* Scope::getObject(const string& varname) const {
-  m_log.debug(string(m_function ? "Function " : "") + "Scope at depth " + boost::lexical_cast<string>(m_depth) + " retrieving object " + varname);
-  Object* o = m_objectStore.getObject(varname);
-  if (o) return o;
+Symbol* Scope::getSymbol(const string& varname) const {
+  m_log.debug(string(m_function ? "Function " : "") + "Scope at depth " + boost::lexical_cast<string>(m_depth) + " retrieving symbol " + varname);
+  Symbol* s = m_symbolTable.getSymbol(varname);
+  if (s) return s;
+  // TODO how to getSymbol from a function-scope?  Need to look up the function
+  // type "symbols" here...??
+  /*
   if (m_function) {
-    o = m_function->type().getMember(varname);
-    if (o) return o;
+    s = m_function->type().getMember(varname);
+    if (s) return s;
   }
+  */
   // TODO: object-literal lookup
   if (!m_parentScope) return NULL;
-  return m_parentScope->getObject(varname);
+  return m_parentScope->getSymbol(varname);
 }
 
-void Scope::newObject(const string& varname, auto_ptr<Type> type) {
+Symbol& Scope::newSymbol(const string& varname, auto_ptr<Type> type) {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
-    return m_parentScope->newObject(varname, type);
+    return m_parentScope->newSymbol(varname, type);
   }
-  return m_objectStore.newObject(varname, type);
+  return m_symbolTable.newSymbol(varname, type);
 }
 
-void Scope::delObject(const string& varname) {
+void Scope::delSymbol(const string& varname) {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
-    return m_parentScope->delObject(varname);
+    return m_parentScope->delSymbol(varname);
   }
-  return m_objectStore.delObject(varname);
+  return m_symbolTable.delSymbol(varname);
 }
 
-void Scope::initObject(const string& varname, auto_ptr<Object> newObject) {
+void Scope::initSymbol(const string& varname, auto_ptr<Object> newObject) {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
-    return m_parentScope->initObject(varname, newObject);
+    return m_parentScope->initSymbol(varname, newObject);
   }
-  return m_objectStore.initObject(varname, newObject);
+  return m_symbolTable.initSymbol(varname, newObject);
 }
 
 void Scope::replaceObject(const string& varname, auto_ptr<Object> newObject) {
@@ -140,5 +144,5 @@ void Scope::replaceObject(const string& varname, auto_ptr<Object> newObject) {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
     return m_parentScope->replaceObject(varname, newObject);
   }
-  return m_objectStore.replaceObject(varname, newObject);
+  return m_symbolTable.replaceObject(varname, newObject);
 }

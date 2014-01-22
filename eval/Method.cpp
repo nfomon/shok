@@ -5,15 +5,29 @@
 
 #include "Arg.h"
 
+#include <memory>
+using std::auto_ptr;
+
 using namespace eval;
 
 Method::Method(const arg_vec* args,
-         std::auto_ptr<Type> returnType,
-         std::auto_ptr<Block> body)
+               auto_ptr<Type> returnType,
+               auto_ptr<Block> body)
   : m_returnType(returnType), m_body(body) {
   if (args) {
     for (arg_iter i = args->begin(); i != args->end(); ++i) {
       m_args.push_back((*i)->getSpec().release());
+    }
+  }
+}
+
+Method::Method(const argspec_vec* args,
+               auto_ptr<Type> returnType,
+               auto_ptr<Block> body)
+  : m_returnType(returnType), m_body(body) {
+  if (args) {
+    for (argspec_iter i = args->begin(); i != args->end(); ++i) {
+      m_args.push_back((*i)->duplicate().release());
     }
   }
 }

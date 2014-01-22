@@ -5,9 +5,12 @@
 
 #include "EvalError.h"
 #include "Identifier.h"
+#include "Type.h"
 
+#include <memory>
 #include <string>
 #include <vector>
+using std::auto_ptr;
 using std::string;
 using std::vector;
 
@@ -17,23 +20,26 @@ void Variable::setup() {
   if (children.size() < 1) {
     throw EvalError("Variable node must have >= 1 children");
   }
-  Object* current = NULL;
+  auto_ptr<Type> memberType;
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     Identifier* ident = dynamic_cast<Identifier*>(*i);
     if (!ident) {
       throw EvalError("Variable children must all be Identifiers");
     }
-    if (!current) {
-      m_varname = ident->getName();
-      current = parentScope->getObject(ident->getName());
+    if (!m_symbol) {
+      m_symbol = parentScope->getSymbol(ident->getName());
+      if (!m_symbol) {
+        throw EvalError("Object " + m_varname + " does not exist");
+      }
+      memberType = m_symbol->type->duplicate();
     } else {
-      m_varname += "." + ident->getName();
-      current = current->getMember(ident->getName());
+      string member = ident->getName();
+      memberType = memberType->getMemberType(member);
+      if (!memberType.get()) {
+        throw EvalError("Object " + m_varname + " member " + member + " does not exist");
+      }
+      m_select.push_back(member);
     }
-  }
-  m_object = current;
-  if (!m_object) {
-    throw EvalError("Object " + m_varname + " does not exist");
   }
   computeType();
 }
@@ -43,15 +49,18 @@ void Variable::evaluate() {
 }
 
 Object& Variable::getObject() const {
-  if (!m_object) {
+  if (!m_symbol) {
+    throw EvalError("Cannot retrieve Symbol of deficient Variable " + print());
+  } else if (!m_symbol->object.get()) {
     throw EvalError("Cannot retrieve Object of deficient Variable " + print());
   }
-  return *m_object;
+  return *m_symbol->object.get();
 }
 
 void Variable::computeType() {
-  if (!m_object) {
-    throw EvalError("Failed to find object behind Variable " + print());
+  if (!m_symbol) {
+    throw EvalError("Failed to find Symbol behind Variable " + print());
   }
-  m_type.reset(new BasicType(log, *m_object));
+  //m_type.reset(new BasicType(log, *m_symbol, m_select));    // TODO
+  m_type.reset(new BasicType(log, *m_symbol));
 }

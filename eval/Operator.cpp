@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+using std::auto_ptr;
 using std::make_pair;
 using std::string;
 
@@ -231,7 +232,7 @@ void Operator::computeType() {
       throw EvalError("| must be a binary operator");
     }
     // TODO: get this directly from the global scope
-    const Object* str = parentScope->getObject("str");
+    const Symbol* str = parentScope->getSymbol("str");
     if (!str) {
       throw EvalError("Cannot use ~ or ~~ operator until str is defined");
     }
@@ -247,15 +248,17 @@ void Operator::computeType() {
     if ("" == method_name) {
       throw EvalError("Cannot determine Type of unimplemented operator " + print());
     }
-    const Object* method = m_left->getType()->getMember(method_name);
-    if (!method) {
+    /*
+    auto_ptr<Type> method = m_left->type().getMemberType(method_name);
+    if (!method.get()) {
       throw EvalError(m_left->print() + " does not define operator" + name);
-    } else if (!method->isFunction()) {
-      throw EvalError("Somehow, " + method_name + " is a non-function member of " + m_left->print());
     }
+    */
 
     if (isPrefix()) {
       paramtype_vec params;   // Leave empty (no params)
+      // TODO when we re-implement takesArgs() etc.
+      /*
       if (!method->takesArgs(params)) {
         throw EvalError(m_left->print() + "." + method_name + " is not defined to take 0 arguments");
       }
@@ -276,6 +279,7 @@ void Operator::computeType() {
       if (!m_type.get()) {
         throw EvalError(m_left->print() + "." + method_name + " with argument " + m_right->print() + " somehow has no return type");
       }
+      */
     } else {
       throw EvalError("What IS this crazy operator!?");
     }

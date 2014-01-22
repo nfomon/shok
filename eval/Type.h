@@ -4,23 +4,18 @@
 #ifndef _Type_h_
 #define _Type_h_
 
-/* Variable type
+/* Variable (symbol) type
  *
- * A Type is a binary tree, where each node is either an OrList of nodes, an
- * AndList of nodes, or an Object*.
- *
- * We do not own these Object*s; the Object should always outlive a child's
- * Type.  Types are typically owned by a TypedNode, which can give you its
- * Type or a duplicate with its getType() or type() methods.
- *
- * A Type can be used to query the members of its underlying object(s), or just
- * their types.  Note that some of the semantics of |-types and &-types are not
- * yet determined, so some of the lookup rules may not be stable/trustworthy.
+ * A Type specifies the set of possible objects that a symbol is allowed to
+ * take on as values.  It is a binary tree of BasicType nodes joined by
+ * AndTypes (&) and OrTypes (|).  A BasicType links to a parent type and also
+ * has a set of members that it provides.
  */
 
 #include "Common.h"
 #include "EvalError.h"
 #include "Log.h"
+#include "Symbol.h"
 
 #include <limits.h>
 #include <memory>
@@ -37,71 +32,53 @@ public:
   Type(Log& log)
     : m_log(log) {}
   virtual ~Type() {}
-
-  // Query our underlying object(s) for a member.
-  // Returns NULL if the member does not exist or is otherwise inaccessible
-  // (e.g. a disallowed aggregate).  This can NOT be used on an OrType (not
-  // sure if that should just return NULL instead?)
-  virtual Object* getMember(const std::string& name) const = 0;
-
-  // Query directly for the Type of a member of the underlying object(s).
-  // Use this if you're just doing type-checking analysis rather than
-  // retrieving the Object* itself, please.
-  // Caller gets a duplicate (takes ownership) because in the case of OrType,
-  // it might need to create a brand new type to represent this.
-  // Note that for a function member (method), the type is the type of this
-  // method, e.g. @(A)->B, and not just the (set of) return type(s).
+  virtual void addMemberType(const std::string& name, std::auto_ptr<Type> type) = 0;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const = 0;
-
-  // Checks if the provided Type is a compatible subtype of this Type
-  virtual bool isCompatible(const Type& rhs) const = 0;
-
-  // Create the default Object for this Type.  Used for assignment when no
-  // alternate default value is provided.  OrType will return NULL.
-  virtual std::auto_ptr<Object> getDefaultObject(
-      const std::string& newName) const = 0;
-
+  virtual std::auto_ptr<Object> makeDefaultObject(const std::string& newName) const = 0;
   // Returns a duplicate of the Type.  Caller takes ownership.
   virtual std::auto_ptr<Type> duplicate() const = 0;
   virtual std::string getName() const = 0;
   virtual std::string print() const = 0;
-  virtual bool isNull() const { return false; }
+  virtual bool isRoot() const { return false; }
 
 protected:
   Log& m_log;
 };
 
-// NullType is the Type of std.object, the root of all objects.
-class NullType : public Type {
+// RootType is the Type of std.object, the root of all objects.
+// It has members but no parent type.
+class RootType : public Type {
 public:
-  NullType(Log& log) : Type(log) {}
-  virtual Object* getMember(const std::string& name) const;
+  RootType(Log& log) : Type(log) {}
+  ~RootType();
+  virtual void addMemberType(const std::string& name, std::auto_ptr<Type> type);
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
-  virtual bool isCompatible(const Type& rhs) const;
-  virtual std::auto_ptr<Object> getDefaultObject(
-      const std::string& newName) const;
+  virtual std::auto_ptr<Object> makeDefaultObject(const std::string& newName) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;
-  virtual bool isNull() const { return true; }
+  virtual bool isRoot() const { return true; }
+private:
+  typedef std::map<std::string,Type*> member_map;
+  typedef std::pair<std::string,Type*> member_pair;
+  typedef member_map::const_iterator member_iter;
+  member_map m_members;
 };
 
 // Builtin type representing a function that takes certain arguments
 class FunctionArgsType : public Type {
 public:
-  FunctionArgsType(Log& log, const Object& froot, const arg_vec& args);
-  FunctionArgsType(Log& log, const Object& froot, const argspec_vec& args);
+  FunctionArgsType(Log& log, const Symbol& froot, const arg_vec& args);
+  FunctionArgsType(Log& log, const Symbol& froot, const argspec_vec& args);
   virtual ~FunctionArgsType();
-  virtual Object* getMember(const std::string& name) const;
+  virtual void addMemberType(const std::string& name, std::auto_ptr<Type> type);
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
-  virtual bool isCompatible(const Type& rhs) const;
-  virtual std::auto_ptr<Object> getDefaultObject(
-      const std::string& newName) const;
+  virtual std::auto_ptr<Object> makeDefaultObject(const std::string& newName) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;
 private:
-  const Object& m_function;   // @
+  const Symbol& m_froot;    // @
   argspec_vec m_args;
 };
 
@@ -109,38 +86,41 @@ private:
 class FunctionReturnsType : public Type {
 public:
   FunctionReturnsType(Log& log,
-                      const Object& froot,
+                      const Symbol& froot,
                       std::auto_ptr<Type> returns)
-    : Type(log), m_function(froot), m_returns(returns) {}
-  virtual Object* getMember(const std::string& name) const;
+    : Type(log), m_froot(froot), m_returns(returns) {}
+  virtual void addMemberType(const std::string& name, std::auto_ptr<Type> type);
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
-  virtual bool isCompatible(const Type& rhs) const;
-  virtual std::auto_ptr<Object> getDefaultObject(
-      const std::string& newName) const;
+  virtual std::auto_ptr<Object> makeDefaultObject(const std::string& newName) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;
 private:
-  const Object& m_function;   // @
+  const Symbol& m_froot;    // @
   std::auto_ptr<Type> m_returns;
 };
 
-// A BasicType wraps a single Object.  Note that a Variable's Type will be the
-// BasicType of its Object, whereas an Object's Type represents its parents.
+// A BasicType has a parent Symbol and maybe some member types.
 class BasicType : public Type {
 public:
-  BasicType(Log& log, const Object& o)
-    : Type(log), m_object(o) {}
-  virtual Object* getMember(const std::string& name) const;
+  BasicType(Log& log, const Symbol& parent)
+    : Type(log), m_parent(parent) {}
+  ~BasicType();
+  virtual void addMemberType(const std::string& name, std::auto_ptr<Type> type);
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
-  virtual bool isCompatible(const Type& rhs) const;
-  virtual std::auto_ptr<Object> getDefaultObject(
-      const std::string& newName) const;
+  virtual std::auto_ptr<Object> makeDefaultObject(const std::string& newName) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;
 private:
-  const Object& m_object;
+  typedef std::map<std::string,Type*> member_map;
+  typedef std::pair<std::string,Type*> member_pair;
+  typedef member_map::const_iterator member_iter;
+  typedef std::vector<std::string> select_vec;
+  typedef select_vec::const_iterator select_iter;
+  const Symbol& m_parent;
+  select_vec m_select;  // nested member names to lookup in the parent
+  member_map m_members;
 };
 
 // AndType:  a&b
@@ -152,11 +132,9 @@ public:
     : Type(log), m_left(left), m_right(right) {}
   const Type& left() const { return *m_left.get(); }    // must exist
   const Type& right() const { return *m_right.get(); }  // must exist
-  virtual Object* getMember(const std::string& name) const;
+  virtual void addMemberType(const std::string& name, std::auto_ptr<Type> type);
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
-  virtual bool isCompatible(const Type& rhs) const;
-  virtual std::auto_ptr<Object> getDefaultObject(
-      const std::string& newName) const;
+  virtual std::auto_ptr<Object> makeDefaultObject(const std::string& newName) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;
@@ -175,11 +153,9 @@ public:
     : Type(log), m_left(left.duplicate()), m_right(right.duplicate()) {}
   const Type& left() const { return *m_left.get(); }
   const Type& right() const { return *m_right.get(); }
-  virtual Object* getMember(const std::string& name) const;
+  virtual void addMemberType(const std::string& name, std::auto_ptr<Type> type);
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
-  virtual bool isCompatible(const Type& rhs) const;
-  virtual std::auto_ptr<Object> getDefaultObject(
-      const std::string& newName) const;
+  virtual std::auto_ptr<Object> makeDefaultObject(const std::string& newName) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;

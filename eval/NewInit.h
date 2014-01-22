@@ -17,7 +17,6 @@
 #include "Identifier.h"
 #include "Log.h"
 #include "Node.h"
-#include "ObjectStore.h"
 #include "RootNode.h"
 #include "Scope.h"
 #include "Token.h"

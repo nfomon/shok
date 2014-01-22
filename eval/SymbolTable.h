@@ -1,28 +1,28 @@
-// Copyright (C) 2013 Michael Biggs.  See the COPYING file at the top-level
+// Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _ObjectStore_h_
-#define _ObjectStore_h_
+#ifndef _SymbolTable_h_
+#define _SymbolTable_h_
 
-/* ObjectStore
+/* SymbolTable
  *
- * What do a block-scope and an Object have in common?  They both own a set of
- * Object members!  The ObjectStore just has a list of Objects that it owns,
- * and has commit/revert logic on new additions.  Scope and Object each have an
- * ObjectStore internally backing their members.
+ * The SymbolTable is a list of Symbols that it owns, and has commit/revert
+ * logic on new additions.  Scope and Symbol each have an SymbolTable
+ * internally backing their members.
  *
- * newObject and deleteObject operations are the only "necessary" ones, for our
+ * newSymbol and delSymbol operations are the only "necessary" ones, for our
  * purpose of allowing "hey that object doesn't exist yet!" error checking
- * before evaluation-time.  But since the ObjectStore owns the memory of its
+ * before evaluation-time.  But since the SymbolTable owns the memory of its
  * objects, it's also where we choose to invoke object constructors and
  * destructors.  That's why we also have replaceObject -- it's so the
- * ObjectStore can be responsible for calling the destructor of the replaced
+ * SymbolTable can be responsible for calling the destructor of the replaced
  * object (also at evaluation-time aka commit-time, of course).
  */
 
 #include "Common.h"
 #include "EvalError.h"
 #include "Log.h"
+#include "Symbol.h"
 
 #include <deque>
 #include <limits>
@@ -34,12 +34,18 @@
 namespace eval {
 
 class Object;
+class Symbol;
 
-class ObjectStore {
+class SymbolTable {
 public:
-  ObjectStore(Log& log)
+  typedef std::map<std::string,Symbol*> symbol_map;
+  typedef std::pair<std::string,Symbol*> symbol_pair;
+  typedef symbol_map::const_iterator symbol_iter;
+  typedef symbol_map::iterator symbol_mod_iter;
+
+  SymbolTable(Log& log)
     : m_log(log) {}
-  ~ObjectStore();
+  ~SymbolTable();
 
   void reset();
   void commitFirst();
@@ -47,35 +53,24 @@ public:
   void revertLast();
   void revertAll();
 
-  // Lookup an object, returning NULL if it is not here.
-  Object* getObject(const std::string& varname) const;
-  // Construct a new object, as "pending" until it's either commit or revert
-  void newObject(const std::string& varname, std::auto_ptr<Type> type);
-  // Delete an object.  Calls the object's destructor when commit.
-  void delObject(const std::string& varname);
-  // Initialize a new'd object with its first value.  (evaluation-time)
-  void initObject(const std::string& varname, std::auto_ptr<Object> newObject);
+  // Lookup a symbol, returning NULL if it is not here
+  Symbol* getSymbol(const std::string& varname) const;
+  // Construct a new symbol, as "pending" until it's either commit or revert
+  Symbol& newSymbol(const std::string& varname, std::auto_ptr<Type> type);
+  // Delete a symbol.  Calls the object's destructor when commit.
+  void delSymbol(const std::string& varname);
+  // Initialize a new'd symbol with its first value.  (evaluation-time)
+  void initSymbol(const std::string& varname, std::auto_ptr<Object> newObject);
   // Assign a new value to an object.  (evaluation-time)
   void replaceObject(const std::string& varname,
                      std::auto_ptr<Object> newObject);
 
-  std::auto_ptr<ObjectStore> duplicate() const;
+  std::auto_ptr<SymbolTable> duplicate() const;
 
+  const symbol_map& getSymbolMap() const { return m_symbols; }
   size_t size() const { return m_symbols.size(); }
 
 private:
-  struct Symbol {
-    Symbol(std::auto_ptr<Type> type)
-      : type(type) {}
-    std::auto_ptr<Type> type;
-    std::auto_ptr<Object> object;
-  };
-
-  typedef std::map<std::string,Symbol*> symbol_map;
-  typedef std::pair<std::string,Symbol*> symbol_pair;
-  typedef symbol_map::const_iterator symbol_iter;
-  typedef symbol_map::iterator symbol_mod_iter;
-
   typedef std::pair<std::string,bool> ordering_pair;
   typedef std::deque<ordering_pair> order_vec;
   typedef order_vec::const_iterator ordering_iter;
@@ -123,4 +118,4 @@ private:
 
 }
 
-#endif // _ObjectStore_h_
+#endif // _SymbolTable_h_

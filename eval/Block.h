@@ -48,6 +48,7 @@ public:
   void defer() { m_isDeferred = true; }
   void ready() { m_isDeferred = false; }
   bool isDeferred() const { return m_isDeferred; }
+  //std::auto_ptr<Block> duplicate() const;
 
 private:
   typedef std::vector<Statement*> statement_vec;

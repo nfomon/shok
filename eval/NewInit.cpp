@@ -40,9 +40,9 @@ void NewInit::setup() {
     // new x -- type and value are both 'object'
     case 1: {
       // TODO get this directly from the global scope
-      const Object* object = parentScope->getObject("object");
+      const Symbol* object = parentScope->getSymbol("object");
       if (!object) {
-        throw EvalError("Cannot find the object object.  Uhoh.");
+        throw EvalError("Cannot find symbol for the object object.  Uhoh.");
       }
       m_type.reset(new BasicType(log, *object));
       // leave m_typeSpec NULL
@@ -104,7 +104,7 @@ void NewInit::setup() {
 void NewInit::prepare() {
   if (!parentScope) {
     throw EvalError("Cannot prepare NewInit " + print() + " with no parent scope");
-  } else if (parentScope->getObject(m_varname)) {
+  } else if (parentScope->getSymbol(m_varname)) {
     throw EvalError("Variable " + m_varname + " already exists");
   } else if (!m_type.get()) {
     throw EvalError("Cannot prepare NewInit " + print() + " which has not determined the new object's Type");
@@ -112,7 +112,7 @@ void NewInit::prepare() {
 
   // Construct the object in our parent scope
   // TODO don't duplicate the type here; just retrieve it if we need to use it
-  parentScope->newObject(m_varname, m_type->duplicate());
+  parentScope->newSymbol(m_varname, m_type->duplicate());
   m_isPrepared = true;
 }
 
@@ -124,9 +124,11 @@ void NewInit::evaluate() {
     throw EvalError("Cannot evaluate NewInit " + print() + " that has no type");
   }
   if (m_exp) {
-    parentScope->initObject(m_varname, m_exp->getObject(m_varname));
+    parentScope->initSymbol(m_varname, m_exp->getObject(m_varname));
   } else {
-    parentScope->initObject(m_varname, m_type->getDefaultObject(m_varname));
+    Symbol* s = parentScope->getSymbol(m_varname);
+    if (!s) throw EvalError("");
+    parentScope->initSymbol(m_varname, s->type->makeDefaultObject(m_varname));
   }
   parentScope->commitFirst();
   m_isPrepared = false;

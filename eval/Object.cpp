@@ -3,93 +3,49 @@
 
 #include "Object.h"
 
-#include "ObjectStore.h"
+#include "SymbolTable.h"
 
 #include <memory>
 #include <string>
+#include <utility>
 using std::auto_ptr;
+using std::make_pair;
 using std::string;
 
 using namespace eval;
 
-Object::Object(Log& log, const string& name, auto_ptr<Type> parentType)
+Object::Object(Log& log, const string& name)
   : m_log(log),
-    m_objectStore(new ObjectStore(log)),
     m_name(name),
-    m_type(parentType),
-    m_isAbstract(false) {
+    m_isAbstract(false),
+    m_isConst(false),
+    m_isConstructed(false),
+    m_isDestructed(false) {
 }
 
 Object::~Object() {
+  if (!m_isDestructed) {
+    m_log.warning("Destroying non-destructed Object " + print());
+  }
+  for (member_iter i = m_members.begin(); i != m_members.end(); ++i) {
+    delete i->second;
+  }
   for (method_iter i = m_methods.begin(); i != m_methods.end(); ++i) {
     delete *i;
   }
 }
 
-auto_ptr<Type> Object::getType() const {
-  if (!m_type.get()) {
-    throw EvalError("Object " + print() + " does not appear to have a Type");
-  }
-  return m_type->duplicate();
-}
-
-const Type& Object::type() const {
-  if (!m_type.get()) {
-    throw EvalError("Object " + print() + " does not appear to have a Type");
-  }
-  return *m_type;
-}
-
-// Clears all members from the object
-void Object::reset() {
-  m_log.debug("Resetting object " + print());
-  m_objectStore->reset();
-}
-
-// Commit (confirm) a pending member into the object
-void Object::commitFirst() {
-  m_objectStore->commitFirst();
-}
-
-// Commit all pending-commit members
-void Object::commitAll() {
-  m_objectStore->commitAll();
-}
-
-// Revert a pending-commit member
-void Object::revertLast() {
-  m_objectStore->revertLast();
-}
-
-// Revert all pending-commit members
-void Object::revertAll() {
-  m_objectStore->revertAll();
-}
-
 Object* Object::getMember(const string& name) const {
-  if (!m_type.get()) {
-    throw EvalError("Cannot get member " + name + " of Object " + print() + " that has no type");
-  }
-  // If we don't have it, check our parent(s).
-  // Note: it's up to the caller to ensure that whatever action they take on
-  // the result, it should be done in the context of the child object, and not
-  // the Object* they get back on its own.
-  Object* o = m_objectStore->getObject(name);
-  if (o) return o;
-  return m_type->getMember(name);
+  member_iter i = m_members.find(name);
+  if (i != m_members.end()) return i->second;
+  return NULL;
 }
 
-auto_ptr<Type> Object::getMemberType(const string& name) const {
-  if (!m_type.get()) {
-    throw EvalError("Cannot get type of member " + name + " of Object " + print() + " that has no type");
+void Object::newMember(const string& name, auto_ptr<Object> object) {
+  if (getMember(name)) {
+    throw new EvalError("Cannot add new member " + name + " to Object " + print() + "; member already exists");
   }
-  const Object* o = m_objectStore->getObject(name);
-  if (o) return o->getType();
-  return m_type->getMemberType(name);
-}
-
-void Object::newMember(const string& varname, auto_ptr<Type> type) {
-  return m_objectStore->newObject(varname, type);
+  m_members.insert(make_pair(name, object.release()));
 }
 
 void Object::newMethod(const arg_vec* args,
@@ -99,46 +55,7 @@ void Object::newMethod(const arg_vec* args,
   m_methods.push_back(new Method(args, returnType, body));
 }
 
-bool Object::takesArgs(const paramtype_vec& params) const {
-  // TODO
-  /*
-  for (signature_iter i = m_signatures.begin(); i != m_signatures.end(); ++i) {
-    if (i->areArgsCompatible(params)) {
-      return true;
-    }
-  }
-  */
-  return false;
-}
-
-auto_ptr<Type> Object::getPossibleReturnTypes(const paramtype_vec& params) const {
-  if (!takesArgs(params)) {
-    throw EvalError("Function " + print() + " does not take these parameters");
-  }
-  auto_ptr<Type> returnTypes(NULL);
-  // TODO
-  /*
-  for (signature_iter i = m_signatures.begin(); i != m_signatures.end(); ++i) {
-    if (i->areArgsCompatible(params)) {
-      returnTypes.reset(i->getReturnType());
-      return returnTypes;
-      // *
-      if (!returnTypes.get()) {
-        returnTypes.reset(i->getReturnType()->duplicate());
-      } else {
-        Type* rt = i->getReturnType(); //...  void??  uhhh...
-        if (!rt) {
-          throw EvalError("Void-returning functions not yet supported");
-        }
-        returnTypes.reset(OrUnion(m_log, *returnTypes.get(), *i->getReturnType()));
-      }
-      // *
-    }
-  }
-  */
-  return returnTypes;
-}
-
+/*
 auto_ptr<Object> Object::call(const param_vec& params) const {
   // TODO
   // ...
@@ -147,34 +64,56 @@ auto_ptr<Object> Object::call(const param_vec& params) const {
     delete *i;
   }
   return auto_ptr<Object>(NULL);
-/*
+*
   try {
   } catch (...) {
   }
-*/
+*
 }
+*/
 
 void Object::construct() {
-  //m_log.debug("Constructing children of " + print());
-  // TODO: Construct children?
+  if (m_isConstructed) {
+    throw EvalError("Cannot construct already-constructed Object " + print());
+  } else if (m_isDestructed) {
+    throw EvalError("Cannot construct already-destructed Object " + print());
+  }
   m_log.info("Object " + print() + ": constructor called");
+  m_log.debug("Constructing children of " + print());
+  for (member_iter i = m_members.begin(); i != m_members.end(); ++i) {
+    i->second->construct();
+  }
+  m_isConstructed = true;
 }
 
 void Object::destruct() {
+  if (!m_isConstructed) {
+    throw EvalError("Cannot destruct non-constructed Object " + print());
+  } else if (m_isDestructed) {
+    throw EvalError("Cannot destruct already-destructed Object " + print());
+  }
   m_log.info("Object " + print() + ": destructor called");
-  //m_log.debug("Destroying children of " + print());
-  // TODO: Destroy children?
+  m_log.debug("Destroying children of " + print());
+  for (member_iter i = m_members.begin(); i != m_members.end(); ++i) {
+    i->second->destruct();
+    delete i->second;
+  }
+  m_members.clear();
+  m_isDestructed = true;
 }
 
 auto_ptr<Object> Object::clone(const string& newName) const {
   m_log.info("Cloning object " + print() + " into " + newName);
-  auto_ptr<Object> o;
-  if (!m_type.get()) {
-    o = auto_ptr<Object>(new Object(m_log, newName, auto_ptr<Type>(new NullType(m_log))));
-  } else {
-    o = auto_ptr<Object>(new Object(m_log, newName, m_type->duplicate()));
+  auto_ptr<Object> o(new Object(m_log, newName));
+  for (member_iter i = m_members.begin(); i != m_members.end(); ++i) {
+    o->m_members.insert(make_pair(i->first, i->second->clone(i->first).release()));
   }
-  o->m_objectStore = m_objectStore->duplicate();
+  // TODO
+  /*
+  for (method_iter i = m_methods.begin(); i != m_methods.end(); ++i) {
+  }
+  */
   o->m_isAbstract = m_isAbstract;
+  o->m_isConst = m_isConst;
   return o;
 }

@@ -3,8 +3,8 @@
 
 #include "StdLib.h"
 
-#include "Log.h"
 #include "EvalError.h"
+#include "Log.h"
 
 #include <memory>
 #include <vector>
@@ -19,14 +19,18 @@ StdLib::StdLib(Log& log, Scope& rootScope)
   : m_log(log), m_scope(rootScope) {
 
   // object: the root of the object tree
-  m_scope.newObject("object", auto_ptr<Type>(new NullType(m_log)));
-  Object* object = new Object(m_log, "object", auto_ptr<Type>(new NullType(m_log)));
-  m_scope.initObject("object", auto_ptr<Object>(object));
+  auto_ptr<Object> objectObject(new Object(m_log, "object"));
+  auto_ptr<Type> objectType(new RootType(m_log));
+  Symbol& object = m_scope.newSymbol("object", objectType);
+  //objectType->addMemberType("foo", auto_ptr<Type>(new BasicType(m_log, objectSymbol)));
+  //object.newMember("foo", auto_ptr<Object>(new Object(m_log, "foo")));
+  m_scope.initSymbol("object", objectObject);
 
-  m_scope.newObject("@", auto_ptr<Type>(new BasicType(m_log, *object)));
-  m_scope.initObject("@",
-      auto_ptr<Object>(new Object(m_log, "@",
-          auto_ptr<Type>(new BasicType(m_log, *object)))));
+  auto_ptr<Object> functionObject(new Object(m_log, "@"));
+  auto_ptr<Type> functionType(new BasicType(m_log, object));
+  //Symbol& function = m_scope.newSymbol("@", functionType);
+  m_scope.newSymbol("@", functionType);
+  m_scope.initSymbol("@", functionObject);
 
   m_scope.commitAll();
 }

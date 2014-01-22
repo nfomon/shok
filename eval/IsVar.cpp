@@ -7,7 +7,9 @@
 #include "Identifier.h"
 
 #include <iostream>
+#include <memory>
 #include <string>
+using std::auto_ptr;
 using std::cout;
 using std::endl;
 using std::string;
@@ -18,7 +20,7 @@ void IsVar::setup() {
   if (children.size() < 1) {
     throw EvalError("IsVar must have >= 1 children");
   }
-  Object* current = NULL;
+  auto_ptr<Type> current(NULL);
   bool found = true;
   string missingName;
   size_t i = 0;
@@ -27,22 +29,24 @@ void IsVar::setup() {
     if (!ident) {
       throw EvalError("Children of IsVar " + print() + " must be Identifiers");
     }
-    if (!current) {
+    if (!current.get()) {
       missingName = ident->getName();
-      current = parentScope->getObject(ident->getName());
-      if (!current) {
+      Symbol* s = parentScope->getSymbol(ident->getName());
+      if (!s) {
         found = false;
         break;
       }
+      current = s->type->duplicate();
     } else {
       missingName += "." + ident->getName();
-      current = current->getMember(ident->getName());
-      if (!current) {
+      current = current->getMemberType(ident->getName());
+      if (!current.get()) {
         found = false;
         break;
       }
     }
   }
+
   string msg;
   if (found) {
     msg = "true";

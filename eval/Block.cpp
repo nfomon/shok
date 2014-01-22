@@ -52,9 +52,7 @@ void Block::setup() {
     vector<child_mod_iter> instants;
     for (child_mod_iter i = children.begin(); i != children.end(); ++i) {
       Statement* statement = dynamic_cast<Statement*>(*i);
-      if (!statement) {
-        throw EvalError("Code-Block " + print() + " has non-Statement child " + (*i)->print());
-      }
+      if (!statement) continue; // Note: not all Block's children are Statements
       // "Instant" statements are builtins that have already been evaluated,
       // and can be discarded.
       if (statement->isInstant()) {
@@ -63,8 +61,8 @@ void Block::setup() {
         m_statements.push_back(statement);
       }
     }
-    for (vector<child_mod_iter>::const_iterator i = instants.begin();
-         i != instants.end(); ++i) {
+    for (vector<child_mod_iter>::const_reverse_iterator i = instants.rbegin();
+         i != instants.rend(); ++i) {
       delete **i;
       children.erase(*i);
     }

@@ -25,9 +25,11 @@ void ProcCall::setup() {
     throw EvalError("ProcCall first child must be a Variable");
   }
   m_object = &var->getObject();
+  /*
   if (!m_object->isFunction()) {
     throw EvalError("ProcCall cannot call a non-function");
   }
+  */
   for (child_iter i = children.begin()+1; i != children.end(); ++i) {
     Expression* exp = dynamic_cast<Expression*>(*i);
     if (!exp) {
@@ -37,9 +39,11 @@ void ProcCall::setup() {
     m_paramtypes.push_back(&exp->type());
   }
   // Verify that the function has a signature for these param types
+  /*
   if (!m_object->takesArgs(m_paramtypes)) {
     throw EvalError("Function " + m_object->print() + " does not accept the provided parameters");
   }
+  */
 }
 
 void ProcCall::evaluate() {
@@ -52,10 +56,10 @@ void ProcCall::evaluate() {
     // specific signature we're calling)
     params.push_back((*i)->getObject("(some arg)").release());
   }
-  auto_ptr<Object> ret = m_object->call(params);
+  //auto_ptr<Object> ret = m_object->call(params);
 }
 
 void ProcCall::computeType() {
   // ProcCall type is the return type of the function
-  m_type = m_object->getPossibleReturnTypes(m_paramtypes);
+  //m_type = m_object->getPossibleReturnTypes(m_paramtypes);
 }

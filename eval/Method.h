@@ -23,7 +23,16 @@ public:
   Method(const arg_vec* args,
          std::auto_ptr<Type> returnType,
          std::auto_ptr<Block> body);
+  Method(const argspec_vec* args,
+         std::auto_ptr<Type> returnType,
+         std::auto_ptr<Block> body);
   ~Method();
+
+  /*
+  std::auto_ptr<Method> duplicate() const {
+    return std::auto_ptr<Method>(new Method(&m_args, m_returnType->duplicate(), m_body->duplicate()));
+  }
+  */
 
   const argspec_vec& args() const {
     return m_args;

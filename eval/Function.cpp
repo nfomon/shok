@@ -68,7 +68,11 @@ auto_ptr<Object> Function::makeObject(const string& newName) {
   } else if (m_isObjectified) {
     throw EvalError("Cannot make object from Function " + print() + " that has already been made into an object");
   }
-  auto_ptr<Object> o(new Object(log, newName, getType()));
+  const Symbol* functionSymbol = parentScope->getSymbol("@");
+  if (!functionSymbol || !functionSymbol->object.get()) {
+    throw EvalError("Cannot find the @ object");
+  }
+  auto_ptr<Object> o(new Object(log, newName));
   const arg_vec* args = NULL;
   if (m_args) {
     args = &m_args->getArgs();
@@ -92,12 +96,12 @@ void Function::computeType() {
   if (m_type.get()) {
     throw EvalError("Cannot compute type of Function " + print() + " that already has a type");
   }
-  const Object* p_function = parentScope->getObject("@");
+  const Symbol* p_function = parentScope->getSymbol("@");
   if (!p_function) {
-    throw EvalError("Cannot find the @ object.");
+    throw EvalError("Cannot find symbol for the @ object");
   }
   log.debug("Computing type of function " + print());
-  const Object& function = *p_function;
+  const Symbol& function = *p_function;
   // Set builtin-function-type @(type1,type2,...) as a parent type
   if (m_args) {
     m_type.reset(new FunctionArgsType(log, function, m_args->getArgs()));

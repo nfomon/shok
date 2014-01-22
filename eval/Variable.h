@@ -27,17 +27,20 @@ class Variable : public TypedNode {
 public:
   Variable(Log& log, RootNode*const root, const Token& token)
     : TypedNode(log, root, token),
-      m_object(NULL) {}
+      m_symbol(NULL) {}
   virtual void setup();
   virtual void evaluate();
 
   Object& getObject() const;
 
 private:
+  typedef std::vector<std::string> select_vec;
+  typedef select_vec::const_iterator select_iter;
   // from TypedNode
   virtual void computeType();
   std::string m_varname;
-  Object* m_object;
+  Symbol* m_symbol;
+  select_vec m_select;
 };
 
 }
