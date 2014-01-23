@@ -40,7 +40,7 @@ public:
   virtual void setup();
   // Prepare the scope to include the new variable.  This is called by an
   // analysis step kickstarted by our parent New, after its setup() is
-  // completed.
+  // completed, or by a parent ObjectLiteral near the end of its setup().
   // We could do this same work at setup() time but it seems nicer to let the
   // New statement finish its setup() validation beforehand.  Here we actually
   // perform the object creation, but mark it as "pending" in the Scope until
@@ -48,6 +48,10 @@ public:
   void prepare();
   // Commit the object to the Scope, and assign its initial value
   virtual void evaluate();
+
+  std::string getName() const { return m_varname; }   // called by ObjectLiteral
+  std::auto_ptr<Type> getType() const;                // called by ObjectLiteral
+  std::auto_ptr<Object> getObject() const;            // called by ObjectLiteral
 
 private:
   bool m_isPrepared;

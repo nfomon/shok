@@ -3,8 +3,6 @@
 
 #include "Object.h"
 
-#include "SymbolTable.h"
-
 #include <memory>
 #include <string>
 #include <utility>
@@ -24,6 +22,7 @@ Object::Object(Log& log, const string& name)
 }
 
 Object::~Object() {
+  m_log.debug("Object " + print() + " is being destroyed");
   if (!m_isDestructed) {
     m_log.warning("Destroying non-destructed Object " + print());
   }
@@ -43,7 +42,7 @@ Object* Object::getMember(const string& name) const {
 
 void Object::newMember(const string& name, auto_ptr<Object> object) {
   if (getMember(name)) {
-    throw new EvalError("Cannot add new member " + name + " to Object " + print() + "; member already exists");
+    throw EvalError("Cannot add new member " + name + " to Object " + print() + "; member already exists");
   }
   m_members.insert(make_pair(name, object.release()));
 }

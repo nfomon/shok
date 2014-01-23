@@ -39,6 +39,7 @@
 namespace eval {
 
 class Function;
+class ObjectLiteral;
 
 class Scope {
 public:
@@ -48,12 +49,13 @@ public:
       m_symbolTable(log),
       m_parentScope(NULL),
       m_function(NULL),
+      m_object(NULL),
       m_depth(0) {}
   ~Scope();
 
   void init(Scope* parentScope);
   void init(Scope* parentScope, Function* parentFunction);
-  //void init(Scope* parentScope, ObjectLiteral* parentObject);
+  void init(Scope* parentScope, ObjectLiteral* parentObject);
   void reset();
   void commitFirst();
   void commitAll();
@@ -75,7 +77,7 @@ private:
   SymbolTable m_symbolTable;
   Scope* m_parentScope;     // NULL for the root scope (held by RootNode)
   Function* m_function;     // set if this is a function's block-scope
-  //ObjectLiteral* m_object;  // set if this is an object literal's block-scope
+  ObjectLiteral* m_object;  // set if this is an object literal's block-scope
   int m_depth;              // 0 at root (global). 1 is special: defers to root
 };
 

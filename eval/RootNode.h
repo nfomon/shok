@@ -22,10 +22,11 @@ public:
   // Prepare the RootNode for another evaluation
   void prepare();
 
+  virtual Scope* getScope() { return &m_scope; }
+
 protected:
   virtual void setup();
   virtual void evaluate();
-  virtual Scope* getScope() { return &m_scope; }
 
 private:
   void clearChildren(bool onlyEvaluatedChildren = false);

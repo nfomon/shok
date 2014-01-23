@@ -8,7 +8,9 @@
 #include "Identifier.h"
 #include "Type.h"
 
+#include <memory>
 #include <string>
+using std::auto_ptr;
 using std::string;
 
 using namespace eval;
@@ -39,8 +41,7 @@ void NewInit::setup() {
   switch (children.size()) {
     // new x -- type and value are both 'object'
     case 1: {
-      // TODO get this directly from the global scope
-      const Symbol* object = parentScope->getSymbol("object");
+      const Symbol* object = root->getScope()->getSymbol("object");
       if (!object) {
         throw EvalError("Cannot find symbol for the object object.  Uhoh.");
       }
@@ -110,9 +111,10 @@ void NewInit::prepare() {
     throw EvalError("Cannot prepare NewInit " + print() + " which has not determined the new object's Type");
   }
 
-  // Construct the object in our parent scope
+  // Add the symbol to our parent scope
   // TODO don't duplicate the type here; just retrieve it if we need to use it
   parentScope->newSymbol(m_varname, m_type->duplicate());
+  log.debug("NewInit " + print() + " adding symbol for " + m_varname + " with type " + m_type->print());
   m_isPrepared = true;
 }
 
@@ -123,13 +125,22 @@ void NewInit::evaluate() {
   } else if (!m_type.get()) {
     throw EvalError("Cannot evaluate NewInit " + print() + " that has no type");
   }
-  if (m_exp) {
-    parentScope->initSymbol(m_varname, m_exp->getObject(m_varname));
-  } else {
-    Symbol* s = parentScope->getSymbol(m_varname);
-    if (!s) throw EvalError("");
-    parentScope->initSymbol(m_varname, s->type->makeDefaultObject(m_varname));
-  }
+  parentScope->initSymbol(m_varname, getObject());
   parentScope->commitFirst();
   m_isPrepared = false;
+}
+
+auto_ptr<Type> NewInit::getType() const {
+  return m_type->duplicate();
+}
+
+auto_ptr<Object> NewInit::getObject() const {
+  if (m_exp) {
+    return m_exp->getObject(m_varname);
+  }
+  Symbol* s = parentScope->getSymbol(m_varname);
+  if (!s) {
+    throw EvalError("Cannot get Object for NewInit " + print() + "; missing symbol for " + m_varname);
+  }
+  return s->type->makeDefaultObject(m_varname);
 }

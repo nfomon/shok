@@ -48,13 +48,15 @@ auto_ptr<Object> Expression::getObject(const string& newName) const {
   Variable* var = dynamic_cast<Variable*>(children.at(0));
   //Operator* op = dynamic_cast<Operator*>(children.at(0));
   Function* function = dynamic_cast<Function*>(children.at(0));
-  //ObjectLiteral* function = dynamic_cast<ObjectLiteral*>(children.at(0)); // TODO
+  ObjectLiteral* object = dynamic_cast<ObjectLiteral*>(children.at(0));
   if (var) {
     auto_ptr<Object> tmp = var->getObject().clone(newName);
     return tmp;
   // } else if (op) {   // TODO
   } else if (function) {
     return function->makeObject(newName);
+  } else if (object) {
+    return object->makeObject(newName);
   }
   throw EvalError("Expression " + print() + " cannot retrieve Object from unsupported child type " + children.at(0)->print());
 }

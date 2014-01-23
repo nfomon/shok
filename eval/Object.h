@@ -25,7 +25,6 @@
 namespace eval {
 
 class Expression;
-class SymbolTable;
 class Type;
 
 class Object {

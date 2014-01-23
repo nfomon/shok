@@ -6,6 +6,8 @@
 #include "Arg.h"
 #include "Object.h"
 
+#include "boost/lexical_cast.hpp"
+
 #include <algorithm>
 #include <string>
 #include <utility>
@@ -193,7 +195,12 @@ auto_ptr<Object> BasicType::makeDefaultObject(const string& newName) const {
 }
 
 auto_ptr<Type> BasicType::duplicate() const {
-  return auto_ptr<Type>(new BasicType(m_log, m_parent));
+  BasicType* bt = new BasicType(m_log, m_parent);
+  auto_ptr<Type> t(bt);
+  for (member_iter i = m_members.begin(); i != m_members.end(); ++i) {
+    bt->m_members.insert(make_pair(i->first, i->second->duplicate().release()));
+  }
+  return t;
 }
 
 string BasicType::getName() const {
@@ -205,9 +212,13 @@ string BasicType::getName() const {
 
 string BasicType::print() const {
   if (!m_parent.object.get()) {
-    return "(uninitialized BasicType:" + m_parent.type->print() + ")";
+    return "(uninitialized BasicType:" + m_parent.type->print() +
+           string(m_members.size() > 0 ? " with " +
+             boost::lexical_cast<string>(m_members.size()) + " members)" : ")");
   }
-  return m_parent.object->print();
+  return "(BasicType:" + m_parent.object->print() +
+         string(m_members.size() > 0 ? " with " +
+           boost::lexical_cast<string>(m_members.size()) + " members)" : ")");
 }
 
 /* AndType */

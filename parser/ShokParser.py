@@ -206,12 +206,12 @@ Parens = Seq('parens',
 # Care is required because there could be an ambiguity between object literals
 # and expblocks, depending on what is allowed inside each.
 MemberExt = Or('memberext', [
-  Seq('memberextsemi', [w, ('SEMI',';'), n, Future('ObjectBody')]),
-  Seq('memberextwn', [(wn,';'), n, Future('ObjectBody')]),
+  Seq('memberextsemi', [w, ('SEMI','; '), n, Future('ObjectBody')]),
+  Seq('memberextwn', [(wn,'; '), n, Future('ObjectBody')]),
 ])
 
 Member = Seq('member',
-  [(Future('NewAssign'),' %s'), Opt(MemberExt)]
+  [Future('NewAssign'), Opt(MemberExt)]
 )
 
 ObjectBody = Opt(Seq('objectbody',
@@ -221,7 +221,7 @@ Replace(MemberExt.items[0], 'ObjectBody', ObjectBody)
 Replace(MemberExt.items[1], 'ObjectBody', ObjectBody)
 
 Object = Seq('object',
-  [('LBRACE','(object'), n, ObjectBody, w, ('RBRACE',')')]
+  [('LBRACE','(object'), n, (ObjectBody,' {%s}'), w, ('RBRACE',')')]
 )
 
 Arg = (Or('arg', [
@@ -281,7 +281,7 @@ NewAssign = (Seq('newassign',
   ['ID', w, Opt(Seq('newtype', [('COLON',' '), n, Type])),
          w, Opt(Seq('newvalue', [('EQUALS',' '), n, Exp]))]
 ), '(init %s)')
-Replace(Member, 0, NewAssign)
+Replace(Member, 'NewAssign', NewAssign)
 
 New = (Seq('new',
   [('NEW',''), n, NewAssign,

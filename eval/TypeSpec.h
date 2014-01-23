@@ -18,6 +18,7 @@
  */
 
 #include "Log.h"
+#include "OperatorParser.h"
 #include "RootNode.h"
 #include "Token.h"
 #include "TypedNode.h"
@@ -26,10 +27,11 @@
 
 namespace eval {
 
-class TypeSpec : public TypedNode {
+class TypeSpec : public TypedNode, public OperatorParser {
 public:
   TypeSpec(Log& log, RootNode*const root, const Token& token)
-    : TypedNode(log, root, token) {}
+    : TypedNode(log, root, token),
+      OperatorParser(log) {}
   virtual void setup();
   virtual void evaluate();
 

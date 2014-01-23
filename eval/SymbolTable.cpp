@@ -88,8 +88,9 @@ void SymbolTable::commitFirst() {
 
 // Commit all pending-commit objects
 void SymbolTable::commitAll() {
-  m_log.debug("Committing all changes");
-  for (size_t i=0; i < m_changeset.size(); ++i) {
+  m_log.debug("Committing all " + boost::lexical_cast<string>(m_changeset.size()) + " changes");
+  size_t n = m_changeset.size();
+  for (size_t i=0; i < n; ++i) {
     commitFirst();
   }
 }
@@ -97,7 +98,7 @@ void SymbolTable::commitAll() {
 // Revert the newest pending-commit change from the store
 void SymbolTable::revertLast() {
   if (m_changeset.empty()) {
-    throw EvalError("Cannot revert last of changeset; no changes pending");
+    throw EvalError(m_log, "Cannot revert last of changeset; no changes pending");
   }
   SymbolChange* sc = m_changeset.back();
   symbol_mod_iter s = m_symbols.find(sc->varname);
@@ -153,7 +154,9 @@ void SymbolTable::revertLast() {
 
 // Revert all pending-commit objects
 void SymbolTable::revertAll() {
-  for (size_t i=0; i < m_changeset.size(); ++i) {
+  m_log.debug("Reverting all " + boost::lexical_cast<string>(m_changeset.size()) + " changes");
+  size_t n = m_changeset.size();
+  for (size_t i=0; i < n; ++i) {
     revertLast();
   }
 }

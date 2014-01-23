@@ -17,7 +17,8 @@ using namespace eval;
 
 Scope::~Scope() {
   m_log.info("Destroying " + string(m_function ? "function " : "") +
-             "scope at depth " + boost::lexical_cast<string>(m_depth));
+             string(m_object ? "object " : "") + "scope at depth " +
+             boost::lexical_cast<string>(m_depth));
 }
 
 // Remains the root scope if this is never called
@@ -44,6 +45,20 @@ void Scope::init(Scope* parentScope, Function* parentFunction) {
   m_function = parentFunction;
   m_depth = 0;
   m_log.debug("Init function-scope at depth " + boost::lexical_cast<string>(m_depth));
+  m_isInit = true;
+}
+
+// Remains the root scope if this is never called
+void Scope::init(Scope* parentScope, ObjectLiteral* parentObject) {
+  if (!parentScope) {
+    throw EvalError("Cannot init the root scope");
+  } else if (m_isInit) {
+    throw EvalError("Cannot init already-initialized scope");
+  }
+  m_parentScope = parentScope;
+  m_object = parentObject;
+  m_depth = 0;
+  m_log.debug("Init object-scope at depth " + boost::lexical_cast<string>(m_depth));
   m_isInit = true;
 }
 
@@ -76,6 +91,9 @@ void Scope::commitAll() {
 
 // Revert a pending-commit object
 void Scope::revertLast() {
+  m_log.debug("Reverting last from " + string(m_function ? "function " : "") +
+              string(m_object ? "object " : "") + "scope at depth " +
+              boost::lexical_cast<string>(m_depth));
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
@@ -86,6 +104,9 @@ void Scope::revertLast() {
 
 // Revert all pending-commit objects
 void Scope::revertAll() {
+  m_log.info("Reverting all from " + string(m_function ? "function " : "") +
+             string(m_object ? "object " : "") + "scope at depth " +
+             boost::lexical_cast<string>(m_depth));
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
     if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
@@ -95,7 +116,10 @@ void Scope::revertAll() {
 }
 
 Symbol* Scope::getSymbol(const string& varname) const {
-  m_log.debug(string(m_function ? "Function " : "") + "Scope at depth " + boost::lexical_cast<string>(m_depth) + " retrieving symbol " + varname);
+  m_log.debug(string(m_function ? "Function " : "") +
+              string(m_object ? "Object " : "") + "Scope at depth " +
+              boost::lexical_cast<string>(m_depth) +
+              " retrieving symbol " + varname);
   Symbol* s = m_symbolTable.getSymbol(varname);
   if (s) return s;
   // TODO how to getSymbol from a function-scope?  Need to look up the function

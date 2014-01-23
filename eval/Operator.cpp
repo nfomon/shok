@@ -231,8 +231,7 @@ void Operator::computeType() {
     if (!isInfix()) {
       throw EvalError("| must be a binary operator");
     }
-    // TODO: get this directly from the global scope
-    const Symbol* str = parentScope->getSymbol("str");
+    const Symbol* str = root->getScope()->getSymbol("str");
     if (!str) {
       throw EvalError("Cannot use ~ or ~~ operator until str is defined");
     }

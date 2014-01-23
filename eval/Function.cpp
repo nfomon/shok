@@ -68,7 +68,7 @@ auto_ptr<Object> Function::makeObject(const string& newName) {
   } else if (m_isObjectified) {
     throw EvalError("Cannot make object from Function " + print() + " that has already been made into an object");
   }
-  const Symbol* functionSymbol = parentScope->getSymbol("@");
+  const Symbol* functionSymbol = root->getScope()->getSymbol("@");
   if (!functionSymbol || !functionSymbol->object.get()) {
     throw EvalError("Cannot find the @ object");
   }
@@ -96,7 +96,7 @@ void Function::computeType() {
   if (m_type.get()) {
     throw EvalError("Cannot compute type of Function " + print() + " that already has a type");
   }
-  const Symbol* p_function = parentScope->getSymbol("@");
+  const Symbol* p_function = root->getScope()->getSymbol("@");
   if (!p_function) {
     throw EvalError("Cannot find symbol for the @ object");
   }

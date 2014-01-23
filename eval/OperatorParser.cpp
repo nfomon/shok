@@ -137,6 +137,6 @@ Node* OperatorParser::finalizeParse() {
     tmp = stackOp;
     m_stack.pop_back();
   }
-
+  m_log.info("Done finalizing operator parser");
   return tmp;
 }

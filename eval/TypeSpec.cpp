@@ -15,7 +15,6 @@ void TypeSpec::setup() {
   if (children.size() != 1) {
     throw EvalError("TypeSpec must wrap a single expression fragment");
   }
-
   computeType();
 }
 

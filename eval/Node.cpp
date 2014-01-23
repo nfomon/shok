@@ -17,6 +17,7 @@
 #include "Log.h"
 #include "New.h"
 #include "NewInit.h"
+#include "ObjectLiteral.h"
 #include "Operator.h"
 #include "OperatorParser.h"
 #include "ProcCall.h"
@@ -74,6 +75,8 @@ Node* Node::MakeNode(Log& log, RootNode*const root, const Token& t) {
     return new ProcCall(log, root, t);
   if ("isvar" == t.name)
     return new IsVar(log, root, t);
+  if ("object" == t.name)
+    return new ObjectLiteral(log, root, t);
   if ("func" == t.name)
     return new Function(log, root, t);
   if ("args" == t.name)
@@ -321,13 +324,12 @@ void Node::initScopeNode(Node* scopeParent) {
     parentScope = scopeParent->getParentScope();
   }
   if (scopeParent->children.size() > 1) {
-    // TODO check for ObjectLiteral as well
     Function* function = dynamic_cast<Function*>(scopeParent->children.at(0));
-    //ObjectLiteral* object = dynamic_cast<ObjectLiteral*>(scopeParent->children.at(0));
+    ObjectLiteral* object = dynamic_cast<ObjectLiteral*>(scopeParent->children.at(0));
     if (function) {
       initScope(parentScope, function);
-    // } else if (object) {
-    //   initScope(parentScope, object);
+    } else if (object) {
+      initScope(parentScope, object);
     } else {
       initScope(parentScope);
     }
@@ -446,7 +448,7 @@ string Node::print() const {
   return r;
 }
 
-Node::operator std::string() const {
+Node::operator string() const {
   return name;
 }
 

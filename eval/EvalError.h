@@ -20,6 +20,8 @@
  * unevaluated code and returns us to the root scope).
  */
 
+#include "Log.h"
+
 #include <stdexcept>
 
 namespace eval {
@@ -29,6 +31,9 @@ class Node;
 class EvalError : public std::runtime_error {
 public:
   EvalError(const std::string& what) : std::runtime_error(what) {}
+  EvalError(Log& log, const std::string& what) : std::runtime_error(what) {
+    log.error(what);
+  }
 };
 
 class RecoveredError : public std::runtime_error {
