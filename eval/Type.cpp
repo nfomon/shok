@@ -29,6 +29,10 @@ void RootType::addMemberType(const string& name, auto_ptr<Type> type) {
   m_members.insert(make_pair(name, type.release()));
 }
 
+bool RootType::hasMember(const string& name) const {
+  return m_members.find(name) != m_members.end();
+}
+
 auto_ptr<Type> RootType::getMemberType(const string& name) const {
   member_iter i = m_members.find(name);
   if (m_members.end() == i) {
@@ -44,6 +48,14 @@ auto_ptr<Object> RootType::makeDefaultObject(const string& newName) const {
     o->newMember(i->first, i->second->makeDefaultObject(i->first));
   }
   return o;
+}
+
+bool RootType::isParentOf(const Type& child) const {
+  return true;
+}
+
+bool RootType::takesArgs(const paramtype_vec& paramtypes) const {
+  return false;
 }
 
 auto_ptr<Type> RootType::duplicate() const {
@@ -101,6 +113,46 @@ auto_ptr<Object> FunctionArgsType::makeDefaultObject(const std::string& newName)
   return m_froot.type->makeDefaultObject(newName);
 }
 
+bool FunctionArgsType::isParentOf(const Type& child) const {
+  const FunctionArgsType* funargsType = dynamic_cast<const FunctionArgsType*>(&child);
+  const BasicType* basicType = dynamic_cast<const BasicType*>(&child);
+  const AndType* andType = dynamic_cast<const AndType*>(&child);
+  const OrType* orType = dynamic_cast<const OrType*>(&child);
+  if (funargsType) {
+    if (funargsType->m_args.size() != m_args.size()) {
+      return false;
+    }
+    // each of the child's args is a parent of our corresponding arg
+    for (size_t i=0; i < m_args.size(); ++i) {
+      if (!funargsType->m_args.at(i)->type().isParentOf(m_args.at(i)->type())) {
+        return false;
+      }
+    }
+    return true;
+  } else if (basicType) {
+    return isParentOf(*basicType->parent().type);
+  } else if (andType) {
+    return isParentOf(andType->left()) || isParentOf(andType->right());
+  } else if (orType) {
+    return isParentOf(orType->left()) && isParentOf(orType->right());
+  }
+
+  return false;
+}
+
+bool FunctionArgsType::takesArgs(const paramtype_vec& paramtypes) const {
+  // compare against m_args, an ArgSpec* vec
+  if (paramtypes.size() != m_args.size()) {
+    return false;
+  }
+  for (size_t i=0; i < paramtypes.size(); ++i) {
+    if (!m_args.at(i)->type().isParentOf(*paramtypes.at(i))) {
+      return false;
+    }
+  }
+  return true;
+}
+
 auto_ptr<Type> FunctionArgsType::duplicate() const {
   argspec_vec new_args;
   for (argspec_iter i = m_args.begin(); i != m_args.end(); ++i) {
@@ -142,6 +194,29 @@ auto_ptr<Object> FunctionReturnsType::makeDefaultObject(const std::string& newNa
   return m_froot.type->makeDefaultObject(newName);
 }
 
+bool FunctionReturnsType::isParentOf(const Type& child) const {
+  const FunctionReturnsType* funretType = dynamic_cast<const FunctionReturnsType*>(&child);
+  const BasicType* basicType = dynamic_cast<const BasicType*>(&child);
+  const AndType* andType = dynamic_cast<const AndType*>(&child);
+  const OrType* orType = dynamic_cast<const OrType*>(&child);
+  if (funretType) {
+    // our return type is a parent of the child's return type
+    return m_returns->isParentOf(*funretType->m_returns);
+  } else if (basicType) {
+    return isParentOf(*basicType->parent().type);
+  } else if (andType) {
+    return isParentOf(andType->left()) || isParentOf(andType->right());
+  } else if (orType) {
+    return isParentOf(orType->left()) && isParentOf(orType->right());
+  }
+
+  return false;
+}
+
+bool FunctionReturnsType::takesArgs(const paramtype_vec& paramtypes) const {
+  return false;
+}
+
 auto_ptr<Type> FunctionReturnsType::duplicate() const {
   return auto_ptr<Type>(new FunctionReturnsType(m_log,
                                                 m_froot,
@@ -168,10 +243,14 @@ void BasicType::addMemberType(const string& name, auto_ptr<Type> type) {
   m_members.insert(make_pair(name, type.release()));
 }
 
+bool BasicType::hasMember(const string& name) const {
+  return m_members.find(name) != m_members.end();
+}
+
 auto_ptr<Type> BasicType::getMemberType(const string& name) const {
   member_iter i = m_members.find(name);
   if (m_members.end() == i) {
-    return auto_ptr<Type>(NULL);
+    return m_parent.type->getMemberType(name);
   }
   return i->second->duplicate();
 }
@@ -184,7 +263,7 @@ auto_ptr<Object> BasicType::makeDefaultObject(const string& newName) const {
   }
   auto_ptr<Object> o;
   if (m_parent.object.get()) {
-    o = m_parent.object->clone(newName);    // TODO
+    o = m_parent.object->clone(newName);
   } else {
     o = m_parent.type->makeDefaultObject(newName);
   }
@@ -192,6 +271,40 @@ auto_ptr<Object> BasicType::makeDefaultObject(const string& newName) const {
     o->newMember(i->first, i->second->makeDefaultObject(i->first));
   }
   return o;
+}
+
+bool BasicType::isParentOf(const Type& child) const {
+  const BasicType* basicType = dynamic_cast<const BasicType*>(&child);
+  const AndType* andType = dynamic_cast<const AndType*>(&child);
+  const OrType* orType = dynamic_cast<const OrType*>(&child);
+  if (basicType) {
+    // if we're a parent, then nevermind what members the rhs has.  just check
+    // if our parent symbol is its parent symbol, and walk up its tree.
+    if (&m_parent == &basicType->parent()) {
+      // If we extended our parent with any members, the child had better have
+      // them too
+      for (member_iter i = m_members.begin(); i != m_members.end(); ++i) {
+        if (!basicType->hasMember(i->first)) {
+          return false;
+        }
+        if (!i->second->isParentOf(*basicType->getMemberType(i->first))) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return isParentOf(*basicType->parent().type);
+  } else if (andType) {
+    return isParentOf(andType->left()) || isParentOf(andType->right());
+  } else if (orType) {
+    return isParentOf(andType->left()) && isParentOf(andType->right());
+  }
+  return false;
+}
+
+bool BasicType::takesArgs(const paramtype_vec& paramtypes) const {
+  // TODO also check if we have an op() member??
+  return m_parent.type->takesArgs(paramtypes);
 }
 
 auto_ptr<Type> BasicType::duplicate() const {
@@ -246,6 +359,14 @@ auto_ptr<Object> AndType::makeDefaultObject(const string& newName) const {
   throw EvalError("AndType::makeDefaultObject(const string&) is unimplemented");
 }
 
+bool AndType::isParentOf(const Type& child) const {
+  return m_left->isParentOf(child) && m_right->isParentOf(child);
+}
+
+bool AndType::takesArgs(const paramtype_vec& paramtypes) const {
+  return m_left->takesArgs(paramtypes) || m_right->takesArgs(paramtypes);
+}
+
 auto_ptr<Type> AndType::duplicate() const {
   if (!m_left.get() || !m_right.get()) {
     throw EvalError("Cannot duplicate deficient AndType " + print());
@@ -275,12 +396,9 @@ string AndType::print() const {
 /* OrType */
 
 auto_ptr<Type> OrType::OrUnion(Log& log, const Type& a, const Type& b) {
-  /*
-  if (a.isCompatible(b)) return a.duplicate();
-  if (b.isCompatible(a)) return b.duplicate();
+  if (a.isParentOf(b)) return a.duplicate();
+  if (b.isParentOf(a)) return b.duplicate();
   return auto_ptr<Type>(new OrType(log, a, b));
-  */
-  return auto_ptr<Type>(NULL);
 }
 
 void OrType::addMemberType(const string& name, auto_ptr<Type> type) {
@@ -303,6 +421,14 @@ auto_ptr<Type> OrType::getMemberType(const string& name) const {
 
 auto_ptr<Object> OrType::makeDefaultObject(const string& newName) const {
   throw EvalError("Cannot make default object " + newName + " for OrType " + print());
+}
+
+bool OrType::isParentOf(const Type& child) const {
+  return m_left->isParentOf(child) || m_right->isParentOf(child);
+}
+
+bool OrType::takesArgs(const paramtype_vec& paramtypes) const {
+  return m_left->takesArgs(paramtypes) && m_right->takesArgs(paramtypes);
 }
 
 auto_ptr<Type> OrType::duplicate() const {

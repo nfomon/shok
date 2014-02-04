@@ -35,6 +35,8 @@ public:
   virtual void addMemberType(const std::string& name, std::auto_ptr<Type> type) = 0;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const = 0;
   virtual std::auto_ptr<Object> makeDefaultObject(const std::string& newName) const = 0;
+  virtual bool isParentOf(const Type& child) const = 0;
+  virtual bool takesArgs(const paramtype_vec& paramtypes) const = 0;
   // Returns a duplicate of the Type.  Caller takes ownership.
   virtual std::auto_ptr<Type> duplicate() const = 0;
   virtual std::string getName() const = 0;
@@ -50,10 +52,13 @@ protected:
 class RootType : public Type {
 public:
   RootType(Log& log) : Type(log) {}
-  ~RootType();
+  virtual ~RootType();
   virtual void addMemberType(const std::string& name, std::auto_ptr<Type> type);
+  virtual bool hasMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual std::auto_ptr<Object> makeDefaultObject(const std::string& newName) const;
+  virtual bool isParentOf(const Type& child) const;
+  virtual bool takesArgs(const paramtype_vec& paramtypes) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;
@@ -74,6 +79,8 @@ public:
   virtual void addMemberType(const std::string& name, std::auto_ptr<Type> type);
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual std::auto_ptr<Object> makeDefaultObject(const std::string& newName) const;
+  virtual bool isParentOf(const Type& child) const;
+  virtual bool takesArgs(const paramtype_vec& paramtypes) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;
@@ -92,6 +99,8 @@ public:
   virtual void addMemberType(const std::string& name, std::auto_ptr<Type> type);
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual std::auto_ptr<Object> makeDefaultObject(const std::string& newName) const;
+  virtual bool isParentOf(const Type& child) const;
+  virtual bool takesArgs(const paramtype_vec& paramtypes) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;
@@ -107,11 +116,15 @@ public:
     : Type(log), m_parent(parent) {}
   ~BasicType();
   virtual void addMemberType(const std::string& name, std::auto_ptr<Type> type);
+  virtual bool hasMember(const std::string& name) const;
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual std::auto_ptr<Object> makeDefaultObject(const std::string& newName) const;
+  virtual bool isParentOf(const Type& child) const;
+  virtual bool takesArgs(const paramtype_vec& paramtypes) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;
+  const Symbol& parent() const { return m_parent; }
 private:
   typedef std::map<std::string,Type*> member_map;
   typedef std::pair<std::string,Type*> member_pair;
@@ -135,6 +148,8 @@ public:
   virtual void addMemberType(const std::string& name, std::auto_ptr<Type> type);
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual std::auto_ptr<Object> makeDefaultObject(const std::string& newName) const;
+  virtual bool isParentOf(const Type& child) const;
+  virtual bool takesArgs(const paramtype_vec& paramtypes) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;
@@ -156,6 +171,8 @@ public:
   virtual void addMemberType(const std::string& name, std::auto_ptr<Type> type);
   virtual std::auto_ptr<Type> getMemberType(const std::string& name) const;
   virtual std::auto_ptr<Object> makeDefaultObject(const std::string& newName) const;
+  virtual bool isParentOf(const Type& child) const;
+  virtual bool takesArgs(const paramtype_vec& paramtypes) const;
   virtual std::auto_ptr<Type> duplicate() const;
   virtual std::string getName() const;
   virtual std::string print() const;

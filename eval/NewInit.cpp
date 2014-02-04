@@ -85,12 +85,9 @@ void NewInit::setup() {
       }
       m_type = m_typeSpec->getType();
 
-      // TODO: Validate that the initial value matches the type
-      /*
-      if (!m_type->isCompatible(m_exp->getType())) {
-        throw EvalError("Value does not match the type of variable " + m_varname);
+      if (!m_type->isParentOf(m_exp->type())) {
+        throw EvalError("Value does not match the type of variable " + m_varname + ".  Type: " + m_type->print() + ", value type: " + m_exp->type().print());
       }
-      */
 
       break;
     }
