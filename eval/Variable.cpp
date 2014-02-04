@@ -27,16 +27,19 @@ void Variable::setup() {
       throw EvalError("Variable children must all be Identifiers");
     }
     if (!m_symbol) {
-      m_symbol = parentScope->getSymbol(ident->getName());
+      m_varname = ident->getName();
+      m_fullname = m_varname;
+      m_symbol = parentScope->getSymbol(m_varname);
       if (!m_symbol) {
         throw EvalError("Object " + m_varname + " does not exist");
       }
       memberType = m_symbol->type->duplicate();
     } else {
       string member = ident->getName();
+      m_fullname += "." + member;
       memberType = memberType->getMemberType(member);
       if (!memberType.get()) {
-        throw EvalError("Object " + m_varname + " member " + member + " does not exist");
+        throw EvalError("Object member " + m_fullname + " does not exist");
       }
       m_select.push_back(member);
     }

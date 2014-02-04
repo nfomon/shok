@@ -39,6 +39,7 @@ private:
   // from TypedNode
   virtual void computeType();
   std::string m_varname;
+  std::string m_fullname;
   Symbol* m_symbol;
   select_vec m_select;
 };
