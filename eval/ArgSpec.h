@@ -32,7 +32,7 @@ public:
   }
 
   std::string print() const {
-    return "(argspec:" + m_name + ":" + m_type.print();
+    return "(argspec:" + m_name + ":" + m_type.print() + ")";
   }
 
 private:
