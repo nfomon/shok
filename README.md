@@ -3,7 +3,7 @@ shok
 
 http://shok.io
 
-The shok command shell is a non-POSIX interactive command language interpreter with an expressive scripting language.  It is a modern, discoverable environment intended for every-day command invocation, process management, and filesystem manipulation.
+The shok command shell is a non-POSIX interactive command language interpreter with an expressive scripting language.  It intends to be a modern, discoverable shell intended for every-day command invocation, process management, and filesystem manipulation.
 
 status
 ======
