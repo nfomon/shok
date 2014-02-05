@@ -30,8 +30,8 @@ void ObjectLiteral::setup() {
   //m_body->defer();
   computeType();
 
-  // TODO we're doing our block's NewInit prepare() too late I think; the
-  // ObjectLiteral should be analyzing each member as they are inserted.
+  // TODO we're doing our block's NewInit prepare() too late for ASAP I think;
+  // the ObjectLiteral should be analyzing each member as they are inserted.
   for (init_iter i = m_inits.begin(); i != m_inits.end(); ++i) {
     (*i)->prepare();
   }
