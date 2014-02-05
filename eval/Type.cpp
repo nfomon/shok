@@ -141,7 +141,6 @@ bool FunctionArgsType::isParentOf(const Type& child) const {
 }
 
 bool FunctionArgsType::takesArgs(const paramtype_vec& paramtypes) const {
-  // compare against m_args, an ArgSpec* vec
   if (paramtypes.size() != m_args.size()) {
     return false;
   }
