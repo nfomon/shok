@@ -126,6 +126,10 @@ void Scope::revertAll() {
 }
 
 Symbol* Scope::getSymbol(const string& varname) const {
+  if (1 == m_depth) {
+    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
+    return m_parentScope->getSymbol(varname);
+  }
   m_log.debug(string(m_function ? "Function " : "") +
               string(m_object ? "Object " : "") + "Scope at depth " +
               boost::lexical_cast<string>(m_depth) +
@@ -147,12 +151,18 @@ Symbol* Scope::getSymbol(const string& varname) const {
 }
 
 Symbol* Scope::getLocalSymbol(const string& varname) const {
+  if (1 == m_depth) {
+    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
+    return m_parentScope->getLocalSymbol(varname);
+  }
   m_log.debug(string(m_function ? "Function " : "") +
               string(m_object ? "Object " : "") + "Scope at depth " +
               boost::lexical_cast<string>(m_depth) +
               " retrieving local symbol " + varname);
   Symbol* s = m_symbolTable.getSymbol(varname);
-  if (s) return s;
+  if (s) {
+    return s;
+  }
   return NULL;
 }
 
