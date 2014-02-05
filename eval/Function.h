@@ -55,6 +55,8 @@ public:
   virtual void setup();
   virtual void evaluate();
 
+  arg_vec getArgs() const;
+
   // Make an Object out of this Function.  Transfers ownership of m_body.
   // This can only happen once, because ownership of m_body is transferred.
   // TODO: also transfer ownership of m_args and m_returns, instead of copying

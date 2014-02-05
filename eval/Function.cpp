@@ -62,6 +62,13 @@ void Function::evaluate() {
   }
 }
 
+arg_vec Function::getArgs() const {
+  if (!m_args) {
+    return arg_vec();
+  }
+  return m_args->getArgs();
+}
+
 auto_ptr<Object> Function::makeObject(const string& newName) {
   if (!isSetup || !isEvaluated) {
     throw EvalError("Cannot make object from Function " + print() + " before it is setup and evaluated");

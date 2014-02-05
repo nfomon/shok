@@ -65,6 +65,9 @@ public:
   // Lookup a symbol, deferring up the tree if it's not found locally.
   // Returns NULL if it does not exist anywhere.
   Symbol* getSymbol(const std::string& varname) const;
+  // Lookup a symbol in exactly this scope, without deferring up the tree.
+  // Returns NULL if it is not found locally.
+  Symbol* getLocalSymbol(const std::string& varname) const;
   // Insert a new symbol, as "pending" until it's either commit or revert
   Symbol& newSymbol(const std::string& varname, std::auto_ptr<Type> type);
   void delSymbol(const std::string& varname);

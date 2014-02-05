@@ -44,6 +44,16 @@ void Scope::init(Scope* parentScope, Function* parentFunction) {
   m_parentScope = parentScope;
   m_function = parentFunction;
   m_depth = 0;
+
+  // Named function arguments go in this scope
+  arg_vec args = m_function->getArgs();
+  for (arg_iter i = args.begin(); i != args.end(); ++i) {
+    string argname = (*i)->getName();
+    if (!argname.empty()) {
+      m_symbolTable.newSymbol(argname, (*i)->getType());
+    }
+  }
+  // TODO Named return value goes in this scope
   m_log.debug("Init function-scope at depth " + boost::lexical_cast<string>(m_depth));
   m_isInit = true;
 }
@@ -123,16 +133,27 @@ Symbol* Scope::getSymbol(const string& varname) const {
   Symbol* s = m_symbolTable.getSymbol(varname);
   if (s) return s;
   // TODO how to getSymbol from a function-scope?  Need to look up the function
-  // type "symbols" here...??
+  // type "symbols" here...?  i.e. members inherit from @ or @(a,b) or @->c
   /*
   if (m_function) {
     s = m_function->type().getMember(varname);
     if (s) return s;
   }
   */
-  // TODO: object-literal lookup
+  // TODO: object-literal lookup through object hierarchy.  Again, not sure how
+  // to return a "Symbol"...
   if (!m_parentScope) return NULL;
   return m_parentScope->getSymbol(varname);
+}
+
+Symbol* Scope::getLocalSymbol(const string& varname) const {
+  m_log.debug(string(m_function ? "Function " : "") +
+              string(m_object ? "Object " : "") + "Scope at depth " +
+              boost::lexical_cast<string>(m_depth) +
+              " retrieving local symbol " + varname);
+  Symbol* s = m_symbolTable.getSymbol(varname);
+  if (s) return s;
+  return NULL;
 }
 
 Symbol& Scope::newSymbol(const string& varname, auto_ptr<Type> type) {

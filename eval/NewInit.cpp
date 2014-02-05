@@ -102,7 +102,7 @@ void NewInit::setup() {
 void NewInit::prepare() {
   if (!parentScope) {
     throw EvalError("Cannot prepare NewInit " + print() + " with no parent scope");
-  } else if (parentScope->getSymbol(m_varname)) {
+  } else if (parentScope->getLocalSymbol(m_varname)) {
     throw EvalError("Variable " + m_varname + " already exists");
   } else if (!m_type.get()) {
     throw EvalError("Cannot prepare NewInit " + print() + " which has not determined the new object's Type");
