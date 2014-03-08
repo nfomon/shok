@@ -7,24 +7,23 @@
 /* Miscellaneous utilities */
 
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace Util {
 
-std::string ltrim_space(std::string s) {
-  size_t startpos = s.find_first_not_of(' ');
-  if (startpos != std::string::npos) {
-    return s.substr(startpos);
-  }
-  return "";
-}
+// Extract the first space-separated word from a string.
+// Returns the pair <first word, rest of s>
+std::pair<std::string,std::string> break_word(std::string s);
 
-std::string rtrim_space(std::string s) {
-  size_t endpos = s.find_last_not_of(' ');
-  if (endpos != std::string::npos) {
-    return s.substr(0, endpos+1);
-  }
-  return "";
-}
+// Split words of a string by whitespace
+std::vector<std::string> split(const std::string& s, char delim = ' ');
+
+// Trim whitespace from the left of s
+std::string ltrim_space(std::string s);
+
+// Trim whitespace from the right of s
+std::string rtrim_space(std::string s);
 
 }
 

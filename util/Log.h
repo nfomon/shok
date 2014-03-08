@@ -6,12 +6,11 @@
 
 /* Debug log */
 
+#include <boost/lexical_cast.hpp>
+
+#include <exception>
 #include <fstream>
 #include <string>
-
-namespace eval {
-
-const std::string LOGFILE = "eval.log";
 
 class Log {
 public:
@@ -21,9 +20,17 @@ public:
     WARNING = 30,
     ERROR = 40
   };
-  static const LEVEL DEFAULT_LEVEL = DEBUG;
+  std::string UnmapLevel(LEVEL level) const {
+    switch (level) {
+      case DEBUG:   return "debug";
+      case INFO:    return "info";
+      case WARNING: return "warning";
+      case ERROR:   return "error";
+      default: throw std::runtime_error("Cannot unmap level " + boost::lexical_cast<std::string>(level));
+    }
+  }
 
-  Log();
+  Log(const std::string& logfile, const LEVEL level = DEBUG);
   ~Log();
 
   void setLevel(LEVEL level);
@@ -38,7 +45,5 @@ private:
   std::ofstream m_log;
   LEVEL m_level;
 };
-
-}
 
 #endif // _Log_h_

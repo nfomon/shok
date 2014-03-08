@@ -14,8 +14,8 @@
  * however, that is yet a longtime coming.
  */
 
-#include "Proc.h"
-#include "Util.h"
+#include "util/Proc.h"
+#include "util/Util.h"
 
 #include <boost/tokenizer.hpp>
 

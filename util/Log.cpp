@@ -8,13 +8,13 @@
 #include <string>
 using std::string;
 
-using namespace eval;
-
-Log::Log()
-  : m_level(DEFAULT_LEVEL)
-  {
-  m_log.open(LOGFILE.c_str());
-  info("Initialized log");
+Log::Log(const string& logfile, const LEVEL level)
+  : m_level(level) {
+  m_log.open(logfile.c_str());
+  if (!m_log) {
+    throw std::runtime_error("Failed to open logfile " + logfile);
+  }
+  info("Initialized log at level " + UnmapLevel(level));
 }
 
 Log::~Log() {

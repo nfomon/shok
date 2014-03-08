@@ -1,7 +1,7 @@
 // Copyright (C) 2013 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#include "Proc.h"
+#include "util/Proc.h"
 
 #include <boost/lexical_cast.hpp>
 
