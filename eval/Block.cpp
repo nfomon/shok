@@ -14,6 +14,8 @@ using std::vector;
 
 using namespace eval;
 
+/* public */
+
 Block::~Block() {
   log.debug("Destroying Block " + print());
   for (child_iter i = children.begin(); i != children.end(); ++i) {
@@ -68,18 +70,23 @@ void Block::setup() {
   }
 }
 
-// Our children have already been evaluated.  This evaluation time is what
-// occurs at the closing }.  We destroy all objects in this scope.  Unless
-// we're an ObjectLiteral's block, in which case, we keep them around.
+// codegen() and then run the code
 void Block::evaluate() {
+  codegen();
+  // llvm-evaluate the m_bytecode
+  /*
+  // We used to keep objects in our scope if we're an ObjectLiteral block
   if (!m_object) {
     m_scope.reset();
   }
+  */
 }
 
 string Block::cmdText() const {
   if (!m_exp) {
     throw EvalError("Cannot get cmdText of a code block");
+  } else if (!isEvaluated) {
+    throw EvalError("Cannot get cmdText of a non-evaluated block");
   }
   return m_exp->cmdText();
 }
@@ -97,4 +104,30 @@ vector<NewInit*> Block::getInits() const {
     iv.push_back(init);
   }
   return iv;
+}
+
+/* private */
+
+void Block::codegen() {
+  // Write out LLVM bytecode for this block
+  if (isCodeBlock()) {
+    if (0 == depth()) {
+      if (m_function) {
+      } else if (m_object) {
+      } else {
+        // create a new main() returning void
+      }
+    }
+    // setup block
+    // codegen each child and insert its code into the block
+    // Note: not all our children are statements, sooo... hmm... we'll need to cast each and every one to find its individual codegen().  which is fine.
+    // Really, we should probably separate the different types of block into
+    // different classes.  Oh well, let's not bother with that yet.
+    // Finish the block
+  } else {
+    // codegen the expression, including a final ->str call on it.
+    // we should, like, hang on to the llvm var that will contain our result,
+    // or something.
+    // m_something = m_exp->codegen();    // ?
+  }
 }

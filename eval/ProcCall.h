@@ -8,10 +8,11 @@
 
 #include "Common.h"
 #include "Function.h"
-#include "Log.h"
 #include "Object.h"
 #include "Type.h"
 #include "Variable.h"
+
+#include "util/Log.h"
 
 #include <memory>
 #include <string>

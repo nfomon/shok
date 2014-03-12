@@ -21,8 +21,9 @@
 
 #include "Common.h"
 #include "EvalError.h"
-#include "Log.h"
 #include "Symbol.h"
+
+#include "util/Log.h"
 
 #include <deque>
 #include <limits>

@@ -10,10 +10,11 @@
  * not yet exist.  Held by nodes such as Variable and NewInit.
  */
 
-#include "Log.h"
 #include "Node.h"
 #include "RootNode.h"
 #include "Token.h"
+
+#include "util/Log.h"
 
 #include <string>
 

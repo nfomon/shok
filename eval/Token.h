@@ -6,7 +6,7 @@
 
 /* Token of AST input read from the parser */
 
-#include "Log.h"
+#include "util/Log.h"
 
 #include <string>
 #include <vector>

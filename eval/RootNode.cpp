@@ -3,9 +3,10 @@
 
 #include "RootNode.h"
 
-#include "Log.h"
 #include "EvalError.h"
 #include "Token.h"
+
+#include "util/Log.h"
 
 using namespace eval;
 
@@ -26,7 +27,7 @@ RootNode::RootNode(Log& log)
 // destruction.
 void RootNode::reset() {
   log.debug("Resetting root node");
-  clearChildren(false);
+  clearChildren();
   m_scope.revertAll();
 }
 
@@ -41,27 +42,16 @@ void RootNode::setup() {
 }
 
 void RootNode::evaluate() {
-  // Children were evaluated successfully.  Clear them away.
-  clearChildren(true);
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
+    (*i)->evaluateNode();
+    // TODO we could delete the child here, but that's messy to deal with
+  }
+  clearChildren();
 }
 
-void RootNode::clearChildren(bool onlyEvaluatedChildren) {
-  int n = children.size();
-  if (onlyEvaluatedChildren) {
-    log.debug("Clearing root node's evaluated children");
-    n = 0;
-    for (child_iter i = children.begin(); i != children.end(); ++i) {
-      if (!(*i)->isNodeEvaluated()) {
-        break;
-      }
-      ++n;
-    }
-  } else {
-    log.debug("Clearing root node's children");
-  }
-  while (n > 0) {
+void RootNode::clearChildren() {
+  while (!children.empty()) {
     delete children.front();
     children.pop_front();
-    --n;
   }
 }

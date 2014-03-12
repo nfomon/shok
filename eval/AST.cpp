@@ -5,10 +5,11 @@
 
 #include "Brace.h"
 #include "EvalError.h"
-#include "Log.h"
 #include "Token.h"
 #include "RootNode.h"
 #include "Operator.h"
+
+#include "util/Log.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -56,14 +57,13 @@ void AST::insert(const Token& token) {
 }
 
 void AST::evaluate() {
-  m_root.prepare();
-
   // We only actually run code if m_current has arrived back at the root node,
   // m_root.  This signifies a return to the outer-most (command-line) scope.
   if (m_current != &m_root) {
     m_log.debug(" - not at root -- not ready to run");
     return;
   }
+  m_root.prepare();
   m_root.evaluateNode();
 }
 

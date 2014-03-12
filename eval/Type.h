@@ -14,8 +14,9 @@
 
 #include "Common.h"
 #include "EvalError.h"
-#include "Log.h"
 #include "Symbol.h"
+
+#include "util/Log.h"
 
 #include <limits.h>
 #include <memory>

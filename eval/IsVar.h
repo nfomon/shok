@@ -11,10 +11,11 @@
  * via hacks.
  */
 
-#include "Log.h"
 #include "RootNode.h"
 #include "Statement.h"
 #include "Token.h"
+
+#include "util/Log.h"
 
 #include <string>
 

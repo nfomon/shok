@@ -13,11 +13,12 @@
  * the parent scope at setup()-time, so the Variable can be a TypedNode.
  */
 
-#include "Log.h"
 #include "Object.h"
 #include "RootNode.h"
 #include "Token.h"
 #include "TypedNode.h"
+
+#include "util/Log.h"
 
 #include <string>
 

@@ -17,11 +17,12 @@
  * including object literals, by the parser.
  */
 
-#include "Log.h"
 #include "OperatorParser.h"
 #include "RootNode.h"
 #include "Token.h"
 #include "TypedNode.h"
+
+#include "util/Log.h"
 
 #include <string>
 

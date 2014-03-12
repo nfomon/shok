@@ -23,9 +23,10 @@
  * parsing) to let us setupNode() nodes as quickly as possible.
  */
 
-#include "Log.h"
 #include "Node.h"
 #include "Operator.h"
+
+#include "util/Log.h"
 
 #include <string>
 #include <utility>

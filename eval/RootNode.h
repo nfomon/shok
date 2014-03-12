@@ -4,12 +4,16 @@
 #ifndef _RootNode_h_
 #define _RootNode_h_
 
-/* Root node of the AST */
+/* Root node of the AST
+ *
+ * Its children are all Commands, although this is not enforced.
+ */
 
-#include "Log.h"
 #include "Node.h"
 #include "Scope.h"
 #include "StdLib.h"
+
+#include "util/Log.h"
 
 namespace eval {
 
@@ -29,7 +33,7 @@ protected:
   virtual void evaluate();
 
 private:
-  void clearChildren(bool onlyEvaluatedChildren = false);
+  void clearChildren();
   Scope m_scope;
   StdLib m_stdlib;
 };

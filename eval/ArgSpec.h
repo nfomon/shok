@@ -6,8 +6,9 @@
 
 /* The specification of a function argument */
 
-#include "Log.h"
 #include "Type.h"
+
+#include "util/Log.h"
 
 #include <memory>
 #include <string>

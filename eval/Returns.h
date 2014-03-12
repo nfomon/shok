@@ -9,10 +9,11 @@
  * Function return type, which (eventually) might have a name.
  */
 
-#include "Log.h"
 #include "RootNode.h"
 #include "Token.h"
 #include "TypeSpec.h"
+
+#include "util/Log.h"
 
 namespace eval {
 

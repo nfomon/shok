@@ -13,9 +13,10 @@
  */
 
 #include "Common.h"
-#include "Log.h"
 #include "Method.h"
 #include "Type.h"
+
+#include "util/Log.h"
 
 #include <map>
 #include <memory>

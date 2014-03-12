@@ -14,7 +14,7 @@
 
 #include "AST.h"
 #include "EvalError.h"
-#include "Log.h"
+#include "util/Log.h"
 #include "Token.h"
 
 #include <iostream>
@@ -28,6 +28,7 @@ using namespace eval;
 
 namespace {
   const string PROGRAM_NAME = "shok_eval";
+  const string LOGFILE = "eval.log";
 }
 
 int main(int argc, char *argv[]) {
@@ -36,7 +37,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  Log log;
+  Log log(LOGFILE);
   try {
     if (2 == argc) {
       log.setLevel(argv[1]);

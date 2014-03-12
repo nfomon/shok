@@ -14,7 +14,6 @@
 #include "Function.h"
 #include "Identifier.h"
 #include "IsVar.h"
-#include "Log.h"
 #include "New.h"
 #include "NewInit.h"
 #include "ObjectLiteral.h"
@@ -25,6 +24,8 @@
 #include "RootNode.h"
 #include "TypeSpec.h"
 #include "Variable.h"
+
+#include "util/Log.h"
 
 #include <boost/lexical_cast.hpp>
 
@@ -411,21 +412,7 @@ void Node::evaluateNode() {
     throw EvalError("Node " + print() + " has already been evaluated");
   }
   if (!isInit || !isSetup || !isAnalyzed) {
-    // An immediate child of the root can skip evaluation if it's not setup
-    if (root == parent && root != NULL) return;
     throw EvalError("Node " + print() + " cannot be evaluated until init, setup, and analyzed");
-  }
-
-  // Skip deferred blocks
-  Block* block = dynamic_cast<Block*>(this);
-  if (block && block->isDeferred()) {
-    log.debug("Not evaluating deferred block " + block->print());
-    return;
-  }
-
-  // Evaluate nodes children-first
-  for (child_iter i = children.begin(); i != children.end(); ++i) {   
-    (*i)->evaluateNode();
   }
   log.debug(" - evaluating node " + print());
   evaluate();

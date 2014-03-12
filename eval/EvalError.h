@@ -20,7 +20,7 @@
  * unevaluated code and returns us to the root scope).
  */
 
-#include "Log.h"
+#include "util/Log.h"
 
 #include <stdexcept>
 

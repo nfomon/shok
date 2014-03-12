@@ -11,10 +11,11 @@
  * appropriate for that statement.
  */
 
-#include "Log.h"
 #include "Node.h"
 #include "RootNode.h"
 #include "Token.h"
+
+#include "util/Log.h"
 
 namespace eval {
 

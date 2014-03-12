@@ -7,8 +7,9 @@
 /* Method: arguments, return type, and code body.  Owned by Object.  */
 
 #include "Common.h"
-#include "Log.h"
 #include "Type.h"
+
+#include "util/Log.h"
 
 #include <memory>
 #include <string>

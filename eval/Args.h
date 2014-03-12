@@ -11,9 +11,10 @@
 
 #include "Arg.h"
 #include "Common.h"
-#include "Log.h"
 #include "RootNode.h"
 #include "Token.h"
+
+#include "util/Log.h"
 
 #include <vector>
 

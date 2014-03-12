@@ -11,9 +11,10 @@
  */
 
 #include "Brace.h"
-#include "Log.h"
 #include "RootNode.h"
 #include "Token.h"
+
+#include "util/Log.h"
 
 namespace eval {
 

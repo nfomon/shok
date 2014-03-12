@@ -21,13 +21,14 @@
  * The expression's Type is determined at setup() time.
  */
 
-#include "Log.h"
 #include "Operator.h"
 #include "OperatorParser.h"
 #include "RootNode.h"
 #include "Token.h"
 #include "Type.h"
 #include "TypedNode.h"
+
+#include "util/Log.h"
 
 #include <memory>
 #include <string>

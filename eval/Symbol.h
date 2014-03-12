@@ -13,8 +13,9 @@
 
 #include "Common.h"
 #include "EvalError.h"
-#include "Log.h"
 #include "SymbolTable.h"
+
+#include "util/Log.h"
 
 #include <map>
 #include <memory>

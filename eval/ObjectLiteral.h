@@ -7,10 +7,11 @@
 /* Object Literals */
 
 #include "Block.h"
-#include "Log.h"
 #include "NewInit.h"
 #include "Token.h"
 #include "TypedNode.h"
+
+#include "util/Log.h"
 
 #include <memory>
 #include <string>

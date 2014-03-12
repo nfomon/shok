@@ -6,9 +6,10 @@
 
 /* shok standard library */
 
-#include "Log.h"
 #include "Object.h"
 #include "Scope.h"
+
+#include "util/Log.h"
 
 #include <vector>
 

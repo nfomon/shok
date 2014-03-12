@@ -15,12 +15,13 @@
 
 #include "Expression.h"
 #include "Identifier.h"
-#include "Log.h"
 #include "Node.h"
 #include "RootNode.h"
 #include "Scope.h"
 #include "Token.h"
 #include "TypeSpec.h"
+
+#include "util/Log.h"
 
 #include <string>
 

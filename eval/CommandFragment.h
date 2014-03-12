@@ -6,10 +6,11 @@
 
 /* CommandFragment: a piece of a command-line */
 
-#include "Log.h"
 #include "Node.h"
 #include "RootNode.h"
 #include "Token.h"
+
+#include "util/Log.h"
 
 #include <string>
 

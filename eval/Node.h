@@ -22,9 +22,10 @@
  * yet.
  */
 
-#include "Log.h"
 #include "Scope.h"
 #include "Token.h"
+
+#include "util/Log.h"
 
 #include <string>
 #include <deque>
@@ -63,6 +64,7 @@ public:
   // Caution! Called by rare crazy node-reorganization routines only.
   void replaceChild(Node* oldChild, Node* newChild);
   // Evaluate the node!  Public because it's called by AST on the root node.
+  // This does not itself perform a recursive call (anymore).
   void evaluateNode();
   // Wipe out the node's parentScope; it is being destroyed.
   void cancelParentScopeNode();
@@ -104,7 +106,7 @@ protected:
   virtual void initScope(Scope* scopeParent, ObjectLiteral* object) {}
   virtual void initChild(Node* child) {}  // early parent setup before new child
   virtual void setup() = 0;               // child-first setup/analysis
-  virtual void evaluate() = 0;            // child-first code execution
+  virtual void evaluate() = 0;            // code execution
   virtual Scope* getScope() { return NULL; }              // local scope
   Scope* getParentScope() const { return parentScope; }   // enclosing scope
 

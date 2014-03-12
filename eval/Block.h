@@ -14,7 +14,7 @@
 #include "Brace.h"
 #include "Expression.h"
 #include "Function.h"
-#include "Log.h"
+#include "util/Log.h"
 #include "NewInit.h"
 #include "ObjectLiteral.h"
 #include "RootNode.h"
@@ -54,9 +54,13 @@ public:
   std::vector<NewInit*> getInits() const;
   //std::auto_ptr<Block> duplicate() const;
 
+  Scope::depth_t depth() const { return m_scope.depth(); }
+
 private:
   typedef std::vector<Statement*> statement_vec;
   typedef statement_vec::const_iterator statement_iter;
+
+  void codegen();
 
   Scope m_scope;
   Expression* m_exp;            // Set if this is an expression block

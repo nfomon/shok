@@ -7,10 +7,11 @@
 /* Abstract Syntax Tree */
 
 #include "EvalError.h"
-#include "Log.h"
 #include "Node.h"
 #include "RootNode.h"
 #include "Token.h"
+
+#include "util/Log.h"
 
 #include <string>
 

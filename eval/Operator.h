@@ -24,12 +24,13 @@
  * (with the refactoring involved) when we implement &.
  */
 
-#include "Log.h"
 #include "Node.h"
 #include "RootNode.h"
 #include "Token.h"
 #include "Type.h"
 #include "TypedNode.h"
+
+#include "util/Log.h"
 
 #include <string>
 #include <utility>

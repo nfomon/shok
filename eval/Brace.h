@@ -6,10 +6,11 @@
 
 /* Brace -- actually, just an AST token that requires a match */
 
-#include "Log.h"
 #include "Node.h"
 #include "RootNode.h"
 #include "Token.h"
+
+#include "util/Log.h"
 
 namespace eval {
 

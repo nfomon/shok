@@ -22,15 +22,29 @@ void Command::setup() {
 }
 
 void Command::evaluate() {
+  // Codegen all the child blocks.  If it's a single code block, run it.
+  // Otherwise, run all the expression blocks, take their cmdtext, and tell
+  // the shell what command it should run on our behalf.
+  if (1 == children.size()) {
+    Block* block = dynamic_cast<Block*>(children.front());
+    if (block && block->isCodeBlock()) {
+      block->evaluateNode();
+      return;
+    }
+  }
   string cmd;
   for (Node::child_iter i = children.begin(); i != children.end(); ++i) {
-    const Block* block = dynamic_cast<const Block*>(*i);
-    // Code blocks aren't commands; don't run them
-    if (block && block->isCodeBlock()) return;
-    const CommandFragment* frag = dynamic_cast<const CommandFragment*>(*i);
+    Block* block = dynamic_cast<Block*>(*i);
+    // Code blocks should have already been dealt with
+    if (block && block->isCodeBlock()) {
+      throw EvalError("Command " + print() + " found inappropriately-positioned code block");
+    }
+    CommandFragment* frag = dynamic_cast<CommandFragment*>(*i);
     if (frag) {
+      frag->evaluateNode();
       cmd += frag->cmdText();
     } else if (block) {
+      block->evaluateNode();
       cmd += block->cmdText();
     } else {
       throw EvalError("Command has an unsupported child: " + string(**i));
