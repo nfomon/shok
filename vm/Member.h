@@ -36,7 +36,7 @@ struct MemberParser : qi::grammar<Iterator, Member(), ascii::space_type> {
     using qi::lit;
     using qi::graph;
 
-    identifier %= qi::lexeme[ (qi::alpha | '_') >> *(qi::alnum | '_') ];
+    identifier %= qi::lexeme[ (qi::alpha | '_') >> *(qi::alnum | '_' | ':') ];
     blank %= qi::lexeme[Member::NO_SOURCE];
     start %=
       lit("member")
