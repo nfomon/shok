@@ -11,8 +11,6 @@
 
 #include "util/Log.h"
 
-#include <boost/lexical_cast.hpp>
-
 #include <iostream>
 #include <string>
 using std::cin;
@@ -38,24 +36,16 @@ int main(int argc, char *argv[]) {
     if (2 == argc) {
       log.setLevel(argv[1]);
     }
-
-    Executor executor(log);
-    log.info("Initialized executor");
-
-    string line;
-    int line_num = 0;
-    while (std::getline(cin, line)) {
-      ++line_num;
-      log.debug("Received input line [" + boost::lexical_cast<string>(line_num) + "]: '" + line + "'");
-      try {
-        executor.exec(line);
-      } catch (VMError& e) {
-        log.error(string("Error executing bytecode at line " + boost::lexical_cast<string>(line_num) + ": ") + e.what());
-        cout << endl;
-        return -1;    // abort!
-      }
+    Executor executor(log, cin);
+    if (executor.execute()) {
+      cout << "parsed!" << endl;
+    } else {
+      cout << "failed to parse!" << endl;
     }
-  } catch (std::exception& e) {
+  } catch (const VMError& e) {
+    log.error(string("Error executing bytecode: ") + e.what());
+    cout << endl;
+  } catch (const std::exception& e) {
     log.error(string("Unknown error: ") + e.what());
   } catch (...) {
     log.error("Unknown error");

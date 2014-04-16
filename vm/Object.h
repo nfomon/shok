@@ -13,8 +13,7 @@ namespace vm {
 
 class Object {
 public:
-  Object();
-  Object(const Object& source);
+  Object(Object* source);
 
 private:
   // parents

@@ -12,8 +12,5 @@ using std::string;
 
 using namespace vm;
 
-Object::Object() {
-}
-
-Object::Object(const Object& source) {
+Object::Object(Object* source) {
 }

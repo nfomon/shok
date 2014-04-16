@@ -6,25 +6,41 @@
 
 /* VM instruction execution dispatch */
 
-#include "Instruction.h"
-#include "SymbolTable.h"
+#include "Object.h"
 
 #include "util/Log.h"
 
-#include <stdexcept>
+#include <boost/function.hpp>
+#include <boost/spirit/home/support/unused.hpp>
+#include <boost/spirit/include/qi.hpp>
+
+#include <istream>
+#include <map>
 
 namespace vm {
 
+class New;
+
 class Executor {
 public:
-  Executor(Log& log);
+  Executor(Log& log, std::istream& input);
 
-  void exec(const std::string& line);
+  // returns true on full successful parse
+  bool execute();
 
 private:
+  typedef std::map<std::string,Object*> symbol_map;
+  typedef symbol_map::const_iterator symbol_iter;
+
   Log& m_log;
-  SymbolTable m_symbolTable;
-  Instruction* m_instruction;
+  std::istream& m_input;
+  symbol_map m_symbolTable;
+
+  // member-function aliases bound to their exec_x counterparts at construction
+  boost::function<void (const New&, boost::spirit::qi::unused_type, boost::spirit::qi::unused_type)> on_new;
+
+  // semantic actions
+  void exec_new(const New&);
 };
 
 }
