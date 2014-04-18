@@ -3,7 +3,7 @@
 
 #include "Block.h"
 
-#include "EvalError.h"
+#include "CompileError.h"
 #include "Expression.h"
 #include "Scope.h"
 
@@ -12,7 +12,7 @@
 using std::string;
 using std::vector;
 
-using namespace eval;
+using namespace compiler;
 
 /* public */
 
@@ -43,7 +43,7 @@ void Block::setup() {
   Brace::setup();
 
   if (m_exp) {
-    throw EvalError("Block.m_exp should not already be set when setting up");
+    throw CompileError("Block.m_exp should not already be set when setting up");
   }
   // Determine if we're a code block or an expression block
   if (1 == children.size()) {
@@ -54,8 +54,8 @@ void Block::setup() {
     for (child_mod_iter i = children.begin(); i != children.end(); ++i) {
       Statement* statement = dynamic_cast<Statement*>(*i);
       if (!statement) continue; // Note: not all Block's children are Statements
-      // "Instant" statements are builtins that have already been evaluated,
-      // and can be discarded.
+      // "Instant" statements are builtins that have already been compiled, and
+      // can be discarded.
       if (statement->isInstant()) {
         instants.push_back(i);
       } else {
@@ -70,10 +70,9 @@ void Block::setup() {
   }
 }
 
-// codegen() and then run the code
-void Block::evaluate() {
+void Block::compile() {
   codegen();
-  // llvm-evaluate the m_bytecode
+  // OLD: llvm-evaluate the m_bytecode
   /*
   // We used to keep objects in our scope if we're an ObjectLiteral block
   if (!m_object) {
@@ -84,22 +83,22 @@ void Block::evaluate() {
 
 string Block::cmdText() const {
   if (!m_exp) {
-    throw EvalError("Cannot get cmdText of a code block");
-  } else if (!isEvaluated) {
-    throw EvalError("Cannot get cmdText of a non-evaluated block");
+    throw CompileError("Cannot get cmdText of a code block");
+  } else if (!isCompiled) {
+    throw CompileError("Cannot get cmdText of a non-compiled block");
   }
   return m_exp->cmdText();
 }
 
 vector<NewInit*> Block::getInits() const {
   if (!m_object) {
-    throw EvalError("Cannot get NewInits out of non-ObjectLiteral Block " + print());
+    throw CompileError("Cannot get NewInits out of non-ObjectLiteral Block " + print());
   }
   std::vector<NewInit*> iv;
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     NewInit* init = dynamic_cast<NewInit*>(*i);
     if (!init) {
-      throw EvalError("ObjectLiteral Block " + print() + " must only contain NewInits");
+      throw CompileError("ObjectLiteral Block " + print() + " must only contain NewInits");
     }
     iv.push_back(init);
   }

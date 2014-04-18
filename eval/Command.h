@@ -16,14 +16,14 @@
 
 #include "util/Log.h"
 
-namespace eval {
+namespace compiler {
 
 class Command : public Brace {
 public:
   Command(Log& log, RootNode*const root, const Token& token)
     : Brace(log, root, token, true) {}
   virtual void setup();
-  virtual void evaluate();
+  virtual void compile();
 };
 
 }

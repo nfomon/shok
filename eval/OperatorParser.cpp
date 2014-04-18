@@ -3,7 +3,7 @@
 
 #include "OperatorParser.h"
 
-#include "EvalError.h"
+#include "CompileError.h"
 #include "Operator.h"
 #include "Variable.h"
 
@@ -12,7 +12,7 @@
 using std::make_pair;
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 /* public */
 
@@ -28,7 +28,7 @@ void OperatorParser::insertNode(Node* node) {
     stack_pair top = m_stack.back();   // peek, don't pop
     stackTop = top.first;
     if (!stackTop) {
-      throw EvalError("Found deficient stack top while parsing " + node->print());
+      throw CompileError("Found deficient stack top while parsing " + node->print());
     }
     topPriority = top.second;
   }
@@ -41,7 +41,7 @@ void OperatorParser::insertNode(Node* node) {
 
     // Top of stack is a free non-operator.  Everything above it is an operator.
     if (stackOp || !stackTop || topPriority != Operator::NO_PRIORITY) {
-      throw EvalError(node->print() + " beginning infix parse, yet top of stack is an operator");
+      throw CompileError(node->print() + " beginning infix parse, yet top of stack is an operator");
     }
     Node* tmp = stackTop;
     m_stack.pop_back();
@@ -50,12 +50,12 @@ void OperatorParser::insertNode(Node* node) {
       stack_pair top = m_stack.back(); // peek, don't pop
       stackTop = top.first;
       if (!stackTop) {
-        throw EvalError("Found deficient stack top while parsing " + node->print());
+        throw CompileError("Found deficient stack top while parsing " + node->print());
       }
       topPriority = top.second;
       stackOp = dynamic_cast<Operator*>(stackTop);
       if (!stackOp || Operator::NO_PRIORITY == topPriority) {
-        throw EvalError("Operator parse of " + node->print() + " found not-top non-op stack item, or deficient priority");
+        throw CompileError("Operator parse of " + node->print() + " found not-top non-op stack item, or deficient priority");
       }
       if (opPrecedence.priority > topPriority) break;
       // stackOp consumes tmp, then becomes tmp, and we bubble up the stack.
@@ -66,7 +66,7 @@ void OperatorParser::insertNode(Node* node) {
       } else if (stackOp->isInfix()) {
         stackOp->setupRight();
       } else {
-        throw EvalError("Operator parse of " + node->print() + " found unknown arity");
+        throw CompileError("Operator parse of " + node->print() + " found unknown arity");
       }
       stackOp->setupNode();
       tmp = stackOp;
@@ -99,13 +99,13 @@ Node* OperatorParser::finalizeParse() {
   m_log.info("Finalizing operator parser");
 
   if (m_stack.empty()) {
-    throw EvalError("Finalizing parse of empty OperatorParser");
+    throw CompileError("Finalizing parse of empty OperatorParser");
   }
   // Ensure we were not left with a dangling operator
   Node* stackTop = m_stack.back().first;
   Operator* stackOp = dynamic_cast<Operator*>(stackTop);
   if (stackOp) {
-    throw EvalError("Finalizing parse was left with dangling operator " + stackOp->print());
+    throw CompileError("Finalizing parse was left with dangling operator " + stackOp->print());
   }
   // The top of the stack is the missing child of the operator above it, and so
   // on up the stack.
@@ -117,11 +117,11 @@ Node* OperatorParser::finalizeParse() {
     stack_pair top = m_stack.back(); // peek, don't pop
     stackTop = top.first;
     if (!stackTop) {
-      throw EvalError("Finalizing parse found deficient stack top");
+      throw CompileError("Finalizing parse found deficient stack top");
     }
     stackOp = dynamic_cast<Operator*>(stackTop);
     if (!stackOp || Operator::NO_PRIORITY == top.second) {
-      throw EvalError("Finalizing parse found not-top non-op stack item, or deficient priority");
+      throw CompileError("Finalizing parse found not-top non-op stack item, or deficient priority");
     }
     // stackOp consumes tmp, then becomes tmp, and we bubble up the stack.
     stackOp->addChild(tmp);
@@ -131,7 +131,7 @@ Node* OperatorParser::finalizeParse() {
     } else if (stackOp->isInfix()) {
       stackOp->setupRight();
     } else {
-      throw EvalError("Finalizing parse found unknown arity");
+      throw CompileError("Finalizing parse found unknown arity");
     }
     stackOp->setupNode();
     tmp = stackOp;

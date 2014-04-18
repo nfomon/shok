@@ -15,7 +15,7 @@
  * operators bottom-up.
  *
  * This single expression may be owned by an expression block, in which case
- * the expression is meant to evaluate to an object on which we'll call
+ * the expression is meant to compile to an object on which we'll call
  * ->str.escape() and then provide this text as a command-line fragment.
  *
  * The expression's Type is determined at setup() time.
@@ -33,7 +33,7 @@
 #include <memory>
 #include <string>
 
-namespace eval {
+namespace compiler {
 
 class Expression : public TypedNode, public OperatorParser {
 public:
@@ -41,10 +41,10 @@ public:
     : TypedNode(log, root, token),
       OperatorParser(log) {}
   virtual void setup();
-  virtual void evaluate();
+  virtual void compile();
   virtual std::string cmdText() const;
 
-  // Get the Object resulting from the expression's evaluation.
+  // Get the Object resulting from the expression's compiled code (?).
   std::auto_ptr<Object> getObject(const std::string& newName) const;
 
 private:

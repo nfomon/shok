@@ -17,7 +17,7 @@
 
 #include "util/Log.h"
 
-namespace eval {
+namespace compiler {
 
 class Statement : public Node {
 public:

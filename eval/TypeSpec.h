@@ -10,7 +10,7 @@
  * it wraps an expression that we intend to use only for its Type.  At setup()
  * time we reorder and validate the operator tree just like an Expression.
  * Then we extract the Type of the expression and delete all the Nodes to block
- * them from ever being evaluated.
+ * them from ever being compiled.
  *
  * A TypeSpec will be more readily permitted to use | and maybe & than some
  * uses of Expression.  Additionally, a TypeSpec may be forbidden from
@@ -26,7 +26,7 @@
 
 #include <string>
 
-namespace eval {
+namespace compiler {
 
 class TypeSpec : public TypedNode, public OperatorParser {
 public:
@@ -34,7 +34,6 @@ public:
     : TypedNode(log, root, token),
       OperatorParser(log) {}
   virtual void setup();
-  virtual void evaluate();
 
   std::string getTypeName() const;
 

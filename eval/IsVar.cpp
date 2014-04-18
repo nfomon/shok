@@ -3,7 +3,7 @@
 
 #include "IsVar.h"
 
-#include "EvalError.h"
+#include "CompileError.h"
 #include "Identifier.h"
 
 #include <iostream>
@@ -14,11 +14,11 @@ using std::cout;
 using std::endl;
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 void IsVar::setup() {
   if (children.size() < 1) {
-    throw EvalError("IsVar must have >= 1 children");
+    throw CompileError("IsVar must have >= 1 children");
   }
   auto_ptr<Type> current(NULL);
   bool found = true;
@@ -27,7 +27,7 @@ void IsVar::setup() {
   for (; i < children.size(); ++i) {
     Identifier* ident = dynamic_cast<Identifier*>(children.at(i));
     if (!ident) {
-      throw EvalError("Children of IsVar " + print() + " must be Identifiers");
+      throw CompileError("Children of IsVar " + print() + " must be Identifiers");
     }
     if (!current.get()) {
       missingName = ident->getName();
@@ -59,6 +59,6 @@ void IsVar::setup() {
 }
 
 // As an "instant" Statement, we should never even get to this stage
-void IsVar::evaluate() {
-  throw EvalError("Cannot evaluate instant statement " + print());
+void IsVar::compile() {
+  throw CompileError("Cannot compile instant statement " + print());
 }

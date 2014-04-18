@@ -3,13 +3,13 @@
 
 #include "Token.h"
 
-#include "EvalError.h"
+#include "CompileError.h"
 
 #include <ctype.h>
 #include <string>
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 string Token::print() const {
   if ("" == value) {
@@ -32,19 +32,19 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
     switch (mode) {
     case MODE_NONE:
       if (inToken || inValue) {
-        throw EvalError("Unexpectedly inToken or inValue during NONE state");
+        throw CompileError("Unexpectedly inToken or inValue during NONE state");
       }
       if ('[' == c) {
         v.push_back(Token("["));
         mode = MODE_CMD;
       } else {
-        throw EvalError("Bad character in AST input: '" + string(1, c) + "'");
+        throw CompileError("Bad character in AST input: '" + string(1, c) + "'");
       }
       break;
     case MODE_CMD:
       if ('[' == c) {
         if (inToken) {
-          throw EvalError("Unexpected '[' within token of CMD mode");
+          throw CompileError("Unexpected '[' within token of CMD mode");
         }
         v.push_back(Token("["));
       } else if (']' == c) {
@@ -67,7 +67,7 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
         mode = MODE_CODE;
         ++codeDepth;
       } else if ('}' == c) {
-        throw EvalError("Unexpected '}' within CMD mode");
+        throw CompileError("Unexpected '}' within CMD mode");
       } else {
         if (!inToken) {
           inToken = true;
@@ -94,7 +94,7 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
         if (0 == codeDepth) {
           mode = MODE_CMD;
         } else if (codeDepth < 0) {
-          throw EvalError("CODE mode observed codeDepth < 0");
+          throw CompileError("CODE mode observed codeDepth < 0");
         }
       } else if ('{' == c) {
         if (inToken) {
@@ -107,9 +107,9 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
         ++codeDepth;
       } else if (':' == c) {
         if (!inToken) {
-          throw EvalError("Found unexpected ':' while in CODE non-Token");
+          throw CompileError("Found unexpected ':' while in CODE non-Token");
         } else if (inValue) {
-          throw EvalError("Found unexpected ':' while in CODE Value");
+          throw CompileError("Found unexpected ':' while in CODE Value");
         }
         inValue = true;
       } else if (' ' == c || ';' == c) {
@@ -136,7 +136,7 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
           inToken = false;
           inValue = false;
         } else {
-          throw EvalError("Unexpected single-quote in CODE Value");
+          throw CompileError("Unexpected single-quote in CODE Value");
         }
       } else if (!isalpha(c)) {
         if (inToken) {
@@ -154,7 +154,7 @@ Tokenizer::token_vec Tokenizer::tokenize(Log& log, const string& ast) {
       }
       break;
     default:
-      throw EvalError("Internal error: unknown MODE detected");
+      throw CompileError("Internal error: unknown MODE detected");
     }
   }
   if (inToken) {

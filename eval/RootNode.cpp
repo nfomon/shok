@@ -3,12 +3,12 @@
 
 #include "RootNode.h"
 
-#include "EvalError.h"
+#include "CompileError.h"
 #include "Token.h"
 
 #include "util/Log.h"
 
-using namespace eval;
+using namespace compiler;
 
 /* public */
 
@@ -21,10 +21,9 @@ RootNode::RootNode(Log& log)
   isAnalyzed = true;
 }
 
-// Reset any pending-evaluation children, and undo any pending changes
-// to the scope.  Note that this does not clear out variables that are
-// already commit in the global scope; we only let that happen on
-// destruction.
+// Reset any pending-compilation children, and undo any pending changes to the
+// scope.  Note that this does not clear out variables that are already commit
+// in the global scope; we only let that happen on destruction.
 void RootNode::reset() {
   log.debug("Resetting root node");
   clearChildren();
@@ -32,18 +31,18 @@ void RootNode::reset() {
 }
 
 void RootNode::prepare() {
-  isEvaluated = false;
+  isCompiled = false;
 }
 
 /* protected */
 
 void RootNode::setup() {
-  throw EvalError("Cannot setup the root node");
+  throw CompileError("Cannot setup the root node");
 }
 
-void RootNode::evaluate() {
+void RootNode::compile() {
   for (child_iter i = children.begin(); i != children.end(); ++i) {
-    (*i)->evaluateNode();
+    (*i)->compileNode();
     // TODO we could delete the child here, but that's messy to deal with
   }
   clearChildren();

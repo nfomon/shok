@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-namespace eval {
+namespace compiler {
 
 struct Token {
   Token() {}

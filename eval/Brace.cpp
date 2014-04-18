@@ -3,12 +3,12 @@
 
 #include "Brace.h"
 
-#include "EvalError.h"
+#include "CompileError.h"
 
 #include <string>
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 bool Brace::isOpen() const {
   return m_isOpen;
@@ -20,7 +20,7 @@ bool Brace::isIrrelevant() const {
 
 bool Brace::matchesCloseBrace(Brace* closeBrace) const {
   if (!m_isOpen) {
-    throw EvalError("A closing brace will never match with another closing brace... :P");
+    throw CompileError("A closing brace will never match with another closing brace... :P");
   }
   if (("[" == name && "]" == closeBrace->name) ||
       ("(" == name && ")" == closeBrace->name) ||
@@ -32,13 +32,13 @@ bool Brace::matchesCloseBrace(Brace* closeBrace) const {
 
 void Brace::setup() {
   if (("(" == name || ")" == name) && children.size() < 1) {
-    throw EvalError("Empty parens in the AST are not allowed");
+    throw CompileError("Empty parens in the AST are not allowed");
   }
 }
 
-void Brace::evaluate() {
+void Brace::compile() {
   if (0 == children.size()) {
     return;
   }
-  throw EvalError("Brace::evaluate is not setup");
+  throw CompileError("Brace::compile is not setup");
 }

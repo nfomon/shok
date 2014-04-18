@@ -3,6 +3,8 @@
 
 #include "Object.h"
 
+#include "CompileError.h"
+
 #include <memory>
 #include <string>
 #include <utility>
@@ -10,7 +12,7 @@ using std::auto_ptr;
 using std::make_pair;
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 Object::Object(Log& log, const string& name)
   : m_log(log),
@@ -42,7 +44,7 @@ Object* Object::getMember(const string& name) const {
 
 void Object::newMember(const string& name, auto_ptr<Object> object) {
   if (getMember(name)) {
-    throw EvalError("Cannot add new member " + name + " to Object " + print() + "; member already exists");
+    throw CompileError("Cannot add new member " + name + " to Object " + print() + "; member already exists");
   }
   m_members.insert(make_pair(name, object.release()));
 }
@@ -73,9 +75,9 @@ auto_ptr<Object> Object::call(const param_vec& params) const {
 
 void Object::construct() {
   if (m_isConstructed) {
-    throw EvalError("Cannot construct already-constructed Object " + print());
+    throw CompileError("Cannot construct already-constructed Object " + print());
   } else if (m_isDestructed) {
-    throw EvalError("Cannot construct already-destructed Object " + print());
+    throw CompileError("Cannot construct already-destructed Object " + print());
   }
   m_log.info("Object " + print() + ": constructor called");
   m_log.debug("Constructing children of " + print());
@@ -87,9 +89,9 @@ void Object::construct() {
 
 void Object::destruct() {
   if (!m_isConstructed) {
-    throw EvalError("Cannot destruct non-constructed Object " + print());
+    throw CompileError("Cannot destruct non-constructed Object " + print());
   } else if (m_isDestructed) {
-    throw EvalError("Cannot destruct already-destructed Object " + print());
+    throw CompileError("Cannot destruct already-destructed Object " + print());
   }
   m_log.info("Object " + print() + ": destructor called");
   m_log.debug("Destroying children of " + print());

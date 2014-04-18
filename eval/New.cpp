@@ -3,20 +3,20 @@
 
 #include "New.h"
 
-#include "EvalError.h"
+#include "CompileError.h"
 #include "NewInit.h"
 
 #include <string>
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 void New::setup() {
   // Children are inits
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     NewInit* init = dynamic_cast<NewInit*>(*i);
     if (!init) {
-      throw EvalError("New statement's children must all be NewInit nodes");
+      throw CompileError("New statement's children must all be NewInit nodes");
     }
   }
 }
@@ -28,6 +28,10 @@ void New::analyze() {
   }
 }
 
-// Children will have already been evaluated (commit their changesets)
-void New::evaluate() {
+// Children will have already been compiled (commit their changesets)
+void New::compile() {
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
+    NewInit* init = dynamic_cast<NewInit*>(*i);
+    init->codegen();
+  }
 }

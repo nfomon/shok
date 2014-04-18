@@ -17,7 +17,7 @@
 #include <memory>
 #include <string>
 
-namespace eval {
+namespace compiler {
 
 class ProcCall : public TypedNode {
 public:
@@ -25,7 +25,7 @@ public:
     : TypedNode(log, root, token),
       m_object(NULL) {}
   virtual void setup();
-  virtual void evaluate();
+  virtual void compile();
 
 private:
   // from TypedNode

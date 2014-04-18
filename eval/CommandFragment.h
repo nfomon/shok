@@ -14,14 +14,14 @@
 
 #include <string>
 
-namespace eval {
+namespace compiler {
 
 class CommandFragment : public Node {
 public:
   CommandFragment(Log& log, RootNode*const root, const Token& token)
     : Node(log, root, token) {}
   virtual void setup();
-  virtual void evaluate();
+  virtual void compile();
   virtual std::string cmdText() const;
 };
 

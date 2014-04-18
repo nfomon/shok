@@ -14,7 +14,7 @@
 
 #include <string>
 
-namespace eval {
+namespace compiler {
 
 class New : public Statement {
 public:
@@ -23,7 +23,7 @@ public:
 
   virtual void setup();
   virtual void analyze();
-  virtual void evaluate();
+  virtual void compile();
 
 private:
 };

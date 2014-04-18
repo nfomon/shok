@@ -3,7 +3,7 @@
 
 #include "Operator.h"
 
-#include "EvalError.h"
+#include "CompileError.h"
 #include "Function.h"
 
 #include <boost/lexical_cast.hpp>
@@ -15,7 +15,7 @@ using std::auto_ptr;
 using std::make_pair;
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 /* public */
 
@@ -23,22 +23,22 @@ using namespace eval;
 // setupLeft() and/or setupRight().
 void Operator::setup() {
   if (!isPartiallySetup || !m_type.get()) {
-    throw EvalError("Cannot setup Operator " + print() + " that has not been partially-setup");
+    throw CompileError("Cannot setup Operator " + print() + " that has not been partially-setup");
   } else if (isSetup) {
-    throw EvalError("Cannot setup Operator " + print() + " that has already been setup");
+    throw CompileError("Cannot setup Operator " + print() + " that has already been setup");
   }
   switch (m_arity) {
     case PREFIX:
       if (children.size() != 1) {
-        throw EvalError("Prefix Operator " + print() + " must have one child");
+        throw CompileError("Prefix Operator " + print() + " must have one child");
       }
       break;
     case INFIX:
       if (children.size() != 2) {
-        throw EvalError("Infix Operator " + print() + " must have 2 children");
+        throw CompileError("Infix Operator " + print() + " must have 2 children");
       }
       break;
-    default: throw EvalError("Cannot setup " + print() + " with unknown arity");
+    default: throw CompileError("Cannot setup " + print() + " with unknown arity");
   }
 }
 
@@ -61,21 +61,21 @@ void Operator::setInfix() {
 
 bool Operator::isPrefix() const {
   if (ARITY_UNKNOWN == m_arity) {
-    throw EvalError("Cannot request isPrefix of " + print() + " with unassigned arity");
+    throw CompileError("Cannot request isPrefix of " + print() + " with unassigned arity");
   }
   return PREFIX == m_arity;
 }
 
 bool Operator::isInfix() const {
   if (ARITY_UNKNOWN == m_arity) {
-    throw EvalError("Cannot request isInfix of " + print() + " with unassigned arity");
+    throw CompileError("Cannot request isInfix of " + print() + " with unassigned arity");
   }
   return INFIX == m_arity;
 }
 
 Operator::op_precedence Operator::precedence(ARITY arity) {
   if (ARITY_UNKNOWN == arity) {
-    throw EvalError("Cannot check unknown-arity precedence of " + print());
+    throw CompileError("Cannot check unknown-arity precedence of " + print());
   }
   op_precedence prec;
   prec.priority = NO_PRIORITY;
@@ -114,22 +114,22 @@ Operator::op_precedence Operator::precedence(ARITY arity) {
   if ("paren" == name)
     prec.priority = 15;
   if (NO_PRIORITY == prec.priority) {
-    throw EvalError("Failed to set Operator priority for " + print());
+    throw CompileError("Failed to set Operator priority for " + print());
   }
   return prec;
 }
 
 void Operator::setupLeft() {
   if (ARITY_UNKNOWN == m_arity) {
-    throw EvalError("Cannot call setupLeft() on unknown-arity " + print());
+    throw CompileError("Cannot call setupLeft() on unknown-arity " + print());
   } else if (isPartiallySetup) {
-    throw EvalError("Cannot call setupLeft() on " + print() + " that is already partially-setup");
+    throw CompileError("Cannot call setupLeft() on " + print() + " that is already partially-setup");
   } else if (children.size() != 1) {
-    throw EvalError("Cannot setupLeft() on " + print() + " that does not have exactly one child");
+    throw CompileError("Cannot setupLeft() on " + print() + " that does not have exactly one child");
   }
   m_left = dynamic_cast<TypedNode*>(children.at(0));
   if (!m_left) {
-    throw EvalError("Cannot setupLeft() on " + print() + " whose child is not a TypedNode");
+    throw CompileError("Cannot setupLeft() on " + print() + " whose child is not a TypedNode");
   }
   // ...
   if (INFIX != m_arity) {
@@ -140,30 +140,30 @@ void Operator::setupLeft() {
 
 void Operator::setupRight() {
   if (ARITY_UNKNOWN == m_arity) {
-    throw EvalError("Cannot call setupRight() on unknown-arity " + print());
+    throw CompileError("Cannot call setupRight() on unknown-arity " + print());
   } else if (m_arity != INFIX) {
-    throw EvalError("Cannot call setupRight() on non-infix " + print());
+    throw CompileError("Cannot call setupRight() on non-infix " + print());
   } else if (isPartiallySetup) {
-    throw EvalError("Cannot call setupRight() on " + print() + " that is already partially-setup");
+    throw CompileError("Cannot call setupRight() on " + print() + " that is already partially-setup");
   } else if (children.size() != 2) {
-    throw EvalError("Cannot setupRight() on " + print() + " that does not have two children");
+    throw CompileError("Cannot setupRight() on " + print() + " that does not have two children");
   }
   m_left = dynamic_cast<TypedNode*>(children.at(0));
   m_right = dynamic_cast<TypedNode*>(children.at(1));
   if (!m_left || !m_right) {
-    throw EvalError("Cannot setupRight() on " + print() + " whose children are not TypedNodes");
+    throw CompileError("Cannot setupRight() on " + print() + " whose children are not TypedNodes");
   }
   // ...
   isPartiallySetup = true;
   computeType();
 }
 
-void Operator::evaluate() {
+void Operator::compile() {
   // TODO remove this check once we're confident it can never happen
   if (!isSetup || (ARITY_UNKNOWN == m_arity)) {
-    throw EvalError("Cannot evaluate operator '" + name + "' which has not been setup");
+    throw CompileError("Cannot compile operator '" + name + "' which has not been setup");
   }
-  throw EvalError("Operator '" + name + "' not yet supported for evaluation");
+  throw CompileError("Operator '" + name + "' not yet supported for compilation");
 }
 
 string Operator::methodName() const {
@@ -205,9 +205,9 @@ string Operator::methodName() const {
 // for infix operators.
 void Operator::computeType() {
   if (!isPartiallySetup || (ARITY_UNKNOWN == m_arity)) {
-    throw EvalError("Cannot compute type of Operator " + print() + " before it is setup and validated");
+    throw CompileError("Cannot compute type of Operator " + print() + " before it is setup and validated");
   } else if (m_type.get()) {
-    throw EvalError("Cannot compute type of Operator " + print() + " that already has a type");
+    throw CompileError("Cannot compute type of Operator " + print() + " that already has a type");
   }
 
   // For overloadable operators, see if the operand has implemented a method
@@ -216,28 +216,28 @@ void Operator::computeType() {
   // been subclassed :)  I think this is just | and & and ~, and for now we'll
   // implement all operator logic right here.
   // Note that some operators require specific types of their operands, or
-  // other special evaluations (e.g. ~ performs a ->str on its operands).
+  // other special compilations (e.g. ~ performs a ->str on its operands).
   if ("PIPE" == name) {
     if (!isInfix()) {
-      throw EvalError("| must be a binary operator");
+      throw CompileError("| must be a binary operator");
     }
     m_type.reset(new OrType(log, *m_left->getType(), *m_right->getType()));
   } else if ("AMP" == name) {
     if (!isInfix()) {
-      throw EvalError("& must be a binary operator");
+      throw CompileError("& must be a binary operator");
     }
     m_type.reset(new AndType(log, *m_left->getType(), *m_right->getType()));
   } else if ("TILDE" == name || "DOUBLETILDE" == name) {
     if (!isInfix()) {
-      throw EvalError("| must be a binary operator");
+      throw CompileError("| must be a binary operator");
     }
     const Symbol* str = root->getScope()->getSymbol("str");
     if (!str) {
-      throw EvalError("Cannot use ~ or ~~ operator until str is defined");
+      throw CompileError("Cannot use ~ or ~~ operator until str is defined");
     }
     m_type.reset(new BasicType(log, *str));
     // TODO more custom ~ and ~~ logic goes here or above
-    throw EvalError("~ and ~~ operators are not yet implemented");
+    throw CompileError("~ and ~~ operators are not yet implemented");
   } else {
     // Lookup the operator as a member of our first (or only) child's type.  If
     // it's there (and in the binary case, if it accepts the second child's
@@ -245,12 +245,12 @@ void Operator::computeType() {
     // result type(s) of that method call.
     string method_name = methodName();
     if ("" == method_name) {
-      throw EvalError("Cannot determine Type of unimplemented operator " + print());
+      throw CompileError("Cannot determine Type of unimplemented operator " + print());
     }
     /*
     auto_ptr<Type> method = m_left->type().getMemberType(method_name);
     if (!method.get()) {
-      throw EvalError(m_left->print() + " does not define operator" + name);
+      throw CompileError(m_left->print() + " does not define operator" + name);
     }
     */
 
@@ -259,28 +259,28 @@ void Operator::computeType() {
       // TODO when we re-implement takesArgs() etc.
       /*
       if (!method->takesArgs(params)) {
-        throw EvalError(m_left->print() + "." + method_name + " is not defined to take 0 arguments");
+        throw CompileError(m_left->print() + "." + method_name + " is not defined to take 0 arguments");
       }
       m_type = method->getPossibleReturnTypes(params);
       if (!m_type.get()) {
-        throw EvalError(m_left->print() + "." + method_name + " somehow has no return type");
+        throw CompileError(m_left->print() + "." + method_name + " somehow has no return type");
       }
     } else if (isInfix()) {
       if (!m_right) {
-        throw EvalError("Right-hand side of binary " + name + " operator must have a type");
+        throw CompileError("Right-hand side of binary " + name + " operator must have a type");
       }
       paramtype_vec params;
       params.push_back(&m_right->type());
       if (!method->takesArgs(params)) {
-        throw EvalError(m_left->print() + "." + method_name + " is not defined to take right-hand side " + m_right->print() + " of type " + params.at(0)->print());
+        throw CompileError(m_left->print() + "." + method_name + " is not defined to take right-hand side " + m_right->print() + " of type " + params.at(0)->print());
       }
       m_type = method->getPossibleReturnTypes(params);
       if (!m_type.get()) {
-        throw EvalError(m_left->print() + "." + method_name + " with argument " + m_right->print() + " somehow has no return type");
+        throw CompileError(m_left->print() + "." + method_name + " with argument " + m_right->print() + " somehow has no return type");
       }
       */
     } else {
-      throw EvalError("What IS this crazy operator!?");
+      throw CompileError("What IS this crazy operator!?");
     }
   }
 }

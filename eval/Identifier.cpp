@@ -3,22 +3,21 @@
 
 #include "Identifier.h"
 
-#include "EvalError.h"
+#include "CompileError.h"
 
 #include <string>
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 void Identifier::setup() {
   if (children.size() != 0) {
-    throw EvalError("Identifier node cannot have children");
+    throw CompileError("Identifier node cannot have children");
   }
   if ("" == value) {
-    throw EvalError("Identifier cannot have blank value");
+    throw CompileError("Identifier cannot have blank value");
   }
 }
 
-// Nothing to do
-void Identifier::evaluate() {
+void Identifier::compile() {
 }

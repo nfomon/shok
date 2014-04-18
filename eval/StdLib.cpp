@@ -3,8 +3,6 @@
 
 #include "StdLib.h"
 
-#include "EvalError.h"
-
 #include "util/Log.h"
 
 #include <memory>
@@ -12,7 +10,7 @@
 using std::auto_ptr;
 using std::vector;
 
-using namespace eval;
+using namespace compiler;
 
 /* public */
 

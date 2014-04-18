@@ -35,7 +35,7 @@
 #include <string>
 #include <utility>
 
-namespace eval {
+namespace compiler {
 
 class OperatorParser;
 
@@ -80,7 +80,7 @@ public:
   void setupLeft();
   void setupRight();
 
-  virtual void evaluate();
+  virtual void compile();
 
   // Returns the internal method name for this operator, e.g. operator+
   // Returns "" if the operator is not overloadable

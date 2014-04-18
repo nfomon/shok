@@ -4,14 +4,14 @@
 #include "Function.h"
 
 #include "Args.h"
-#include "EvalError.h"
+#include "CompileError.h"
 
 #include <memory>
 #include <string>
 using std::auto_ptr;
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 // Determine the Function's type before we look into its { child scope
 void Function::initChild(Node* child) {
@@ -20,15 +20,15 @@ void Function::initChild(Node* child) {
   Returns* returns = dynamic_cast<Returns*>(child);
   Block* body = dynamic_cast<Block*>(child);
   if (!args && !returns && !body) {
-    throw EvalError("Function " + print() + " initChild " + child->print() + " child is inappropriate");
+    throw CompileError("Function " + print() + " initChild " + child->print() + " child is inappropriate");
   } else if ((args && returns) || (args && body) || (returns && body)) {
-    throw EvalError("Function " + print() + " initChild " + child->print() + " child fits multiple child types");
+    throw CompileError("Function " + print() + " initChild " + child->print() + " child fits multiple child types");
   } else if ((args && m_args) || (returns && m_returns) || (body && m_body)) {
-    throw EvalError("Function " + print() + " initChild " + child->print() + " already has that child");
+    throw CompileError("Function " + print() + " initChild " + child->print() + " already has that child");
   } else if (args && (m_returns || m_body)) {
-    throw EvalError("Function " + print() + " initChild " + child->print() + " cannot set args when it already has returns or body");
+    throw CompileError("Function " + print() + " initChild " + child->print() + " cannot set args when it already has returns or body");
   } else if (returns && m_body) {
-    throw EvalError("Function " + print() + " initChild " + child->print() + " cannot set returns when it already has body");
+    throw CompileError("Function " + print() + " initChild " + child->print() + " cannot set returns when it already has body");
   }
   if (args) {
     m_args = args;
@@ -42,7 +42,7 @@ void Function::initChild(Node* child) {
 
 void Function::setup() {
   if (children.size() > 3) {
-    throw EvalError("Function " + print() + " must have <= 2 children");
+    throw CompileError("Function " + print() + " must have <= 2 children");
   }
   if (m_body) {
     m_body->defer();
@@ -51,7 +51,7 @@ void Function::setup() {
   }
 }
 
-void Function::evaluate() {
+void Function::compile() {
   if (m_preparedArgs) {
     parentScope->commitFirst();
     m_preparedArgs = false;
@@ -70,14 +70,14 @@ arg_vec Function::getArgs() const {
 }
 
 auto_ptr<Object> Function::makeObject(const string& newName) {
-  if (!isSetup || !isEvaluated) {
-    throw EvalError("Cannot make object from Function " + print() + " before it is setup and evaluated");
+  if (!isSetup || !isCompiled) {
+    throw CompileError("Cannot make object from Function " + print() + " before it is setup and compiled");
   } else if (m_isObjectified) {
-    throw EvalError("Cannot make object from Function " + print() + " that has already been made into an object");
+    throw CompileError("Cannot make object from Function " + print() + " that has already been made into an object");
   }
   const Symbol* functionSymbol = root->getScope()->getSymbol("@");
   if (!functionSymbol || !functionSymbol->object.get()) {
-    throw EvalError("Cannot find the @ object");
+    throw CompileError("Cannot find the @ object");
   }
   auto_ptr<Object> o(new Object(log, newName));
   const arg_vec* args = NULL;
@@ -101,11 +101,11 @@ auto_ptr<Object> Function::makeObject(const string& newName) {
 
 void Function::computeType() {
   if (m_type.get()) {
-    throw EvalError("Cannot compute type of Function " + print() + " that already has a type");
+    throw CompileError("Cannot compute type of Function " + print() + " that already has a type");
   }
   const Symbol* p_function = root->getScope()->getSymbol("@");
   if (!p_function) {
-    throw EvalError("Cannot find symbol for the @ object");
+    throw CompileError("Cannot find symbol for the @ object");
   }
   log.debug("Computing type of function " + print());
   const Symbol& function = *p_function;
@@ -126,7 +126,7 @@ void Function::computeType() {
   if (!m_args && !m_returns) {
     m_type.reset(new BasicType(log, function));
   } else if (!m_type.get()) {
-    throw EvalError("Function " + print() + " failed to compute a type for itself");
+    throw CompileError("Function " + print() + " failed to compute a type for itself");
   }
   log.info("Type of Function " + print() + ": " + m_type->print() + " -- " + m_type->getName());
 }
@@ -137,7 +137,7 @@ void Function::addSignature(Signature signature) {
   // For now: signatures must not have same # arguments
   for (signature_iter i = m_signatures.begin(); i != m_signatures.end(); ++i) {
     if (i->isEquivalentTo(signature)) {
-      throw EvalError("Cannot (yet) overload function signature with same number of arguments");
+      throw CompileError("Cannot (yet) overload function signature with same number of arguments");
     }
   }
   m_signatures.push_back(signature);
@@ -148,7 +148,7 @@ void Function::addSignature(Signature signature) {
 /*
 const Signature* Function::getSignature(const argtype_list& args) const {
   if (m_signatures.size() < 1) {
-    throw EvalError("Function must have at least one signature");
+    throw CompileError("Function must have at least one signature");
   }
   // For now, just pick the signature with the matching # arguments
   for (signature_iter i = m_signatures.begin(); i != m_signatures.end(); ++i) {

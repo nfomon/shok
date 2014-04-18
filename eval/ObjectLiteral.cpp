@@ -6,23 +6,23 @@
 #include "boost/lexical_cast.hpp"
 
 #include "Args.h"
-#include "EvalError.h"
+#include "CompileError.h"
 
 #include <memory>
 #include <string>
 using std::auto_ptr;
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 void ObjectLiteral::setup() {
   if (children.size() > 1) {
-    throw EvalError("ObjectLiteral " + print() + " must have <= 1 children");
+    throw CompileError("ObjectLiteral " + print() + " must have <= 1 children");
   }
   if (1 == children.size()) {
     m_body = dynamic_cast<Block*>(children.at(0));
     if (!m_body) {
-      throw EvalError("ObjectLiteral " + print() + "'s only child must be a Block");
+      throw CompileError("ObjectLiteral " + print() + "'s only child must be a Block");
     }
     m_inits = m_body->getInits();
   }
@@ -37,7 +37,7 @@ void ObjectLiteral::setup() {
   }
 }
 
-void ObjectLiteral::evaluate() {
+void ObjectLiteral::compile() {
 }
 
 auto_ptr<Object> ObjectLiteral::makeObject(const string& newName) const {
@@ -51,11 +51,11 @@ auto_ptr<Object> ObjectLiteral::makeObject(const string& newName) const {
 
 void ObjectLiteral::computeType() {
   if (m_type.get()) {
-    throw EvalError("Cannot compute type of ObjectLiteral  " + print() + " that already has a type");
+    throw CompileError("Cannot compute type of ObjectLiteral  " + print() + " that already has a type");
   }
   const Symbol* object = parentScope->getSymbol("object");
   if (!object) {
-    throw EvalError("Cannot find symbol for the object object");
+    throw CompileError("Cannot find symbol for the object object");
   }
   log.debug("Computing type of ObjectLiteral " + print());
   BasicType* type = new BasicType(log, *object);

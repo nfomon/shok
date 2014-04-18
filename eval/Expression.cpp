@@ -3,7 +3,7 @@
 
 #include "Expression.h"
 
-#include "EvalError.h"
+#include "CompileError.h"
 #include "Function.h"
 #include "Operator.h"
 #include "Variable.h"
@@ -17,22 +17,22 @@ using std::auto_ptr;
 using std::string;
 using std::vector;
 
-using namespace eval;
+using namespace compiler;
 
 void Expression::setup() {
   if (children.size() != 1) {
-    throw EvalError("Expression " + print() + " must have exactly one child");
+    throw CompileError("Expression " + print() + " must have exactly one child");
   }
   computeType();
 }
 
 // Nothing to do here
-void Expression::evaluate() {
+void Expression::compile() {
 }
 
 string Expression::cmdText() const {
-  if (!isEvaluated) {
-    throw EvalError("Cannot get cmdText of unevaluated Expression");
+  if (!isCompiled) {
+    throw CompileError("Cannot get cmdText of uncompiled Expression");
   }
   // TODO: call the resulting object's ->str.escape() (*UNIMPL*)
   //return children.front()->cmdText();
@@ -40,10 +40,10 @@ string Expression::cmdText() const {
 }
 
 auto_ptr<Object> Expression::getObject(const string& newName) const {
-  if (!isEvaluated) {
-    throw EvalError("Cannot get object from Expression " + print() + " before its evaluation");
+  if (!isCompiled) {
+    throw CompileError("Cannot get object from Expression " + print() + " before its compilation");
   } else if (0 == children.size()) {
-    throw EvalError("Cannot get object from defective Expression " + print() + " with no children");
+    throw CompileError("Cannot get object from defective Expression " + print() + " with no children");
   }
   Variable* var = dynamic_cast<Variable*>(children.at(0));
   //Operator* op = dynamic_cast<Operator*>(children.at(0));
@@ -58,16 +58,16 @@ auto_ptr<Object> Expression::getObject(const string& newName) const {
   } else if (object) {
     return object->makeObject(newName);
   }
-  throw EvalError("Expression " + print() + " cannot retrieve Object from unsupported child type " + children.at(0)->print());
+  throw CompileError("Expression " + print() + " cannot retrieve Object from unsupported child type " + children.at(0)->print());
 }
 
 void Expression::computeType() {
   TypedNode* child = dynamic_cast<TypedNode*>(children.at(0));
   if (!child) {
-    throw EvalError("Child of Expression must be a TypedNode");
+    throw CompileError("Child of Expression must be a TypedNode");
   }
   m_type = child->getType();
   if (!m_type.get()) {
-    throw EvalError("Child of Expression must have a Type");
+    throw CompileError("Child of Expression must have a Type");
   }
 }

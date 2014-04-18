@@ -26,23 +26,27 @@
  */
 
 #include "Common.h"
-#include "Log.h"
+#include "CompileError.h"
 #include "Object.h"
 #include "SymbolTable.h"
 #include "Symbol.h"
+
+#include "util/Log.h"
 
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 
-namespace eval {
+namespace compiler {
 
 class Function;
 class ObjectLiteral;
 
 class Scope {
 public:
+  typedef int depth_t;
+
   Scope(Log& log)
     : m_log(log),
       m_isInit(false),
@@ -74,6 +78,13 @@ public:
   void initSymbol(const std::string& varname, std::auto_ptr<Object> newObject);
   void replaceObject(const std::string& varname, std::auto_ptr<Object> newObject);
 
+  depth_t depth() const {
+    if (!m_isInit) {
+      throw CompileError("Cannot get depth of uninitialized Scope");
+    }
+    return m_depth;
+  }
+
 private:
   Log& m_log;
   bool m_isInit;
@@ -81,7 +92,7 @@ private:
   Scope* m_parentScope;     // NULL for the root scope (held by RootNode)
   Function* m_function;     // set if this is a function's block-scope
   ObjectLiteral* m_object;  // set if this is an object literal's block-scope
-  int m_depth;              // 0 at root (global). 1 is special: defers to root
+  depth_t m_depth;          // 0 at root (global). 1 is special: defers to root
 };
 
 }

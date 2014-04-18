@@ -1,19 +1,19 @@
 // Copyright (C) 2013 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-/* shok abstract syntax tree evaluator
+/* shok abstract syntax tree code-generator
  *
  * Reads lines of specially-formatted AST text input from stdin, performs
- * static analysis to ensure it specifies a valid program, and emits text on
- * stdout possibly instructing the shell to run programs on our behalf.
+ * static analysis to ensure it specifies a valid program, and emits "bytecode"
+ * instructions to the vm for execution.  Some built-in language constructs
+ * will execute immediately during analysis.
  *
  * In the future, this may be broken into several parts; such as operator
- * re-ordering, type-checking and static analysis, optimization, code/bytecode
- * generation, and execution.
+ * re-ordering, type-checking and static analysis, optimization, etc.
  */
 
 #include "AST.h"
-#include "EvalError.h"
+#include "CompileError.h"
 #include "util/Log.h"
 #include "Token.h"
 
@@ -24,11 +24,11 @@ using std::cout;
 using std::endl;
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 namespace {
-  const string PROGRAM_NAME = "shok_eval";
-  const string LOGFILE = "eval.log";
+  const string PROGRAM_NAME = "shok_compiler";
+  const string LOGFILE = "compiler.log";
 }
 
 int main(int argc, char *argv[]) {
@@ -57,15 +57,15 @@ int main(int argc, char *argv[]) {
           log.debug("Inserting token: '" + i->name + ":" + i->value + "'");
           ast.insert(*i);
         }
-        log.info("Evaluating: '" + ast.print() + "'");
-        ast.evaluate();
+        log.info("Compiling: '" + ast.print() + "'");
+        ast.codegen();
         cout << endl;
       } catch (RecoveredError& e) {
-        log.error(string("Error evaluating parse tree: ") + e.what());
+        log.error(string("Compilation error: ") + e.what());
         cout << endl;
         // TODO: synchronize state with the parser
-      } catch (EvalError& e) {
-        log.error(string("Error evaluating parse tree: ") + e.what());
+      } catch (CompileError& e) {
+        log.error(string("Compilation error: ") + e.what());
         cout << endl;
         ast.reset();
       }

@@ -23,7 +23,7 @@
 #include <memory>
 #include <string>
 
-namespace eval {
+namespace compiler {
 
 class Arg : public Node {
 public:
@@ -31,7 +31,6 @@ public:
     : Node(log, root, token),
       m_typeSpec(NULL) {}
   virtual void setup();
-  virtual void evaluate();
 
   // If the arg is unnamed, returns the empty string
   std::string getName() const;

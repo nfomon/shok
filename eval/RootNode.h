@@ -15,7 +15,7 @@
 
 #include "util/Log.h"
 
-namespace eval {
+namespace compiler {
 
 class RootNode : public Node {
 public:
@@ -23,14 +23,14 @@ public:
 
   // Reset the whole AST; destroys all children
   void reset();
-  // Prepare the RootNode for another evaluation
+  // Prepare the RootNode for another compilation
   void prepare();
 
   virtual Scope* getScope() { return &m_scope; }
 
 protected:
   virtual void setup();
-  virtual void evaluate();
+  virtual void compile();
 
 private:
   void clearChildren();

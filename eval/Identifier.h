@@ -18,14 +18,14 @@
 
 #include <string>
 
-namespace eval {
+namespace compiler {
 
 class Identifier : public Node {
 public:
   Identifier(Log& log, RootNode*const root, const Token& token)
     : Node(log, root, token) {}
   virtual void setup();
-  virtual void evaluate();
+  virtual void compile();
 
   std::string getName() const { return value; }
 

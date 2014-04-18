@@ -8,7 +8,7 @@
 #include <memory>
 using std::auto_ptr;
 
-using namespace eval;
+using namespace compiler;
 
 Method::Method(const arg_vec* args,
                auto_ptr<Type> returnType,

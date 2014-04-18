@@ -13,7 +13,7 @@
  */
 
 #include "Common.h"
-#include "EvalError.h"
+#include "CompileError.h"
 #include "Symbol.h"
 
 #include "util/Log.h"
@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 
-namespace eval {
+namespace compiler {
 
 class Object;
 

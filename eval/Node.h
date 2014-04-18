@@ -14,9 +14,9 @@
  * InsertNode() which manipulates the node tree and returns the new "current"
  * (insertion) position.
  *
- * Each subclass gets to override initScope(), setup(), and evaluate().  As
- * much static analysis / error checking as possible should happen in setup().
- * evaluate() should be able to assume the Node is in as correct a state as
+ * Each subclass gets to override initScope(), setup(), and compile().  As much
+ * static analysis / error checking as possible should happen in setup().
+ * compile() should be able to assume the Node is in as correct a state as
  * possible and just run the code.  initScope() is a very early initialization
  * of enclosing scopes; the node may not have a real parent or any children
  * yet.
@@ -30,10 +30,10 @@
 #include <string>
 #include <deque>
 
-namespace eval {
+namespace compiler {
 
 class Block;
-class EvalError;
+class CompileError;
 class Function;
 class RootNode;
 
@@ -52,7 +52,7 @@ protected:
   // this removes the destructive subtree from the nearest enclosing block, and
   // throws a RecoveredError with the cleaned-up block which the AST will catch
   // and use as the new current position.
-  static void RecoverFromError(EvalError& e, Node* problemNode);
+  static void RecoverFromError(CompileError& e, Node* problemNode);
 
   // Creates an operator tree out of the provided node's flattened children.
   // We do this during setupNode(), before we setup() an Expression or TypeSpec.
@@ -63,15 +63,15 @@ public:
 
   // Caution! Called by rare crazy node-reorganization routines only.
   void replaceChild(Node* oldChild, Node* newChild);
-  // Evaluate the node!  Public because it's called by AST on the root node.
+  // Compile the node!  Public because it's called by AST on the root node.
   // This does not itself perform a recursive call (anymore).
-  void evaluateNode();
+  void compileNode();
   // Wipe out the node's parentScope; it is being destroyed.
   void cancelParentScopeNode();
 
   std::string getName() const { return name; }
   std::string getValue() const { return value; }
-  bool isNodeEvaluated() const { return isEvaluated; }
+  bool isNodeCompiled() const { return isCompiled; }
 
   virtual std::string print() const;
   virtual operator std::string() const;
@@ -106,7 +106,7 @@ protected:
   virtual void initScope(Scope* scopeParent, ObjectLiteral* object) {}
   virtual void initChild(Node* child) {}  // early parent setup before new child
   virtual void setup() = 0;               // child-first setup/analysis
-  virtual void evaluate() = 0;            // code execution
+  virtual void compile() = 0;             // code compilation
   virtual Scope* getScope() { return NULL; }              // local scope
   Scope* getParentScope() const { return parentScope; }   // enclosing scope
 
@@ -125,7 +125,7 @@ protected:
   bool isInit;
   bool isSetup;
   bool isAnalyzed;
-  bool isEvaluated;
+  bool isCompiled;
 };
 
 }

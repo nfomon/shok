@@ -32,7 +32,7 @@
 #include <utility>
 #include <vector>
 
-namespace eval {
+namespace compiler {
 
 class OperatorParser {
 public:

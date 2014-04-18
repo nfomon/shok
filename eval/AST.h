@@ -6,7 +6,6 @@
 
 /* Abstract Syntax Tree */
 
-#include "EvalError.h"
 #include "Node.h"
 #include "RootNode.h"
 #include "Token.h"
@@ -15,19 +14,19 @@
 
 #include <string>
 
-namespace eval {
+namespace compiler {
 
 class AST {
 public:
   AST(Log& log);
   ~AST();
 
-  // Reset the AST to a correct state; may destroy some unevaluated code.
+  // Reset the AST to a correct state; may destroy some uncompiled code.
   void reset();
   // Performs the ugly work of inserting an input "AST Token" into the AST.
   void insert(const Token& token);
-  // Analyze the AST and execute any appropriate, complete fragments of code
-  void evaluate();
+  // Analyze the AST and compile any appropriate, complete fragments of code
+  void compile();
   // Pretty-print the contents of the AST to a string
   std::string print() const;
 

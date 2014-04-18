@@ -3,7 +3,7 @@
 
 #include "Arg.h"
 
-#include "EvalError.h"
+#include "CompileError.h"
 #include "Identifier.h"
 #include "TypeSpec.h"
 
@@ -14,7 +14,7 @@ using std::auto_ptr;
 using std::string;
 using std::vector;
 
-using namespace eval;
+using namespace compiler;
 
 void Arg::setup() {
   // If two children, the first is the name.  Otherwise, name is "".
@@ -24,24 +24,20 @@ void Arg::setup() {
     m_typeSpec = dynamic_cast<TypeSpec*>(children.at(1));
     Identifier* ident = dynamic_cast<Identifier*>(children.at(0));
     if (!ident) {
-      throw EvalError("First child of 2-child Arg " + print() + " must be an Identifier");
+      throw CompileError("First child of 2-child Arg " + print() + " must be an Identifier");
     }
     m_argname = ident->getName();
   } else {
-    throw EvalError("Arg node must have 1 or 2 children");
+    throw CompileError("Arg node must have 1 or 2 children");
   }
   if (!m_typeSpec) {
-    throw EvalError("Arg " + print() + " must have a TypeSpec child");
+    throw CompileError("Arg " + print() + " must have a TypeSpec child");
   }
-}
-
-// Nothing to do
-void Arg::evaluate() {
 }
 
 string Arg::getName() const {
   if (!isSetup) {
-    throw EvalError("Cannot get name of Arg " + print() + " before it is setup");
+    throw CompileError("Cannot get name of Arg " + print() + " before it is setup");
   }
   return m_argname;
 }

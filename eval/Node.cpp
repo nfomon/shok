@@ -9,7 +9,7 @@
 #include "Brace.h"
 #include "Command.h"
 #include "CommandFragment.h"
-#include "EvalError.h"
+#include "CompileError.h"
 #include "Expression.h"
 #include "Function.h"
 #include "Identifier.h"
@@ -32,7 +32,7 @@
 #include <string>
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 /* Statics */
 
@@ -86,13 +86,13 @@ Node* Node::MakeNode(Log& log, RootNode*const root, const Token& t) {
     return new Arg(log, root, t);
   if ("returns" == t.name)
     return new Returns(log, root, t);
-  throw EvalError("Unsupported token " + t.print());
+  throw CompileError("Unsupported token " + t.print());
   return NULL;    // guard
 }
 
 Node* Node::InsertNode(Log& log, Node* current, Node* n) {
   if (!current || !n) {
-    throw EvalError("NULL nodes provided to Node::InsertNode()");
+    throw CompileError("NULL nodes provided to Node::InsertNode()");
   }
   Brace* brace = dynamic_cast<Brace*>(n);
 
@@ -153,15 +153,15 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
   // an OperatorParser, they should be positions 1 and 0 in the grandparent's
   // children list, respectively, and we will insertNode ourselves into the oP.
   if (!current->parent) {
-    throw EvalError("Cannot move above root node " + current->name);
+    throw CompileError("Cannot move above root node " + current->name);
   }
 
   Brace* open = dynamic_cast<Brace*>(current);
   if (!open) {
-    throw EvalError("Found closing brace " + brace->name + " but its parent " + current->name + " is not an open brace");
+    throw CompileError("Found closing brace " + brace->name + " but its parent " + current->name + " is not an open brace");
   }
   if (!open->matchesCloseBrace(brace)) {
-    throw EvalError("Incorrect brace/paren match: '" + open->name + "' against '" + n->name + "'");
+    throw CompileError("Incorrect brace/paren match: '" + open->name + "' against '" + n->name + "'");
   }
   Node* parent = current->parent;
 
@@ -181,7 +181,7 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
   if (open->isIrrelevant()) {
     // Extract the first child of the open brace; it is the new "operator"
     if (open->children.size() < 1) {
-      throw EvalError("Empty parens in the AST are not allowed");
+      throw CompileError("Empty parens in the AST are not allowed");
     }
     Node* op = open->children.front();    // "operator" becomes the parent
     open->children.pop_front();
@@ -189,7 +189,7 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
     // a '({' cannot appear in the input.  Note that actual parentheses in
     // expressions are not given to us as a bare '(' brace.
     if (op->children.size() != 0) {
-      throw EvalError("Cannot escalate child " + op->name + " that has " + boost::lexical_cast<string>(op->children.size()) + " > 0 children");
+      throw CompileError("Cannot escalate child " + op->name + " that has " + boost::lexical_cast<string>(op->children.size()) + " > 0 children");
     }
     op->children = open->children;
     open->children.clear();   // Clear open's children so they're not deleted
@@ -227,17 +227,17 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
     // Errors from setupAsParent are recoverable
     try {
       op->setupAsParent();
-    } catch (EvalError& e) {
+    } catch (CompileError& e) {
       RecoverFromError(e, op);
-      throw EvalError(string("Failed to recover from error: ") + e.what());
+      throw CompileError(string("Failed to recover from error: ") + e.what());
     }
   } else {
     // Errors from setupAsParent are recoverable
     try {
       open->setupAsParent();
-    } catch (EvalError& e) {
+    } catch (CompileError& e) {
       RecoverFromError(e, open);
-      throw EvalError(string("Failed to recover from error: ") + e.what());
+      throw CompileError(string("Failed to recover from error: ") + e.what());
     }
   }
   delete n;   // always discard the closing brace/paren
@@ -250,12 +250,12 @@ Node* Node::InsertNode(Log& log, Node* current, Node* n) {
 //
 // On success, throws a recoveredError with the new "recoveredPosition" that
 // should be the AST's new current position (the cleaned-up block).
-// On error, throws its own EvalError.
+// On error, throws its own CompileError.
 //
 // TODO we don't want the nearest enclosing *block*, because block includes
 // object and function literals, which we don't want to catch here, I don't
 // think.
-void Node::RecoverFromError(EvalError& e, Node* problemNode) {
+void Node::RecoverFromError(CompileError& e, Node* problemNode) {
   Node* current = problemNode;
   try {
     while (current && current->parent) {
@@ -269,11 +269,11 @@ void Node::RecoverFromError(EvalError& e, Node* problemNode) {
       parentBlock->removeChildrenStartingAt(current);
       throw RecoveredError(e, parentBlock);
     }
-  } catch (EvalError& x) {
-    throw EvalError(string("Cannot recover from error '") + e.what() + "': " + x.what());
+  } catch (CompileError& x) {
+    throw CompileError(string("Cannot recover from error '") + e.what() + "': " + x.what());
   }
   if (!current || current->parent || !dynamic_cast<RootNode*>(current)) {
-    throw EvalError(string("Cannot recover from error '") + e.what() + "': unknown error");
+    throw CompileError(string("Cannot recover from error '") + e.what() + "': unknown error");
   }
   // We made it to the root node.
   throw RecoveredError(e, current);
@@ -291,7 +291,7 @@ Node::Node(Log& log, RootNode*const root, const Token& token)
     isInit(false),
     isSetup(false),
     isAnalyzed(false),
-    isEvaluated(false) {
+    isCompiled(false) {
 }
 
 Node::~Node() {
@@ -318,7 +318,7 @@ Node::~Node() {
 // special scoping rules.
 void Node::initScopeNode(Node* scopeParent) {
   if (this == root) {
-    throw EvalError("Cannot init scope for the root node");
+    throw CompileError("Cannot init scope for the root node");
   }
   parentScope = scopeParent->getScope();
   if (!parentScope) {
@@ -362,7 +362,7 @@ void Node::replaceChild(Node* oldChild, Node* newChild) {
     }
   }
   if (!replaced) {
-    throw EvalError("Failed to replace " + oldChild->print() + " with " + newChild->print() + " in " + print());
+    throw CompileError("Failed to replace " + oldChild->print() + " with " + newChild->print() + " in " + print());
   }
   log.debug("Replaced " + oldChild->print() + " in " + oldPrint + " with " + newChild->print() + " to become " + print());
 }
@@ -381,10 +381,10 @@ void Node::setupAsParent() {
 void Node::setupNode() {
   if (isSetup) return;
   if (!isInit) {
-    throw EvalError("Cannot setup Node " + print() + " until it's init");
+    throw CompileError("Cannot setup Node " + print() + " until it's init");
   }
   if (!parent) {
-    throw EvalError("Cannot setup Node " + print() + " with no parent");
+    throw CompileError("Cannot setup Node " + print() + " with no parent");
   }
   log.debug(" - setting up node " + print());
   setup();
@@ -397,7 +397,7 @@ void Node::setupNode() {
 void Node::analyzeNode() {
   if (isAnalyzed) return;
   if (!isInit || !isSetup) {
-    throw EvalError("Node " + print() + " cannot do static analysis until init and setup");
+    throw CompileError("Node " + print() + " cannot do static analysis until init and setup");
   }
 
   Statement* statement = dynamic_cast<Statement*>(this);
@@ -407,16 +407,16 @@ void Node::analyzeNode() {
   }
 }
 
-void Node::evaluateNode() {
-  if (isEvaluated) {
-    throw EvalError("Node " + print() + " has already been evaluated");
+void Node::compileNode() {
+  if (isCompiled) {
+    throw CompileError("Node " + print() + " has already been compiled");
   }
   if (!isInit || !isSetup || !isAnalyzed) {
-    throw EvalError("Node " + print() + " cannot be evaluated until init, setup, and analyzed");
+    throw CompileError("Node " + print() + " cannot be compiled until init, setup, and analyzed");
   }
-  log.debug(" - evaluating node " + print());
-  evaluate();
-  isEvaluated = true;
+  log.debug(" - compiling node " + print());
+  compile();
+  isCompiled = true;
 }
 
 string Node::print() const {

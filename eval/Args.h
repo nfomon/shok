@@ -18,14 +18,13 @@
 
 #include <vector>
 
-namespace eval {
+namespace compiler {
 
 class Args : public Node {
 public:
   Args(Log& log, RootNode*const root, const Token& token)
     : Node(log, root, token) {}
   virtual void setup();
-  virtual void evaluate();
 
   const arg_vec& getArgs() const;
 

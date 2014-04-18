@@ -37,7 +37,7 @@
 #include <memory>
 #include <string>
 
-namespace eval {
+namespace compiler {
 
 class Block;
 
@@ -54,7 +54,7 @@ public:
 
   virtual void initChild(Node* child);
   virtual void setup();
-  virtual void evaluate();
+  virtual void compile();
 
   arg_vec getArgs() const;
 

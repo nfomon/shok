@@ -3,7 +3,7 @@
 
 #include "Returns.h"
 
-#include "EvalError.h"
+#include "CompileError.h"
 #include "TypeSpec.h"
 
 #include <memory>
@@ -13,32 +13,28 @@ using std::auto_ptr;
 using std::string;
 using std::vector;
 
-using namespace eval;
+using namespace compiler;
 
 void Returns::setup() {
   if (children.size() != 1) {
-    throw EvalError("TypeSpec" + print() + " must have 1 child");
+    throw CompileError("TypeSpec" + print() + " must have 1 child");
   }
   m_typeSpec = dynamic_cast<TypeSpec*>(children.at(0));
   if (!m_typeSpec) {
-    throw EvalError("Arg " + print() + " child must be a TypeSpec");
+    throw CompileError("Arg " + print() + " child must be a TypeSpec");
   }
-}
-
-// Nothing to do
-void Returns::evaluate() {
 }
 
 string Returns::getName() const {
   if (!isSetup || !m_typeSpec) {
-    throw EvalError("Cannot get name of Function-Returns "  + print() + " that has not been setup or is missing typespec");
+    throw CompileError("Cannot get name of Function-Returns "  + print() + " that has not been setup or is missing typespec");
   }
   return m_typeSpec->getTypeName();
 }
 
 auto_ptr<Type> Returns::getType() const {
   if (!isSetup || !m_typeSpec) {
-    throw EvalError("Cannot get type of Function-Returns "  + print() + " that has not been setup or is missing typespec");
+    throw CompileError("Cannot get type of Function-Returns "  + print() + " that has not been setup or is missing typespec");
   }
   return m_typeSpec->getType();
 }

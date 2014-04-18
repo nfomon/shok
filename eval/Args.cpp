@@ -5,32 +5,28 @@
 
 #include "Arg.h"
 #include "Common.h"
-#include "EvalError.h"
+#include "CompileError.h"
 
 #include <string>
 #include <vector>
 using std::string;
 using std::vector;
 
-using namespace eval;
+using namespace compiler;
 
 void Args::setup() {
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     Arg* arg = dynamic_cast<Arg*>(*i);
     if (!arg) {
-      throw EvalError("Args " + print() + " found non-Arg child " + (*i)->print());
+      throw CompileError("Args " + print() + " found non-Arg child " + (*i)->print());
     }
     m_args.push_back(arg);
   }
 }
 
-// Nothing to do
-void Args::evaluate() {
-}
-
 const arg_vec& Args::getArgs() const {
   if (!isSetup) {
-    throw EvalError("Cannot get args from Args " + print() + " before it is setup");
+    throw CompileError("Cannot get args from Args " + print() + " before it is setup");
   }
   return m_args;
 }

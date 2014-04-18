@@ -12,7 +12,7 @@
 
 #include "util/Log.h"
 
-namespace eval {
+namespace compiler {
 
 class Brace : public Node {
 public:
@@ -26,7 +26,7 @@ public:
   bool matchesCloseBrace(Brace* closeBrace) const;
 
   virtual void setup();
-  virtual void evaluate();
+  virtual void compile();
 
 private:
   bool m_isOpen;

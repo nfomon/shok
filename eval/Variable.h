@@ -22,7 +22,7 @@
 
 #include <string>
 
-namespace eval {
+namespace compiler {
 
 class Variable : public TypedNode {
 public:
@@ -30,7 +30,6 @@ public:
     : TypedNode(log, root, token),
       m_symbol(NULL) {}
   virtual void setup();
-  virtual void evaluate();
 
   Object& getObject() const;
 

@@ -24,7 +24,7 @@
 
 #include <map>
 
-namespace eval {
+namespace compiler {
 
 class ObjectLiteral;
 
@@ -43,7 +43,7 @@ public:
   virtual void initScope(Scope* scopeParent, Function* function);
   virtual void initScope(Scope* scopeParent, ObjectLiteral* object);
   virtual void setup();
-  virtual void evaluate();
+  virtual void compile();
   virtual std::string cmdText() const;
 
   bool isCodeBlock() const { return !m_exp; }

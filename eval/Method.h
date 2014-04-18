@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace eval {
+namespace compiler {
 
 class Block;
 

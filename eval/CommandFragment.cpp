@@ -3,17 +3,17 @@
 
 #include "CommandFragment.h"
 
-#include "EvalError.h"
+#include "CompileError.h"
 
 #include <string>
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 void CommandFragment::setup() {
 }
 
-void CommandFragment::evaluate() {
+void CommandFragment::compile() {
 }
 
 string CommandFragment::cmdText() const {

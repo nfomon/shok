@@ -4,6 +4,7 @@
 #include "Type.h"
 
 #include "Arg.h"
+#include "CompileError.h"
 #include "Object.h"
 
 #include "boost/lexical_cast.hpp"
@@ -15,7 +16,7 @@ using std::auto_ptr;
 using std::make_pair;
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 /* RootType */
 
@@ -102,7 +103,7 @@ FunctionArgsType::~FunctionArgsType() {
 }
 
 void FunctionArgsType::addMemberType(const string& name, auto_ptr<Type> type) {
-  throw EvalError("Cannot add member type for " + name + " to FunctionArgsType " + print());
+  throw CompileError("Cannot add member type for " + name + " to FunctionArgsType " + print());
 }
 
 auto_ptr<Type> FunctionArgsType::getMemberType(const string& name) const {
@@ -182,7 +183,7 @@ string FunctionArgsType::print() const {
 /* FunctionReturnsType */
 
 void FunctionReturnsType::addMemberType(const string& name, auto_ptr<Type> type) {
-  throw EvalError("Cannot add member type for " + name + " to FunctionReturnsType " + print());
+  throw CompileError("Cannot add member type for " + name + " to FunctionReturnsType " + print());
 }
 
 auto_ptr<Type> FunctionReturnsType::getMemberType(const string& name) const {
@@ -258,7 +259,7 @@ auto_ptr<Object> BasicType::makeDefaultObject(const string& newName) const {
   // TODO it's really not clear what the right logic here is.
   // Let's carefully define what it means for  new x : foo.bar = lol.wut
   if (!m_select.empty()) {
-    throw EvalError("BasicType::makeDefaultObject(const string&) does not support selectvecs yet");
+    throw CompileError("BasicType::makeDefaultObject(const string&) does not support selectvecs yet");
   }
   auto_ptr<Object> o;
   if (m_parent.object.get()) {
@@ -336,12 +337,12 @@ string BasicType::print() const {
 /* AndType */
 
 void AndType::addMemberType(const string& name, auto_ptr<Type> type) {
-  throw EvalError("Cannot add type of member " + name + " to AndType " + print());
+  throw CompileError("Cannot add type of member " + name + " to AndType " + print());
 }
 
 auto_ptr<Type> AndType::getMemberType(const string& name) const {
   if (!m_left.get() || !m_right.get()) {
-    throw EvalError("Cannot get member " + name + " type from deficient AndType " + print());
+    throw CompileError("Cannot get member " + name + " type from deficient AndType " + print());
   }
   auto_ptr<Type> type = m_left->getMemberType(name);
   if (type.get()) return type;
@@ -350,12 +351,12 @@ auto_ptr<Type> AndType::getMemberType(const string& name) const {
 
 auto_ptr<Object> AndType::makeDefaultObject(const string& newName) const {
   if (!m_left.get() || !m_right.get()) {
-    throw EvalError("Cannot make default object for deficient AndType " + print());
+    throw CompileError("Cannot make default object for deficient AndType " + print());
   }
   auto_ptr<Object> left = m_left->makeDefaultObject(newName);
   auto_ptr<Object> right = m_right->makeDefaultObject(newName);
   // TODO &-merge the objects
-  throw EvalError("AndType::makeDefaultObject(const string&) is unimplemented");
+  throw CompileError("AndType::makeDefaultObject(const string&) is unimplemented");
 }
 
 bool AndType::isParentOf(const Type& child) const {
@@ -368,7 +369,7 @@ bool AndType::takesArgs(const paramtype_vec& paramtypes) const {
 
 auto_ptr<Type> AndType::duplicate() const {
   if (!m_left.get() || !m_right.get()) {
-    throw EvalError("Cannot duplicate deficient AndType " + print());
+    throw CompileError("Cannot duplicate deficient AndType " + print());
   }
   return auto_ptr<Type>(new AndType(m_log, *m_left.get(), *m_right.get()));
 }
@@ -401,25 +402,25 @@ auto_ptr<Type> OrType::OrUnion(Log& log, const Type& a, const Type& b) {
 }
 
 void OrType::addMemberType(const string& name, auto_ptr<Type> type) {
-  throw EvalError("Cannot add type of member " + name + " to OrType " + print());
+  throw CompileError("Cannot add type of member " + name + " to OrType " + print());
 }
 
 auto_ptr<Type> OrType::getMemberType(const string& name) const {
   // It must exist in both children.  We return the best |-union of the member
   // types.
   if (!m_left.get() || !m_right.get()) {
-    throw EvalError("Cannot get member type of deficient OrType " + print());
+    throw CompileError("Cannot get member type of deficient OrType " + print());
   }
   auto_ptr<Type> leftType(m_left->getMemberType(name));
   auto_ptr<Type> rightType(m_right->getMemberType(name));
   if (!leftType.get() || !rightType.get()) {
-    throw EvalError("A child of OrType " + print() + " has a deficient Type.");
+    throw CompileError("A child of OrType " + print() + " has a deficient Type.");
   }
   return OrUnion(m_log, *leftType.get(), *rightType.get());
 }
 
 auto_ptr<Object> OrType::makeDefaultObject(const string& newName) const {
-  throw EvalError("Cannot make default object " + newName + " for OrType " + print());
+  throw CompileError("Cannot make default object " + newName + " for OrType " + print());
 }
 
 bool OrType::isParentOf(const Type& child) const {
@@ -432,7 +433,7 @@ bool OrType::takesArgs(const paramtype_vec& paramtypes) const {
 
 auto_ptr<Type> OrType::duplicate() const {
   if (!m_left.get() || !m_right.get()) {
-    throw EvalError("Cannot duplicate deficient OrType " + print());
+    throw CompileError("Cannot duplicate deficient OrType " + print());
   }
   return auto_ptr<Type>(new OrType(m_log, *m_left.get(), *m_right.get()));
 }

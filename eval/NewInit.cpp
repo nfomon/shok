@@ -4,7 +4,7 @@
 #include "NewInit.h"
 
 #include "Block.h"
-#include "EvalError.h"
+#include "CompileError.h"
 #include "Identifier.h"
 #include "Type.h"
 
@@ -13,7 +13,7 @@
 using std::auto_ptr;
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 NewInit::~NewInit() {
   // Revert our object if we've partially created it.
@@ -26,15 +26,15 @@ NewInit::~NewInit() {
 
 void NewInit::setup() {
   if (!parentScope) {
-    throw EvalError("Cannot setup NewInit " + print() + " with no parent scope");
+    throw CompileError("Cannot setup NewInit " + print() + " with no parent scope");
   } else if (children.size() < 1 || children.size() > 3) {
-    throw EvalError("NewInit node must have 1, 2, or 3 children");
+    throw CompileError("NewInit node must have 1, 2, or 3 children");
   } else if (m_identifier || m_exp || m_typeSpec || m_type.get()) {
-    throw EvalError("NewInit node " + print() + " is already partially setup");
+    throw CompileError("NewInit node " + print() + " is already partially setup");
   }
   m_identifier = dynamic_cast<Identifier*>(children.at(0));
   if (!m_identifier) {
-    throw EvalError("NewInit's first child must be an identifier");
+    throw CompileError("NewInit's first child must be an identifier");
   }
   m_varname = m_identifier->getName();
   log.info("NewInit varname is " + m_varname);
@@ -43,7 +43,7 @@ void NewInit::setup() {
     case 1: {
       const Symbol* object = root->getScope()->getSymbol("object");
       if (!object) {
-        throw EvalError("Cannot find symbol for the object object.  Uhoh.");
+        throw CompileError("Cannot find symbol for the object object.  Uhoh.");
       }
       m_type.reset(new BasicType(log, *object));
       // leave m_typeSpec NULL
@@ -59,16 +59,16 @@ void NewInit::setup() {
       m_typeSpec = dynamic_cast<TypeSpec*>(children.at(1));
       m_exp = dynamic_cast<Expression*>(children.at(1));
       if (m_typeSpec && m_exp) {
-        throw EvalError("NewInit " + print() + " somehow has child of both TypeSpec and Exp type");
+        throw CompileError("NewInit " + print() + " somehow has child of both TypeSpec and Exp type");
       } else if (m_typeSpec) {
         m_type = m_typeSpec->getType();
         if (dynamic_cast<OrType*>(m_type.get())) {
-          throw EvalError("NewInit " + print() + " has OrType " + m_typeSpec->print() + " but no default value is provided");
+          throw CompileError("NewInit " + print() + " has OrType " + m_typeSpec->print() + " but no default value is provided");
         }
       } else if (m_exp) {
         m_type = m_exp->getType();
       } else {
-        throw EvalError("NewInit " + print() + " has inappropriate child type; expected TypeSpec or Exp");
+        throw CompileError("NewInit " + print() + " has inappropriate child type; expected TypeSpec or Exp");
       }
       break;
     }
@@ -77,35 +77,35 @@ void NewInit::setup() {
     case 3: {
       m_typeSpec = dynamic_cast<TypeSpec*>(children.at(1));
       if (!m_typeSpec) {
-        throw EvalError("NewInit child " + children.at(1)->print() + " should have been a TypeSpec");
+        throw CompileError("NewInit child " + children.at(1)->print() + " should have been a TypeSpec");
       }
       m_exp = dynamic_cast<Expression*>(children.at(2));
       if (!m_exp) {
-        throw EvalError("NewInit child " + children.at(2)->print() + " should have been an Expression");
+        throw CompileError("NewInit child " + children.at(2)->print() + " should have been an Expression");
       }
       m_type = m_typeSpec->getType();
 
       if (!m_type->isParentOf(m_exp->type())) {
-        throw EvalError("Value does not match the type of variable " + m_varname + ".  Type: " + m_type->print() + ", value type: " + m_exp->type().print());
+        throw CompileError("Value does not match the type of variable " + m_varname + ".  Type: " + m_type->print() + ", value type: " + m_exp->type().print());
       }
 
       break;
     }
     default:
-      throw EvalError("NewInit node must have 1, 2, or 3 children");
+      throw CompileError("NewInit node must have 1, 2, or 3 children");
   }
   if (!m_type.get()) {
-    throw EvalError("NewInit " + print() + " failed to determine a type during setup()");
+    throw CompileError("NewInit " + print() + " failed to determine a type during setup()");
   }
 }
 
 void NewInit::prepare() {
   if (!parentScope) {
-    throw EvalError("Cannot prepare NewInit " + print() + " with no parent scope");
+    throw CompileError("Cannot prepare NewInit " + print() + " with no parent scope");
   } else if (parentScope->getLocalSymbol(m_varname)) {
-    throw EvalError("Variable " + m_varname + " already exists");
+    throw CompileError("Variable " + m_varname + " already exists");
   } else if (!m_type.get()) {
-    throw EvalError("Cannot prepare NewInit " + print() + " which has not determined the new object's Type");
+    throw CompileError("Cannot prepare NewInit " + print() + " which has not determined the new object's Type");
   }
 
   // Add the symbol to our parent scope
@@ -116,11 +116,11 @@ void NewInit::prepare() {
 }
 
 // Commit the new object to our enclosing scope, and assign its initial value
-void NewInit::evaluate() {
+void NewInit::compile() {
   if (!m_isPrepared) {
-    throw EvalError("Cannot evaluate NewInit " + print() + " until it has been prepared");
+    throw CompileError("Cannot compile NewInit " + print() + " until it has been prepared");
   } else if (!m_type.get()) {
-    throw EvalError("Cannot evaluate NewInit " + print() + " that has no type");
+    throw CompileError("Cannot compile NewInit " + print() + " that has no type");
   }
   parentScope->initSymbol(m_varname, getObject());
   parentScope->commitFirst();
@@ -137,7 +137,7 @@ auto_ptr<Object> NewInit::getObject() const {
   }
   Symbol* s = parentScope->getSymbol(m_varname);
   if (!s) {
-    throw EvalError("Cannot get Object for NewInit " + print() + "; missing symbol for " + m_varname);
+    throw CompileError("Cannot get Object for NewInit " + print() + "; missing symbol for " + m_varname);
   }
   return s->type->makeDefaultObject(m_varname);
 }

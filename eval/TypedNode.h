@@ -9,7 +9,6 @@
  * Any AST Node that has a Type and thus may appear in an Expression.
  */
 
-#include "EvalError.h"
 #include "Node.h"
 #include "RootNode.h"
 #include "Token.h"
@@ -19,7 +18,7 @@
 
 #include <memory>
 
-namespace eval {
+namespace compiler {
 
 class TypedNode : public Node {
 public:

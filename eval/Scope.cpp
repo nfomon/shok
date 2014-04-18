@@ -3,7 +3,7 @@
 
 #include "Scope.h"
 
-#include "EvalError.h"
+#include "CompileError.h"
 #include "Function.h"
 
 #include <boost/lexical_cast.hpp>
@@ -13,7 +13,7 @@
 using std::auto_ptr;
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 Scope::~Scope() {
   m_log.info("Destroying " + string(m_function ? "function " : "") +
@@ -24,9 +24,9 @@ Scope::~Scope() {
 // Remains the root scope if this is never called
 void Scope::init(Scope* parentScope) {
   if (!parentScope) {
-    throw EvalError("Cannot init the root scope");
+    throw CompileError("Cannot init the root scope");
   } else if (m_isInit) {
-    throw EvalError("Cannot init already-initialized scope");
+    throw CompileError("Cannot init already-initialized scope");
   }
   m_parentScope = parentScope;
   m_depth = parentScope->m_depth + 1;
@@ -37,9 +37,9 @@ void Scope::init(Scope* parentScope) {
 // Remains the root scope if this is never called
 void Scope::init(Scope* parentScope, Function* parentFunction) {
   if (!parentScope) {
-    throw EvalError("Cannot init the root scope");
+    throw CompileError("Cannot init the root scope");
   } else if (m_isInit) {
-    throw EvalError("Cannot init already-initialized scope");
+    throw CompileError("Cannot init already-initialized scope");
   }
   m_parentScope = parentScope;
   m_function = parentFunction;
@@ -61,9 +61,9 @@ void Scope::init(Scope* parentScope, Function* parentFunction) {
 // Remains the root scope if this is never called
 void Scope::init(Scope* parentScope, ObjectLiteral* parentObject) {
   if (!parentScope) {
-    throw EvalError("Cannot init the root scope");
+    throw CompileError("Cannot init the root scope");
   } else if (m_isInit) {
-    throw EvalError("Cannot init already-initialized scope");
+    throw CompileError("Cannot init already-initialized scope");
   }
   m_parentScope = parentScope;
   m_object = parentObject;
@@ -83,7 +83,7 @@ void Scope::reset() {
 void Scope::commitFirst() {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
-    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
+    if (!m_parentScope) { throw CompileError("Scope at depth 1 has no parent"); }
     return m_parentScope->commitFirst();
   }
   m_symbolTable.commitFirst();
@@ -93,7 +93,7 @@ void Scope::commitFirst() {
 void Scope::commitAll() {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
-    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
+    if (!m_parentScope) { throw CompileError("Scope at depth 1 has no parent"); }
     return m_parentScope->commitAll();
   }
   m_symbolTable.commitAll();
@@ -106,7 +106,7 @@ void Scope::revertLast() {
               boost::lexical_cast<string>(m_depth));
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
-    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
+    if (!m_parentScope) { throw CompileError("Scope at depth 1 has no parent"); }
     return m_parentScope->revertLast();
   }
   m_symbolTable.revertLast();
@@ -119,7 +119,7 @@ void Scope::revertAll() {
              boost::lexical_cast<string>(m_depth));
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
-    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
+    if (!m_parentScope) { throw CompileError("Scope at depth 1 has no parent"); }
     return m_parentScope->revertAll();
   }
   m_symbolTable.revertAll();
@@ -127,7 +127,7 @@ void Scope::revertAll() {
 
 Symbol* Scope::getSymbol(const string& varname) const {
   if (1 == m_depth) {
-    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
+    if (!m_parentScope) { throw CompileError("Scope at depth 1 has no parent"); }
     return m_parentScope->getSymbol(varname);
   }
   m_log.debug(string(m_function ? "Function " : "") +
@@ -152,7 +152,7 @@ Symbol* Scope::getSymbol(const string& varname) const {
 
 Symbol* Scope::getLocalSymbol(const string& varname) const {
   if (1 == m_depth) {
-    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
+    if (!m_parentScope) { throw CompileError("Scope at depth 1 has no parent"); }
     return m_parentScope->getLocalSymbol(varname);
   }
   m_log.debug(string(m_function ? "Function " : "") +
@@ -169,7 +169,7 @@ Symbol* Scope::getLocalSymbol(const string& varname) const {
 Symbol& Scope::newSymbol(const string& varname, auto_ptr<Type> type) {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
-    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
+    if (!m_parentScope) { throw CompileError("Scope at depth 1 has no parent"); }
     return m_parentScope->newSymbol(varname, type);
   }
   return m_symbolTable.newSymbol(varname, type);
@@ -178,7 +178,7 @@ Symbol& Scope::newSymbol(const string& varname, auto_ptr<Type> type) {
 void Scope::delSymbol(const string& varname) {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
-    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
+    if (!m_parentScope) { throw CompileError("Scope at depth 1 has no parent"); }
     return m_parentScope->delSymbol(varname);
   }
   return m_symbolTable.delSymbol(varname);
@@ -187,7 +187,7 @@ void Scope::delSymbol(const string& varname) {
 void Scope::initSymbol(const string& varname, auto_ptr<Object> newObject) {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
-    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
+    if (!m_parentScope) { throw CompileError("Scope at depth 1 has no parent"); }
     return m_parentScope->initSymbol(varname, newObject);
   }
   return m_symbolTable.initSymbol(varname, newObject);
@@ -196,7 +196,7 @@ void Scope::initSymbol(const string& varname, auto_ptr<Object> newObject) {
 void Scope::replaceObject(const string& varname, auto_ptr<Object> newObject) {
   // depth of 1 is fake; it just defers up to the root scope
   if (1 == m_depth) {
-    if (!m_parentScope) { throw EvalError("Scope at depth 1 has no parent"); }
+    if (!m_parentScope) { throw CompileError("Scope at depth 1 has no parent"); }
     return m_parentScope->replaceObject(varname, newObject);
   }
   return m_symbolTable.replaceObject(varname, newObject);

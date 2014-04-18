@@ -5,7 +5,7 @@
 
 #include "Block.h"
 #include "CommandFragment.h"
-#include "EvalError.h"
+#include "CompileError.h"
 #include "Node.h"
 
 #include <boost/lexical_cast.hpp>
@@ -16,19 +16,19 @@
 using std::string;
 using std::vector;
 
-using namespace eval;
+using namespace compiler;
 
 void Command::setup() {
 }
 
-void Command::evaluate() {
+void Command::compile() {
   // Codegen all the child blocks.  If it's a single code block, run it.
   // Otherwise, run all the expression blocks, take their cmdtext, and tell
   // the shell what command it should run on our behalf.
   if (1 == children.size()) {
     Block* block = dynamic_cast<Block*>(children.front());
     if (block && block->isCodeBlock()) {
-      block->evaluateNode();
+      block->compileNode();
       return;
     }
   }
@@ -37,17 +37,17 @@ void Command::evaluate() {
     Block* block = dynamic_cast<Block*>(*i);
     // Code blocks should have already been dealt with
     if (block && block->isCodeBlock()) {
-      throw EvalError("Command " + print() + " found inappropriately-positioned code block");
+      throw CompileError("Command " + print() + " found inappropriately-positioned code block");
     }
     CommandFragment* frag = dynamic_cast<CommandFragment*>(*i);
     if (frag) {
-      frag->evaluateNode();
+      frag->compileNode();
       cmd += frag->cmdText();
     } else if (block) {
-      block->evaluateNode();
+      block->compileNode();
       cmd += block->cmdText();
     } else {
-      throw EvalError("Command has an unsupported child: " + string(**i));
+      throw CompileError("Command has an unsupported child: " + string(**i));
     }
   }
   log.info("RUNNING CMD: <" + cmd + ">");

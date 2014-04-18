@@ -13,7 +13,7 @@
 #include <memory>
 #include <string>
 
-namespace eval {
+namespace compiler {
 
 class ArgSpec {
 public:

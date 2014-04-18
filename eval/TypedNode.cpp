@@ -3,22 +3,24 @@
 
 #include "TypedNode.h"
 
+#include "CompileError.h"
+
 #include <memory>
 using std::auto_ptr;
 
-using namespace eval;
+using namespace compiler;
 
 // Returns a duplicate of m_type; caller must take ownership
 auto_ptr<Type> TypedNode::getType() const {
   if (!m_type.get()) {
-    throw EvalError("Cannot get Type of TypedNode " + print() + " before it has been computed");
+    throw CompileError("Cannot get Type of TypedNode " + print() + " before it has been computed");
   }
   return m_type->duplicate();
 }
 
 const Type& TypedNode::type() const {
   if (!m_type.get()) {
-    throw EvalError("Cannot refer to Type of TypedNode " + print() + " before it has been computed");
+    throw CompileError("Cannot refer to Type of TypedNode " + print() + " before it has been computed");
   }
   return *m_type.get();
 }

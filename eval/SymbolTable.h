@@ -12,15 +12,15 @@
  *
  * newSymbol and delSymbol operations are the only "necessary" ones, for our
  * purpose of allowing "hey that object doesn't exist yet!" error checking
- * before evaluation-time.  But since the SymbolTable owns the memory of its
+ * before compilation-time.  But since the SymbolTable owns the memory of its
  * objects, it's also where we choose to invoke object constructors and
  * destructors.  That's why we also have replaceObject -- it's so the
  * SymbolTable can be responsible for calling the destructor of the replaced
- * object (also at evaluation-time aka commit-time, of course).
+ * object (also at compilation-time aka commit-time, of course).
  */
 
 #include "Common.h"
-#include "EvalError.h"
+#include "CompileError.h"
 #include "Symbol.h"
 
 #include "util/Log.h"
@@ -32,7 +32,7 @@
 #include <string>
 #include <utility>
 
-namespace eval {
+namespace compiler {
 
 class Object;
 class Symbol;
@@ -60,9 +60,9 @@ public:
   Symbol& newSymbol(const std::string& varname, std::auto_ptr<Type> type);
   // Delete a symbol.  Calls the object's destructor when commit.
   void delSymbol(const std::string& varname);
-  // Initialize a new'd symbol with its first value.  (evaluation-time)
+  // Initialize a new'd symbol with its first value.  (compile-time)
   void initSymbol(const std::string& varname, std::auto_ptr<Object> newObject);
-  // Assign a new value to an object.  (evaluation-time)
+  // Assign a new value to an object.  (compile-time)
   void replaceObject(const std::string& varname,
                      std::auto_ptr<Object> newObject);
 

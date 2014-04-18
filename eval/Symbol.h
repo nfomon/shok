@@ -8,11 +8,10 @@
  *
  * A Symbol is a typed entry in a symbol table.  The "Type" just refers to the
  * set of parent Symbol(s).  The Symbol itself has a SymbolTable of members.
- * At evaluate()-time it will be given an actual Object instance.
+ * At compile()-time it will be given an actual Object instance.
  */
 
 #include "Common.h"
-#include "EvalError.h"
 #include "SymbolTable.h"
 
 #include "util/Log.h"
@@ -21,7 +20,7 @@
 #include <memory>
 #include <string>
 
-namespace eval {
+namespace compiler {
 
 class Object;
 class Type;

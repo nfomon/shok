@@ -15,7 +15,7 @@
 
 #include "util/Log.h"
 
-namespace eval {
+namespace compiler {
 
 class Returns : public Node {
 public:
@@ -23,7 +23,6 @@ public:
     : Node(log, root, token),
       m_typeSpec(NULL) {}
   virtual void setup();
-  virtual void evaluate();
 
   std::string getName() const;
   std::auto_ptr<Type> getType() const;

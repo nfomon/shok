@@ -3,7 +3,7 @@
 
 #include "SymbolTable.h"
 
-#include "EvalError.h"
+#include "CompileError.h"
 #include "Object.h"
 #include "Symbol.h"
 
@@ -14,7 +14,7 @@
 using std::auto_ptr;
 using std::string;
 
-using namespace eval;
+using namespace compiler;
 
 SymbolTable::~SymbolTable() {
   reset();
@@ -27,7 +27,7 @@ void SymbolTable::reset() {
        i != m_ordering.rend(); ++i) {
     symbol_mod_iter s = m_symbols.find(i->first);
     if (m_symbols.end() == s) {
-      throw EvalError("Resetting SymbolTable failed to find " + i->first);
+      throw CompileError("Resetting SymbolTable failed to find " + i->first);
     }
     if (s->second) {
       if (s->second->object.get()) {
@@ -39,32 +39,32 @@ void SymbolTable::reset() {
   }
   m_ordering.clear();
   if (!m_symbols.empty()) {
-    throw EvalError("Resetting SymbolTable failed to clear all objects");
+    throw CompileError("Resetting SymbolTable failed to clear all objects");
   }
 }
 
 // Commit (confirm) the oldest pending change to the store
 void SymbolTable::commitFirst() {
   if (m_changeset.empty()) {
-    throw EvalError("Cannot commit first of changeset; no changes pending");
+    throw CompileError("Cannot commit first of changeset; no changes pending");
   }
   SymbolChange* sc = m_changeset.front();
   symbol_iter s = m_symbols.find(sc->varname);
   if (m_symbols.end() == s) {
-    throw EvalError("Cannot commit " + sc->varname + "; symbol missing");
+    throw CompileError("Cannot commit " + sc->varname + "; symbol missing");
   }
   AddSymbol* add = dynamic_cast<AddSymbol*>(sc);
   DelSymbol* del = dynamic_cast<DelSymbol*>(sc);
   if (add) {
     m_log.debug("Commit: addition of " + add->varname);
     if (!s->second->object.get()) {
-      throw EvalError("Cannot commit " + add->varname + "; object missing");
+      throw CompileError("Cannot commit " + add->varname + "; object missing");
     }
     s->second->object->construct();
   } else if (del) {
     m_log.debug("Commit: deletion of " + del->varname);
     if (!del->oldObject.get()) {
-      throw EvalError("Cannot commit deletion of " + del->varname + "; old object missing from changeset");
+      throw CompileError("Cannot commit deletion of " + del->varname + "; old object missing from changeset");
     }
     bool found = false;
     for (ordering_mod_iter i = m_ordering.begin();
@@ -76,11 +76,11 @@ void SymbolTable::commitFirst() {
       }
     }
     if (!found) {
-      throw EvalError("Cannot commit deletion of " + del->varname + "; object is missing from ordering");
+      throw CompileError("Cannot commit deletion of " + del->varname + "; object is missing from ordering");
     }
     del->oldObject->destruct();
   } else {
-    throw EvalError("Unknown SymbolChange");
+    throw CompileError("Unknown SymbolChange");
   }
   delete sc;
   m_changeset.pop_front();
@@ -98,12 +98,12 @@ void SymbolTable::commitAll() {
 // Revert the newest pending-commit change from the store
 void SymbolTable::revertLast() {
   if (m_changeset.empty()) {
-    throw EvalError(m_log, "Cannot revert last of changeset; no changes pending");
+    throw CompileError(m_log, "Cannot revert last of changeset; no changes pending");
   }
   SymbolChange* sc = m_changeset.back();
   symbol_mod_iter s = m_symbols.find(sc->varname);
   if (m_symbols.end() == s) {
-    throw EvalError("Cannot revert " + sc->varname + "; symbol missing");
+    throw CompileError("Cannot revert " + sc->varname + "; symbol missing");
   }
   AddSymbol* add = dynamic_cast<AddSymbol*>(sc);
   DelSymbol* del = dynamic_cast<DelSymbol*>(sc);
@@ -111,27 +111,27 @@ void SymbolTable::revertLast() {
     m_log.debug("Revert: addition of " + add->varname);
     // The add to revert should be the last element of m_ordering
     if (m_ordering.empty()) {
-      throw EvalError("Cannot revert addition of " + add->varname + "; object is missing from ordering");
+      throw CompileError("Cannot revert addition of " + add->varname + "; object is missing from ordering");
     }
     ordering_pair order = m_ordering.back();
     if (order.first != add->varname) {
-      throw EvalError("Cannot revert addition of " + add->varname + "; object missing or misplaced in ordering");
+      throw CompileError("Cannot revert addition of " + add->varname + "; object missing or misplaced in ordering");
     } else if (order.second) {
-      throw EvalError("Cannot revert addition of " + add->varname + "; ordering suggests object is pending deletion");
+      throw CompileError("Cannot revert addition of " + add->varname + "; ordering suggests object is pending deletion");
     }
     m_ordering.pop_back();
     m_symbols.erase(s);
   } else if (del) {
     m_log.debug("Revert: deletion of " + del->varname);
     if (!del->oldObject.get()) {
-      throw EvalError("Cannot revert deletion of " + del->varname + "; old object missing from changeset");
+      throw CompileError("Cannot revert deletion of " + del->varname + "; old object missing from changeset");
     }
     bool found = false;
     for (ordering_rev_mod_iter i = m_ordering.rbegin();
          i != m_ordering.rend(); ++i) {
       if (del->varname == i->first) {
         if (!i->second) {
-          throw EvalError("Cannot revert deletion of " + del->varname + "; ordering suggests object is not pending deletion");
+          throw CompileError("Cannot revert deletion of " + del->varname + "; ordering suggests object is not pending deletion");
         }
         i->second = false;
         found = true;
@@ -139,14 +139,14 @@ void SymbolTable::revertLast() {
       }
     }
     if (!found) {
-      throw EvalError("Cannot revert deletion of " + del->varname + "; object is missing from ordering");
+      throw CompileError("Cannot revert deletion of " + del->varname + "; object is missing from ordering");
     }
     auto_ptr<Symbol> symbol(new Symbol(m_log, del->oldType));
     symbol->object = del->oldObject;
     symbol_pair sp(del->varname, symbol.release());
     m_symbols.insert(make_pair(del->varname, symbol.release()));
   } else {
-    throw EvalError("Unknown SymbolChange");
+    throw CompileError("Unknown SymbolChange");
   }
   delete sc;
   m_changeset.pop_back();
@@ -171,7 +171,7 @@ Symbol& SymbolTable::newSymbol(const string& varname, auto_ptr<Type> type) {
   // An object name collision should have already been detected, but repeat
   // this now until we're confident about that
   if (getSymbol(varname)) {
-    throw EvalError("Cannot create variable " + varname + "; already exists, and should never have been created");
+    throw CompileError("Cannot create variable " + varname + "; already exists, and should never have been created");
   }
   m_log.info("Pending addition of object " + varname + " to an object store");
   symbol_pair sp(varname, new Symbol(m_log, type));
@@ -179,7 +179,7 @@ Symbol& SymbolTable::newSymbol(const string& varname, auto_ptr<Type> type) {
   // slow paranoid safety check
   for (ordering_iter i = m_ordering.begin(); i != m_ordering.end(); ++i) {
     if (varname == i->first && !i->second) {
-      throw EvalError("Cannot create variable " + varname + "; somehow already exists in ordering");
+      throw CompileError("Cannot create variable " + varname + "; somehow already exists in ordering");
     }
   }
   ordering_pair orp(varname, false);
@@ -193,7 +193,7 @@ void SymbolTable::delSymbol(const string& varname) {
   m_log.info("Pending deletion of object " + varname + " to an object store");
   symbol_mod_iter s = m_symbols.find(varname);
   if (m_symbols.end() == s) {
-    throw EvalError("Cannot delete variable " + varname + "; does not exist in this store");
+    throw CompileError("Cannot delete variable " + varname + "; does not exist in this store");
   }
   // this steals the type and object from s (of m_symbols)
   auto_ptr<DelSymbol> ds(new DelSymbol(varname, s->second->type, s->second->object));
@@ -206,7 +206,7 @@ void SymbolTable::delSymbol(const string& varname) {
     }
   }
   if (!found) {
-    throw EvalError("Cannot delete variable " + varname + "; somehow does not exist in ordering");
+    throw CompileError("Cannot delete variable " + varname + "; somehow does not exist in ordering");
   }
   delete s->second;
   m_symbols.erase(s);
@@ -218,13 +218,13 @@ void SymbolTable::initSymbol(const string& varname,
   m_log.info("Initializing object " + varname);
   symbol_mod_iter s = m_symbols.find(varname);
   if (m_symbols.end() == s) {
-    throw EvalError("Cannot replace variable " + varname + "; does not exist in this store");
+    throw CompileError("Cannot replace variable " + varname + "; does not exist in this store");
   } else if (!s->second) {
-    throw EvalError("Cannot initialize variable " + varname + " that exists but has no symbol");
+    throw CompileError("Cannot initialize variable " + varname + " that exists but has no symbol");
   } else if (s->second->object.get()) {
-    throw EvalError("Cannot initialize variable " + varname + " that already has an object");
+    throw CompileError("Cannot initialize variable " + varname + " that already has an object");
   } else if (!newObject.get()) {
-    throw EvalError("Cannot initialize variable " + varname + " with no newObject");
+    throw CompileError("Cannot initialize variable " + varname + " with no newObject");
   }
   if (varname != newObject->getName()) {
     m_log.warning("Replacing SymbolTable name " + varname + " with object that thinks its name is " + newObject->getName());
@@ -238,11 +238,11 @@ void SymbolTable::replaceObject(const string& varname,
   m_log.info("Replacing object " + varname);
   symbol_mod_iter s = m_symbols.find(varname);
   if (m_symbols.end() == s) {
-    throw EvalError("Cannot replace variable " + varname + "; does not exist in this store");
+    throw CompileError("Cannot replace variable " + varname + "; does not exist in this store");
   } else if (!s->second || !s->second->object.get()) {
-    throw EvalError("Cannot replace variable " + varname + "; found deficient symbol in the store");
+    throw CompileError("Cannot replace variable " + varname + "; found deficient symbol in the store");
   } else if (!newObject.get()) {
-    throw EvalError("Cannot replace variable " + varname + " with no newObject");
+    throw CompileError("Cannot replace variable " + varname + " with no newObject");
   }
   if (varname != newObject->getName()) {
     m_log.warning("Replacing SymbolTable name " + varname + " with object that thinks its name is " + newObject->getName());
@@ -255,12 +255,12 @@ void SymbolTable::replaceObject(const string& varname,
 auto_ptr<SymbolTable> SymbolTable::duplicate() const {
   m_log.debug("Duplicating object store");
   if (!m_changeset.empty() || !m_ordering.empty()) {
-    throw EvalError("Cannot duplicate SymbolTable that has pending changes");
+    throw CompileError("Cannot duplicate SymbolTable that has pending changes");
   }
   auto_ptr<SymbolTable> os(new SymbolTable(m_log));
   for (symbol_iter i = m_symbols.begin(); i != m_symbols.end(); ++i) {
     if (!i->second || !i->second->type.get() || !i->second->object.get()) {
-      throw EvalError("Cannot duplicate SymbolTable with deficient symbol");
+      throw CompileError("Cannot duplicate SymbolTable with deficient symbol");
     }
     os->newSymbol(i->first, i->second->type->duplicate());
     os->initSymbol(i->first, i->second->object->clone(i->second->object->getName()));

@@ -19,14 +19,14 @@
 
 #include <string>
 
-namespace eval {
+namespace compiler {
 
 class IsVar : public Statement {
 public:
   IsVar(Log& log, RootNode*const root, const Token& token)
     : Statement(log, root, token) {}
   virtual void setup();
-  virtual void evaluate();
+  virtual void compile();
   virtual bool isInstant() const { return true; }
 
 private:

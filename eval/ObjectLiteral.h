@@ -16,7 +16,7 @@
 #include <memory>
 #include <string>
 
-namespace eval {
+namespace compiler {
 
 class ObjectLiteral : public TypedNode {
 public:
@@ -25,7 +25,7 @@ public:
       m_body(NULL) {}
 
   virtual void setup();
-  virtual void evaluate();
+  virtual void compile();
   std::auto_ptr<Object> makeObject(const std::string& newName) const;
 
 private:
