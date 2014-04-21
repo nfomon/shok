@@ -29,13 +29,12 @@ public:
 private:
   Log& m_log;
   std::istream& m_input;
-  //AST m_ast;
 
   // member-function aliases bound to their exec_x counterparts at construction
   boost::function<void (const std::string&, boost::spirit::qi::unused_type, boost::spirit::qi::unused_type)> on_cmdline;
 
   // semantic actions
-  void exec_cmdline(const std::string& cmdline);
+  void emit(const std::string& bytecode);
 };
 
 }

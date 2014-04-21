@@ -3,8 +3,8 @@
 
 #include "Compiler.h"
 
-//#include "AST.h"
-#include "CmdLine.h"
+#include "Cmd.h"
+#include "Code.h"
 #include "CompileError.h"
 
 #include "util/Util.h"
@@ -17,32 +17,33 @@ namespace spirit = boost::spirit;
 namespace qi = spirit::qi;
 namespace ascii = spirit::ascii;
 
+#include <iostream>
 #include <istream>
 #include <string>
 #include <utility>
 #include <vector>
+using std::cout;
+using std::endl;
 using std::istream;
 using std::string;
 using std::vector;
-
-// debug
-#include <iostream>
-using std::cout;
-using std::endl;
 
 using namespace compiler;
 
 Compiler::Compiler(Log& log, istream& input)
   : m_log(log),
     m_input(input),
-    on_cmdline(boost::bind(&Compiler::exec_cmdline, this, _1)) {
+    on_cmdline(boost::bind(&Compiler::emit, this, _1)) {
 }
 
-void Compiler::exec_cmdline(const std::string& cmdline) {
-  cout << "RUN CMD:" << cmdline << endl;
+void Compiler::emit(const std::string& bytecode) {
+  cout << "bytecode:'" << bytecode << "'" << endl;
 }
 
 bool Compiler::execute() {
+  using qi::lit;
+  using qi::omit;
+
   // iterate over stream input
   typedef std::istreambuf_iterator<char> base_iterator_type;
   base_iterator_type in_begin(m_input);
@@ -52,10 +53,16 @@ bool Compiler::execute() {
   forward_iterator_type fwd_begin = spirit::make_default_multi_pass(in_begin);
   forward_iterator_type fwd_end;
 
-  CmdLineParser<forward_iterator_type> cmdline_(m_log);
-  typedef qi::rule<forward_iterator_type, ascii::space_type> Rule;
+  CodeParser<forward_iterator_type> code_(m_log);
+  CmdParser<forward_iterator_type> cmd_(m_log);
 
-  Rule program_ = +(cmdline_[on_cmdline]);
+  typedef qi::rule<forward_iterator_type, std::string(), ascii::space_type> StringRule;
+  typedef qi::rule<forward_iterator_type, ascii::space_type> VoidRule;
+
+  StringRule codeblock_ = omit[ code_ ];
+  StringRule cmdline_ = lit('[') > (cmd_ | codeblock_) > lit(']');
+
+  VoidRule program_ = +(cmdline_[on_cmdline]);
 
   bool r = qi::phrase_parse(
     fwd_begin, fwd_end,

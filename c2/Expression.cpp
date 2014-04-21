@@ -13,17 +13,25 @@ using std::vector;
 
 using namespace compiler;
 
-void Expression::init() {
+Expression::Expression(Log& log)
+  : m_log(log),
+    m_infixing(false) {
 }
 
 void Expression::attach_atom(const std::string& atom) {
+  // TODO
 }
 
 void Expression::attach_preop(const std::string& preop) {
+  PrefixOperator op(m_log, preop);
+  // TODO
 }
 
 void Expression::attach_binop(const std::string& binop) {
+  InfixOperator op(m_log, binop);
+  // TODO
 }
 
-void Expression::end() {
+std::string Expression::bytecode() const {
+  return "<bytecode>";
 }

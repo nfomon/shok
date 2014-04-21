@@ -6,15 +6,20 @@
 
 /* Expression */
 
+#include "Operator.h"
+
 #include "util/Log.h"
 
-#include <boost/bind.hpp>
+//#include <boost/bind.hpp>
+//#include <boost/phoenix/bind.hpp>
+#include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
-namespace spirit = boost::spirit;
 namespace phoenix = boost::phoenix;
-namespace qi = spirit::qi;
+namespace spirit = boost::spirit;
 namespace ascii = spirit::ascii;
+namespace qi = spirit::qi;
 
 #include <string>
 #include <vector>
@@ -26,42 +31,34 @@ using std::endl;
 
 namespace compiler {
 
-struct Expression {
+class Expression {
 public:
-  Expression(Log& log)
-    : m_log(log) {}
+  Expression(Log& log);
 
-  void init();
-  void attach_atom(const std::string&);
-  void attach_preop(const std::string&);
-  void attach_binop(const std::string&);
-  void end();
+  void attach_atom(const std::string& atom);
+  void attach_preop(const std::string& preop);
+  void attach_binop(const std::string& binop);
+  std::string bytecode() const;
 
 private:
+  typedef std::vector<Operator*> stack_vec;
+  typedef stack_vec::const_iterator stack_iter;
+
   Log& m_log;
+  bool m_infixing;
+  stack_vec m_stack;
 };
 
 template <typename Iterator>
 struct ExpParser : qi::grammar<Iterator, std::string(), ascii::space_type> {
-private:
-  Log& m_log;
-  Expression m_exp;
-  boost::function<void (boost::spirit::qi::unused_type, boost::spirit::qi::unused_type, boost::spirit::qi::unused_type)> init;
-  boost::function<void (const std::string&, boost::spirit::qi::unused_type, boost::spirit::qi::unused_type)> attach_atom;
-  boost::function<void (const std::string&, boost::spirit::qi::unused_type, boost::spirit::qi::unused_type)> attach_preop;
-  boost::function<void (const std::string&, boost::spirit::qi::unused_type, boost::spirit::qi::unused_type)> attach_binop;
-  boost::function<void (boost::spirit::qi::unused_type, boost::spirit::qi::unused_type, boost::spirit::qi::unused_type)> end;
-
 public:
   ExpParser(Log& log)
-    : ExpParser::base_type(exp_, "expression"),
+    : ExpParser::base_type(exp_, "expression parser"),
       m_log(log),
-      m_exp(log),
-      init(boost::bind(&Expression::init, &m_exp)),
-      attach_atom(boost::bind(&Expression::attach_atom, &m_exp, _1)),
-      attach_preop(boost::bind(&Expression::attach_preop, &m_exp, _1)),
-      attach_binop(boost::bind(&Expression::attach_binop, &m_exp, _1)),
-      end(boost::bind(&Expression::end, &m_exp)) {
+      m_exp(log) {
+    using phoenix::ref;
+    using phoenix::val;
+    using qi::_val;
     using qi::alnum;
     using qi::char_;
     using qi::lexeme;
@@ -70,23 +67,29 @@ public:
 
     identifier_.name("identifier");
     variable_.name("variable");
+    atoms_.name("atoms");
     atom_.name("atom");
+    preops_.name("prefix operators");
     preop_.name("prefix operator");
+    binops_.name("binary operators");
     binop_.name("binary operator");
     exp_.name("expression");
 
     identifier_ %= lit("ID:") > +(alnum | '_') > -(lit(":") > +(alnum | '_'));
-    variable_ %= lit("(var ") >> identifier_ >> ")";
-    atom_ %= variable_;
-    preop_ %= lit("PLUS") | lit("MINUS");
-    binop_ %= lit("PLUS") | lit("MINUS") | lit("STAR") | lit("DIV");
+    variable_ %= lit("(var") >> identifier_ >> ")";
+    atoms_ %= variable_;
+    atom_ %= atoms_[phoenix::bind(&Expression::attach_atom, &m_exp, qi::_1)];
+    preops_ %= lit("PLUS") | lit("MINUS");
+    preop_ %= preops_[phoenix::bind(&Expression::attach_preop, &m_exp, qi::_1)];
+    binops_ %= lit("PLUS") | lit("MINUS") | lit("STAR") | lit("DIV");
+    binop_ %= binops_[phoenix::bind(&Expression::attach_binop, &m_exp, qi::_1)];
 
-    exp_ %=
-      lit("(exp ")[init]
-      >> -preop_[attach_preop]
-      >> atom_[attach_atom]
-      >> *(binop_[attach_binop] > -preop_[attach_preop] > atom_[attach_atom])
-      >> lit(")")[end];
+    exp_ =
+      (lit("(exp ")
+      >> -preop_
+      >> atom_
+      >> *(binop_ > -preop_ > atom_)
+      >> lit(")"))[_val = phoenix::bind(&Expression::bytecode, &m_exp)];
 
 /*
     qi::on_error<qi::fail>(
@@ -95,10 +98,17 @@ public:
 */
   }
 
+private:
+  Log& m_log;
+  Expression m_exp;
+
   qi::rule<Iterator, std::string(), ascii::space_type> identifier_;
   qi::rule<Iterator, std::string(), ascii::space_type> variable_;
+  qi::rule<Iterator, std::string(), ascii::space_type> atoms_;
   qi::rule<Iterator, std::string(), ascii::space_type> atom_;
+  qi::rule<Iterator, std::string(), ascii::space_type> preops_;
   qi::rule<Iterator, std::string(), ascii::space_type> preop_;
+  qi::rule<Iterator, std::string(), ascii::space_type> binops_;
   qi::rule<Iterator, std::string(), ascii::space_type> binop_;
   qi::rule<Iterator, std::string(), ascii::space_type> exp_;
 };
