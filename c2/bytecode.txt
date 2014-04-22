@@ -1,0 +1,25 @@
+new object - endnew
+#new @ object endnew
+
+
+{new x}  <=>  {new x:object = object}
+[{(new (init ID:'x'))}]   <=>   [{(new (init ID:'x' (type (var ID:'object')) (exp (var ID:'object'))))}]
+
+At ID:'x' I could ensure there's no name conflict.
+Throughout the (type...) I can be TDOP type-checking
+ - I do all the requisite symbol-table and method-lookups to determine the final type of the expression
+ - the expression gets thrown away -- no types go into the bytecode!
+ - just keep the type, which is... the same wonky tree it was in the old compiler
+ - if we don't have an exp, we'll also need to get this type's default value
+Throughout the (exp...) I can be TDOP type-checking
+ - results in bytecode that evaluates to produce an object result
+ - then we have bytecode to construct the object and assign this initial value
+At the init's ')' I add the symbol to my local scope
+ - it comes with the type, that old wonky tree thing
+ - the exp bytecode is already in our block's synthesized attribute
+ - add the bytecode to construct the object with the exp's value
+ - the block's bytecode will be returned upwards when the block is done
+
+new x object endnew
+
+{new

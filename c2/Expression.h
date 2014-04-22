@@ -90,12 +90,6 @@ public:
       >> atom_
       >> *(binop_ > -preop_ > atom_)
       >> lit(")"))[_val = phoenix::bind(&Expression::bytecode, &m_exp)];
-
-/*
-    qi::on_error<qi::fail>(
-      exp_,
-      cout << "Failed to compile expression" << endl);
-*/
   }
 
 private:

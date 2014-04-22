@@ -40,8 +40,6 @@ public:
     // Write expression bytecode before the cmd.
     // The cmd uses "{}" as placeholders for the expression's computed result.
     expblock_ %= (lit('{') > omit[ exp_[ref(m_expcode) += qi::_1] ] > lit('}'))[_val += "{}"];
-    //expblock_ %= (lit('{') > +char_ > lit('}'))[_val += "{}"];
-    //expblock_ %= (lit('{') > +char_ > lit('}'));
     cmdtext_ %= +no_skip[ char_ - lit('{') - lit(']') ];
     cmdwhole_ %= (cmdtext_ > *(expblock_ > -cmdtext_));
     cmd_ %= cmdwhole_[_val = ref(m_expcode) + qi::_1];

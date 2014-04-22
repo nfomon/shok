@@ -53,15 +53,16 @@ bool Compiler::execute() {
   forward_iterator_type fwd_begin = spirit::make_default_multi_pass(in_begin);
   forward_iterator_type fwd_end;
 
-  CodeParser<forward_iterator_type> code_(m_log);
+  //Scope globalScope;
+
   CmdParser<forward_iterator_type> cmd_(m_log);
+  CodeParser<forward_iterator_type> code_(m_log);
+  //CodeParser<forward_iterator_type> code_(m_log, globalScope);
 
   typedef qi::rule<forward_iterator_type, std::string(), ascii::space_type> StringRule;
   typedef qi::rule<forward_iterator_type, ascii::space_type> VoidRule;
 
-  StringRule codeblock_ = omit[ code_ ];
-  StringRule cmdline_ = lit('[') > (cmd_ | codeblock_) > lit(']');
-
+  StringRule cmdline_ = lit('[') > (cmd_ | code_) > lit(']');
   VoidRule program_ = +(cmdline_[on_cmdline]);
 
   bool r = qi::phrase_parse(

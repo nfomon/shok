@@ -6,7 +6,7 @@
 
 /* Code block */
 
-//#include "Expression.h"
+#include "NewInit.h"
 
 #include "util/Log.h"
 
@@ -28,7 +28,8 @@ struct CodeParser : qi::grammar<Iterator, std::string(), ascii::space_type> {
 public:
   CodeParser(Log& log)
     : CodeParser::base_type(code_, "code parser"),
-      m_log(log) {
+      m_log(log),
+      newinit_(log) {
     using phoenix::ref;
     using phoenix::val;
     using qi::_val;
@@ -41,23 +42,19 @@ public:
 
     code_.name("code");
 
-    init_ %= lit("(init");
-
-    new_ %= lit("(new");
+    new_ %= lit("(new") > +newinit_ > lit(")");
 
     statement_ %= new_;
-
-    code_ = omit[
+    code_ %=
       lit('{')
       > +statement_
-      > lit('}')
-    ];
+      > lit('}');
   }
 
 private:
   Log& m_log;
 
-  qi::rule<Iterator, std::string(), ascii::space_type> init_;
+  NewInitParser<Iterator> newinit_;
   qi::rule<Iterator, std::string(), ascii::space_type> new_;
   qi::rule<Iterator, std::string(), ascii::space_type> statement_;
   qi::rule<Iterator, std::string(), ascii::space_type> code_;
