@@ -34,7 +34,6 @@ namespace compiler {
 class Expression {
 public:
   Expression();
-  void init(Log& log);
   void attach_atom(const std::string& atom);
   void attach_preop(const std::string& preop);
   void attach_binop(const std::string& binop);
@@ -45,7 +44,6 @@ private:
   typedef std::vector<Operator*> stack_vec;
   typedef stack_vec::const_iterator stack_iter;
 
-  Log* m_log;
   bool m_infixing;
   stack_vec m_stack;
 };
@@ -64,8 +62,6 @@ public:
     using qi::lexeme;
     using qi::lit;
     using qi::print;
-
-    m_exp.init(log);
 
     identifier_.name("identifier");
     variable_.name("variable");

@@ -8,8 +8,6 @@
 
 #include "CompileError.h"
 
-#include "util/Log.h"
-
 #include <string>
 #include <vector>
 
@@ -20,8 +18,8 @@ public:
   typedef int Priority;
   static const Priority NO_PRIORITY = -1;
 
-  Operator(Log& log, const std::string& name, Priority priority)
-    : m_log(log), m_name(name), m_priority(priority) {}
+  Operator(const std::string& name, Priority priority)
+    : m_name(name), m_priority(priority) {}
   virtual ~Operator() {}
 
   Priority priority() const {
@@ -29,7 +27,6 @@ public:
   }
 
 private:
-  Log& m_log;
   std::string m_name;
   Priority m_priority;
 };
@@ -44,8 +41,8 @@ private:
   }
 
 public:
-  PrefixOperator(Log& log, const std::string& name)
-    : Operator(log, name, priority(name)) {}
+  PrefixOperator(const std::string& name)
+    : Operator(name, priority(name)) {}
 };
 
 class InfixOperator : public Operator {
@@ -97,8 +94,8 @@ private:
   }
 
 public:
-  InfixOperator(Log& log, const std::string& name)
-    : Operator(log, name, priority(name)),
+  InfixOperator(const std::string& name)
+    : Operator(name, priority(name)),
       m_assoc(assoc(name)) {}
 
   Assoc assoc() const {
