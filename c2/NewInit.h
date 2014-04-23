@@ -26,7 +26,6 @@ namespace compiler {
 class NewInit {
 public:
   NewInit(Log& log);
-
   void attach_name(const std::string& name);
   void attach_type(const std::string& type);
   void attach_exp(const std::string& exp);
@@ -62,12 +61,13 @@ public:
     identifier_ %= lit("ID:") > +(alnum | '_') > -(lit(":") > +(alnum | '_'));
     variable_ %= lit("(var") > identifier_ > lit(')');
     typespec_ %= lit("(type") > identifier_ > lit(')');
-    newinit_ =
-      (lit("(init")
+    newinit_ = (
+      lit("(init")
       > identifier_[phoenix::bind(&NewInit::attach_name, &m_newinit, qi::_1)]
       > -typespec_[phoenix::bind(&NewInit::attach_type, &m_newinit, qi::_1)]
-      > -exp_[phoenix::bind(&NewInit::attach_exp, &m_newinit, qi::_1)]
-      > lit(")"))[_val = phoenix::bind(&NewInit::bytecode, &m_newinit)];
+      > -exp_[phoenix::bind(&NewInit::attach_exp, &m_newinit, (phoenix::bind(&Expression::bytecode, qi::_1)))]
+      > lit(")")
+    )[_val = phoenix::bind(&NewInit::bytecode, &m_newinit)];
   }
 
 private:

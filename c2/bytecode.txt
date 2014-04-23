@@ -23,3 +23,22 @@ At the init's ')' I add the symbol to my local scope
 new x object endnew
 
 {new
+
+-----
+2k14-04-21
+
+If we want to pass Expression (or any other object) as qi attributes, it can't
+have a reference; it needs to be assignable.  Maybe that's ok, get rid of Log&,
+pass in a Log* instead (so that the default assignment operator is ok).
+
+Want exp_ to give back an Expression.  That way expblocks can get its cmdtext()
+and its bytecode(), whereas statements can get whatever they want from it
+(probably its type, maybe also its bytecode).
+
+
+naaaaaaah another way to do things:  use spirit locals.  that's the "right way"
+even though it's uuugly :)
+ - nurrrrrrrr no we still need to assign to _val!
+
+-----
+

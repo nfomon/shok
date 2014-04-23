@@ -10,6 +10,8 @@
 
 #include "util/Log.h"
 
+#include <boost/spirit/include/phoenix_bind.hpp>
+#include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/phoenix_stl.hpp>
@@ -39,7 +41,12 @@ public:
 
     // Write expression bytecode before the cmd.
     // The cmd uses "{}" as placeholders for the expression's computed result.
-    expblock_ %= (lit('{') > omit[ exp_[ref(m_expcode) += qi::_1] ] > lit('}'))[_val += "{}"];
+
+    expblock_ %= (
+      lit('{')
+      > omit[ exp_[ref(m_expcode) += phoenix::bind(&Expression::bytecode, qi::_1)] ]
+      > lit('}')
+    )[_val += "{}"];
     cmdtext_ %= +no_skip[ char_ - lit('{') - lit(']') ];
     cmdwhole_ %= (cmdtext_ > *(expblock_ > -cmdtext_));
     cmd_ %= cmdwhole_[_val = ref(m_expcode) + qi::_1];

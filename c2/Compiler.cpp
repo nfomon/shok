@@ -6,6 +6,7 @@
 #include "Cmd.h"
 #include "Code.h"
 #include "CompileError.h"
+#include "Scope.h"
 
 #include "util/Util.h"
 
@@ -56,8 +57,8 @@ bool Compiler::execute() {
   //Scope globalScope;
 
   CmdParser<forward_iterator_type> cmd_(m_log);
-  CodeParser<forward_iterator_type> code_(m_log);
   //CodeParser<forward_iterator_type> code_(m_log, globalScope);
+  CodeParser<forward_iterator_type> code_(m_log);
 
   typedef qi::rule<forward_iterator_type, std::string(), ascii::space_type> StringRule;
   typedef qi::rule<forward_iterator_type, ascii::space_type> VoidRule;

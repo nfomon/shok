@@ -7,13 +7,13 @@
 /* Expression */
 
 #include "Operator.h"
+#include "Type.h"
 
 #include "util/Log.h"
 
-//#include <boost/bind.hpp>
-//#include <boost/phoenix/bind.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
 namespace phoenix = boost::phoenix;
@@ -33,29 +33,29 @@ namespace compiler {
 
 class Expression {
 public:
-  Expression(Log& log);
-
+  Expression();
+  void init(Log& log);
   void attach_atom(const std::string& atom);
   void attach_preop(const std::string& preop);
   void attach_binop(const std::string& binop);
+  void finalize();
   std::string bytecode() const;
 
 private:
   typedef std::vector<Operator*> stack_vec;
   typedef stack_vec::const_iterator stack_iter;
 
-  Log& m_log;
+  Log* m_log;
   bool m_infixing;
   stack_vec m_stack;
 };
 
 template <typename Iterator>
-struct ExpParser : qi::grammar<Iterator, std::string(), ascii::space_type> {
+struct ExpParser : qi::grammar<Iterator, Expression(), ascii::space_type> {
 public:
   ExpParser(Log& log)
     : ExpParser::base_type(exp_, "expression parser"),
-      m_log(log),
-      m_exp(log) {
+      m_log(log) {
     using phoenix::ref;
     using phoenix::val;
     using qi::_val;
@@ -64,6 +64,8 @@ public:
     using qi::lexeme;
     using qi::lit;
     using qi::print;
+
+    m_exp.init(log);
 
     identifier_.name("identifier");
     variable_.name("variable");
@@ -84,12 +86,13 @@ public:
     binops_ %= lit("PLUS") | lit("MINUS") | lit("STAR") | lit("DIV");
     binop_ %= binops_[phoenix::bind(&Expression::attach_binop, &m_exp, qi::_1)];
 
-    exp_ =
-      (lit("(exp ")
+    exp_ = (
+      lit("(exp ")
       >> -preop_
       >> atom_
       >> *(binop_ > -preop_ > atom_)
-      >> lit(")"))[_val = phoenix::bind(&Expression::bytecode, &m_exp)];
+      >> lit(")")[phoenix::bind(&Expression::finalize, &m_exp)]
+    )[_val = ref(m_exp)];
   }
 
 private:
@@ -104,7 +107,7 @@ private:
   qi::rule<Iterator, std::string(), ascii::space_type> preop_;
   qi::rule<Iterator, std::string(), ascii::space_type> binops_;
   qi::rule<Iterator, std::string(), ascii::space_type> binop_;
-  qi::rule<Iterator, std::string(), ascii::space_type> exp_;
+  qi::rule<Iterator, Expression(), ascii::space_type> exp_;
 };
 
 }

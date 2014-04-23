@@ -3,6 +3,8 @@
 
 #include "Expression.h"
 
+#include "Operator.h"
+
 #include "util/Util.h"
 
 #include <string>
@@ -13,9 +15,12 @@ using std::vector;
 
 using namespace compiler;
 
-Expression::Expression(Log& log)
-  : m_log(log),
-    m_infixing(false) {
+Expression::Expression()
+  : m_infixing(false) {
+}
+
+void Expression::init(Log& log) {
+  m_log = &log;
 }
 
 void Expression::attach_atom(const std::string& atom) {
@@ -23,13 +28,16 @@ void Expression::attach_atom(const std::string& atom) {
 }
 
 void Expression::attach_preop(const std::string& preop) {
-  PrefixOperator op(m_log, preop);
+  PrefixOperator op(*m_log, preop);
   // TODO
 }
 
 void Expression::attach_binop(const std::string& binop) {
-  InfixOperator op(m_log, binop);
+  InfixOperator op(*m_log, binop);
   // TODO
+}
+
+void Expression::finalize() {
 }
 
 std::string Expression::bytecode() const {

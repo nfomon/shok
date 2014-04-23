@@ -7,9 +7,7 @@
 
 #include <string>
 #include <utility>
-#include <vector>
 using std::string;
-using std::vector;
 
 using namespace compiler;
 
