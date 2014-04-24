@@ -9,8 +9,6 @@
 #include "Operator.h"
 #include "Type.h"
 
-#include "util/Log.h"
-
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
@@ -51,9 +49,7 @@ private:
 template <typename Iterator>
 struct ExpParser : qi::grammar<Iterator, Expression(), ascii::space_type> {
 public:
-  ExpParser(Log& log)
-    : ExpParser::base_type(exp_, "expression parser"),
-      m_log(log) {
+  ExpParser() : ExpParser::base_type(exp_, "expression parser") {
     using phoenix::ref;
     using phoenix::val;
     using qi::_val;
@@ -92,7 +88,6 @@ public:
   }
 
 private:
-  Log& m_log;
   Expression m_exp;
 
   qi::rule<Iterator, std::string(), ascii::space_type> identifier_;

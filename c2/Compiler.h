@@ -8,8 +8,6 @@
 
 //#include "AST.h"
 
-#include "util/Log.h"
-
 #include <boost/function.hpp>
 #include <boost/spirit/home/support/unused.hpp>
 #include <boost/spirit/include/qi.hpp>
@@ -21,13 +19,12 @@ namespace compiler {
 
 class Compiler {
 public:
-  Compiler(Log& log, std::istream& input);
+  Compiler(std::istream& input);
 
   // returns true on full successful compile
   bool execute();
 
 private:
-  Log& m_log;
   std::istream& m_input;
 
   // member-function aliases bound to their exec_x counterparts at construction

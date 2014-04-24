@@ -17,8 +17,6 @@
 #include "SymbolTable.h"
 #include "Type.h"
 
-#include "util/Log.h"
-
 #include <string>
 #include <vector>
 
@@ -28,11 +26,9 @@ class Scope {
 public:
   typedef int Depth;
 
-  Scope(Log& log, Scope* parent = NULL)
-    : m_log(log),
-      m_parent(parent),
-      m_depth(parent ? (parent->depth() + 1) : 0),
-      m_symbolTable(log) {
+  Scope(Scope* parent = NULL)
+    : m_parent(parent),
+      m_depth(parent ? (parent->depth() + 1) : 0) {
   }
   virtual ~Scope() {}
 
@@ -45,7 +41,6 @@ public:
   const Type* findLocal(const std::string& name) const;
 
 private:
-  Log& m_log;
   Scope* m_parent;
   Depth m_depth;
   SymbolTable m_symbolTable;

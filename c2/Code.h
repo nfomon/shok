@@ -7,8 +7,7 @@
 /* Code block */
 
 #include "NewInit.h"
-
-#include "util/Log.h"
+#include "Scope.h"
 
 #include <boost/bind.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
@@ -26,10 +25,9 @@ namespace compiler {
 template <typename Iterator>
 struct CodeParser : qi::grammar<Iterator, std::string(), ascii::space_type> {
 public:
-  CodeParser(Log& log)
+  CodeParser(Scope& globalScope)
     : CodeParser::base_type(code_, "code parser"),
-      m_log(log),
-      newinit_(log) {
+      m_globalScope(globalScope) {
     using phoenix::ref;
     using phoenix::val;
     using qi::_val;
@@ -42,7 +40,7 @@ public:
 
     code_.name("code");
 
-    new_ %= lit("(new") > +newinit_ > lit(")");
+    new_ %= lit("(new") > +newinit_(ref(m_globalScope)) > lit(")");
 
     statement_ %= new_;
     code_ %=
@@ -52,7 +50,7 @@ public:
   }
 
 private:
-  Log& m_log;
+  Scope& m_globalScope;
 
   NewInitParser<Iterator> newinit_;
   qi::rule<Iterator, std::string(), ascii::space_type> new_;

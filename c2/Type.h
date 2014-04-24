@@ -8,8 +8,6 @@
 
 #include "CompileError.h"
 
-#include "util/Log.h"
-
 #include <string>
 #include <vector>
 
@@ -17,8 +15,7 @@ namespace compiler {
 
 class Type {
 public:
-  Type(Log& log)
-    : m_log(log) {}
+  Type() {}
   virtual ~Type() {}
 /*
   virtual void addMemberType(const std::string& name, std::auto_ptr<Type> type) = 0;
@@ -30,7 +27,6 @@ public:
 */
 
 protected:
-  Log& m_log;
 };
 
 }

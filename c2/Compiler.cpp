@@ -31,9 +31,8 @@ using std::vector;
 
 using namespace compiler;
 
-Compiler::Compiler(Log& log, istream& input)
-  : m_log(log),
-    m_input(input),
+Compiler::Compiler(istream& input)
+  : m_input(input),
     on_cmdline(boost::bind(&Compiler::emit, this, _1)) {
 }
 
@@ -54,11 +53,10 @@ bool Compiler::execute() {
   forward_iterator_type fwd_begin = spirit::make_default_multi_pass(in_begin);
   forward_iterator_type fwd_end;
 
-  //Scope globalScope;
+  Scope globalScope;
 
-  CmdParser<forward_iterator_type> cmd_(m_log);
-  //CodeParser<forward_iterator_type> code_(m_log, globalScope);
-  CodeParser<forward_iterator_type> code_(m_log);
+  CmdParser<forward_iterator_type> cmd_;
+  CodeParser<forward_iterator_type> code_(globalScope);
 
   typedef qi::rule<forward_iterator_type, std::string(), ascii::space_type> StringRule;
   typedef qi::rule<forward_iterator_type, ascii::space_type> VoidRule;

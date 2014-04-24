@@ -8,8 +8,6 @@
 
 #include "Expression.h"
 
-#include "util/Log.h"
-
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
@@ -28,10 +26,7 @@ namespace compiler {
 template <typename Iterator>
 struct CmdParser : qi::grammar<Iterator, std::string(), ascii::space_type> {
 public:
-  CmdParser(Log& log)
-    : CmdParser::base_type(cmd_),
-      m_log(log),
-      exp_(log) {
+  CmdParser() : CmdParser::base_type(cmd_, "command parser") {
     using qi::_val;
     using qi::char_;
     using qi::lit;
@@ -53,7 +48,6 @@ public:
   }
 
 private:
-  Log& m_log;
   std::string m_expcode;
 
   ExpParser<Iterator> exp_;
