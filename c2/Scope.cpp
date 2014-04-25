@@ -5,14 +5,16 @@
 
 #include "util/Util.h"
 
+#include <memory>
 #include <string>
 #include <utility>
+using std::auto_ptr;
 using std::string;
 
 using namespace compiler;
 
-void Scope::insert(const std::string& name, const Type& type) {
-  return m_symbolTable.insert(name, type);
+void Scope::insert(const std::string& name, std::auto_ptr<Type> type) {
+  m_symbolTable.insert(name, type);
 }
 
 const Type* Scope::find(const string& name) const {

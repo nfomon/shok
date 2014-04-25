@@ -10,17 +10,20 @@
 #include "Type.h"
 
 #include <map>
+#include <memory>
 #include <string>
 
 namespace compiler {
 
 class SymbolTable {
 public:
-  void insert(const std::string& name, const Type& type);
+  ~SymbolTable();
+  void insert(const std::string& name, std::auto_ptr<Type> type);
   const Type* find(const std::string& name) const;
+  size_t size() const { return m_symbols.size(); }
 
 private:
-  typedef std::map<std::string,Type> symbol_map;
+  typedef std::map<std::string,Type*> symbol_map;
   typedef symbol_map::const_iterator symbol_iter;
 
   symbol_map m_symbols;

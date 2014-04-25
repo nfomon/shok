@@ -17,6 +17,7 @@
 #include "SymbolTable.h"
 #include "Type.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -36,7 +37,7 @@ public:
     return m_depth;
   }
 
-  void insert(const std::string& name, const Type& type);
+  void insert(const std::string& name, std::auto_ptr<Type> type);
   const Type* find(const std::string& name) const;
   const Type* findLocal(const std::string& name) const;
 

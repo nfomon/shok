@@ -19,6 +19,12 @@ Expression::Expression()
   : m_infixing(false) {
 }
 
+Expression::~Expression() {
+  for (stack_iter i = m_stack.begin(); i != m_stack.end(); ++i) {
+    delete *i;
+  }
+}
+
 void Expression::attach_atom(const std::string& atom) {
   // TODO
 }

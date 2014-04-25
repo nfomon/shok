@@ -15,17 +15,23 @@ using std::string;
 
 using namespace compiler;
 
-void SymbolTable::insert(const string& name, const Type& type) {
+SymbolTable::~SymbolTable() {
+  for (symbol_iter i = m_symbols.begin(); i != m_symbols.end(); ++i) {
+    delete i->second;
+  }
+}
+
+void SymbolTable::insert(const string& name, std::auto_ptr<Type> type) {
   if (m_symbols.find(name) != m_symbols.end()) {
     throw CompileError("Cannot insert symbol " + name + " into symbol table; already exists");
   }
-  m_symbols.insert(std::pair<string,Type>(name, type));
+  m_symbols.insert(std::make_pair(name, type.release()));
 }
 
 const Type* SymbolTable::find(const string& name) const {
   symbol_iter s = m_symbols.find(name);
   if (s != m_symbols.end()) {
-    return &s->second;
+    return s->second;
   }
   return NULL;
 }

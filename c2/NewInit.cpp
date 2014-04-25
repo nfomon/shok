@@ -29,7 +29,7 @@ void NewInit::attach_name(const std::string& name) {
 }
 
 void NewInit::attach_type(const std::string& type) {
-  //m_type = Type(m_log);   // !!! NOPE!!! NOPE
+  m_type.reset(new RootType());
 }
 
 void NewInit::attach_exp(const std::string& exp) {
@@ -38,13 +38,13 @@ void NewInit::attach_exp(const std::string& exp) {
 }
 
 void NewInit::finalize() {
-  if (!m_type) {
+  if (!m_type.get()) {
     // TODO make a BasicType(stdlib::object)
-    //m_type = Type(m_log);   // ??
+    m_type.reset(new RootType());
   }
   // TODO also handle !m_exp
   // TODO set m_exp if unset, so that bytecode() can use both m_type and m_exp
-  m_scope->insert(m_name, *m_type);
+  m_scope->insert(m_name, std::auto_ptr<Type>(m_type->duplicate()));
 }
 
 std::string NewInit::bytecode() const {

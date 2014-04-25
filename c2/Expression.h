@@ -32,6 +32,7 @@ namespace compiler {
 class Expression {
 public:
   Expression();
+  ~Expression();
   void attach_atom(const std::string& atom);
   void attach_preop(const std::string& preop);
   void attach_binop(const std::string& binop);

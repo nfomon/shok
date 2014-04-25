@@ -38,8 +38,8 @@ public:
 private:
   Scope* m_scope;
   std::string m_name;
-  boost::optional<Type> m_type;
-  boost::optional<Expression> m_exp;
+  std::auto_ptr<Type> m_type;
+  //std::auto_ptr<Expression> m_exp;
 };
 
 template <typename Iterator>
