@@ -63,6 +63,21 @@ private:
   std::auto_ptr<SymbolTable> m_members;
 };
 
+/*
+class AndType : public Type {
+public:
+  BasicType(std::auto_ptr<Type> left, std::auto_ptr<Type> right);
+  std::auto_ptr<Type> duplicate() const;
+  std::string print() const;
+  void addMember(const std::string& name, std::auto_ptr<Type> type);
+  const Type* findMember(const std::string& name) const;
+
+private:
+  std::auto_ptr<Type> m_left;
+  std::auto_ptr<Type> m_right;
+};
+*/
+
 }
 
 #endif // _Type_h_
