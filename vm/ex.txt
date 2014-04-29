@@ -1,0 +1,51 @@
+new x
+member y object
+
+
+
+input:
+
+new x : animal = cat*mouse
+
+becomes:
+
+new x   # <NULL>
+call x cat operator* mouse
+
+
+input:
+
+new x = moo
+
+new x           # <NULL>
+assign x moo    # look up moo, clone the object on the heap, assign to x
+
+
+input:
+
+new x = cat*mouse+fish
+
+(new x (call plus (call operator* cat mouse) fish))
+
+
+(new x
+ (member q)
+ (member y
+  (member z object)
+ )
+)
+
+NO, ObjectLiterals have members, a New just has a name and an Expression value.
+When we run the New, it runs the Expression which gives us an Object* that we
+assign to the New's new name in our symbol table.
+
+
+what does the vm do?
+new: create a New struct that has
+ - name
+ - Expression
+
+Let's have an Exp parser:
+  x | (call x method args...)
+
+

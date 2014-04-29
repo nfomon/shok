@@ -36,9 +36,6 @@ private:
   std::istream& m_input;
   symbol_map m_symbolTable;
 
-  // member-function aliases bound to their exec_x counterparts at construction
-  boost::function<void (const New&, boost::spirit::qi::unused_type, boost::spirit::qi::unused_type)> on_new;
-
   // semantic actions
   void exec_new(const New&);
 };

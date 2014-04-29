@@ -6,7 +6,7 @@
 
 /* A New instruction: defines a symbol (name, type, value) */
 
-#include "Member.h"
+#include "Expression.h"
 
 #include "util/Log.h"
 
@@ -21,37 +21,31 @@ namespace ascii = spirit::ascii;
 namespace vm {
 
 struct New {
-  typedef std::vector<Member> member_vec;
-  typedef member_vec::const_iterator member_iter;
-  static const std::string NO_SOURCE;
-
   std::string name;
-  std::string source;
-  member_vec members;
+  Expression exp;
 };
 
 template <typename Iterator>
 struct NewParser : qi::grammar<Iterator, New(), ascii::space_type> {
-  NewParser() : NewParser::base_type(start) {
+public:
+  NewParser() : NewParser::base_type(new_, "new parser") {
     using qi::int_;
     using qi::lit;
     using qi::graph;
 
-    identifier %= qi::lexeme[ (qi::alpha | '_') >> *(qi::alnum | '_' | ':') ];
-    blank %= qi::lexeme[New::NO_SOURCE];
-    start %=
-      lit("new")
-      >> identifier
-      >> (identifier | blank)
-      >> *member_
-      >> lit("endnew")
+    identifier_ %= qi::lexeme[ (qi::alpha | '_') >> *(qi::alnum | '_' | ':') ];
+    new_ %=
+      lit("(new")
+      > identifier_
+      > exp_
+      > lit(")")
     ;
   }
 
-  qi::rule<Iterator, New(), ascii::space_type> start;
-  qi::rule<Iterator, std::string(), ascii::space_type> identifier;
-  qi::rule<Iterator, std::string(), ascii::space_type> blank;
-  MemberParser<Iterator> member_;
+private:
+  ExpParser<Iterator> exp_;
+  qi::rule<Iterator, New(), ascii::space_type> new_;
+  qi::rule<Iterator, std::string(), ascii::space_type> identifier_;
 };
 
 }

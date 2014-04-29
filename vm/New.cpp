@@ -16,4 +16,3 @@ using std::vector;
 
 using namespace vm;
 
-const std::string New::NO_SOURCE = "-";

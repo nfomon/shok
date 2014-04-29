@@ -3,7 +3,7 @@
 
 #include "Executor.h"
 
-#include "Member.h"
+#include "Expression.h"
 #include "New.h"
 #include "Object.h"
 #include "VMError.h"
@@ -12,11 +12,17 @@
 
 #include <boost/bind.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
+#include <boost/spirit/include/phoenix_bind.hpp>
+#include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_object.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/support_multi_pass.hpp>
+
+namespace phoenix = boost::phoenix;
 namespace spirit = boost::spirit;
-namespace qi = spirit::qi;
 namespace ascii = spirit::ascii;
+namespace qi = spirit::qi;
 
 #include <istream>
 #include <string>
@@ -35,18 +41,15 @@ using namespace vm;
 
 Executor::Executor(Log& log, istream& input)
   : m_log(log),
-    m_input(input),
-    on_new(boost::bind(&Executor::exec_new, this, _1)) {
+    m_input(input) {
 }
 
 void Executor::exec_new(const New& n) {
-  cout << "New: name=" << n.name << " source=" << n.source << endl;
-  for (New::member_iter i = n.members.begin(); i != n.members.end(); ++i) {
-    cout << " - member " << i->name << ":" << i->source << endl;
-  }
+  cout << "New: name=" << n.name << endl;
   if (m_symbolTable.find(n.name) != m_symbolTable.end()) {
     throw VMError("Cannot insert symbol " + n.name + "; already exists");
   }
+/*
   if (New::NO_SOURCE == n.source) {
     m_symbolTable.insert(std::make_pair(n.name, new Object(NULL)));
   } else {
@@ -56,20 +59,22 @@ void Executor::exec_new(const New& n) {
     }
     m_symbolTable.insert(std::make_pair(n.name, new Object(s->second)));
   }
+*/
 }
-
-BOOST_FUSION_ADAPT_STRUCT(
-  Member,
-  (std::string, name)
-  (std::string, source)
-  (Member::member_vec, members)
-)
 
 BOOST_FUSION_ADAPT_STRUCT(
   New,
   (std::string, name)
-  (std::string, source)
-  (New::member_vec, members)
+  (Expression, exp)
+)
+
+// We need to tell fusion about our mini_xml struct
+// to make it a first-class fusion citizen
+BOOST_FUSION_ADAPT_STRUCT(
+  MethodCall,
+  (Expression, source)
+  (std::string, method)
+  (std::vector<Expression>, args)
 )
 
 bool Executor::execute() {
@@ -85,7 +90,7 @@ bool Executor::execute() {
   NewParser<forward_iterator_type> new_;
   typedef qi::rule<forward_iterator_type, ascii::space_type> Rule;
 
-  Rule Statement_ = +(new_[on_new]);
+  Rule Statement_ = new_[phoenix::bind(&Executor::exec_new, this, qi::_1)];
   Rule Bytecode_ = +Statement_;
 
   bool r = qi::phrase_parse(
