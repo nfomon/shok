@@ -49,17 +49,6 @@ void Executor::exec_new(const New& n) {
   if (m_symbolTable.find(n.name) != m_symbolTable.end()) {
     throw VMError("Cannot insert symbol " + n.name + "; already exists");
   }
-/*
-  if (New::NO_SOURCE == n.source) {
-    m_symbolTable.insert(std::make_pair(n.name, new Object(NULL)));
-  } else {
-    symbol_iter s = m_symbolTable.find(n.source);
-    if (m_symbolTable.end() == s) {
-      throw VMError("Source " + n.source + " not found for symbol " + n.name);
-    }
-    m_symbolTable.insert(std::make_pair(n.name, new Object(s->second)));
-  }
-*/
 }
 
 BOOST_FUSION_ADAPT_STRUCT(
@@ -68,8 +57,6 @@ BOOST_FUSION_ADAPT_STRUCT(
   (Expression, exp)
 )
 
-// We need to tell fusion about our mini_xml struct
-// to make it a first-class fusion citizen
 BOOST_FUSION_ADAPT_STRUCT(
   MethodCall,
   (Expression, source)
