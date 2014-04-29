@@ -27,3 +27,7 @@ const Type* Scope::find(const string& name) const {
 const Type* Scope::findLocal(const string& name) const {
   return m_symbolTable.find(name);
 }
+
+const Type* Scope::findRoot(const string& name) const {
+  return m_root.find(name);
+}

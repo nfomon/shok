@@ -1,0 +1,6 @@
+Compiler::execute() owns the globalScope which is (arg)'d to the Cmd_ and
+Code_ parsers.
+
+The global scope contains the stdlib types, e.g. object:RootType().
+
+

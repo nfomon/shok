@@ -35,7 +35,7 @@ protected:
 
 class RootType : public Type {
 public:
-  RootType(std::auto_ptr<SymbolTable> members = std::auto_ptr<SymbolTable>());
+  RootType();
   std::auto_ptr<Type> duplicate() const;
   std::string print() const { return "(root)"; }
   void addMember(const std::string& name, std::auto_ptr<Type> type);
@@ -51,7 +51,7 @@ private:
 // members local to the BasicType(y).
 class BasicType : public Type {
 public:
-  BasicType(std::auto_ptr<Type> parent, const std::string& parentName, std::auto_ptr<SymbolTable> members = std::auto_ptr<SymbolTable>());
+  BasicType(std::auto_ptr<Type> parent, const std::string& parentName);
   std::auto_ptr<Type> duplicate() const;
   std::string print() const;
   void addMember(const std::string& name, std::auto_ptr<Type> type);

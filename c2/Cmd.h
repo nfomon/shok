@@ -7,6 +7,7 @@
 /* A command-line with an actual program to invoke (not a code block). */
 
 #include "Expression.h"
+#include "Scope.h"
 
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
@@ -26,7 +27,9 @@ namespace compiler {
 template <typename Iterator>
 struct CmdParser : qi::grammar<Iterator, std::string(), ascii::space_type> {
 public:
-  CmdParser() : CmdParser::base_type(cmd_, "command parser") {
+  CmdParser(Scope& globalScope)
+    : CmdParser::base_type(cmd_, "command parser"),
+      m_globalScope(globalScope) {
     using qi::_val;
     using qi::char_;
     using qi::lit;
@@ -39,7 +42,7 @@ public:
 
     expblock_ %= (
       lit('{')
-      > omit[ exp_[ref(m_expcode) += phoenix::bind(&Expression::bytecode, qi::_1)] ]
+      > omit[ exp_(ref(m_globalScope))[ref(m_expcode) += phoenix::bind(&Expression::bytecode, qi::_1)] ]
       > lit('}')
     )[_val += "{}"];
     cmdtext_ %= +no_skip[ char_ - lit('{') - lit(']') ];
@@ -49,6 +52,7 @@ public:
 
 private:
   std::string m_expcode;
+  Scope& m_globalScope;
 
   ExpParser<Iterator> exp_;
   qi::rule<Iterator, std::string(), ascii::space_type> expblock_;

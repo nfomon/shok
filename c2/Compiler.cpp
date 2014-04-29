@@ -20,9 +20,11 @@ namespace ascii = spirit::ascii;
 
 #include <iostream>
 #include <istream>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+using std::auto_ptr;
 using std::cout;
 using std::endl;
 using std::istream;
@@ -54,8 +56,10 @@ bool Compiler::execute() {
   forward_iterator_type fwd_end;
 
   Scope globalScope;
+  // Stdlib objects
+  globalScope.insert("object", auto_ptr<Type>(new RootType()));
 
-  CmdParser<forward_iterator_type> cmd_;
+  CmdParser<forward_iterator_type> cmd_(globalScope);
   CodeParser<forward_iterator_type> code_(globalScope);
 
   typedef qi::rule<forward_iterator_type, std::string(), ascii::space_type> StringRule;

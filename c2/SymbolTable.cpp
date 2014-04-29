@@ -15,7 +15,14 @@ using std::string;
 
 using namespace compiler;
 
+SymbolTable::SymbolTable(const SymbolTable& s) {
+  for (symbol_iter i = s.m_symbols.begin(); i != s.m_symbols.end(); ++i){
+    insert(i->first, i->second->duplicate());
+  }
+}
+
 SymbolTable::~SymbolTable() {
+  // Need to OWN these!  So we must disallow copy-ctor
   for (symbol_iter i = m_symbols.begin(); i != m_symbols.end(); ++i) {
     delete i->second;
   }

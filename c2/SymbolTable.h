@@ -9,6 +9,8 @@
 #include "CompileError.h"
 #include "Type.h"
 
+#include <boost/utility.hpp>
+
 #include <map>
 #include <memory>
 #include <string>
@@ -17,6 +19,8 @@ namespace compiler {
 
 class SymbolTable {
 public:
+  SymbolTable() {}
+  SymbolTable(const SymbolTable&);
   ~SymbolTable();
   void insert(const std::string& name, std::auto_ptr<Type> type);
   const Type* find(const std::string& name) const;
@@ -25,6 +29,7 @@ public:
 private:
   typedef std::map<std::string,Type*> symbol_map;
   typedef symbol_map::const_iterator symbol_iter;
+  SymbolTable& operator=(const SymbolTable&);
 
   symbol_map m_symbols;
 };

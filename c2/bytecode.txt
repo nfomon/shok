@@ -41,4 +41,20 @@ even though it's uuugly :)
  - nurrrrrrrr no we still need to assign to _val!
 
 -----
+2k14-04-26
 
+SymbolTable owns its symbols (types) (should it!!???), so that it explicitly
+deletes them on destruction.  Its copy constructor.... copies, go figure.
+
+-----
+
+RootType: <-, object members>
+ - CAN be dup'd; needs to be to construct descendent (memory: parent) types :)
+
+BasicType: <parent, parentName, my members>
+
+SymbolTable member:  <name, BasicType(parent, parentName, my new members)>
+
+The variable_t should ensure the var (and members) all exist as it is created.
+Its type is not constructed, it is *found*; it already exists in the symbol
+table!

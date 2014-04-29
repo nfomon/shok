@@ -17,8 +17,8 @@ using namespace compiler;
 
 /* RootType */
 
-RootType::RootType(auto_ptr<SymbolTable> members)
-  : m_members(members) {
+RootType::RootType()
+  : m_members(new SymbolTable()) {
 }
 
 void RootType::addMember(const string& name, auto_ptr<Type> type) {
@@ -29,16 +29,21 @@ const Type* RootType::findMember(const string& name) const {
   return m_members->find(name);
 }
 
+// It would probably be valid to disallow this, since it's put only once into
+// the root scope.
 auto_ptr<Type> RootType::duplicate() const {
-  return auto_ptr<Type>(new RootType(std::auto_ptr<SymbolTable>(new SymbolTable(*m_members))));
+  RootType* rt = new RootType();
+  auto_ptr<Type> art(rt);
+  rt->m_members.reset(new SymbolTable(*m_members));
+  return art;
 }
 
 /* BasicType */
 
-BasicType::BasicType(auto_ptr<Type> parent, const string& parentName, auto_ptr<SymbolTable> members)
+BasicType::BasicType(auto_ptr<Type> parent, const string& parentName)
   : m_parent(parent),
     m_parentName(parentName),
-    m_members(members) {
+    m_members(new SymbolTable()) {
 }
 
 string BasicType::print() const {
@@ -60,5 +65,8 @@ const Type* BasicType::findMember(const string& name) const {
 }
 
 auto_ptr<Type> BasicType::duplicate() const {
-  return auto_ptr<Type>(new BasicType(m_parent->duplicate(), m_parentName, std::auto_ptr<SymbolTable>(new SymbolTable(*m_members))));
+  BasicType* bt = new BasicType(m_parent->duplicate(), m_parentName);
+  auto_ptr<Type> abt(bt);
+  bt->m_members.reset(new SymbolTable(*m_members));
+  return abt;
 }

@@ -7,16 +7,19 @@
 
 #include "util/Util.h"
 
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+using std::auto_ptr;
 using std::string;
 using std::vector;
 
 using namespace compiler;
 
 Expression::Expression()
-  : m_infixing(false) {
+  : m_scope(NULL),
+    m_infixing(false) {
 }
 
 Expression::~Expression() {
@@ -25,8 +28,15 @@ Expression::~Expression() {
   }
 }
 
-void Expression::attach_atom(const std::string& atom) {
+void Expression::init(Scope& scope) {
+  m_scope = &scope;
+}
+
+void Expression::attach_atom(const Variable& atom) {
   // TODO
+  // For now the Expression has a single Variable atom.  Our type is that the
+  // Expression is a descendent of the variable, and adds no new members.
+  m_type.reset(new BasicType(atom.type().duplicate(), atom.fullname()));
 }
 
 void Expression::attach_preop(const std::string& preop) {
@@ -43,5 +53,12 @@ void Expression::finalize() {
 }
 
 std::string Expression::bytecode() const {
-  return "<bytecode>";
+  return "<bytecode for " + (m_type ? m_type->print() : "n/a") + ">";
+}
+
+const Type& Expression::type() const {
+  if (!m_type.get()) {
+    throw CompileError("Cannot get type of untyped Expression");
+  }
+  return *m_type;
 }

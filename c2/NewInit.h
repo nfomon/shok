@@ -9,9 +9,10 @@
 #include "Expression.h"
 
 #include "Scope.h"
+#include "Type.h"
 
-#include <boost/bind.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/qi.hpp>
 namespace phoenix = boost::phoenix;
@@ -30,23 +31,24 @@ public:
   NewInit();
   void init(Scope& scope);
   void attach_name(const std::string& name);
-  void attach_type(const std::string& type);
-  void attach_exp(const std::string& exp);
+  void attach_type(const Type& type);
+  void attach_exp(const Expression& exp);
   void finalize();
   std::string bytecode() const;
 
 private:
   Scope* m_scope;
   std::string m_name;
-  std::auto_ptr<Type> m_type;
-  //std::auto_ptr<Expression> m_exp;
+  boost::shared_ptr<Type> m_type;
+  std::string m_bytecode;
 };
 
 template <typename Iterator>
 struct NewInitParser : qi::grammar<Iterator, std::string(Scope&), ascii::space_type> {
 public:
   NewInitParser()
-    : NewInitParser::base_type(newinit_, "newinit parser") {
+    : NewInitParser::base_type(newinit_, "newinit parser"),
+      typespec_(true) {
     using phoenix::ref;
     using phoenix::val;
     using qi::_val;
@@ -59,25 +61,22 @@ public:
 
     newinit_.name("newinit");
 
-    identifier_ %= lit("ID:") > +(alnum | '_') > -(lit(":") > +(alnum | '_'));
-    variable_ %= lit("(var") > identifier_ > lit(')');
-    typespec_ %= lit("(type") > identifier_ > lit(')');
+    identifier_ %= lit("ID:'") > +(alnum | '_') > lit('\'');
     newinit_ = (
       lit("(init")[phoenix::bind(&NewInit::init, &m_newinit, qi::_r1)]
       > identifier_[phoenix::bind(&NewInit::attach_name, &m_newinit, qi::_1)]
-      > -typespec_[phoenix::bind(&NewInit::attach_type, &m_newinit, qi::_1)]
-      > -exp_[phoenix::bind(&NewInit::attach_exp, &m_newinit, (phoenix::bind(&Expression::bytecode, qi::_1)))]
-      > lit(")")
+      > -typespec_(qi::_r1)[phoenix::bind(&NewInit::attach_type, &m_newinit, phoenix::bind(&Expression::type, qi::_1))]
+      > -exp_(qi::_r1)[phoenix::bind(&NewInit::attach_exp, &m_newinit, qi::_1)]
+      > lit(")")[phoenix::bind(&NewInit::finalize, &m_newinit)]
     )[_val = phoenix::bind(&NewInit::bytecode, &m_newinit)];
   }
 
 private:
   NewInit m_newinit;
 
+  ExpParser<Iterator> typespec_;
   ExpParser<Iterator> exp_;
   qi::rule<Iterator, std::string(), ascii::space_type> identifier_;
-  qi::rule<Iterator, std::string(), ascii::space_type> variable_;
-  qi::rule<Iterator, std::string(), ascii::space_type> typespec_;
   qi::rule<Iterator, std::string(Scope&), ascii::space_type> newinit_;
 };
 

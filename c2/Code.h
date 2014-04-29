@@ -42,6 +42,9 @@ public:
 
     new_ %= lit("(new") > +newinit_(ref(m_globalScope)) > lit(")");
 
+    // A code block would construct a new block that gets passed to *its* child
+    // statements btw
+
     statement_ %= new_;
     code_ %=
       lit('{')
