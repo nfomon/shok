@@ -22,7 +22,6 @@ SymbolTable::SymbolTable(const SymbolTable& s) {
 }
 
 SymbolTable::~SymbolTable() {
-  // Need to OWN these!  So we must disallow copy-ctor
   for (symbol_iter i = m_symbols.begin(); i != m_symbols.end(); ++i) {
     delete i->second;
   }

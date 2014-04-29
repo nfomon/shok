@@ -42,13 +42,14 @@ public:
   const Type& type() const;
 
 private:
-  typedef std::vector<Operator*> stack_vec;
-  typedef stack_vec::const_iterator stack_iter;
+  //typedef std::vector<Operator*> stack_vec;
+  //typedef stack_vec::const_iterator stack_iter;
 
   Scope* m_scope;
   bool m_infixing;
-  stack_vec m_stack;
+  //stack_vec m_stack;
   boost::shared_ptr<Type> m_type;
+  std::string m_bytecode;
 };
 
 template <typename Iterator>

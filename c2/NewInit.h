@@ -40,6 +40,7 @@ private:
   Scope* m_scope;
   std::string m_name;
   boost::shared_ptr<Type> m_type;
+  boost::shared_ptr<Expression> m_exp;
   std::string m_bytecode;
 };
 

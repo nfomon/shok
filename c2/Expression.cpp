@@ -23,9 +23,11 @@ Expression::Expression()
 }
 
 Expression::~Expression() {
+/*
   for (stack_iter i = m_stack.begin(); i != m_stack.end(); ++i) {
     delete *i;
   }
+*/
 }
 
 void Expression::init(Scope& scope) {
@@ -37,6 +39,7 @@ void Expression::attach_atom(const Variable& atom) {
   // For now the Expression has a single Variable atom.  Our type is that the
   // Expression is a descendent of the variable, and adds no new members.
   m_type.reset(new BasicType(atom.type().duplicate(), atom.fullname()));
+  m_bytecode = atom.fullname();
 }
 
 void Expression::attach_preop(const std::string& preop) {
@@ -53,7 +56,7 @@ void Expression::finalize() {
 }
 
 std::string Expression::bytecode() const {
-  return "<bytecode for " + (m_type ? m_type->print() : "n/a") + ">";
+  return m_bytecode;
 }
 
 const Type& Expression::type() const {

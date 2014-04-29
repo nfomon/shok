@@ -21,7 +21,7 @@ void NewInit::init(Scope& scope) {
   m_scope = &scope;
 }
 
-void NewInit::attach_name(const std::string& name) {
+void NewInit::attach_name(const string& name) {
   m_name = name;
   if (m_scope->findLocal(name)) {
     throw CompileError("Variable " + name + " already exists in scope at depth " + boost::lexical_cast<string>(m_scope->depth()));
@@ -33,10 +33,10 @@ void NewInit::attach_type(const Type& type) {
 }
 
 void NewInit::attach_exp(const Expression& exp) {
+  m_exp.reset(new Expression(exp));
   if (!m_type.get()) {
     m_type.reset(exp.type().duplicate().release());
   }
-  m_bytecode = exp.bytecode();
 }
 
 void NewInit::finalize() {
@@ -51,10 +51,9 @@ void NewInit::finalize() {
     // bytecode value-identifier) from constructing the type's default value
   }
   m_scope->insert(m_name, m_type->duplicate());
-  m_bytecode += "new " + m_name;    // TODO + bytecode value-identifier
+  m_bytecode = "(new " + m_name + m_bytecode + ")";
 }
 
-std::string NewInit::bytecode() const {
-  // if !m_hasExp, then the initial value comes from the type
-  return "<newinit>";
+string NewInit::bytecode() const {
+  return m_bytecode;
 }
