@@ -34,6 +34,9 @@ typedef boost::variant<
   > Expression;
 
 struct MethodCall {
+  typedef std::vector<Expression> args_vec;
+  typedef args_vec::const_iterator args_iter;
+
   Expression source;
   std::string method;
   std::vector<Expression> args;
@@ -44,23 +47,8 @@ public:
   Exec_Exp(const symbol_map& symbols)
     : m_symbols(symbols) {}
 
-  std::auto_ptr<Object> operator() (const std::string& var) const {
-    symbol_iter s = m_symbols.find(var);
-    if (m_symbols.end() == s) {
-      throw VMError("Variable " + var + " not found");
-    }
-    return std::auto_ptr<Object>(new Object(*s->second));
-  }
-
-  std::auto_ptr<Object> operator() (const MethodCall& methodCall) const {
-    // I want to apply these in the context of a symbol table etc.
-    // And I want them to return an auto_ptr<Object>.
-    // For methodCall, we find the source object, push a function context for
-    // the method on our call stack, give it the args, set our stack pointer
-    // and return pointer, and finally set the program counter...
-    // TODO
-    return std::auto_ptr<Object>();
-  }
+  std::auto_ptr<Object> operator() (const std::string& var) const;
+  std::auto_ptr<Object> operator() (const MethodCall& methodCall) const;
 
 private:
   const symbol_map& m_symbols;
