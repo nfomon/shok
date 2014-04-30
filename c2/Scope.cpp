@@ -14,18 +14,20 @@ using std::string;
 using namespace compiler;
 
 void Scope::insert(const std::string& name, std::auto_ptr<Type> type) {
-  m_symbolTable.insert(name, type);
+  m_locals.insert(name, type);
 }
 
 const Type* Scope::find(const string& name) const {
-  const Type* type = m_symbolTable.find(name);
-  if (type) return type;
+  symbol_iter s = m_locals.find(name);
+  if (s != m_locals.end()) return s->second;
   if (m_parent) return m_parent->find(name);
   return NULL;
 }
 
 const Type* Scope::findLocal(const string& name) const {
-  return m_symbolTable.find(name);
+  symbol_iter s = m_locals.find(name);
+  if (s != m_locals.end()) return s->second;
+  return NULL;
 }
 
 const Type* Scope::findRoot(const string& name) const {

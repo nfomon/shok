@@ -7,6 +7,9 @@
 /* Type */
 
 #include "CompileError.h"
+#include "SymbolTable.h"
+
+#include <boost/utility.hpp>
 
 #include <memory>
 #include <string>
@@ -14,9 +17,7 @@
 
 namespace compiler {
 
-class SymbolTable;
-
-class Type {
+class Type : boost::noncopyable {
 public:
   virtual ~Type() {}
   virtual std::auto_ptr<Type> duplicate() const = 0;
@@ -25,7 +26,7 @@ public:
     throw CompileError("Cannot add member " + name + " to Type " + print());
   }
   virtual const Type* findMember(const std::string& name) const = 0;
-  //virtual std::string defaultObjectBytecode() const = 0;
+  virtual std::string defaultValueBytecode() const = 0;
   //virtual bool isParentOf(const Type& child) const = 0;
   //virtual bool takesArgs(const paramtype_vec& paramtypes) const = 0;
   virtual bool isRoot() const { return false; }
@@ -35,15 +36,15 @@ protected:
 
 class RootType : public Type {
 public:
-  RootType();
   std::auto_ptr<Type> duplicate() const;
   std::string print() const { return "(root)"; }
   void addMember(const std::string& name, std::auto_ptr<Type> type);
   const Type* findMember(const std::string& name) const;
+  std::string defaultValueBytecode() const;
   bool isRoot() const { return true; }
 
 private:
-  std::auto_ptr<SymbolTable> m_members;
+  symbol_map m_members;
 };
 
 // A BasicType is a type wrapping an existing object.  If x has type
@@ -56,11 +57,12 @@ public:
   std::string print() const;
   void addMember(const std::string& name, std::auto_ptr<Type> type);
   const Type* findMember(const std::string& name) const;
+  std::string defaultValueBytecode() const;
 
 private:
   std::auto_ptr<Type> m_parent;
   std::string m_parentName;
-  std::auto_ptr<SymbolTable> m_members;
+  symbol_map m_members;
 };
 
 /*
@@ -77,6 +79,10 @@ private:
   std::auto_ptr<Type> m_right;
 };
 */
+
+inline Type* new_clone(const Type& t) {
+  return t.duplicate().release();
+}
 
 }
 

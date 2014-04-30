@@ -6,6 +6,7 @@
 #include "util/Util.h"
 
 #include <boost/lexical_cast.hpp>
+using boost::lexical_cast;
 
 #include <string>
 #include <utility>
@@ -24,7 +25,7 @@ void NewInit::init(Scope& scope) {
 void NewInit::attach_name(const string& name) {
   m_name = name;
   if (m_scope->findLocal(name)) {
-    throw CompileError("Variable " + name + " already exists in scope at depth " + boost::lexical_cast<string>(m_scope->depth()));
+    throw CompileError("Variable " + name + " already exists in scope at depth " + lexical_cast<string>(m_scope->depth()));
   }
 }
 
@@ -37,19 +38,22 @@ void NewInit::attach_exp(const Expression& exp) {
   if (!m_type.get()) {
     m_type.reset(exp.type().duplicate().release());
   }
+  m_bytecode = " " + m_exp->bytecode();
 }
 
 void NewInit::finalize() {
-  if (!m_type.get()) {
+  if (m_type.get()) {
+    if (!m_exp.get()) {
+      m_bytecode = " " + m_type->defaultValueBytecode();
+    }
+  } else {
     const Type* object = m_scope->findRoot("object");
     if (!object) {
       throw CompileError("NewInit finalize failed to find the root object type");
     }
     m_type.reset(new BasicType(object->duplicate(), "object"));
-  } else {
-    // TODO if we have a type but we did not attach_exp, need the bytecode (+
-    // bytecode value-identifier) from constructing the type's default value
   }
+  // This type dup might be unnecessary
   m_scope->insert(m_name, m_type->duplicate());
   m_bytecode = "(new " + m_name + m_bytecode + ")";
 }

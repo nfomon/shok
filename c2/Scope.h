@@ -50,7 +50,7 @@ private:
   Scope* m_parent;
   Scope& m_root;
   Depth m_depth;
-  SymbolTable m_symbolTable;
+  symbol_map m_locals;
 };
 
 class ObjectScope : public Scope {

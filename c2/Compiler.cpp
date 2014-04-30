@@ -39,7 +39,7 @@ Compiler::Compiler(istream& input)
 }
 
 void Compiler::emit(const std::string& bytecode) {
-  cout << "bytecode:'" << bytecode << "'" << endl;
+  cout << bytecode << endl;
 }
 
 bool Compiler::execute() {

@@ -44,7 +44,8 @@ private:
   Scope* m_scope;
   std::string m_name;
   member_vec m_members;
-  const Type* m_type;
+  // This could probably be a bare const Type*
+  boost::shared_ptr<Type> m_type;
 };
 
 template <typename Iterator>
