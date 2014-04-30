@@ -21,7 +21,7 @@ public:
   void Return();
 
 private:
-  typedef boost::ptr_vector<StackFrame> stack_vec;
+  typedef std::vector<StackFrame> stack_vec;
   typedef stack_vec::const_iterator stack_iter;
 
   stack_vec m_stack;

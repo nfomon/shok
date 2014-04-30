@@ -6,16 +6,15 @@
 
 /* Execution stack frame */
 
+#include "SymbolTable.h"
+
 #include <memory>
 #include <string>
 
 namespace vm {
 
-class StackFrame {
-public:
-  StackFrame() {}
-
-private:
+struct StackFrame {
+  symbol_map locals;
 };
 
 }

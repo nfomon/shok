@@ -49,3 +49,48 @@ Let's have an Exp parser:
   x | (call x method args...)
 
 
+-----
+2k14-04-29
+Symbols and calls
+
+code:
+  new x = @() {
+    new moo
+  }
+
+  new y = @() {
+    new lala
+    x()
+  }
+
+  x()
+  y()
+
+bytecode:
+
+(new x (func (new moo) ))
+  => creates Object x with value (Object result of (func (new moo)))
+(new y (func (new lala) (call x)))
+  => creates Object y with value (Object result of (func (new lala) (call x)))
+(call x)
+  => Creates a StackFrame with code ptr set to x's first statement; calls the StackFrame
+    -> the "new moo" is added to the StackFrame's own locals map
+  -> StackFrame is destroyed
+(call y)
+  => copies the body of y into a StackFrame, calls the StackFrame
+    -> the "new lala" is added to the StackFrame's own locals map
+    -> "call x":
+      => we *knew* which x that referred to, so no problem there
+      => copies the body of x into a StackFrame, calls the StackFrame
+        -> the "new moo" is added to the StackFrame's own locals map
+
+There's something different about bare code (at any depth) vs. the temporary
+locals that are constructed by a function-call's stack frame.  When we're
+compiling bare code, the varname:scopedepth gives us a unique identifier that
+we can give to the VM to put in the global symbol table.
+
+As for the locals, just refer to them by their local name.
+
+When we get to 'self', the compiler will know to create that as a special
+member of the methods, and give special names to the self.vars to allow for the
+lookups through self.  Or something like that.

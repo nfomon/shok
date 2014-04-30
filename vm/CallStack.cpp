@@ -2,6 +2,7 @@
 // directory of this distribution and at http://shok.io/code/copyright.html
 
 #include "CallStack.h"
+#include "Object.h"
 
 #include "VMError.h"
 
@@ -13,8 +14,7 @@ using std::string;
 using namespace vm;
 
 void CallStack::Call() {
-  auto_ptr<StackFrame> frame;
-  m_stack.push_back(frame);
+  m_stack.push_back(StackFrame());
 }
 
 void CallStack::Return() {
