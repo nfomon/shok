@@ -14,3 +14,10 @@ using namespace vm;
 
 Object::Object() {
 }
+
+Object::Object(const Object& rhs) {
+  for (symbol_iter i = rhs.m_members.begin(); i != rhs.m_members.end(); ++i) {
+    auto_ptr<Object> member(new Object(*i->second));
+    m_members.insert(i->first, member);
+  }
+}

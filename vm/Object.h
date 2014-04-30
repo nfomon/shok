@@ -16,14 +16,9 @@ namespace vm {
 class Object {
 public:
   Object();
-
-  bool operator< (const Object& rhs) const {
-    return this < &rhs;
-  }
+  Object(const Object&);
 
 private:
-  // parents
-  // members
   symbol_map m_members;
 };
 

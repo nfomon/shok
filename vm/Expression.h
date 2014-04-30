@@ -49,14 +49,12 @@ public:
     if (m_symbols.end() == s) {
       throw VMError("Variable " + var + " not found");
     }
-    //return std::auto_ptr<Object>(new Object(s->second));  // TODO copy ctor
-    return std::auto_ptr<Object>(); // FIXME
+    return std::auto_ptr<Object>(new Object(*s->second));
   }
 
   std::auto_ptr<Object> operator() (const MethodCall& methodCall) const {
     // I want to apply these in the context of a symbol table etc.
-    // And I want them to return an auto_ptr<Object>
-    // For var, we return a dup of the Object from our symbol table.
+    // And I want them to return an auto_ptr<Object>.
     // For methodCall, we find the source object, push a function context for
     // the method on our call stack, give it the args, set our stack pointer
     // and return pointer, and finally set the program counter...

@@ -17,6 +17,6 @@ void StdLib::Initialize(symbol_map& symbols) {
   auto_ptr<Object> object(new Object());
   symbols.insert("object", object);
 
-  //auto_ptr<Object> function(new Object());
-  //symbols.insert("@", function);
+  auto_ptr<Object> function(new Object());
+  symbols.insert("@", function);
 }

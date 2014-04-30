@@ -47,6 +47,7 @@ public:
     if (m_symbols.find(n.name) != m_symbols.end()) {
       throw VMError("Cannot insert symbol " + n.name + "; already exists");
     }
+    m_symbols.insert(n.name, value);
   }
 
 private:
