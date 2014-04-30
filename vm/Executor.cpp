@@ -6,6 +6,7 @@
 #include "Expression.h"
 #include "New.h"
 #include "Object.h"
+#include "StdLib.h"
 #include "VMError.h"
 
 #include "util/Util.h"
@@ -18,6 +19,7 @@
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/support_multi_pass.hpp>
+#include <boost/variant.hpp>
 
 namespace phoenix = boost::phoenix;
 namespace spirit = boost::spirit;
@@ -42,11 +44,12 @@ using namespace vm;
 Executor::Executor(Log& log, istream& input)
   : m_log(log),
     m_input(input) {
+  StdLib::Initialize(m_symbols);
 }
 
 void Executor::exec_new(const New& n) {
   cout << "New: name=" << n.name << endl;
-  if (m_symbolTable.find(n.name) != m_symbolTable.end()) {
+  if (m_symbols.find(n.name) != m_symbols.end()) {
     throw VMError("Cannot insert symbol " + n.name + "; already exists");
   }
 }
@@ -77,7 +80,10 @@ bool Executor::execute() {
   NewParser<forward_iterator_type> new_;
   typedef qi::rule<forward_iterator_type, ascii::space_type> Rule;
 
-  Rule Statement_ = new_[phoenix::bind(&Executor::exec_new, this, qi::_1)];
+  // Statement visitors
+  Exec_New exec_New(m_symbols);
+
+  Rule Statement_ = new_[exec_New];
   Rule Bytecode_ = +Statement_;
 
   bool r = qi::phrase_parse(

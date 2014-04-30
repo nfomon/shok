@@ -6,6 +6,8 @@
 
 /* Object */
 
+#include "SymbolTable.h"
+
 #include <memory>
 #include <string>
 
@@ -13,11 +15,16 @@ namespace vm {
 
 class Object {
 public:
-  Object(Object* source);
+  Object();
+
+  bool operator< (const Object& rhs) const {
+    return this < &rhs;
+  }
 
 private:
   // parents
   // members
+  symbol_map m_members;
 };
 
 }

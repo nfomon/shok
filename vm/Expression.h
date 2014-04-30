@@ -6,6 +6,10 @@
 
 /* A Expression instruction: defines a symbol (name, type, value) */
 
+#include "Object.h"
+#include "SymbolTable.h"
+#include "VMError.h"
+
 #include "util/Log.h"
 
 #include <boost/fusion/include/sequence.hpp>
@@ -35,17 +39,33 @@ struct MethodCall {
   std::vector<Expression> args;
 };
 
-class exec_exp_visitor : public boost::static_visitor<> {
+class Exec_Exp : public boost::static_visitor<std::auto_ptr<Object> > {
 public:
-  void operator() (const std::string& var) const {}
-  void operator() (const MethodCall& methodCall) const {
+  Exec_Exp(const symbol_map& symbols)
+    : m_symbols(symbols) {}
+
+  std::auto_ptr<Object> operator() (const std::string& var) const {
+    symbol_iter s = m_symbols.find(var);
+    if (m_symbols.end() == s) {
+      throw VMError("Variable " + var + " not found");
+    }
+    //return std::auto_ptr<Object>(new Object(s->second));  // TODO copy ctor
+    return std::auto_ptr<Object>(); // FIXME
+  }
+
+  std::auto_ptr<Object> operator() (const MethodCall& methodCall) const {
     // I want to apply these in the context of a symbol table etc.
     // And I want them to return an auto_ptr<Object>
     // For var, we return a dup of the Object from our symbol table.
     // For methodCall, we find the source object, push a function context for
     // the method on our call stack, give it the args, set our stack pointer
     // and return pointer, and finally set the program counter...
+    // TODO
+    return std::auto_ptr<Object>();
   }
+
+private:
+  const symbol_map& m_symbols;
 };
 
 template <typename Iterator>

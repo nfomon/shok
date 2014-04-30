@@ -7,6 +7,7 @@
 /* VM instruction execution dispatch */
 
 #include "Object.h"
+#include "SymbolTable.h"
 
 #include "util/Log.h"
 
@@ -29,12 +30,9 @@ public:
   bool execute();
 
 private:
-  typedef std::map<std::string,Object*> symbol_map;
-  typedef symbol_map::const_iterator symbol_iter;
-
   Log& m_log;
   std::istream& m_input;
-  symbol_map m_symbolTable;
+  symbol_map m_symbols;
 
   // semantic actions
   void exec_new(const New&);

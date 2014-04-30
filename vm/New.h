@@ -7,10 +7,15 @@
 /* A New instruction: defines a symbol (name, type, value) */
 
 #include "Expression.h"
+#include "SymbolTable.h"
 
 #include "util/Log.h"
 
+#include <boost/utility.hpp>
+#include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
+#include <boost/variant.hpp>
 namespace spirit = boost::spirit;
 namespace qi = spirit::qi;
 namespace ascii = spirit::ascii;
@@ -18,11 +23,34 @@ namespace ascii = spirit::ascii;
 #include <string>
 #include <vector>
 
+// debug
+#include <iostream>
+using std::cout;
+using std::endl;
+
 namespace vm {
 
 struct New {
   std::string name;
   Expression exp;
+};
+
+struct Exec_New {
+public:
+  Exec_New(symbol_map& symbols)
+    : m_symbols(symbols) {}
+
+  void operator() (const New& n, qi::unused_type, qi::unused_type) const {
+    cout << "New: name=" << n.name << endl;
+    Exec_Exp exec_Exp(m_symbols);
+    std::auto_ptr<Object> value = boost::apply_visitor(exec_Exp, n.exp);
+    if (m_symbols.find(n.name) != m_symbols.end()) {
+      throw VMError("Cannot insert symbol " + n.name + "; already exists");
+    }
+  }
+
+private:
+  symbol_map& m_symbols;
 };
 
 template <typename Iterator>
