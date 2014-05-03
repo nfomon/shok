@@ -7,42 +7,44 @@
 /* Operator */
 
 #include "CompileError.h"
+#include "Variable.h"
+
+#include <boost/shared_ptr.hpp>
 
 #include <string>
 #include <vector>
 
 namespace compiler {
 
+/* Operators */
+
 class Operator {
 public:
   typedef int Priority;
-  static const Priority NO_PRIORITY = -1;
 
   Operator(const std::string& name, Priority priority)
     : m_name(name), m_priority(priority) {}
   virtual ~Operator() {}
 
-  Priority priority() const {
-    return m_priority;
-  }
+  virtual std::string methodName() const = 0;
 
-private:
+  std::string name() const { return m_name; }
+  virtual Priority priority() const { return m_priority; }
+
+protected:
   std::string m_name;
   Priority m_priority;
 };
 
 class PrefixOperator : public Operator {
-private:
-  static Priority priority(const std::string& name) {
-    if ("PLUS" == name || "MINUS" == name) {
-      return 12;
-    }
-    throw CompileError("Priority unknown for prefix operator " + name);
-  }
-
 public:
   PrefixOperator(const std::string& name)
-    : Operator(name, priority(name)) {}
+    : Operator(name, PrefixPriority(name)) {}
+
+  std::string methodName() const { return "operator" + m_name; }
+
+private:
+  static Priority PrefixPriority(const std::string& name);
 };
 
 class InfixOperator : public Operator {
@@ -52,59 +54,93 @@ public:
     RIGHT_ASSOC
   };
 
-private:
-  static Priority priority(const std::string& name) {
-    if ("DOT" == name) {
-      return 1;
-    } else if ("OR" == name || "NOR" == name || "XOR" == name || "XNOR" == name) {
-      return 2;
-    } else if ("AND" == name) {
-      return 3;
-    } else if ("EQ" == name || "NE" == name) {
-      return 4;
-    } else if ("LT" == name || "LE" == name || "GT" == name || "GE" == name) {
-      return 5;
-    } else if ("USEROP" == name) {
-      return 6;
-    } else if ("TILDE" == name || "DOUBLETILDE" == name) {
-      return 7;
-    } else if ("PLUS" == name || "MINUS" == name) {
-      return 8;
-    } else if ("STAR" == name || "SLASH" == name || "PERCENT" == name) {
-      return 9;
-    } else if ("CARAT" == name) {
-      return 10;
-    } else if ("NOT" == name) {
-      return 11;
-    } else if ("PIPE" == name) {
-      return 13;
-    } else if ("AMP" == name) {
-      return 14;
-    } else if ("paren" == name) {
-      return 15;
-    }
-    throw CompileError("Priority unknown for infix operator " + name);
-  }
-
-  static Assoc assoc(const std::string& name) {
-    if ("CARAT" == name) {
-      return RIGHT_ASSOC;
-    }
-    return LEFT_ASSOC;
-  }
-
-public:
   InfixOperator(const std::string& name)
-    : Operator(name, priority(name)),
+    : Operator(name, InfixPriority(name)),
       m_assoc(assoc(name)) {}
 
-  Assoc assoc() const {
-    return m_assoc;
+  std::string methodName() const { return "operator" + m_name; }
+
+  Assoc assoc() const { return m_assoc; }
+
+private:
+  static Priority InfixPriority(const std::string& name);
+  static Assoc assoc(const std::string& name);
+
+  Assoc m_assoc;
+};
+
+/* Operator tree nodes */
+
+class OperatorNode {
+public:
+  virtual ~OperatorNode() {}
+  virtual Operator::Priority priority() const = 0;
+  virtual std::auto_ptr<OperatorNode> duplicate() const = 0;
+
+  std::string bytecode() const;
+protected:
+  std::string m_bytecode;
+  boost::shared_ptr<Type> m_type;
+};
+
+class AtomOperatorNode : public OperatorNode {
+public:
+  AtomOperatorNode(const Variable& atom) {
+    m_bytecode = atom.fullname();
+    m_type = atom.type().duplicate();
+  }
+
+  Operator::Priority priority() const {
+    throw CompileError("Cannot get priority of OperatorNode " + m_bytecode);
+  }
+
+  std::auto_ptr<OperatorNode> duplicate() const {
+    return std::auto_ptr<OperatorNode>(new AtomOperatorNode(*this));
+  }
+};
+
+class PrefixOperatorNode : public OperatorNode {
+public:
+  PrefixOperatorNode(const std::string& name)
+    : m_op(name) {}
+
+  void addChild(OperatorNode* child);
+  Operator::Priority priority() const { return m_op.priority(); }
+
+  std::auto_ptr<OperatorNode> duplicate() const {
+    return std::auto_ptr<OperatorNode>(new PrefixOperatorNode(*this));
   }
 
 private:
-  Assoc m_assoc;
+  PrefixOperator m_op;
+  boost::shared_ptr<OperatorNode> m_child;
 };
+
+class InfixOperatorNode : public OperatorNode {
+public:
+  InfixOperatorNode(const std::string& name)
+    : m_op(name) {}
+
+  void addLeft(OperatorNode* left);
+  void addRight(OperatorNode* right);
+  Operator::Priority priority() const {
+    return m_op.priority() +
+      (InfixOperator::LEFT_ASSOC == m_op.assoc() ? 0 : 1);
+  }
+
+  std::auto_ptr<OperatorNode> duplicate() const {
+    return std::auto_ptr<OperatorNode>(new InfixOperatorNode(*this));
+  }
+
+private:
+  InfixOperator m_op;
+  boost::shared_ptr<OperatorNode> m_left;
+  boost::shared_ptr<OperatorNode> m_right;
+};
+
+inline OperatorNode* new_clone(const OperatorNode& opn) {
+  return opn.duplicate().release();
+}
 
 }
 

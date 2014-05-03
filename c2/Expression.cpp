@@ -18,16 +18,7 @@ using std::vector;
 using namespace compiler;
 
 Expression::Expression()
-  : m_scope(NULL),
-    m_infixing(false) {
-}
-
-Expression::~Expression() {
-/*
-  for (stack_iter i = m_stack.begin(); i != m_stack.end(); ++i) {
-    delete *i;
-  }
-*/
+  : m_scope(NULL) {
 }
 
 void Expression::init(Scope& scope) {
@@ -35,21 +26,45 @@ void Expression::init(Scope& scope) {
 }
 
 void Expression::attach_atom(const Variable& atom) {
-  // TODO
+/*
   // For now the Expression has a single Variable atom.  Our type is that the
   // Expression is a descendent of the variable, and adds no new members.
   m_type.reset(new BasicType(atom.type().duplicate(), atom.fullname()));
   m_bytecode = atom.fullname();
+*/
+  m_stack.push_back(new AtomOperatorNode(atom));
 }
 
 void Expression::attach_preop(const std::string& preop) {
-  PrefixOperator op(preop);
-  // TODO
+  m_stack.push_back(new PrefixOperatorNode(preop));
 }
 
 void Expression::attach_binop(const std::string& binop) {
-  InfixOperator op(binop);
-  // TODO
+  if (m_stack.empty()) {
+    throw CompileError("Cannot attach infix operator " + binop + " at the start of an expression");
+  }
+  auto_ptr<InfixOperatorNode> op(new InfixOperatorNode(binop));
+  stack_vec::auto_type tmp_op = m_stack.pop_back();
+  if (!tmp_op || !dynamic_cast<AtomOperatorNode*>(tmp_op.get())) {
+    throw CompileError("Cannot attach infix operator " + binop + " that does not follow an atom");
+  }
+  while (!m_stack.empty()) {
+    if (op->priority() > m_stack.back().priority()) break;
+    stack_vec::auto_type top_op = m_stack.pop_back();
+    PrefixOperatorNode* top_preop = dynamic_cast<PrefixOperatorNode*>(top_op.get());
+    InfixOperatorNode* top_infop = dynamic_cast<InfixOperatorNode*>(top_op.get());
+    if (top_preop) {
+      top_preop->addChild(tmp_op.release());
+    } else if (top_infop) {
+      top_infop->addRight(tmp_op.release());
+    } else {
+      throw CompileError("Found non-operator stack item at the not-top of the stack while attaching infix operator " + binop);
+    }
+    tmp_op.reset(top_op.release());
+  }
+
+  op->addLeft(tmp_op.release());
+  m_stack.push_back(op);
 }
 
 void Expression::finalize() {

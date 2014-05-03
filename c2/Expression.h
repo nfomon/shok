@@ -13,6 +13,7 @@
 
 #include <boost/fusion/include/std_pair.hpp>
 #include <boost/optional.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
@@ -25,14 +26,12 @@ namespace ascii = spirit::ascii;
 namespace qi = spirit::qi;
 
 #include <string>
-#include <vector>
 
 namespace compiler {
 
 class Expression {
 public:
   Expression();
-  ~Expression();
   void init(Scope& scope);
   void attach_atom(const Variable& atom);   // TODO variant of other atoms
   void attach_preop(const std::string& preop);
@@ -42,12 +41,11 @@ public:
   const Type& type() const;
 
 private:
-  //typedef std::vector<Operator*> stack_vec;
-  //typedef stack_vec::const_iterator stack_iter;
+  typedef boost::ptr_vector<OperatorNode> stack_vec;
+  typedef stack_vec::const_iterator stack_iter;
 
   Scope* m_scope;
-  bool m_infixing;
-  //stack_vec m_stack;
+  stack_vec m_stack;
   boost::shared_ptr<Type> m_type;
   std::string m_bytecode;
 };

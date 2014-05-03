@@ -68,7 +68,7 @@ private:
 /*
 class AndType : public Type {
 public:
-  BasicType(std::auto_ptr<Type> left, std::auto_ptr<Type> right);
+  AndType(std::auto_ptr<Type> left, std::auto_ptr<Type> right);
   std::auto_ptr<Type> duplicate() const;
   std::string print() const;
   void addMember(const std::string& name, std::auto_ptr<Type> type);
