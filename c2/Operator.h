@@ -76,6 +76,7 @@ public:
   virtual ~OperatorNode() {}
   virtual Operator::Priority priority() const = 0;
   virtual std::auto_ptr<OperatorNode> duplicate() const = 0;
+  boost::shared_ptr<Type> type() const { return m_type; }
 
   std::string bytecode() const;
 protected:

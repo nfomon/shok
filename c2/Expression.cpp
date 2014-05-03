@@ -26,12 +26,6 @@ void Expression::init(Scope& scope) {
 }
 
 void Expression::attach_atom(const Variable& atom) {
-/*
-  // For now the Expression has a single Variable atom.  Our type is that the
-  // Expression is a descendent of the variable, and adds no new members.
-  m_type.reset(new BasicType(atom.type().duplicate(), atom.fullname()));
-  m_bytecode = atom.fullname();
-*/
   m_stack.push_back(new AtomOperatorNode(atom));
 }
 
@@ -44,8 +38,8 @@ void Expression::attach_binop(const std::string& binop) {
     throw CompileError("Cannot attach infix operator " + binop + " at the start of an expression");
   }
   auto_ptr<InfixOperatorNode> op(new InfixOperatorNode(binop));
-  stack_vec::auto_type tmp_op = m_stack.pop_back();
-  if (!tmp_op || !dynamic_cast<AtomOperatorNode*>(tmp_op.get())) {
+  stack_vec::auto_type tmp_node = m_stack.pop_back();
+  if (!tmp_node || !dynamic_cast<AtomOperatorNode*>(tmp_node.get())) {
     throw CompileError("Cannot attach infix operator " + binop + " that does not follow an atom");
   }
   while (!m_stack.empty()) {
@@ -54,20 +48,44 @@ void Expression::attach_binop(const std::string& binop) {
     PrefixOperatorNode* top_preop = dynamic_cast<PrefixOperatorNode*>(top_op.get());
     InfixOperatorNode* top_infop = dynamic_cast<InfixOperatorNode*>(top_op.get());
     if (top_preop) {
-      top_preop->addChild(tmp_op.release());
+      top_preop->addChild(tmp_node.release());
     } else if (top_infop) {
-      top_infop->addRight(tmp_op.release());
+      top_infop->addRight(tmp_node.release());
     } else {
       throw CompileError("Found non-operator stack item at the not-top of the stack while attaching infix operator " + binop);
     }
-    tmp_op.reset(top_op.release());
+    tmp_node.reset(top_op.release());
   }
 
-  op->addLeft(tmp_op.release());
+  op->addLeft(tmp_node.release());
   m_stack.push_back(op);
 }
 
 void Expression::finalize() {
+  if (m_stack.empty()) {
+    throw CompileError("Cannot finalize Expression with empty stack");
+  }
+  stack_vec::auto_type tmp_node = m_stack.pop_back();
+  if (!tmp_node || !dynamic_cast<AtomOperatorNode*>(tmp_node.get())) {
+    throw CompileError("Cannot finalize Expression with dangling operator");
+  }
+  // The top of the stack is the missing child of the operator above it, and so
+  // on up the stack.
+  while (!m_stack.empty()) {
+    stack_vec::auto_type top_op = m_stack.pop_back();
+    PrefixOperatorNode* top_preop = dynamic_cast<PrefixOperatorNode*>(top_op.get());
+    InfixOperatorNode* top_infop = dynamic_cast<InfixOperatorNode*>(top_op.get());
+    if (top_preop) {
+      top_preop->addChild(tmp_node.release());
+    } else if (top_infop) {
+      top_infop->addRight(tmp_node.release());
+    } else {
+      throw CompileError("Found non-operator stack item at the not-top of the stack while finalizing expression");
+    }
+    tmp_node.reset(top_op.release());
+  }
+  m_type = tmp_node->type();
+  m_bytecode = tmp_node->bytecode();
 }
 
 std::string Expression::bytecode() const {
