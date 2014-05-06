@@ -15,3 +15,16 @@ using std::string;
 using std::vector;
 
 using namespace compiler;
+
+void Cmd::attach_text(const std::string& text) {
+  m_cmdtext += text;
+}
+
+void Cmd::attach_exp(const Expression& exp) {
+  m_expcode += exp.bytecode() + "\n";
+  m_cmdtext += "{}";
+}
+
+std::string Cmd::bytecode() const {
+  return m_expcode + m_cmdtext;
+}

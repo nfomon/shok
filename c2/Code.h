@@ -38,6 +38,8 @@ public:
     using qi::omit;
     using qi::print;
 
+    new_.name("new");
+    statement_.name("statement");
     code_.name("code");
 
     new_ %= lit("(new") > +newinit_(ref(m_globalScope)) > lit(")");

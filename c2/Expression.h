@@ -6,6 +6,7 @@
 
 /* Expression */
 
+//#include "Object.h"
 #include "Operator.h"
 #include "Scope.h"
 #include "Type.h"
@@ -28,6 +29,8 @@ namespace qi = spirit::qi;
 #include <string>
 
 namespace compiler {
+
+//typedef boost::variant<Variable,Object> Atom;
 
 class Expression {
 public:
@@ -55,8 +58,13 @@ struct ExpParser : qi::grammar<Iterator, Expression(Scope&), ascii::space_type> 
 public:
   ExpParser(bool isTypeSpec = false)
     : ExpParser::base_type(exp_, std::string(isTypeSpec ? "typespec" : "expression") + " parser") {
+    using ascii::string;
     using phoenix::ref;
     using phoenix::val;
+    using qi::_1;
+    using qi::_a;
+    using qi::_r1;
+    using qi::_r2;
     using qi::_val;
     using qi::alnum;
     using qi::char_;
@@ -66,36 +74,32 @@ public:
     using qi::print;
 
     atom_.name("atom");
-    preops_.name("prefix operators");
     preop_.name("prefix operator");
-    binops_.name("binary operators");
     binop_.name("binary operator");
     exp_.name("expression");
 
-    atom_ = variable_(qi::_r1)[phoenix::bind(&Expression::attach_atom, &m_exp, qi::_1)];
-    preops_ %= lit("PLUS") | lit("MINUS");
-    preop_ %= preops_[phoenix::bind(&Expression::attach_preop, &m_exp, qi::_1)];
-    binops_ %= lit("PLUS") | lit("MINUS") | lit("STAR") | lit("DIV");
-    binop_ %= binops_[phoenix::bind(&Expression::attach_binop, &m_exp, qi::_1)];
+    atom_ = variable_(_r1)[phoenix::bind(&Expression::attach_atom, _r2, _1)];
+    preop_ %= (
+      string("PLUS") | string("MINUS")
+    )[phoenix::bind(&Expression::attach_preop, _r1, _1)];
+    binop_ %= (
+      string("PLUS") | string("MINUS") | string("MULT") | string("DIV")
+    )[phoenix::bind(&Expression::attach_binop, _r1, _1)];
 
     exp_ = (
-      lit("(" + std::string(isTypeSpec ? "type" : "exp"))[phoenix::bind(&Expression::init, &m_exp, qi::_r1)]
-      >> -preop_
-      >> atom_(qi::_r1)
-      >> *(binop_ > -preop_ > atom_(qi::_r1))
-      >> lit(")")[phoenix::bind(&Expression::finalize, &m_exp)]
-    )[_val = ref(m_exp)];
+      lit("(" + std::string(isTypeSpec ? "type" : "exp"))[phoenix::bind(&Expression::init, _val, _r1)]
+      > -preop_(_val)
+      > atom_(_r1, _val)
+      > *(binop_(_val) > -preop_(_val) > atom_(_r1, _val))
+      > lit(")")[phoenix::bind(&Expression::finalize, _val)]
+    );
   }
 
 private:
-  Expression m_exp;
-
   VariableParser<Iterator> variable_;
-  qi::rule<Iterator, spirit::unused_type(Scope&), ascii::space_type> atom_;
-  qi::rule<Iterator, std::string(), ascii::space_type> preops_;
-  qi::rule<Iterator, std::string(), ascii::space_type> preop_;
-  qi::rule<Iterator, std::string(), ascii::space_type> binops_;
-  qi::rule<Iterator, std::string(), ascii::space_type> binop_;
+  qi::rule<Iterator, void(Scope&, Expression&), ascii::space_type> atom_;
+  qi::rule<Iterator, void(Expression&), ascii::space_type> preop_;
+  qi::rule<Iterator, void(Expression&), ascii::space_type> binop_;
   qi::rule<Iterator, Expression(Scope&), ascii::space_type> exp_;
 };
 

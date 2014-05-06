@@ -20,6 +20,11 @@ using namespace compiler;
 
 /* RootType */
 
+RootType::RootType() {
+  // object members
+  //m_members.insert("->str", auto_ptr<Type());   // TODO circular!
+}
+
 void RootType::addMember(const string& name, auto_ptr<Type> type) {
   m_members.insert(name, type);
 }
@@ -77,6 +82,9 @@ auto_ptr<Type> BasicType::duplicate() const {
 
 std::string BasicType::defaultValueBytecode() const {
   std::string bc("(object");
+  for (symbol_iter i = m_members.begin(); i != m_members.end(); ++i) {
+    bc += "(member " + i->first + " " + i->second->defaultValueBytecode() + ")";
+  }
   bc += ")";
   return bc;
 }

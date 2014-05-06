@@ -58,3 +58,23 @@ SymbolTable member:  <name, BasicType(parent, parentName, my new members)>
 The variable_t should ensure the var (and members) all exist as it is created.
 Its type is not constructed, it is *found*; it already exists in the symbol
 table!
+
+-----
+2k14-05-03
+
+what can an object lookup, and how?
+
+{
+  new x
+  {
+    new y
+    new o = {
+      x : x   # ?  compiler warning
+      q = {
+        r = y
+      }
+    }
+  }
+}
+
+

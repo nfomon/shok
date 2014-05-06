@@ -45,13 +45,16 @@ private:
 };
 
 template <typename Iterator>
-struct NewInitParser : qi::grammar<Iterator, std::string(Scope&), ascii::space_type> {
+struct NewInitParser : qi::grammar<Iterator, std::string(Scope&), qi::locals<NewInit>, ascii::space_type> {
 public:
   NewInitParser()
     : NewInitParser::base_type(newinit_, "newinit parser"),
       typespec_(true) {
     using phoenix::ref;
     using phoenix::val;
+    using qi::_1;
+    using qi::_a;
+    using qi::_r1;
     using qi::_val;
     using qi::alnum;
     using qi::char_;
@@ -60,25 +63,26 @@ public:
     using qi::omit;
     using qi::print;
 
+    identifier_.name("identifier");
+    init_.name("init");
     newinit_.name("newinit");
 
     identifier_ %= lit("ID:'") > +(alnum | '_') > lit('\'');
     newinit_ = (
-      lit("(init")[phoenix::bind(&NewInit::init, &m_newinit, qi::_r1)]
-      > identifier_[phoenix::bind(&NewInit::attach_name, &m_newinit, qi::_1)]
-      > -typespec_(qi::_r1)[phoenix::bind(&NewInit::attach_type, &m_newinit, phoenix::bind(&Expression::type, qi::_1))]
-      > -exp_(qi::_r1)[phoenix::bind(&NewInit::attach_exp, &m_newinit, qi::_1)]
-      > lit(")")[phoenix::bind(&NewInit::finalize, &m_newinit)]
-    )[_val = phoenix::bind(&NewInit::bytecode, &m_newinit)];
+      lit("(init")[phoenix::bind(&NewInit::init, _a, _r1)]
+      > identifier_[phoenix::bind(&NewInit::attach_name, _a, _1)]
+      > -typespec_(_r1)[phoenix::bind(&NewInit::attach_type, _a, phoenix::bind(&Expression::type, _1))]
+      > -exp_(_r1)[phoenix::bind(&NewInit::attach_exp, _a, _1)]
+      > lit(")")[phoenix::bind(&NewInit::finalize, _a)]
+    )[_val = phoenix::bind(&NewInit::bytecode, _a)];
   }
 
 private:
-  NewInit m_newinit;
-
   ExpParser<Iterator> typespec_;
   ExpParser<Iterator> exp_;
   qi::rule<Iterator, std::string(), ascii::space_type> identifier_;
-  qi::rule<Iterator, std::string(Scope&), ascii::space_type> newinit_;
+  qi::rule<Iterator, NewInit(Scope&), ascii::space_type> init_;
+  qi::rule<Iterator, std::string(Scope&), qi::locals<NewInit>, ascii::space_type> newinit_;
 };
 
 }

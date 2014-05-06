@@ -49,12 +49,16 @@ private:
 };
 
 template <typename Iterator>
-struct VariableParser : qi::grammar<Iterator, Variable(Scope&), ascii::space_type> {
+struct VariableParser
+  : qi::grammar<Iterator, Variable(Scope&), ascii::space_type> {
 public:
   VariableParser()
     : VariableParser::base_type(variable_, "variable parser") {
     using phoenix::ref;
     using phoenix::val;
+    using qi::_1;
+    using qi::_a;
+    using qi::_r1;
     using qi::_val;
     using qi::alnum;
     using qi::lit;
@@ -63,16 +67,14 @@ public:
 
     identifier_ %= lit("ID:'") > +(alnum | '_') > lit('\'');
     variable_ = (
-      lit("(var")[phoenix::bind(&Variable::init, &m_var, qi::_r1)]
-      > identifier_[phoenix::bind(&Variable::attach_name, &m_var, qi::_1)]
-      > *(identifier_[phoenix::bind(&Variable::attach_member, &m_var, qi::_1)])
+      lit("(var")[phoenix::bind(&Variable::init, _val, _r1)]
+      > identifier_[phoenix::bind(&Variable::attach_name, _val, _1)]
+      > *(identifier_[phoenix::bind(&Variable::attach_member, _val, _1)])
       > lit(')')
-    )[_val = ref(m_var)];
+    );
   }
 
 private:
-  Variable m_var;
-
   qi::rule<Iterator, std::string(), ascii::space_type> identifier_;
   qi::rule<Iterator, Variable(Scope&), ascii::space_type> variable_;
 };

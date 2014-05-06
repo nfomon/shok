@@ -65,7 +65,11 @@ bool Compiler::execute() {
   typedef qi::rule<forward_iterator_type, std::string(), ascii::space_type> StringRule;
   typedef qi::rule<forward_iterator_type, ascii::space_type> VoidRule;
 
-  StringRule cmdline_ = lit('[') > (cmd_ | code_) > lit(']');
+  StringRule cmdline_ = (
+    lit('[')
+    > (cmd_ | code_)
+    > lit(']')
+  );
   VoidRule program_ = +(cmdline_[on_cmdline]);
 
   bool r = qi::phrase_parse(

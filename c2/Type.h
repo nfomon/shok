@@ -36,6 +36,7 @@ protected:
 
 class RootType : public Type {
 public:
+  RootType();
   std::auto_ptr<Type> duplicate() const;
   std::string print() const { return "(root)"; }
   void addMember(const std::string& name, std::auto_ptr<Type> type);
