@@ -13,7 +13,10 @@
 
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_object.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
 namespace phoenix = boost::phoenix;
 namespace spirit = boost::spirit;

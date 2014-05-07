@@ -50,7 +50,7 @@ public:
     statement_ %= new_;
     code_ %=
       lit('{')
-      > +statement_
+      > +(statement_ > -lit(';'))
       > lit('}');
   }
 
