@@ -6,6 +6,7 @@
 
 /* Object literals */
 
+#include "NewInit.h"
 #include "Scope.h"
 #include "Type.h"
 
@@ -40,7 +41,7 @@ private:
 
 template <typename Iterator>
 struct ObjectParser
-  : qi::grammar<Iterator, Object(Scope&), qi::locals<Object>, ascii::space_type> {
+  : qi::grammar<Iterator, Object(Scope&), ascii::space_type> {
 public:
   ObjectParser()
     : ObjectParser::base_type(object_, "object parser") {
@@ -56,13 +57,15 @@ public:
     object_.name("object");
 
     object_ = (
-      lit('{')[phoenix::bind(&Object::init, _a, _r1)]
+      lit('{')[phoenix::bind(&Object::init, _val, _r1)]
+      > +newinit_(_r1) > -lit(';')
       > lit('}')
-    )[_val = _a];
+    );
   }
 
 private:
-  qi::rule<Iterator, Object(Scope&), qi::locals<Object>, ascii::space_type> object_;
+  NewInitParser<Iterator> newinit_;
+  qi::rule<Iterator, Object(Scope&), ascii::space_type> object_;
 };
 
 }

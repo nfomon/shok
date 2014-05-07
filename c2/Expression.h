@@ -6,7 +6,7 @@
 
 /* Expression */
 
-//#include "Object.h"
+#include "Object.h"
 #include "Operator.h"
 #include "Scope.h"
 #include "Type.h"
@@ -21,6 +21,7 @@
 #include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
+#include <boost/variant.hpp>
 namespace phoenix = boost::phoenix;
 namespace spirit = boost::spirit;
 namespace ascii = spirit::ascii;
@@ -30,7 +31,7 @@ namespace qi = spirit::qi;
 
 namespace compiler {
 
-//typedef boost::variant<Variable,Object> Atom;
+typedef boost::variant<Variable,Object> Atom;
 
 class Expression {
 public:
@@ -78,7 +79,10 @@ public:
     binop_.name("binary operator");
     exp_.name("expression");
 
-    atom_ = variable_(_r1)[phoenix::bind(&Expression::attach_atom, _r2, _1)];
+    atom_ = (
+      variable_(_r1)
+      //| object_(_r1)
+    )[phoenix::bind(&Expression::attach_atom, _r2, _1)];
     preop_ %= (
       string("PLUS") | string("MINUS")
     )[phoenix::bind(&Expression::attach_preop, _r1, _1)];
@@ -97,6 +101,7 @@ public:
 
 private:
   VariableParser<Iterator> variable_;
+  ObjectParser<Iterator> object_;
   qi::rule<Iterator, void(Scope&, Expression&), ascii::space_type> atom_;
   qi::rule<Iterator, void(Expression&), ascii::space_type> preop_;
   qi::rule<Iterator, void(Expression&), ascii::space_type> binop_;
