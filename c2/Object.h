@@ -6,7 +6,6 @@
 
 /* Object literals */
 
-#include "NewInit.h"
 #include "Scope.h"
 #include "Type.h"
 
@@ -28,25 +27,35 @@ namespace qi = spirit::qi;
 
 namespace compiler {
 
+class NewInit;
+class ObjectScope;
+class Scope;
+
 class Object {
 public:
-  Object();
-  void init(Scope& scope);
-  const Type& type() const;
+  void init(const Scope& parentScope);
+  void attach_new(const NewInit& newInit);
+  Scope& scope() const;
+  const Type& type() const { return *m_type; }
+  std::string bytecode() const;
 
 private:
-  Scope* m_scope;
+  boost::shared_ptr<ObjectScope> m_scope;
   boost::shared_ptr<Type> m_type;
+  std::string m_bytecode;
 };
+
+template <typename Iterator>
+struct NewInitParser;
 
 template <typename Iterator>
 struct ObjectParser
   : qi::grammar<Iterator, Object(Scope&), ascii::space_type> {
 public:
-  ObjectParser()
-    : ObjectParser::base_type(object_, "object parser") {
+  ObjectParser(NewInitParser<Iterator>& newinit_)
+    : ObjectParser::base_type(object_, "object parser"),
+      newinit_(newinit_) {
     using phoenix::ref;
-    using phoenix::val;
     using qi::_val;
     using qi::_1;
     using qi::_a;
@@ -57,14 +66,21 @@ public:
     object_.name("object");
 
     object_ = (
-      lit('{')[phoenix::bind(&Object::init, _val, _r1)]
-      > +newinit_(_r1) > -lit(';')
-      > lit('}')
+      lit("(object")[phoenix::bind(&Object::init, _val, _r1)]
+      > -(
+        lit('{')
+        > +(
+          newinit_(phoenix::bind(&Object::scope, _val))[phoenix::bind(&Object::attach_new, _val, _1)]
+          > -lit(';')
+        )
+        > lit('}')
+      )
+      > lit(')')
     );
   }
 
 private:
-  NewInitParser<Iterator> newinit_;
+  NewInitParser<Iterator>& newinit_;
   qi::rule<Iterator, Object(Scope&), ascii::space_type> object_;
 };
 

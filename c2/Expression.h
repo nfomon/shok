@@ -6,6 +6,7 @@
 
 /* Expression */
 
+#include "Atom.h"
 #include "Object.h"
 #include "Operator.h"
 #include "Scope.h"
@@ -31,13 +32,11 @@ namespace qi = spirit::qi;
 
 namespace compiler {
 
-typedef boost::variant<Variable,Object> Atom;
-
 class Expression {
 public:
   Expression();
   void init(Scope& scope);
-  void attach_atom(const Variable& atom);   // TODO variant of other atoms
+  void attach_atom(const Atom& atom);
   void attach_preop(const std::string& preop);
   void attach_binop(const std::string& binop);
   void finalize();
@@ -55,13 +54,17 @@ private:
 };
 
 template <typename Iterator>
+struct NewInitParser;
+
+// Requires a NewInitParser to resolve circular dependency
+template <typename Iterator>
 struct ExpParser : qi::grammar<Iterator, Expression(Scope&), ascii::space_type> {
 public:
-  ExpParser(bool isTypeSpec = false)
-    : ExpParser::base_type(exp_, std::string(isTypeSpec ? "typespec" : "expression") + " parser") {
+  ExpParser(NewInitParser<Iterator>& newinit_, bool isTypeSpec = false)
+    : ExpParser::base_type(exp_, std::string(isTypeSpec ? "typespec" : "expression") + " parser"),
+      object_(newinit_) {
     using ascii::string;
     using phoenix::ref;
-    using phoenix::val;
     using qi::_1;
     using qi::_a;
     using qi::_r1;
@@ -74,6 +77,8 @@ public:
     using qi::omit;
     using qi::print;
 
+    variable_.name("variable");
+    object_.name("object");
     atom_.name("atom");
     preop_.name("prefix operator");
     binop_.name("binary operator");
@@ -81,7 +86,7 @@ public:
 
     atom_ = (
       variable_(_r1)
-      //| object_(_r1)
+      | object_(_r1)
     )[phoenix::bind(&Expression::attach_atom, _r2, _1)];
     preop_ %= (
       string("PLUS") | string("MINUS")

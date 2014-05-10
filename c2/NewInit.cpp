@@ -55,9 +55,12 @@ void NewInit::finalize() {
   }
   // This type dup might be unnecessary
   m_scope->insert(m_name, m_type->duplicate());
-  m_bytecode = "(new " + m_name + m_bytecode + ")";
 }
 
-string NewInit::bytecode() const {
-  return m_bytecode;
+string NewInit::bytecode_asNew() const {
+  return "(new " + m_name + m_bytecode + ")";
+}
+
+string NewInit::bytecode_asMember() const {
+  return "(member " + m_name + m_bytecode + ")";
 }

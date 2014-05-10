@@ -50,10 +50,3 @@ std::string Variable::fullname() const {
   }
   return name;
 }
-
-const Type& Variable::type() const {
-  if (!m_type) {
-    throw CompileError("Cannot get type of untyped Variable " + fullname());
-  }
-  return *m_type;
-}

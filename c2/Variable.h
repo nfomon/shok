@@ -34,8 +34,8 @@ public:
   void attach_name(const std::string& name);
   void attach_member(const std::string& member);
 
+  const Type& type() const { return *m_type; }
   std::string fullname() const;
-  const Type& type() const;
 
 private:
   typedef std::vector<std::string> member_vec;
@@ -55,9 +55,7 @@ public:
   VariableParser()
     : VariableParser::base_type(variable_, "variable parser") {
     using phoenix::ref;
-    using phoenix::val;
     using qi::_1;
-    using qi::_a;
     using qi::_r1;
     using qi::_val;
     using qi::alnum;

@@ -37,7 +37,10 @@ public:
   void attach_type(const Type& type);
   void attach_exp(const Expression& exp);
   void finalize();
-  std::string bytecode() const;
+  std::string name() const { return m_name; }
+  const Type& type() const { return *m_type; }
+  std::string bytecode_asNew() const;
+  std::string bytecode_asMember() const;
 
 private:
   Scope* m_scope;
@@ -48,44 +51,37 @@ private:
 };
 
 template <typename Iterator>
-struct NewInitParser : qi::grammar<Iterator, std::string(Scope&), qi::locals<NewInit>, ascii::space_type> {
+struct NewInitParser : qi::grammar<Iterator, NewInit(Scope&), ascii::space_type> {
 public:
   NewInitParser()
     : NewInitParser::base_type(newinit_, "newinit parser"),
-      typespec_(true) {
+      typespec_(*this, true),
+      exp_(*this) {
     using phoenix::ref;
-    using phoenix::val;
     using qi::_1;
-    using qi::_a;
     using qi::_r1;
     using qi::_val;
     using qi::alnum;
-    using qi::char_;
-    using qi::lexeme;
     using qi::lit;
-    using qi::omit;
-    using qi::print;
 
     identifier_.name("identifier");
-    init_.name("init");
     newinit_.name("newinit");
 
     identifier_ %= lit("ID:'") > +(alnum | '_') > lit('\'');
     newinit_ = (
-      lit("(init")[phoenix::bind(&NewInit::init, _a, _r1)]
-      > identifier_[phoenix::bind(&NewInit::attach_name, _a, _1)]
-      > -typespec_(_r1)[phoenix::bind(&NewInit::attach_type, _a, phoenix::bind(&Expression::type, _1))]
-      > -exp_(_r1)[phoenix::bind(&NewInit::attach_exp, _a, _1)]
-      > lit(")")[phoenix::bind(&NewInit::finalize, _a)]
-    )[_val = phoenix::bind(&NewInit::bytecode, _a)];
+      lit("(init")[phoenix::bind(&NewInit::init, _val, _r1)]
+      > identifier_[phoenix::bind(&NewInit::attach_name, _val, _1)]
+      > -typespec_(_r1)[phoenix::bind(&NewInit::attach_type, _val, phoenix::bind(&Expression::type, _1))]
+      > -exp_(_r1)[phoenix::bind(&NewInit::attach_exp, _val, _1)]
+      > lit(")")[phoenix::bind(&NewInit::finalize, _val)]
+    );
   }
 
 private:
   ExpParser<Iterator> typespec_;
   ExpParser<Iterator> exp_;
   qi::rule<Iterator, std::string(), ascii::space_type> identifier_;
-  qi::rule<Iterator, NewInit(Scope&), ascii::space_type> init_;
-  qi::rule<Iterator, std::string(Scope&), qi::locals<NewInit>, ascii::space_type> newinit_;
+  qi::rule<Iterator, NewInit(Scope&), ascii::space_type> newinit_;
 };
 
 }

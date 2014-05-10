@@ -3,6 +3,8 @@
 
 #include "Object.h"
 
+#include "NewInit.h"
+
 #include "util/Util.h"
 
 #include <boost/lexical_cast.hpp>
@@ -14,17 +16,20 @@ using std::string;
 
 using namespace compiler;
 
-Object::Object()
-  : m_scope(NULL) {
+void Object::init(const Scope& scope) {
+  m_scope.reset(new ObjectScope(*this, scope));
+  m_type.reset(new BasicType(m_scope->findRoot("object")->duplicate(), "object"));
 }
 
-void Object::init(Scope& scope) {
-  m_scope = &scope;
+void Object::attach_new(const NewInit& newInit) {
+  m_bytecode += newInit.bytecode_asMember() + "\n";
+  m_type->addMember(newInit.name(), newInit.type().duplicate());
 }
 
-const Type& Object::type() const {
-  if (!m_type) {
-    throw CompileError("Cannot get type of untyped Object");
-  }
-  return *m_type;
+Scope& Object::scope() const {
+  return *dynamic_cast<Scope*>(m_scope.get());
+}
+
+string Object::bytecode() const {
+  return "(object" + m_bytecode + ")";
 }

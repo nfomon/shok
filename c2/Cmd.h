@@ -7,6 +7,7 @@
 /* A command-line with an actual program to invoke (not a code block). */
 
 #include "Expression.h"
+#include "NewInit.h"
 #include "Scope.h"
 
 #include <boost/spirit/include/phoenix_bind.hpp>
@@ -40,7 +41,8 @@ struct CmdParser : qi::grammar<Iterator, std::string(), qi::locals<Cmd>, ascii::
 public:
   CmdParser(Scope& globalScope)
     : CmdParser::base_type(cmd_, "command parser"),
-      m_globalScope(globalScope) {
+      m_globalScope(globalScope),
+      exp_(newinit_) {
     using qi::_1;
     using qi::_a;
     using qi::_r1;
@@ -68,6 +70,8 @@ public:
 
 private:
   Scope& m_globalScope;
+  // This must be provided to exp_ to break a circular-dependency
+  NewInitParser<Iterator> newinit_;
 
   ExpParser<Iterator> exp_;
   qi::rule<Iterator, void(Cmd&), ascii::space_type> expblock_;

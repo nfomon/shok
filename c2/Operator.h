@@ -6,7 +6,9 @@
 
 /* Operator */
 
+#include "Atom.h"
 #include "CompileError.h"
+#include "Object.h"
 #include "Variable.h"
 
 #include <boost/shared_ptr.hpp>
@@ -85,9 +87,9 @@ protected:
 
 class AtomOperatorNode : public OperatorNode {
 public:
-  AtomOperatorNode(const Variable& atom) {
-    m_bytecode = atom.fullname();
-    m_type = atom.type().duplicate();
+  AtomOperatorNode(const Atom& atom) {
+    m_bytecode = boost::apply_visitor(Atom_bytecode(), atom);
+    m_type = boost::apply_visitor(Atom_type(), atom).duplicate();
   }
 
   Operator::Priority priority() const {

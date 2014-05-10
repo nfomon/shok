@@ -25,7 +25,7 @@ void Expression::init(Scope& scope) {
   m_scope = &scope;
 }
 
-void Expression::attach_atom(const Variable& atom) {
+void Expression::attach_atom(const Atom& atom) {
   m_stack.push_back(new AtomOperatorNode(atom));
 }
 

@@ -10,7 +10,10 @@
 #include "Scope.h"
 
 #include <boost/bind.hpp>
+#include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_object.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
 namespace phoenix = boost::phoenix;
 namespace spirit = boost::spirit;
@@ -29,20 +32,17 @@ public:
     : CodeParser::base_type(code_, "code parser"),
       m_globalScope(globalScope) {
     using phoenix::ref;
-    using phoenix::val;
+    using qi::_1;
     using qi::_val;
-    using qi::alnum;
-    using qi::char_;
-    using qi::lexeme;
     using qi::lit;
-    using qi::omit;
-    using qi::print;
 
     new_.name("new");
     statement_.name("statement");
     code_.name("code");
 
-    new_ %= lit("(new") > +newinit_(ref(m_globalScope)) > lit(")");
+    new_ = lit("(new")
+      > +newinit_(ref(m_globalScope))[_val += phoenix::bind(&NewInit::bytecode_asNew, _1)]
+      > lit(")");
 
     // A code block would construct a new block that gets passed to *its* child
     // statements btw
