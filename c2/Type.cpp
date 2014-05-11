@@ -214,7 +214,7 @@ bool ReturnsType::isParentOf(const Type& child) const {
 AndType::AndType(auto_ptr<Type> left, auto_ptr<Type> right)
   : m_left(left),
     m_right(right) {
-  if (!left.get() || !right.get()) {
+  if (!m_left.get() || !m_right.get()) {
     throw CompileError("Cannot create AndType with missing children");
   }
   // TODO validate that left and right don't have colliding member names from

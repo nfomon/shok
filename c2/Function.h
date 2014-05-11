@@ -88,7 +88,7 @@ public:
 
     args_ %= (
       lit("(args")[phoenix::bind(&Function::init_args, _r1)]
-      > +arg_(_r1)
+      > *arg_(_r1)
       > lit(')')
     );
 
