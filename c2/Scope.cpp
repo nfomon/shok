@@ -24,9 +24,6 @@ Scope::Scope(const Scope* parent)
     m_depth(parent ? (parent->depth() + 1) : 0) {
 }
 
-Scope::~Scope() {
-}
-
 void Scope::reParent(const Scope& newParent) {
   m_parent = &newParent;
   m_root = &newParent.root();
@@ -52,6 +49,14 @@ const Type* Scope::findLocal(const string& name) const {
 
 const Type* Scope::findRoot(const string& name) const {
   return m_root->find(name);
+}
+
+string Scope::bytecode() const {
+  string s;
+  for (symbol_rev_iter i = m_locals.rbegin(); i != m_locals.rend(); ++i) {
+    s += " (del " + i->first + ")";
+  }
+  return s;
 }
 
 /* FunctionScope */

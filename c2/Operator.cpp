@@ -78,7 +78,7 @@ void PrefixOperatorNode::addChild(OperatorNode* child) {
   m_child.reset(child);
   // TODO check that the child implements this method (no args), and set m_type
   // to the type of the result
-  m_bytecode = "(call " + m_child->bytecode() + " " + m_op.methodName() + ")";
+  m_bytecode = " (call " + m_child->bytecode() + " " + m_op.methodName() + ")";
 }
 
 void InfixOperatorNode::addLeft(OperatorNode* left) {
@@ -96,5 +96,5 @@ void InfixOperatorNode::addRight(OperatorNode* right) {
   m_right.reset(right);
   // TODO check that the left child implements this method with the right child
   // as its argument, and set m_type to the type of the result
-  m_bytecode = "(call " + m_left->bytecode() + " " + m_op.methodName() + " " + m_right->bytecode() + ")";
+  m_bytecode = " (call " + m_left->bytecode() + " " + m_op.methodName() + " " + m_right->bytecode() + ")";
 }

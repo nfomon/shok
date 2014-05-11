@@ -36,7 +36,7 @@ namespace compiler {
 class Expression {
 public:
   Expression();
-  void init(Scope& scope);
+  void init(const Scope& scope);
   void attach_atom(const Atom& atom);
   void attach_preop(const std::string& preop);
   void attach_binop(const std::string& binop);
@@ -48,7 +48,7 @@ private:
   typedef boost::ptr_vector<OperatorNode> stack_vec;
   typedef stack_vec::const_iterator stack_iter;
 
-  Scope* m_scope;
+  const Scope* m_scope;
   stack_vec m_stack;
   boost::shared_ptr<Type> m_type;
   std::string m_bytecode;
@@ -57,11 +57,12 @@ private:
 /* Second qi inherited attribute (std::string): should be "type" to match a
  * type specifier, otherwise "exp" to match a plain expression. */
 template <typename Iterator>
-struct ExpParser : qi::grammar<Iterator, Expression(Scope&, std::string), ascii::space_type> {
+struct ExpParser : qi::grammar<Iterator, Expression(const Scope&, std::string), ascii::space_type> {
 public:
   ExpParser()
     : ExpParser::base_type(exp_, "expression parser"),
-      object_(*this) {
+      object_(*this),
+      function_(*this) {
     using ascii::string;
     using phoenix::ref;
     using qi::_1;
@@ -69,15 +70,11 @@ public:
     using qi::_r1;
     using qi::_r2;
     using qi::_val;
-    using qi::alnum;
-    using qi::char_;
-    using qi::lexeme;
     using qi::lit;
-    using qi::omit;
-    using qi::print;
 
     variable_.name("variable");
     object_.name("object");
+    function_.name("function");
     atom_.name("atom");
     preop_.name("prefix operator");
     binop_.name("binary operator");
@@ -86,6 +83,7 @@ public:
     atom_ = (
       variable_(_r1)
       | object_(_r1)
+      | function_(_r1)
     )[phoenix::bind(&Expression::attach_atom, _r2, _1)];
     preop_ %= (
       string("PLUS") | string("MINUS")
@@ -96,7 +94,7 @@ public:
 
     exp_ = (
       lit("(")
-      > ascii::string(_r2)[phoenix::bind(&Expression::init, _val, _r1)]
+      >> ascii::string(_r2)[phoenix::bind(&Expression::init, _val, _r1)]
       > -preop_(_val)
       > atom_(_r1, _val)
       > *(binop_(_val) > -preop_(_val) > atom_(_r1, _val))
@@ -107,10 +105,11 @@ public:
 private:
   VariableParser<Iterator> variable_;
   ObjectParser<Iterator> object_;
-  qi::rule<Iterator, void(Scope&, Expression&), ascii::space_type> atom_;
+  FunctionParser<Iterator> function_;
+  qi::rule<Iterator, void(const Scope&, Expression&), ascii::space_type> atom_;
   qi::rule<Iterator, void(Expression&), ascii::space_type> preop_;
   qi::rule<Iterator, void(Expression&), ascii::space_type> binop_;
-  qi::rule<Iterator, Expression(Scope&, std::string), ascii::space_type> exp_;
+  qi::rule<Iterator, Expression(const Scope&, std::string), ascii::space_type> exp_;
 };
 
 }

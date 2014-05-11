@@ -30,7 +30,7 @@ namespace compiler {
 class Variable {
 public:
   Variable();
-  void init(Scope& scope);
+  void init(const Scope& scope);
   void attach_name(const std::string& name);
   void attach_member(const std::string& member);
 
@@ -41,7 +41,7 @@ private:
   typedef std::vector<std::string> member_vec;
   typedef member_vec::const_iterator member_iter;
 
-  Scope* m_scope;
+  const Scope* m_scope;
   std::string m_name;
   member_vec m_members;
   // This could probably be a bare const Type*
@@ -50,7 +50,7 @@ private:
 
 template <typename Iterator>
 struct VariableParser
-  : qi::grammar<Iterator, Variable(Scope&), ascii::space_type> {
+  : qi::grammar<Iterator, Variable(const Scope&), ascii::space_type> {
 public:
   VariableParser()
     : VariableParser::base_type(variable_, "variable parser") {
@@ -74,7 +74,7 @@ public:
 
 private:
   qi::rule<Iterator, std::string(), ascii::space_type> identifier_;
-  qi::rule<Iterator, Variable(Scope&), ascii::space_type> variable_;
+  qi::rule<Iterator, Variable(const Scope&), ascii::space_type> variable_;
 };
 
 }

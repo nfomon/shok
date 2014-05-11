@@ -21,7 +21,7 @@ Expression::Expression()
   : m_scope(NULL) {
 }
 
-void Expression::init(Scope& scope) {
+void Expression::init(const Scope& scope) {
   m_scope = &scope;
 }
 

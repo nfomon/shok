@@ -37,7 +37,7 @@ class Object {
 public:
   void init(const Scope& parentScope);
   void attach_new(const NewInit& newInit);
-  Scope& scope() const;
+  ObjectScope& scope() const;
   const Type& type() const { return *m_type; }
   std::string bytecode() const;
 

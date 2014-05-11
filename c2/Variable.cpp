@@ -18,7 +18,7 @@ Variable::Variable()
   : m_scope(NULL) {
 }
 
-void Variable::init(Scope& scope) {
+void Variable::init(const Scope& scope) {
   m_scope = &scope;
 }
 

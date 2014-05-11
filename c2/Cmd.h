@@ -64,7 +64,7 @@ public:
 
     cmdchars_ %= (+(~char_("{]")));
     cmdtext_ = cmdchars_[phoenix::bind(&Cmd::attach_text, _r1, _1)];
-    cmdwhole_ = cmdtext_(_r1) > *(expblock_(_r1)) > -cmdtext_(_r1);
+    cmdwhole_ = cmdtext_(_r1) > *(expblock_(_r1) > -cmdtext_(_r1));
     cmd_ = cmdwhole_(_a)[_val = phoenix::bind(&Cmd::bytecode, _a)];
   }
 

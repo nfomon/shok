@@ -40,13 +40,13 @@ void NewInit::attach_exp(const Expression& exp) {
   if (!m_type.get()) {
     m_type.reset(exp.type().duplicate().release());
   }
-  m_bytecode = " " + m_exp->bytecode();
+  m_bytecode = m_exp->bytecode();
 }
 
 void NewInit::finalize() {
   if (m_type.get()) {
     if (!m_exp.get()) {
-      m_bytecode = " " + m_type->defaultValueBytecode();
+      m_bytecode = m_type->defaultValueBytecode();
     }
   } else {
     const Type* object = m_scope->findRoot("object");
@@ -55,14 +55,13 @@ void NewInit::finalize() {
     }
     m_type.reset(new BasicType(object->duplicate(), "object"));
   }
-  // This type dup might be unnecessary
   m_scope->insert(m_name, m_type->duplicate());
 }
 
 string NewInit::bytecode_asNew() const {
-  return "(new " + m_name + m_bytecode + ")";
+  return " (new " + m_name + m_bytecode + ")";
 }
 
 string NewInit::bytecode_asMember() const {
-  return "(member " + m_name + m_bytecode + ")";
+  return " (member " + m_name + m_bytecode + ")";
 }

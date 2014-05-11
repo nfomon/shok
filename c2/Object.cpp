@@ -7,9 +7,6 @@
 
 #include "util/Util.h"
 
-#include <boost/lexical_cast.hpp>
-using boost::lexical_cast;
-
 #include <string>
 #include <utility>
 using std::string;
@@ -26,10 +23,10 @@ void Object::attach_new(const NewInit& newInit) {
   m_type->addMember(newInit.name(), newInit.type().duplicate());
 }
 
-Scope& Object::scope() const {
-  return *dynamic_cast<Scope*>(m_scope.get());
+ObjectScope& Object::scope() const {
+  return *m_scope;
 }
 
 string Object::bytecode() const {
-  return "(object" + m_bytecode + ")";
+  return " (object" + m_bytecode + ")";
 }

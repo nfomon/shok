@@ -60,6 +60,8 @@ bool Compiler::execute() {
   Scope globalScope;
   // Stdlib objects
   globalScope.insert("object", auto_ptr<Type>(new RootType()));
+  globalScope.insert("@", auto_ptr<Type>(new BasicType(
+      globalScope.find("object")->duplicate(), "object")));
 
   ExpParser<forward_iterator_type> exp_;
 
@@ -85,5 +87,9 @@ bool Compiler::execute() {
   if (!r || fwd_begin != fwd_end) {
     return false;
   }
+
+  // Cleanup the global scope :)
+  emit(globalScope.bytecode());
+
   return r;
 }

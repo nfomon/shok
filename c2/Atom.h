@@ -16,23 +16,28 @@
 
 namespace compiler {
 
+class Function;
 class Object;
 class Variable;
 
 typedef boost::variant<
   Variable,
-  boost::recursive_wrapper<Object> > Atom;
+  boost::recursive_wrapper<Object>,
+  boost::recursive_wrapper<Function>
+> Atom;
 
 class Atom_bytecode : public boost::static_visitor<std::string> {
 public:
   std::string operator() (const Variable& var) const;
   std::string operator() (const Object& object) const;
+  std::string operator() (const Function& function) const;
 };
 
 class Atom_type : public boost::static_visitor<const Type&> {
 public:
   const Type& operator() (const Variable& var) const;
   const Type& operator() (const Object& object) const;
+  const Type& operator() (const Function& function) const;
 };
 
 }

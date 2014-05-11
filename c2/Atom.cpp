@@ -3,13 +3,11 @@
 
 #include "Atom.h"
 
+#include "Function.h"
 #include "Object.h"
 #include "Variable.h"
 
 #include "util/Util.h"
-
-#include <boost/lexical_cast.hpp>
-using boost::lexical_cast;
 
 #include <string>
 #include <utility>
@@ -18,11 +16,15 @@ using std::string;
 using namespace compiler;
 
 std::string Atom_bytecode::operator() (const Variable& var) const {
-  return var.fullname();
+  return " " + var.fullname();
 }
 
 std::string Atom_bytecode::operator() (const Object& object) const {
   return object.bytecode();
+}
+
+std::string Atom_bytecode::operator() (const Function& function) const {
+  return function.bytecode();
 }
 
 const Type& Atom_type::operator() (const Variable& var) const {
@@ -31,4 +33,8 @@ const Type& Atom_type::operator() (const Variable& var) const {
 
 const Type& Atom_type::operator() (const Object& object) const {
   return object.type();
+}
+
+const Type& Atom_type::operator() (const Function& function) const {
+  return function.type();
 }

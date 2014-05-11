@@ -33,7 +33,7 @@ public:
   typedef int Depth;
 
   Scope(const Scope* parent = NULL);
-  virtual ~Scope();
+  virtual ~Scope() {}
 
   void reParent(const Scope& parent);
 
@@ -44,6 +44,7 @@ public:
   virtual const Type* find(const std::string& name) const;
   virtual const Type* findLocal(const std::string& name) const;
   const Type* findRoot(const std::string& name) const;
+  std::string bytecode() const;
 
 protected:
   Scope(const Scope&);

@@ -57,13 +57,13 @@ public:
 
     statement_ %= new_(_r1);
 
-    block_ %=
+    block_ =
       lit('{')[phoenix::bind(&Scope::reParent, _a, _r1)]
       > +(
-        (statement_(_a) > -lit(';'))
-        | block_(_a)
+        (statement_(_a)[_val += _1] > -lit(';'))
+        | block_(_a)[_val += _1]
       )
-      > lit('}');
+      > lit('}')[_val += phoenix::bind(&Scope::bytecode, _a)];
 
     code_ %=
       lit('{')
