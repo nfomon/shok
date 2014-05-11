@@ -27,6 +27,13 @@ ObjectScope& Object::scope() const {
   return *m_scope;
 }
 
+const Type& Object::type() const {
+  if (!m_type.get()) {
+    throw CompileError("Object " + bytecode() + " does not have a type");
+  }
+  return *m_type;
+}
+
 string Object::bytecode() const {
   return " (object" + m_bytecode + ")";
 }

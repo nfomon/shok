@@ -111,12 +111,8 @@ bool BasicType::isParentOf(const Type& child) const {
 
 /* ArgsType */
 
-ArgsType::ArgsType(const Type& froot, const boost::ptr_vector<Type>& args)
+ArgsType::ArgsType(const Type& froot)
   : m_froot(froot) {
-  for (boost::ptr_vector<Type>::const_iterator i = args.begin();
-       i != args.end(); ++i) {
-    m_args.push_back(i->duplicate());
-  }
 }
 
 void ArgsType::addMember(const string& name, auto_ptr<Type> type) {
@@ -124,11 +120,12 @@ void ArgsType::addMember(const string& name, auto_ptr<Type> type) {
 }
 
 const Type* ArgsType::findMember(const string& name) const {
+  // TODO check if it's one of our named args
   return m_froot.findMember(name);
 }
 
 auto_ptr<Type> ArgsType::duplicate() const {
-  return auto_ptr<Type>(new ArgsType(m_froot, m_args));
+  return auto_ptr<Type>(new ArgsType(m_froot));
 }
 
 std::string ArgsType::defaultValueBytecode() const {
@@ -160,6 +157,14 @@ bool ArgsType::isParentOf(const Type& child) const {
   }
 
   return false;
+}
+
+void ArgsType::addArg(const std::string& name, auto_ptr<Type> type) {
+  // TODO dropping the name on the floor, for now.
+  // TODO validate the arg; name collision?
+  // TODO once symbol_map is upgraded, these problems go away!  and we can just
+  // use addMember() instead of addArg().
+  m_args.push_back(type);
 }
 
 /* ReturnsType */

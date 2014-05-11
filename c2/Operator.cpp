@@ -71,6 +71,13 @@ std::string OperatorNode::bytecode() const {
   return m_bytecode;
 }
 
+boost::shared_ptr<Type> OperatorNode::type() const {
+  if (!m_type.get()) {
+    throw CompileError("OperatorNode '" + m_bytecode + "' does not have a type");
+  }
+  return m_type;
+}
+
 void PrefixOperatorNode::addChild(OperatorNode* child) {
   if (m_child.get()) {
     throw CompileError("Cannot add another child to PrefixOperator " + m_op.name());

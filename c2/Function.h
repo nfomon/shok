@@ -36,12 +36,12 @@ class Scope;
 class Function {
 public:
   void init(const Scope& parentScope);
+  void init_args();
   void attach_arg(const std::string& name, const Expression& exp);
-  void finalize_args();
   void attach_returns(const Expression& returns);
   void attach_body(const std::string& code);
   FunctionScope& scope() const;
-  const Type& type() const { return *m_type; }
+  const Type& type() const;
   std::string bytecode() const;
 
 private:
@@ -52,7 +52,6 @@ private:
   const Type* m_froot;
   boost::shared_ptr<Type> m_type;
   std::string m_bytecode;
-  arg_vec m_args;
 };
 
 template <typename Iterator>
@@ -88,9 +87,9 @@ public:
     );
 
     args_ %= (
-      lit("(args")
+      lit("(args")[phoenix::bind(&Function::init_args, _r1)]
       > +arg_(_r1)
-      > lit(')')[phoenix::bind(&Function::finalize_args, _r1)]
+      > lit(')')
     );
 
     returns_ %= (

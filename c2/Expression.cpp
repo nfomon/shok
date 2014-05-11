@@ -85,6 +85,9 @@ void Expression::finalize() {
     tmp_node.reset(top_op.release());
   }
   m_type = tmp_node->type();
+  if (!m_type) {
+    throw CompileError("Failed to determine type of Expression");
+  }
   m_bytecode = tmp_node->bytecode();
 }
 

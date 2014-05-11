@@ -43,6 +43,13 @@ void Variable::attach_member(const std::string& member) {
   m_members.push_back(member);
 }
 
+const Type& Variable::type() const {
+  if (!m_type) {
+    throw CompileError("Variable " + fullname() + " has no type");
+  }
+  return *m_type;
+}
+
 std::string Variable::fullname() const {
   std::string name = m_name;
   for (member_iter i = m_members.begin(); i != m_members.end(); ++i) {

@@ -69,12 +69,14 @@ private:
 // Builtin type representing a function that takes certain arguments
 class ArgsType : public Type {
 public:
-  ArgsType(const Type& froot, const boost::ptr_vector<Type>& args);
+  ArgsType(const Type& froot);
   std::auto_ptr<Type> duplicate() const;
   void addMember(const std::string& name, std::auto_ptr<Type> type);
   const Type* findMember(const std::string& name) const;
   std::string defaultValueBytecode() const;
   bool isParentOf(const Type& child) const;
+
+  void addArg(const std::string& name, std::auto_ptr<Type> type);
 
 private:
   const Type& m_froot;    // @

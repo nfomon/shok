@@ -23,16 +23,19 @@ void Function::init(const Scope& scope) {
   }
 }
 
-void Function::attach_arg(const std::string& name, const Expression& exp) {
-  // TODO dropping the name on the floor, for now.  Where does it belong?
-  // TODO validate the arg (e.g. name collision?)
-  m_args.push_back(exp.type().duplicate());
+void Function::init_args() {
+  if (m_type) {
+    throw CompileError("Cannot init args of Function that already has a type");
+  }
+  m_type.reset(new ArgsType(*m_froot));
 }
 
-void Function::finalize_args() {
-  if (m_args.size() > 0) {
-    m_type.reset(new ArgsType(*m_froot, m_args));
+void Function::attach_arg(const std::string& name, const Expression& exp) {
+  ArgsType* argsType = dynamic_cast<ArgsType*>(m_type.get());
+  if (!argsType) {
+    throw CompileError("Cannot attach arg " + name + " to Function with uninitialized args");
   }
+  argsType->addArg(name, exp.type().duplicate());
 }
 
 void Function::attach_returns(const Expression& returns) {
@@ -50,6 +53,13 @@ void Function::attach_body(const string& code) {
 
 FunctionScope& Function::scope() const {
   return *m_scope;
+}
+
+const Type& Function::type() const {
+  if (!m_type.get()) {
+    throw CompileError("Function " + bytecode() + " does not have a type");
+  }
+  return *m_type;
 }
 
 string Function::bytecode() const {

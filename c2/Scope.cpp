@@ -67,13 +67,13 @@ FunctionScope::FunctionScope(const Scope& parent, const Function& function)
 }
 
 const Type* FunctionScope::find(const string& name) const {
-  // TODO
-  return NULL;
+  const Type* t = m_function.type().findMember(name);
+  if (t) return t;
+  return m_parent->find(name);
 }
 
 const Type* FunctionScope::findLocal(const string& name) const {
-  // TODO
-  return NULL;
+  return m_function.type().findMember(name);
 }
 
 /* ObjectScope */

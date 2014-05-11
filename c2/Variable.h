@@ -34,7 +34,7 @@ public:
   void attach_name(const std::string& name);
   void attach_member(const std::string& member);
 
-  const Type& type() const { return *m_type; }
+  const Type& type() const;
   std::string fullname() const;
 
 private:

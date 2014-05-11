@@ -4,7 +4,9 @@
 #ifndef _SymbolTable_h_
 #define _SymbolTable_h_
 
-/* SymbolTable */
+/* A SymbolTable is a table of named Types.  The table owns the Types.
+ * Name-lookups need to be fast but we also need to keep an ordering by
+ * lifetime. */
 
 #include "CompileError.h"
 
