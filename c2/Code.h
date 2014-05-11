@@ -6,6 +6,7 @@
 
 /* Code block */
 
+#include "Common.h"
 #include "NewInit.h"
 #include "Scope.h"
 
@@ -25,15 +26,25 @@ namespace qi = spirit::qi;
 
 namespace compiler {
 
+/* The CodeParser is provided a scope for the block.  This is so that the
+ * Compiler can own the global scope (code-blocks just "swap" into it), and
+ * also so that Functions can own their scopes.  Those are the places a
+ * CodeParser is used.  Nested code-blocks are handled by the CodeParser
+ * itself, so those scopes are managed here within the CodeParser.
+ */
+
 template <typename Iterator>
-struct CodeParser : qi::grammar<Iterator, std::string(), ascii::space_type> {
+struct CodeParser : qi::grammar<Iterator, std::string(Scope&), ascii::space_type> {
 public:
-  CodeParser(Scope& globalScope)
+  CodeParser(ExpParser<Iterator>& exp_)
     : CodeParser::base_type(code_, "code parser"),
-      m_globalScope(globalScope) {
+      newinit_(exp_) {
     using phoenix::ref;
     using qi::_1;
+    using qi::_a;
+    using qi::_r1;
     using qi::_val;
+    using qi::eps;
     using qi::lit;
 
     new_.name("new");
@@ -41,26 +52,34 @@ public:
     code_.name("code");
 
     new_ = lit("(new")
-      > +newinit_(ref(m_globalScope))[_val += phoenix::bind(&NewInit::bytecode_asNew, _1)]
+      > +newinit_(_r1)[_val += phoenix::bind(&NewInit::bytecode_asNew, _1)]
       > lit(")");
 
-    // A code block would construct a new block that gets passed to *its* child
-    // statements btw
+    statement_ %= new_(_r1);
 
-    statement_ %= new_;
+    block_ %=
+      lit('{')[phoenix::bind(&Scope::reParent, _a, _r1)]
+      > +(
+        (statement_(_a) > -lit(';'))
+        | block_(_a)
+      )
+      > lit('}');
+
     code_ %=
       lit('{')
-      > +(statement_ > -lit(';'))
+      > +(
+        (statement_(_r1) > -lit(';'))
+        | block_(_r1)
+      )
       > lit('}');
   }
 
 private:
-  Scope& m_globalScope;
-
   NewInitParser<Iterator> newinit_;
-  qi::rule<Iterator, std::string(), ascii::space_type> new_;
-  qi::rule<Iterator, std::string(), ascii::space_type> statement_;
-  qi::rule<Iterator, std::string(), ascii::space_type> code_;
+  qi::rule<Iterator, std::string(Scope&), ascii::space_type> new_;
+  qi::rule<Iterator, std::string(Scope&), ascii::space_type> statement_;
+  qi::rule<Iterator, std::string(Scope&), qi::locals<Scope>, ascii::space_type> block_;
+  qi::rule<Iterator, std::string(Scope&), ascii::space_type> code_;
 };
 
 }

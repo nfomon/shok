@@ -6,6 +6,8 @@
 #include "Cmd.h"
 #include "Code.h"
 #include "CompileError.h"
+#include "Expression.h"
+#include "NewInit.h"
 #include "Scope.h"
 
 #include "util/Util.h"
@@ -43,8 +45,8 @@ void Compiler::emit(const std::string& bytecode) {
 }
 
 bool Compiler::execute() {
+  using phoenix::ref;
   using qi::lit;
-  using qi::omit;
 
   // iterate over stream input
   typedef std::istreambuf_iterator<char> base_iterator_type;
@@ -59,15 +61,17 @@ bool Compiler::execute() {
   // Stdlib objects
   globalScope.insert("object", auto_ptr<Type>(new RootType()));
 
-  CmdParser<forward_iterator_type> cmd_(globalScope);
-  CodeParser<forward_iterator_type> code_(globalScope);
+  ExpParser<forward_iterator_type> exp_;
+
+  CodeParser<forward_iterator_type> code_(exp_);
+  CmdParser<forward_iterator_type> cmd_(exp_, globalScope);
 
   typedef qi::rule<forward_iterator_type, std::string(), ascii::space_type> StringRule;
   typedef qi::rule<forward_iterator_type, ascii::space_type> VoidRule;
 
   StringRule cmdline_ = (
     lit('[')
-    > (cmd_ | code_)
+    > (cmd_ | code_(ref(globalScope)))
     > lit(']')
   );
   VoidRule program_ = +(cmdline_[on_cmdline]);

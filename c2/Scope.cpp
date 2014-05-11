@@ -3,6 +3,9 @@
 
 #include "Scope.h"
 
+#include "Function.h"
+#include "Object.h"
+
 #include "util/Util.h"
 
 #include <memory>
@@ -17,8 +20,17 @@ using namespace compiler;
 
 Scope::Scope(const Scope* parent)
   : m_parent(parent),
-    m_root(parent ? parent->root() : *this),
+    m_root(parent ? &parent->root() : this),
     m_depth(parent ? (parent->depth() + 1) : 0) {
+}
+
+Scope::~Scope() {
+}
+
+void Scope::reParent(const Scope& newParent) {
+  m_parent = &newParent;
+  m_root = &newParent.root();
+  m_depth = newParent.depth() + 1;
 }
 
 void Scope::insert(const std::string& name, std::auto_ptr<Type> type) {
@@ -39,12 +51,29 @@ const Type* Scope::findLocal(const string& name) const {
 }
 
 const Type* Scope::findRoot(const string& name) const {
-  return m_root.find(name);
+  return m_root->find(name);
+}
+
+/* FunctionScope */
+
+FunctionScope::FunctionScope(const Scope& parent, const Function& function)
+  : Scope(&parent),
+    m_function(function) {
+}
+
+const Type* FunctionScope::find(const string& name) const {
+  // TODO
+  return NULL;
+}
+
+const Type* FunctionScope::findLocal(const string& name) const {
+  // TODO
+  return NULL;
 }
 
 /* ObjectScope */
 
-ObjectScope::ObjectScope(const Object& object, const Scope& parent)
+ObjectScope::ObjectScope(const Scope& parent, const Object& object)
   : Scope(&parent),
     m_object(object) {
 }

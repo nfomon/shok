@@ -3,6 +3,8 @@
 
 #include "NewInit.h"
 
+#include "Expression.h"
+
 #include "util/Util.h"
 
 #include <boost/lexical_cast.hpp>
@@ -29,8 +31,8 @@ void NewInit::attach_name(const string& name) {
   }
 }
 
-void NewInit::attach_type(const Type& type) {
-  m_type.reset(type.duplicate().release());
+void NewInit::attach_type(const Expression& exp) {
+  m_type.reset(exp.type().duplicate().release());
 }
 
 void NewInit::attach_exp(const Expression& exp) {

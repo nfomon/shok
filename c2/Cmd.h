@@ -6,7 +6,7 @@
 
 /* A command-line with an actual program to invoke (not a code block). */
 
-#include "Expression.h"
+#include "Common.h"
 #include "NewInit.h"
 #include "Scope.h"
 
@@ -25,6 +25,8 @@ namespace ascii = spirit::ascii;
 
 namespace compiler {
 
+class Expression;
+
 class Cmd {
 public:
   void attach_text(const std::string& text);
@@ -39,10 +41,11 @@ private:
 template <typename Iterator>
 struct CmdParser : qi::grammar<Iterator, std::string(), qi::locals<Cmd>, ascii::space_type> {
 public:
-  CmdParser(Scope& globalScope)
+  CmdParser(ExpParser<Iterator>& exp_,
+            Scope& globalScope)
     : CmdParser::base_type(cmd_, "command parser"),
       m_globalScope(globalScope),
-      exp_(newinit_) {
+      exp_(exp_) {
     using qi::_1;
     using qi::_a;
     using qi::_r1;
@@ -53,12 +56,9 @@ public:
     using qi::omit;
     using phoenix::ref;
 
-    // Write expression bytecode before the cmd.
-    // The cmd uses "{}" as placeholders for the expression's computed result.
-
     expblock_ %= (
       lit('{')
-      > exp_(ref(m_globalScope))[phoenix::bind(&Cmd::attach_exp, _r1, _1)]
+      > exp_(ref(m_globalScope), std::string("exp"))[phoenix::bind(&Cmd::attach_exp, _r1, _1)]
       > lit('}')
     );
 
@@ -70,10 +70,8 @@ public:
 
 private:
   Scope& m_globalScope;
-  // This must be provided to exp_ to break a circular-dependency
-  NewInitParser<Iterator> newinit_;
+  ExpParser<Iterator>& exp_;
 
-  ExpParser<Iterator> exp_;
   qi::rule<Iterator, void(Cmd&), ascii::space_type> expblock_;
   qi::rule<Iterator, std::string()> cmdchars_;
   qi::rule<Iterator, void(Cmd&)> cmdtext_;

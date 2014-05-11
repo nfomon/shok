@@ -6,8 +6,7 @@
 
 /* NewInit */
 
-#include "Expression.h"
-
+#include "Common.h"
 #include "Scope.h"
 #include "Type.h"
 
@@ -29,12 +28,15 @@ namespace qi = spirit::qi;
 
 namespace compiler {
 
+class Expression;
+class Type;
+
 class NewInit {
 public:
   NewInit();
   void init(Scope& scope);
   void attach_name(const std::string& name);
-  void attach_type(const Type& type);
+  void attach_type(const Expression& exp);
   void attach_exp(const Expression& exp);
   void finalize();
   std::string name() const { return m_name; }
@@ -53,10 +55,9 @@ private:
 template <typename Iterator>
 struct NewInitParser : qi::grammar<Iterator, NewInit(Scope&), ascii::space_type> {
 public:
-  NewInitParser()
+  NewInitParser(ExpParser<Iterator>& exp_)
     : NewInitParser::base_type(newinit_, "newinit parser"),
-      typespec_(*this, true),
-      exp_(*this) {
+      exp_(exp_) {
     using phoenix::ref;
     using qi::_1;
     using qi::_r1;
@@ -71,15 +72,15 @@ public:
     newinit_ = (
       lit("(init")[phoenix::bind(&NewInit::init, _val, _r1)]
       > identifier_[phoenix::bind(&NewInit::attach_name, _val, _1)]
-      > -typespec_(_r1)[phoenix::bind(&NewInit::attach_type, _val, phoenix::bind(&Expression::type, _1))]
-      > -exp_(_r1)[phoenix::bind(&NewInit::attach_exp, _val, _1)]
+      > -exp_(_r1, std::string("type"))[phoenix::bind(&NewInit::attach_type, _val, _1)]
+      > -exp_(_r1, std::string("exp"))[phoenix::bind(&NewInit::attach_exp, _val, _1)]
       > lit(")")[phoenix::bind(&NewInit::finalize, _val)]
     );
   }
 
 private:
-  ExpParser<Iterator> typespec_;
-  ExpParser<Iterator> exp_;
+  ExpParser<Iterator>& exp_;
+
   qi::rule<Iterator, std::string(), ascii::space_type> identifier_;
   qi::rule<Iterator, NewInit(Scope&), ascii::space_type> newinit_;
 };

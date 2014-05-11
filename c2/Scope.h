@@ -14,7 +14,6 @@
  */
 
 #include "CompileError.h"
-#include "Object.h"
 #include "SymbolTable.h"
 #include "Type.h"
 
@@ -26,6 +25,7 @@
 
 namespace compiler {
 
+class Function;
 class Object;
 
 class Scope : public boost::noncopyable {
@@ -33,10 +33,12 @@ public:
   typedef int Depth;
 
   Scope(const Scope* parent = NULL);
-  virtual ~Scope() {}
+  virtual ~Scope();
+
+  void reParent(const Scope& parent);
 
   Depth depth() const { return m_depth; }
-  const Scope& root() const { return m_root; }
+  const Scope& root() const { return *m_root; }
 
   void insert(const std::string& name, std::auto_ptr<Type> type);
   virtual const Type* find(const std::string& name) const;
@@ -47,28 +49,35 @@ protected:
   Scope(const Scope&);
 
   const Scope* m_parent;
-  const Scope& m_root;
+  const Scope* m_root;
   Depth m_depth;
   symbol_map m_locals;
+};
+
+/* FunctionScope: member lookups check the function's scope before deferring to
+ * the parent scope. */
+class FunctionScope : public Scope {
+public:
+  FunctionScope(const Scope& parent, const Function& function);
+
+  virtual const Type* find(const std::string& name) const;
+  virtual const Type* findLocal(const std::string& name) const;
+
+protected:
+  const Function& m_function;
 };
 
 /* ObjectScope: member lookups check the Object's type before deferring to the
  * parent scope. */
 class ObjectScope : public Scope {
 public:
-  ObjectScope(const Object& object, const Scope& parent);
+  ObjectScope(const Scope& parent, const Object& object);
 
   virtual const Type* find(const std::string& name) const;
   virtual const Type* findLocal(const std::string& name) const;
 
 protected:
   const Object& m_object;
-};
-
-class FunctionScope : public Scope {
-public:
-protected:
-  //Function* m_function;
 };
 
 }

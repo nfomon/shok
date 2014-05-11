@@ -6,6 +6,8 @@
 
 /* Object literals */
 
+#include "Common.h"
+#include "NewInit.h"
 #include "Scope.h"
 #include "Type.h"
 
@@ -46,15 +48,12 @@ private:
 };
 
 template <typename Iterator>
-struct NewInitParser;
-
-template <typename Iterator>
 struct ObjectParser
-  : qi::grammar<Iterator, Object(Scope&), ascii::space_type> {
+  : qi::grammar<Iterator, Object(const Scope&), ascii::space_type> {
 public:
-  ObjectParser(NewInitParser<Iterator>& newinit_)
+  ObjectParser(ExpParser<Iterator>& exp_)
     : ObjectParser::base_type(object_, "object parser"),
-      newinit_(newinit_) {
+      newinit_(exp_) {
     using phoenix::ref;
     using qi::_val;
     using qi::_1;
@@ -63,6 +62,7 @@ public:
     using qi::alnum;
     using qi::lit;
 
+    newinit_.name("newinit");
     object_.name("object");
 
     object_ = (
@@ -80,8 +80,8 @@ public:
   }
 
 private:
-  NewInitParser<Iterator>& newinit_;
-  qi::rule<Iterator, Object(Scope&), ascii::space_type> object_;
+  NewInitParser<Iterator> newinit_;
+  qi::rule<Iterator, Object(const Scope&), ascii::space_type> object_;
 };
 
 }

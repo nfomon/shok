@@ -17,7 +17,7 @@ using std::string;
 using namespace compiler;
 
 void Object::init(const Scope& scope) {
-  m_scope.reset(new ObjectScope(*this, scope));
+  m_scope.reset(new ObjectScope(scope, *this));
   m_type.reset(new BasicType(m_scope->findRoot("object")->duplicate(), "object"));
 }
 

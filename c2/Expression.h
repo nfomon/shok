@@ -7,6 +7,7 @@
 /* Expression */
 
 #include "Atom.h"
+#include "Function.h"
 #include "Object.h"
 #include "Operator.h"
 #include "Scope.h"
@@ -53,16 +54,14 @@ private:
   std::string m_bytecode;
 };
 
+/* Second qi inherited attribute (std::string): should be "type" to match a
+ * type specifier, otherwise "exp" to match a plain expression. */
 template <typename Iterator>
-struct NewInitParser;
-
-// Requires a NewInitParser to resolve circular dependency
-template <typename Iterator>
-struct ExpParser : qi::grammar<Iterator, Expression(Scope&), ascii::space_type> {
+struct ExpParser : qi::grammar<Iterator, Expression(Scope&, std::string), ascii::space_type> {
 public:
-  ExpParser(NewInitParser<Iterator>& newinit_, bool isTypeSpec = false)
-    : ExpParser::base_type(exp_, std::string(isTypeSpec ? "typespec" : "expression") + " parser"),
-      object_(newinit_) {
+  ExpParser()
+    : ExpParser::base_type(exp_, "expression parser"),
+      object_(*this) {
     using ascii::string;
     using phoenix::ref;
     using qi::_1;
@@ -96,7 +95,8 @@ public:
     )[phoenix::bind(&Expression::attach_binop, _r1, _1)];
 
     exp_ = (
-      lit("(" + std::string(isTypeSpec ? "type" : "exp"))[phoenix::bind(&Expression::init, _val, _r1)]
+      lit("(")
+      > ascii::string(_r2)[phoenix::bind(&Expression::init, _val, _r1)]
       > -preop_(_val)
       > atom_(_r1, _val)
       > *(binop_(_val) > -preop_(_val) > atom_(_r1, _val))
@@ -110,7 +110,7 @@ private:
   qi::rule<Iterator, void(Scope&, Expression&), ascii::space_type> atom_;
   qi::rule<Iterator, void(Expression&), ascii::space_type> preop_;
   qi::rule<Iterator, void(Expression&), ascii::space_type> binop_;
-  qi::rule<Iterator, Expression(Scope&), ascii::space_type> exp_;
+  qi::rule<Iterator, Expression(Scope&, std::string), ascii::space_type> exp_;
 };
 
 }
