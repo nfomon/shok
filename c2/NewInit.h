@@ -7,6 +7,7 @@
 /* NewInit */
 
 #include "Common.h"
+#include "Expression.h"
 #include "Scope.h"
 #include "Type.h"
 

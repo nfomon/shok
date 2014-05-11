@@ -7,7 +7,6 @@
 /* Object literals */
 
 #include "Common.h"
-#include "NewInit.h"
 #include "Scope.h"
 #include "Type.h"
 
@@ -46,6 +45,8 @@ private:
   boost::shared_ptr<Type> m_type;
   std::string m_bytecode;
 };
+
+template <typename Iterator> struct NewInitParser;
 
 template <typename Iterator>
 struct ObjectParser

@@ -6,8 +6,7 @@
 #include "Cmd.h"
 #include "Code.h"
 #include "CompileError.h"
-#include "Expression.h"
-#include "NewInit.h"
+#include "ExpParser.h"
 #include "Scope.h"
 
 #include "util/Util.h"

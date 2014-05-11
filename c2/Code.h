@@ -7,8 +7,10 @@
 /* Code block */
 
 #include "Common.h"
+#include "Expression.h"
 #include "NewInit.h"
 #include "Scope.h"
+#include "Variable.h"
 
 #include <boost/bind.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
@@ -38,6 +40,7 @@ struct CodeParser : qi::grammar<Iterator, std::string(Scope&), ascii::space_type
 public:
   CodeParser(ExpParser<Iterator>& exp_)
     : CodeParser::base_type(code_, "code parser"),
+      exp_(exp_),
       newinit_(exp_) {
     using phoenix::ref;
     using qi::_1;
@@ -55,7 +58,14 @@ public:
       > +newinit_(_r1)[_val += phoenix::bind(&NewInit::bytecode_asNew, _1)]
       > lit(")");
 
-    statement_ %= new_(_r1);
+    call_ = lit("(call")[_val = "(call "]
+      > variable_(_r1)[_val += phoenix::bind(&Variable::fullname, _1)]
+      > *exp_(_r1, std::string("exp"))[_val += phoenix::bind(&Expression::bytecode, _1)]
+      > lit(")")[_val += ")"];
+
+    statement_ %=
+      new_(_r1)
+      | call_(_r1);
 
     block_ =
       lit('{')[phoenix::bind(&Scope::reParent, _a, _r1)]
@@ -75,8 +85,12 @@ public:
   }
 
 private:
+  ExpParser<Iterator>& exp_;
+
   NewInitParser<Iterator> newinit_;
+  VariableParser<Iterator> variable_;
   qi::rule<Iterator, std::string(Scope&), ascii::space_type> new_;
+  qi::rule<Iterator, std::string(Scope&), ascii::space_type> call_;
   qi::rule<Iterator, std::string(Scope&), ascii::space_type> statement_;
   qi::rule<Iterator, std::string(Scope&), qi::locals<Scope>, ascii::space_type> block_;
   qi::rule<Iterator, std::string(Scope&), ascii::space_type> code_;
