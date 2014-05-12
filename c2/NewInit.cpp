@@ -49,6 +49,9 @@ void NewInit::finalize() {
       m_bytecode = m_type->defaultValueBytecode();
     }
   } else {
+    if (!m_exp.get()) {
+      m_bytecode = "object";
+    }
     const Type* object = m_scope->findRoot("object");
     if (!object) {
       throw CompileError("NewInit finalize failed to find the root object type");
@@ -59,9 +62,9 @@ void NewInit::finalize() {
 }
 
 string NewInit::bytecode_asNew() const {
-  return " (new " + m_name + m_bytecode + ")";
+  return " (new " + m_name + " " + m_bytecode + ")";
 }
 
 string NewInit::bytecode_asMember() const {
-  return " (member " + m_name + m_bytecode + ")";
+  return " (member " + m_name + " " + m_bytecode + ")";
 }

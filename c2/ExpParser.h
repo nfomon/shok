@@ -66,7 +66,7 @@ public:
       string("PLUS") | string("MINUS")
     )[phoenix::bind(&Expression::attach_preop, _r1, _1)];
     binop_ %= (
-      string("PLUS") | string("MINUS") | string("MULT") | string("DIV")
+      string("PLUS") | string("MINUS") | string("STAR") | string("SLASH")
     )[phoenix::bind(&Expression::attach_binop, _r1, _1)];
 
     exp_ = (

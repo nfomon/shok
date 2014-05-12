@@ -27,5 +27,5 @@ void Cmd::attach_exp(const Expression& exp) {
 }
 
 std::string Cmd::bytecode() const {
-  return m_expcode + "CMD:" + m_cmdtext;
+  return m_expcode + "CMD:[" + m_cmdtext + "]";
 }
