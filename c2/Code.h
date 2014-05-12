@@ -28,6 +28,18 @@ namespace qi = spirit::qi;
 
 namespace compiler {
 
+class Call {
+public:
+  void init(const Scope& scope);
+  void attach_source(const Variable& var);
+  void attach_arg(const Expression& arg);
+  std::string bytecode() const;
+
+private:
+  const Scope* m_scope;
+  std::string m_bytecode;
+};
+
 /* The CodeParser is provided a scope for the block.  This is so that the
  * Compiler can own the global scope (code-blocks just "swap" into it), and
  * also so that Functions can own their scopes.  Those are the places a
@@ -58,10 +70,10 @@ public:
       > +newinit_(_r1)[_val += phoenix::bind(&NewInit::bytecode_asNew, _1)]
       > lit(")");
 
-    call_ = lit("(call")[_val = "(call "]
-      > variable_(_r1)[_val += phoenix::bind(&Variable::fullname, _1)]
-      > *exp_(_r1, std::string("exp"))[_val += phoenix::bind(&Expression::bytecode, _1)]
-      > lit(")")[_val += ")"];
+    call_ = lit("(call")[phoenix::bind(&Call::init, _a, _r1)]
+      > variable_(_r1)[phoenix::bind(&Call::attach_source, _a, _1)]
+      > *exp_(_r1, std::string("exp"))[phoenix::bind(&Call::attach_arg, _a, _1)]
+      > lit(")")[_val = phoenix::bind(&Call::bytecode, _a)];
 
     statement_ %=
       new_(_r1)
@@ -90,7 +102,7 @@ private:
   NewInitParser<Iterator> newinit_;
   VariableParser<Iterator> variable_;
   qi::rule<Iterator, std::string(Scope&), ascii::space_type> new_;
-  qi::rule<Iterator, std::string(Scope&), ascii::space_type> call_;
+  qi::rule<Iterator, std::string(Scope&), qi::locals<Call>, ascii::space_type> call_;
   qi::rule<Iterator, std::string(Scope&), ascii::space_type> statement_;
   qi::rule<Iterator, std::string(Scope&), qi::locals<Scope>, ascii::space_type> block_;
   qi::rule<Iterator, std::string(Scope&), ascii::space_type> code_;

@@ -7,9 +7,25 @@
 
 #include <string>
 #include <utility>
-#include <vector>
 using std::string;
-using std::vector;
 
 using namespace compiler;
 
+void Call::init(const Scope& scope) {
+  m_scope = &scope;
+  m_bytecode = "(call ";
+}
+
+void Call::attach_source(const Variable& var) {
+  // TODO validate that var is callable
+  m_bytecode += var.fullname();
+}
+
+void Call::attach_arg(const Expression& arg) {
+  // TODO validate that var's next arg accepts this arg's type
+  m_bytecode += arg.bytecode();
+}
+
+string Call::bytecode() const {
+  return m_bytecode + ")";
+}

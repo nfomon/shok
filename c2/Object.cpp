@@ -19,7 +19,7 @@ void Object::init(const Scope& scope) {
 }
 
 void Object::attach_new(const NewInit& newInit) {
-  m_bytecode += newInit.bytecode_asMember() + "\n";
+  m_bytecode += newInit.bytecode_asMember();
   m_type->addMember(newInit.name(), newInit.type().duplicate());
 }
 
