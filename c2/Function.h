@@ -67,7 +67,7 @@ public:
     using qi::_1;
     using qi::_a;
     using qi::_r1;
-    using qi::alnum;
+    using qi::char_;
     using qi::lit;
 
     body_.name("body");
@@ -77,7 +77,7 @@ public:
     returns_.name("returns");
     function_.name("function");
 
-    identifier_ %= lit("ID:'") > +(alnum | '_') > lit('\'');
+    identifier_ %= lit("ID:'") > +char_("0-9A-Za-z_") > lit('\'');
 
     arg_ %= (
       lit("(arg")

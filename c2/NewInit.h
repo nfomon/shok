@@ -63,13 +63,13 @@ public:
     using qi::_1;
     using qi::_r1;
     using qi::_val;
-    using qi::alnum;
+    using qi::char_;
     using qi::lit;
 
     identifier_.name("identifier");
     newinit_.name("newinit");
 
-    identifier_ %= lit("ID:'") > +(alnum | '_') > lit('\'');
+    identifier_ %= lit("ID:'") > +char_("0-9A-Za-z_") > lit('\'');
     newinit_ = (
       lit("(init")[phoenix::bind(&NewInit::init, _val, _r1)]
       > identifier_[phoenix::bind(&NewInit::attach_name, _val, _1)]

@@ -58,12 +58,12 @@ public:
     using qi::_1;
     using qi::_r1;
     using qi::_val;
-    using qi::alnum;
+    using qi::char_;
     using qi::lit;
 
     variable_.name("variable");
 
-    identifier_ %= lit("ID:'") > +(alnum | '_') > lit('\'');
+    identifier_ %= lit("ID:'") > +char_("0-9A-Za-z_") > lit('\'');
     variable_ = (
       lit("(var")[phoenix::bind(&Variable::init, _val, _r1)]
       > identifier_[phoenix::bind(&Variable::attach_name, _val, _1)]
