@@ -1,10 +1,10 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _New_h_
-#define _New_h_
+#ifndef _Del_h_
+#define _Del_h_
 
-/* A New instruction: defines a symbol (name, type, value) */
+/* Del instruction: delete an object */
 
 #include "Expression.h"
 #include "Object.h"
@@ -30,46 +30,38 @@ using std::endl;
 
 namespace vm {
 
-struct New {
-  std::string name;
-  Expression exp;
-};
-
-struct Exec_New {
+struct Exec_Del {
 public:
-  Exec_New(symbol_map& symbols)
+  Exec_Del(symbol_map& symbols)
     : m_symbols(symbols) {}
 
-  void operator() (const New& n, qi::unused_type, qi::unused_type) const;
+  void operator() (const std::string& name, qi::unused_type, qi::unused_type) const;
 
 private:
   symbol_map& m_symbols;
 };
 
 template <typename Iterator>
-struct NewParser : qi::grammar<Iterator, New(), ascii::space_type> {
+struct DelParser : qi::grammar<Iterator, std::string(), ascii::space_type> {
 public:
-  NewParser() : NewParser::base_type(new_, "new parser") {
+  DelParser() : DelParser::base_type(del_, "del parser") {
     using qi::char_;
     using qi::lexeme;
     using qi::lit;
-    using qi::graph;
 
-    identifier_ %= lexeme[ char_("A-Za-z_") > *char_("0-9A-Za-z_:") ];
-    new_ %=
-      lit("(new")
+    identifier_ %= lexeme[ char_("A-Za-z_@") > *char_("0-9A-Za-z_:") ];
+    del_ %=
+      lit("(del")
       > identifier_
-      > exp_
       > lit(')')
     ;
   }
 
 private:
-  ExpParser<Iterator> exp_;
-  qi::rule<Iterator, New(), ascii::space_type> new_;
+  qi::rule<Iterator, std::string(), ascii::space_type> del_;
   qi::rule<Iterator, std::string(), ascii::space_type> identifier_;
 };
 
 }
 
-#endif // _New_h_
+#endif // _Del_h_

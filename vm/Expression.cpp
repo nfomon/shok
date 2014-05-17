@@ -48,6 +48,12 @@ auto_ptr<Object> Exec_Exp::operator() (const MethodCall& methodCall) const {
 }
 
 auto_ptr<Object> Exec_Exp::operator() (const ObjectLiteral& object) const {
-  // TODO
-  return auto_ptr<Object>();
+  Exec_Exp exec_Exp(m_symbols);
+  auto_ptr<Object> o(new Object());
+  for (ObjectLiteral::member_iter i = object.members.begin();
+       i != object.members.end(); ++i) {
+    auto_ptr<Object> value = boost::apply_visitor(exec_Exp, i->second);
+    o->insert(i->first, value);
+  }
+  return o;
 }

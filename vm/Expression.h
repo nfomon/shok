@@ -15,6 +15,7 @@
 #include <boost/fusion/include/sequence.hpp>
 #include <boost/fusion/sequence.hpp>
 #include <boost/spirit/include/qi.hpp>
+#include <boost/fusion/include/std_pair.hpp>
 #include <boost/variant.hpp>
 namespace fusion = boost::fusion;
 namespace spirit = boost::spirit;
@@ -45,6 +46,8 @@ struct MethodCall {
   std::string method;
   args_vec args;
 };
+
+typedef std::pair<std::string,Expression> member_pair;
 
 struct ObjectLiteral {
   typedef std::pair<std::string,Expression> member_pair;
@@ -77,46 +80,30 @@ template <typename Iterator>
 struct ExpParser : qi::grammar<Iterator, Expression(), ascii::space_type> {
 public:
   ExpParser() : ExpParser::base_type(exp_, "expression parser") {
-    using qi::int_;
+    using qi::char_;
+    using qi::lexeme;
     using qi::lit;
     using qi::graph;
 
-    identifier_ %= qi::lexeme[ (qi::alpha | '_') > *(qi::alnum | '_' | ':') ];
+    identifier_ %= lexeme[ char_("A-Za-z_") > *char_("0-9A-Za-z_:") ];
+    methodcall_ = lit("(call") > exp_ > identifier_ > *exp_ > lit(')');
+    member_ = lit("(member") > identifier_ > identifier_ > lit(')');
+    object_ = lit("(object") > *member_ > lit(')');
+    //function_ = lit("(function") > +statement_ > lit(')');  // TODO
     exp_ %= (
       identifier_
-      | (
-        lit("(call")
-        > exp_
-        > identifier_
-        > *exp_
-        > lit(')')
-      )
-
-/*
-      | (
-        lit("(object")
-        > *(
-          lit("(member")
-          > identifier_
-          > exp_
-        )
-        > lit(')')
-      )
-*/
-
-/*
-      | (
-        lit("(function")
-        // > +statement_    // TODO
-        > lit(')')
-      )
-*/
+      | methodcall_
+      | object_
+      //| function_
     );
   }
 
 private:
-  qi::rule<Iterator, Expression(), ascii::space_type> exp_;
   qi::rule<Iterator, std::string(), ascii::space_type> identifier_;
+  qi::rule<Iterator, MethodCall(), ascii::space_type> methodcall_;
+  qi::rule<Iterator, ObjectLiteral::member_pair(), ascii::space_type> member_;
+  qi::rule<Iterator, ObjectLiteral(), ascii::space_type> object_;
+  qi::rule<Iterator, Expression(), ascii::space_type> exp_;
 };
 
 }

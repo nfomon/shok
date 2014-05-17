@@ -4,6 +4,7 @@
 #include "Executor.h"
 
 #include "Cmd.h"
+#include "Del.h"
 #include "Expression.h"
 #include "New.h"
 #include "StdLib.h"
@@ -18,6 +19,7 @@
 #include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
+#include <boost/fusion/include/std_pair.hpp>
 #include <boost/spirit/include/support_multi_pass.hpp>
 #include <boost/variant.hpp>
 
@@ -66,6 +68,11 @@ BOOST_FUSION_ADAPT_STRUCT(
   (std::vector<Expression>, args)
 )
 
+BOOST_FUSION_ADAPT_STRUCT(
+  ObjectLiteral,
+  (ObjectLiteral::member_vec, members)
+)
+
 bool Executor::execute() {
   // iterate over stream input
   typedef std::istreambuf_iterator<char> base_iterator_type;
@@ -78,13 +85,18 @@ bool Executor::execute() {
 
   CmdParser<forward_iterator_type> cmd_;
   NewParser<forward_iterator_type> new_;
+  DelParser<forward_iterator_type> del_;
   typedef qi::rule<forward_iterator_type, ascii::space_type> Rule;
 
   // Statement visitors
   Exec_New exec_New(m_symbols);
+  Exec_Del exec_Del(m_symbols);
   Exec_Cmd exec_Cmd(m_symbols);
 
-  Rule Statement_ = new_[exec_New];
+  Rule Statement_ =
+    new_[exec_New]
+    | del_[exec_Del]
+  ;
   Rule Bytecode_ = +(
     Statement_
     | cmd_[exec_Cmd]

@@ -18,9 +18,11 @@ class Object;
 
 typedef boost::ptr_map<std::string,Object> symbol_map;
 typedef symbol_map::const_iterator symbol_iter;
+typedef symbol_map::iterator symbol_mod_iter;
 
 class Object {
 public:
+  void insert(const std::string& name, std::auto_ptr<Object> value);
   void assign(const std::string& name, std::auto_ptr<Object> value);
 
 private:

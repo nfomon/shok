@@ -12,6 +12,14 @@ using std::string;
 
 using namespace vm;
 
+void Object::insert(const string& name, auto_ptr<Object> value) {
+  symbol_iter m = m_members.find(name);
+  if(m != m_members.end()) {
+    throw VMError("Cannot insert member " + name + "; already exists");
+  }
+  m_members.insert(name, value);  // TODO use iterator
+}
+
 void Object::assign(const string& name, auto_ptr<Object> value) {
   symbol_iter m = m_members.find(name);
   if(m_members.end() == m) {
