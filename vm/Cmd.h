@@ -12,6 +12,7 @@
 
 #include "util/Log.h"
 
+#include <boost/optional.hpp>
 #include <boost/utility.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
@@ -56,14 +57,13 @@ public:
     using qi::lit;
     using qi::no_skip;
 
-    cmd_ %=
-      *(lit("EXP:") > exp_)
-      > lit("CMD:[") > +no_skip[~char_("]")] > lit(']')
-    ;
+    runcmd_ %= lit("CMD:[") > +no_skip[~char_("]")] > lit(']');
+    cmd_ %= *(lit("EXP:") > exp_) >> runcmd_;
   }
 
 private:
   ExpParser<Iterator> exp_;
+  qi::rule<Iterator, std::string(), ascii::space_type> runcmd_;
   qi::rule<Iterator, Cmd(), ascii::space_type> cmd_;
 };
 

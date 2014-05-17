@@ -37,10 +37,8 @@ int main(int argc, char *argv[]) {
       log.setLevel(argv[1]);
     }
     Executor executor(log, cin);
-    if (executor.execute()) {
-      cout << "parsed!" << endl;
-    } else {
-      cout << "failed to parse!" << endl;
+    if (!executor.execute()) {
+      cout << "failed to execute program!" << endl;
     }
   } catch (const VMError& e) {
     log.error(string("Error executing bytecode: ") + e.what());

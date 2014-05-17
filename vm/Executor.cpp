@@ -86,16 +86,19 @@ bool Executor::execute() {
   CmdParser<forward_iterator_type> cmd_;
   NewParser<forward_iterator_type> new_;
   DelParser<forward_iterator_type> del_;
+  //CallParser<forward_iterator_type> call_;
   typedef qi::rule<forward_iterator_type, ascii::space_type> Rule;
 
   // Statement visitors
   Exec_New exec_New(m_symbols);
   Exec_Del exec_Del(m_symbols);
+  //Exec_Call exec_Call(m_symbols);
   Exec_Cmd exec_Cmd(m_symbols);
 
   Rule Statement_ =
     new_[exec_New]
     | del_[exec_Del]
+    //| call_[exec_Call]
   ;
   Rule Bytecode_ = +(
     Statement_

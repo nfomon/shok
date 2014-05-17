@@ -39,9 +39,7 @@ int main(int argc, char *argv[]) {
       log.setLevel(argv[1]);
     }
     Compiler compiler(cin);
-    if (compiler.execute()) {
-      cout << "compiled!" << endl;
-    } else {
+    if (!compiler.execute()) {
       cout << "failed to compile" << endl;
     }
   } catch (const CompileError& e) {

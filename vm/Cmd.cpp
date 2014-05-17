@@ -25,7 +25,7 @@ void Exec_Cmd::operator() (const Cmd& c, qi::unused_type, qi::unused_type) const
   Exec_Exp exec_Exp(m_symbols);
   for (vector<Expression>::const_iterator i = c.exps.begin();
        i != c.exps.end(); ++i) {
-    //auto_ptr<Object> exp = boost::apply_visitor(exec_Exp, c.exp);
+    auto_ptr<Object> exp = boost::apply_visitor(exec_Exp, *i);
     // The expression should have already provided us with the ->str.  So just
     // need to reach in to extract its actual string value.
   }
