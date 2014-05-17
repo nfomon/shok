@@ -6,7 +6,7 @@
 
 /* Execution stack frame */
 
-#include "SymbolTable.h"
+#include "Object.h"
 
 #include <memory>
 #include <string>

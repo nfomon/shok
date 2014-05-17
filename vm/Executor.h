@@ -7,7 +7,6 @@
 /* VM instruction execution dispatch */
 
 #include "Object.h"
-#include "SymbolTable.h"
 
 #include "util/Log.h"
 

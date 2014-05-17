@@ -1,10 +1,11 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _New_h_
-#define _New_h_
+#ifndef _Cmd_h_
+#define _Cmd_h_
 
-/* A New instruction: defines a symbol (name, type, value) */
+/* A program (and its arguments) to invoke, preceded by expressions that should
+ * be interpolated into the command. */
 
 #include "Expression.h"
 #include "Object.h"
@@ -30,45 +31,42 @@ using std::endl;
 
 namespace vm {
 
-struct New {
-  std::string name;
-  Expression exp;
+struct Cmd {
+  std::vector<Expression> exps;
+  std::string cmd;
 };
 
-struct Exec_New {
+struct Exec_Cmd {
 public:
-  Exec_New(symbol_map& symbols)
+  Exec_Cmd(symbol_map& symbols)
     : m_symbols(symbols) {}
 
-  void operator() (const New& n, qi::unused_type, qi::unused_type) const;
+  void operator() (const Cmd& n, qi::unused_type, qi::unused_type) const;
 
 private:
   symbol_map& m_symbols;
 };
 
 template <typename Iterator>
-struct NewParser : qi::grammar<Iterator, New(), ascii::space_type> {
+struct CmdParser : qi::grammar<Iterator, Cmd(), ascii::space_type> {
 public:
-  NewParser() : NewParser::base_type(new_, "new parser") {
+  CmdParser() : CmdParser::base_type(cmd_, "cmd parser") {
+    using qi::char_;
     using qi::int_;
     using qi::lit;
-    using qi::graph;
+    using qi::no_skip;
 
-    identifier_ %= qi::lexeme[ (qi::alpha | '_') >> *(qi::alnum | '_' | ':') ];
-    new_ %=
-      lit("(new")
-      > identifier_
-      > exp_
-      > lit(')')
+    cmd_ %=
+      *(lit("EXP:") > exp_)
+      > lit("CMD:[") > +no_skip[~char_("]")] > lit(']')
     ;
   }
 
 private:
   ExpParser<Iterator> exp_;
-  qi::rule<Iterator, New(), ascii::space_type> new_;
-  qi::rule<Iterator, std::string(), ascii::space_type> identifier_;
+  qi::rule<Iterator, Cmd(), ascii::space_type> cmd_;
 };
 
 }
 
-#endif // _New_h_
+#endif // _Cmd_h_

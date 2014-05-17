@@ -46,3 +46,8 @@ auto_ptr<Object> Exec_Exp::operator() (const MethodCall& methodCall) const {
   // 4. Execute the stack-frame (??)
   return auto_ptr<Object>(new Object());    // TODO
 }
+
+auto_ptr<Object> Exec_Exp::operator() (const ObjectLiteral& object) const {
+  // TODO
+  return auto_ptr<Object>();
+}

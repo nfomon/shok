@@ -3,9 +3,9 @@
 
 #include "Executor.h"
 
+#include "Cmd.h"
 #include "Expression.h"
 #include "New.h"
-#include "Object.h"
 #include "StdLib.h"
 #include "VMError.h"
 
@@ -47,12 +47,11 @@ Executor::Executor(Log& log, istream& input)
   StdLib::Initialize(m_symbols);
 }
 
-void Executor::exec_new(const New& n) {
-  cout << "New: name=" << n.name << endl;
-  if (m_symbols.find(n.name) != m_symbols.end()) {
-    throw VMError("Cannot insert symbol " + n.name + "; already exists");
-  }
-}
+BOOST_FUSION_ADAPT_STRUCT(
+  Cmd,
+  (std::vector<Expression>, exps)
+  (std::string, cmd)
+)
 
 BOOST_FUSION_ADAPT_STRUCT(
   New,
@@ -77,14 +76,19 @@ bool Executor::execute() {
   forward_iterator_type fwd_begin = spirit::make_default_multi_pass(in_begin);
   forward_iterator_type fwd_end;
 
+  CmdParser<forward_iterator_type> cmd_;
   NewParser<forward_iterator_type> new_;
   typedef qi::rule<forward_iterator_type, ascii::space_type> Rule;
 
   // Statement visitors
   Exec_New exec_New(m_symbols);
+  Exec_Cmd exec_Cmd(m_symbols);
 
   Rule Statement_ = new_[exec_New];
-  Rule Bytecode_ = +Statement_;
+  Rule Bytecode_ = +(
+    Statement_
+    | cmd_[exec_Cmd]
+  );
 
   bool r = qi::phrase_parse(
     fwd_begin, fwd_end,

@@ -6,7 +6,7 @@
 
 /* A runtime symbol table */
 
-#include "SymbolTable.h"
+#include "Object.h"
 
 #include <map>
 #include <string>

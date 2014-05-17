@@ -6,17 +6,22 @@
 
 /* Object */
 
-#include "SymbolTable.h"
+#include <boost/ptr_container/ptr_map.hpp>
+#include <boost/variant.hpp>
 
 #include <memory>
 #include <string>
 
 namespace vm {
 
+class Object;
+
+typedef boost::ptr_map<std::string,Object> symbol_map;
+typedef symbol_map::const_iterator symbol_iter;
+
 class Object {
 public:
-  Object();
-  Object(const Object&);
+  void assign(const std::string& name, std::auto_ptr<Object> value);
 
 private:
   symbol_map m_members;

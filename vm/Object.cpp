@@ -12,12 +12,10 @@ using std::string;
 
 using namespace vm;
 
-Object::Object() {
-}
-
-Object::Object(const Object& rhs) {
-  for (symbol_iter i = rhs.m_members.begin(); i != rhs.m_members.end(); ++i) {
-    auto_ptr<Object> member(new Object(*i->second));
-    m_members.insert(i->first, member);
+void Object::assign(const string& name, auto_ptr<Object> value) {
+  symbol_iter m = m_members.find(name);
+  if(m_members.end() == m) {
+    throw VMError("Cannot assign to member " + name + "; no such member found on object");
   }
+  m_members.insert(name, value);  // TODO use iterator
 }

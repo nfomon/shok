@@ -94,3 +94,14 @@ As for the locals, just refer to them by their local name.
 When we get to 'self', the compiler will know to create that as a special
 member of the methods, and give special names to the self.vars to allow for the
 lookups through self.  Or something like that.
+
+=====
+
+{new x = {A;B}}
+ (new x (object (member Aobject) (member Bobject)))
+ (del x) (del object) (del @)
+
+{new x = @(object)->object{new q}}
+ (new x (function (new qobject)))
+ (del x) (del object) (del @)
+
