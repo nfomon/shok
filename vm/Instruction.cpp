@@ -10,9 +10,13 @@
 using namespace vm;
 
 void Exec_Instruction::operator() (const New& n) const {
-  n.exec(m_symbols);
+  n.exec(m_context);
 }
 
 void Exec_Instruction::operator() (const Del& del) const {
-  del.exec(m_symbols);
+  del.exec(m_context);
+}
+
+void Exec_Instruction::operator() (const Call& call) const {
+  call.exec(m_context);
 }

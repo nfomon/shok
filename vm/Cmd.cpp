@@ -22,7 +22,7 @@ using namespace vm;
 
 void Exec_Cmd::operator() (const Cmd& c, qi::unused_type, qi::unused_type) const {
   cout << "RUN CMD:" << c.cmd << endl;
-  Exec_Exp exec_Exp(m_symbols);
+  Exec_Exp exec_Exp(m_context);
   for (vector<Expression>::const_iterator i = c.exps.begin();
        i != c.exps.end(); ++i) {
     auto_ptr<Object> exp = boost::apply_visitor(exec_Exp, *i);

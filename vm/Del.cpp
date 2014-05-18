@@ -14,11 +14,11 @@ using std::endl;
 
 using namespace vm;
 
-void Del::exec(symbol_map& symbols) const {
+void Del::exec(Context& context) const {
   cout << "Del: name=" << name << endl;
-  symbol_mod_iter s = symbols.find(name);
-  if (symbols.end() == s) {
-    throw VMError("No such symbol " + name + " to delete");
+  symbol_mod_iter s = context.locals().find(name);
+  if (context.end() == s) {
+    throw VMError("No such local symbol " + name + " to delete");
   }
-  symbols.erase(s);
+  context.locals().erase(s);
 }

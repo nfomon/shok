@@ -6,7 +6,7 @@
 
 /* A Expression instruction: defines a symbol (name, type, value) */
 
-#include "Object.h"
+#include "Context.h"
 #include "Object.h"
 #include "VMError.h"
 
@@ -68,16 +68,16 @@ struct FunctionLiteral {
 
 class Exec_Exp : public boost::static_visitor<std::auto_ptr<Object> > {
 public:
-  Exec_Exp(const symbol_map& symbols)
-    : m_symbols(symbols) {}
+  Exec_Exp(Context& context)
+    : m_context(context) {}
 
-  std::auto_ptr<Object> operator() (const std::string& var) const;
-  std::auto_ptr<Object> operator() (const MethodCall& methodCall) const;
-  std::auto_ptr<Object> operator() (const ObjectLiteral& object) const;
-  //std::auto_ptr<Object> operator() (const FunctionLiteral& function) const;
+  std::auto_ptr<Object> operator() (const std::string& var);
+  std::auto_ptr<Object> operator() (const MethodCall& methodCall);
+  std::auto_ptr<Object> operator() (const ObjectLiteral& object);
+  //std::auto_ptr<Object> operator() (const FunctionLiteral& function);
 
 private:
-  const symbol_map& m_symbols;
+  Context& m_context;
 };
 
 template <typename Iterator>

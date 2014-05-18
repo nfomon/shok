@@ -6,10 +6,10 @@
 
 /* Executable instructions */
 
-//#include "Call.h"
+#include "Call.h"
+#include "Context.h"
 #include "Del.h"
 #include "New.h"
-#include "Object.h"
 
 #include "util/Log.h"
 
@@ -29,24 +29,24 @@ namespace vm {
 
 typedef boost::variant<
   New,
-  Del
-  //Call
+  Del,
+  Call
 > Instruction;
 
 struct Exec_Instruction : public boost::static_visitor<> {
 public:
-  Exec_Instruction(symbol_map& symbols/* , callstack_vec& callstack*/)
-    : m_symbols(symbols)/* , m_callstack(callstack)*/ {}
+  Exec_Instruction(Context& context)
+    : m_context(context) {}
 
   void operator() (const Instruction& instruction, qi::unused_type, qi::unused_type) const {
     boost::apply_visitor(*this, instruction);
   }
   void operator() (const New& n) const;
   void operator() (const Del& del) const;
+  void operator() (const Call& call) const;
 
 private:
-  symbol_map& m_symbols;
-  //callstack_vec& m_callstack;
+  Context& m_context;
 };
 
 template <typename Iterator>
@@ -57,7 +57,7 @@ public:
     instruction_ %=
       new_
       | del_
-      //| call_
+      | call_
     ;
 
     //BOOST_SPIRIT_DEBUG_NODE(instruction_);
@@ -66,6 +66,7 @@ public:
 private:
   NewParser<Iterator> new_;
   DelParser<Iterator> del_;
+  CallParser<Iterator> call_;
   qi::rule<Iterator, Instruction(), ascii::space_type> instruction_;
 };
 

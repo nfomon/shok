@@ -43,7 +43,7 @@ using namespace vm;
 Executor::Executor(Log& log, istream& input)
   : m_log(log),
     m_input(input) {
-  StdLib::Initialize(m_symbols);
+  StdLib::Initialize(m_context.globals());
 }
 
 BOOST_FUSION_ADAPT_STRUCT(
@@ -94,8 +94,8 @@ bool Executor::execute() {
   typedef qi::rule<forward_iterator_type, ascii::space_type> Rule;
   CmdParser<forward_iterator_type> cmd_;
   InstructionParser<forward_iterator_type> instruction_;
-  Exec_Cmd exec_Cmd(m_symbols);
-  Exec_Instruction exec_Instruction(m_symbols);
+  Exec_Cmd exec_Cmd(m_context);
+  Exec_Instruction exec_Instruction(m_context);
 
   Rule bytecode_ = *(
     cmd_[exec_Cmd]

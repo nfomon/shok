@@ -22,19 +22,20 @@ using std::endl;
 
 using namespace vm;
 
-void Exec_Call::operator() (const Call& call, qi::unused_type, qi::unused_type) const {
+void Call::exec(Context& context) const {
   cout << "Call" << endl;
-  Exec_Exp exec_Exp(m_symbols);
-  auto_ptr<Object> function = boost::apply_visitor(exec_Exp, call.function);
-  boost::ptr_vector<Object> args;
-  for (vector<Expression>::const_iterator i = call.args.begin();
-       i != call.args.end(); ++i) {
-    args.push_back(boost::apply_visitor(exec_Exp, call.function));
+  Exec_Exp exec_Exp(context);
+  auto_ptr<Object> function_obj = boost::apply_visitor(exec_Exp, function);
+  boost::ptr_vector<Object> arg_objs;
+  for (vector<Expression>::const_iterator i = args.begin();
+       i != args.end(); ++i) {
+    arg_objs.push_back(boost::apply_visitor(exec_Exp, *i));
   }
   // Actually call the function
   // Lookup the signature that best matches our arguments
   // Create a stack frame for the call
-  //std::vector<StackFrame*> callstack; // ??
+  context.addFrame();
   // Give the frame our args
   // etc.
+  context.removeFrame();    // TODO hacky cleanup for now :)
 }

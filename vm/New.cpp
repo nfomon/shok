@@ -17,12 +17,12 @@ using std::endl;
 
 using namespace vm;
 
-void New::exec(symbol_map& symbols) const {
+void New::exec(Context& context) const {
   cout << "New: name=" << name << endl;
-  Exec_Exp exec_Exp(symbols);
+  Exec_Exp exec_Exp(context);
   auto_ptr<Object> value = boost::apply_visitor(exec_Exp, exp);
-  if (symbols.find(name) != symbols.end()) {
+  if (context.locals().find(name) != context.end()) {
     throw VMError("Cannot insert symbol " + name + "; already exists");
   }
-  symbols.insert(name, value);
+  context.locals().insert(name, value);
 }

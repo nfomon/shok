@@ -7,8 +7,8 @@
 /* A program (and its arguments) to invoke, preceded by expressions that should
  * be interpolated into the command. */
 
+#include "Context.h"
 #include "Expression.h"
-#include "Object.h"
 
 #include "util/Log.h"
 
@@ -39,13 +39,13 @@ struct Cmd {
 
 struct Exec_Cmd {
 public:
-  Exec_Cmd(symbol_map& symbols)
-    : m_symbols(symbols) {}
+  Exec_Cmd(Context& context)
+    : m_context(context) {}
 
   void operator() (const Cmd& n, qi::unused_type, qi::unused_type) const;
 
 private:
-  symbol_map& m_symbols;
+  Context& m_context;
 };
 
 template <typename Iterator>

@@ -6,8 +6,8 @@
 
 /* Del instruction: delete an object */
 
+#include "Context.h"
 #include "Expression.h"
-#include "Object.h"
 
 #include "util/Log.h"
 
@@ -25,8 +25,7 @@ namespace ascii = spirit::ascii;
 namespace vm {
 
 struct Del {
-public:
-  void exec(symbol_map& symbols) const;
+  void exec(Context& context) const;
   std::string name;
 };
 

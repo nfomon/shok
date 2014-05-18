@@ -6,8 +6,8 @@
 
 /* A "procedure" call, i.e. a function call that isn't a method call. */
 
+#include "Context.h"
 #include "Expression.h"
-#include "Object.h"
 
 #include "util/Log.h"
 
@@ -26,19 +26,9 @@ namespace ascii = spirit::ascii;
 namespace vm {
 
 struct Call {
+  void exec(Context& context) const;
   Expression function;
   std::vector<Expression> args;
-};
-
-struct Exec_Call {
-public:
-  Exec_Call(symbol_map& symbols)
-    : m_symbols(symbols) {}
-
-  void operator() (const Call& n, qi::unused_type, qi::unused_type) const;
-
-private:
-  symbol_map& m_symbols;
 };
 
 template <typename Iterator>

@@ -6,6 +6,7 @@
 
 /* VM instruction execution dispatch */
 
+#include "Context.h"
 #include "Object.h"
 
 #include "util/Log.h"
@@ -31,10 +32,7 @@ public:
 private:
   Log& m_log;
   std::istream& m_input;
-  symbol_map m_symbols;
-
-  // semantic actions
-  void exec_new(const New&);
+  Context m_context;
 };
 
 }

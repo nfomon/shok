@@ -6,8 +6,8 @@
 
 /* A New instruction: defines a symbol (name, type, value) */
 
+#include "Context.h"
 #include "Expression.h"
-#include "Object.h"
 
 #include "util/Log.h"
 
@@ -25,7 +25,7 @@ namespace ascii = spirit::ascii;
 namespace vm {
 
 struct New {
-  void exec(symbol_map& symbols) const;
+  void exec(Context& context) const;
   std::string name;
   Expression exp;
 };
