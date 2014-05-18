@@ -62,9 +62,9 @@ void NewInit::finalize() {
 }
 
 string NewInit::bytecode_asNew() const {
-  return " (new " + m_name + " " + m_bytecode + ")";
+  return " (new " + m_name + (m_scope->depth() > 0 ? ":"+lexical_cast<string>(m_scope->depth()) : "") + " " + m_bytecode + ")";
 }
 
 string NewInit::bytecode_asMember() const {
-  return " (member " + m_name + " " + m_bytecode + ")";
+  return " (member " + m_name + (m_scope->depth() > 0 ? ":"+lexical_cast<string>(m_scope->depth()) : "") + " " + m_bytecode + ")";
 }

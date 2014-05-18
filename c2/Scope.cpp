@@ -8,6 +8,9 @@
 
 #include "util/Util.h"
 
+#include <boost/lexical_cast.hpp>
+using boost::lexical_cast;
+
 #include <memory>
 #include <string>
 #include <utility>
@@ -54,7 +57,7 @@ const Type* Scope::findRoot(const string& name) const {
 string Scope::bytecode() const {
   string s;
   for (symbol_rev_iter i = m_locals.rbegin(); i != m_locals.rend(); ++i) {
-    s += " (del " + i->first + ")";
+    s += " (del " + i->first + (depth() > 0 ? ":"+boost::lexical_cast<string>(depth()) : "") + ")";
   }
   return s;
 }
@@ -64,6 +67,7 @@ string Scope::bytecode() const {
 FunctionScope::FunctionScope(const Scope& parent, const Function& function)
   : Scope(&parent),
     m_function(function) {
+  m_depth = 0;
 }
 
 const Type* FunctionScope::find(const string& name) const {
@@ -81,6 +85,7 @@ const Type* FunctionScope::findLocal(const string& name) const {
 ObjectScope::ObjectScope(const Scope& parent, const Object& object)
   : Scope(&parent),
     m_object(object) {
+  m_depth = 0;
 }
 
 const Type* ObjectScope::find(const string& name) const {
