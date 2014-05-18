@@ -43,7 +43,7 @@ struct CmdParser : qi::grammar<Iterator, std::string(), qi::locals<Cmd>, ascii::
 public:
   CmdParser(ExpParser<Iterator>& exp_,
             Scope& globalScope)
-    : CmdParser::base_type(cmd_, "command parser"),
+    : CmdParser::base_type(cmd_, "Cmd"),
       m_globalScope(globalScope),
       exp_(exp_) {
     using qi::_1;
@@ -66,6 +66,11 @@ public:
     cmdtext_ = cmdchars_[phoenix::bind(&Cmd::attach_text, _r1, _1)];
     cmdwhole_ = cmdtext_(_r1) > *(expblock_(_r1) > -cmdtext_(_r1));
     cmd_ = cmdwhole_(_a)[_val = phoenix::bind(&Cmd::bytecode, _a)];
+
+    //BOOST_SPIRIT_DEBUG_NODE(expblock_);
+    //BOOST_SPIRIT_DEBUG_NODE(cmdtext_);
+    //BOOST_SPIRIT_DEBUG_NODE(cmdwhole_);
+    //BOOST_SPIRIT_DEBUG_NODE(cmd_);
   }
 
 private:

@@ -53,7 +53,7 @@ struct ObjectParser
   : qi::grammar<Iterator, Object(const Scope&), ascii::space_type> {
 public:
   ObjectParser(ExpParser<Iterator>& exp_)
-    : ObjectParser::base_type(object_, "object parser"),
+    : ObjectParser::base_type(object_, "Object"),
       newinit_(exp_) {
     using phoenix::ref;
     using qi::_val;
@@ -62,9 +62,6 @@ public:
     using qi::_r1;
     using qi::alnum;
     using qi::lit;
-
-    newinit_.name("newinit");
-    object_.name("object");
 
     object_ = (
       lit("(object")[phoenix::bind(&Object::init, _val, _r1)]
@@ -78,6 +75,8 @@ public:
       )
       > lit(')')
     );
+
+    //BOOST_SPIRIT_DEBUG_NODE(object_);
   }
 
 private:

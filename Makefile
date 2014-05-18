@@ -47,9 +47,11 @@ shok_compiler: util/*.h util/*.cpp compiler/*.h compiler/*.cpp
 	$(CC) `llvm-config-3.4 --cxxflags` -fexceptions -frtti -Wno-long-long util/*.cpp compiler/*.cpp `llvm-config-3.4 --libs` `llvm-config-3.4 --ldflags` -o shok_compiler
 
 shok_c2: util/*.h util/*.cpp c2/*.h c2/*.cpp
+#	$(CC) -DBOOST_SPIRIT_DEBUG util/*.cpp c2/*.cpp -o shok_c2
 	$(CC) util/*.cpp c2/*.cpp -o shok_c2
 
 shok_vm: util/*.h util/*.cpp vm/*.h vm/*.cpp
+#	$(CC) -DBOOST_SPIRIT_DEBUG util/*.cpp vm/*.cpp -o shok_vm
 	$(CC) util/*.cpp vm/*.cpp -o shok_vm
 
 shok: util/Proc.h util/Util.h shell/shell.cpp

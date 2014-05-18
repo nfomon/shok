@@ -51,7 +51,7 @@ template <typename Iterator>
 struct CodeParser : qi::grammar<Iterator, std::string(Scope&), ascii::space_type> {
 public:
   CodeParser(ExpParser<Iterator>& exp_)
-    : CodeParser::base_type(code_, "code parser"),
+    : CodeParser::base_type(code_, "Code"),
       exp_(exp_),
       newinit_(exp_) {
     using phoenix::ref;
@@ -61,10 +61,6 @@ public:
     using qi::_val;
     using qi::eps;
     using qi::lit;
-
-    new_.name("new");
-    statement_.name("statement");
-    code_.name("code");
 
     new_ = lit("(new")
       > +newinit_(_r1)[_val += phoenix::bind(&NewInit::bytecode_asNew, _1)]
@@ -81,7 +77,7 @@ public:
 
     block_ =
       lit('{')[phoenix::bind(&Scope::reParent, _a, _r1)]
-      > +(
+      > *(
         (statement_(_a)[_val += _1] > -lit(';'))
         | block_(_a)[_val += _1]
       )
@@ -89,11 +85,17 @@ public:
 
     code_ %=
       lit('{')
-      > +(
+      > *(
         (statement_(_r1) > -lit(';'))
         | block_(_r1)
       )
       > lit('}');
+
+    //BOOST_SPIRIT_DEBUG_NODE(new_);
+    //BOOST_SPIRIT_DEBUG_NODE(call_);
+    //BOOST_SPIRIT_DEBUG_NODE(statement_);
+    //BOOST_SPIRIT_DEBUG_NODE(block_);
+    //BOOST_SPIRIT_DEBUG_NODE(code_);
   }
 
 private:

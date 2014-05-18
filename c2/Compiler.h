@@ -6,13 +6,9 @@
 
 /* shok compiler */
 
-//#include "AST.h"
-
 #include <boost/function.hpp>
 #include <boost/spirit/home/support/unused.hpp>
 #include <boost/spirit/include/qi.hpp>
-
-#define BOOST_SPIRIT_QI_DEBUG
 
 #include <istream>
 #include <map>

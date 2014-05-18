@@ -64,8 +64,8 @@ bool Compiler::execute() {
 
   ExpParser<forward_iterator_type> exp_;
 
-  CodeParser<forward_iterator_type> code_(exp_);
   CmdParser<forward_iterator_type> cmd_(exp_, globalScope);
+  CodeParser<forward_iterator_type> code_(exp_);
 
   typedef qi::rule<forward_iterator_type, std::string(), ascii::space_type> StringRule;
   typedef qi::rule<forward_iterator_type, ascii::space_type> VoidRule;
@@ -76,6 +76,9 @@ bool Compiler::execute() {
     > lit(']')
   );
   VoidRule program_ = +(cmdline_[on_cmdline]);
+
+  //BOOST_SPIRIT_DEBUG_NODE(cmdline_);
+  //BOOST_SPIRIT_DEBUG_NODE(program_);
 
   bool r = qi::phrase_parse(
     fwd_begin, fwd_end,

@@ -37,7 +37,7 @@ template <typename Iterator>
 struct ExpParser : qi::grammar<Iterator, Expression(const Scope&, std::string), ascii::space_type> {
 public:
   ExpParser()
-    : ExpParser::base_type(exp_, "expression parser"),
+    : ExpParser::base_type(exp_, "Expression"),
       object_(*this),
       function_(*this) {
     using ascii::string;
@@ -48,14 +48,6 @@ public:
     using qi::_r2;
     using qi::_val;
     using qi::lit;
-
-    variable_.name("variable");
-    object_.name("object");
-    function_.name("function");
-    atom_.name("atom");
-    preop_.name("prefix operator");
-    binop_.name("binary operator");
-    exp_.name("expression");
 
     atom_ = (
       variable_(_r1)
@@ -77,6 +69,11 @@ public:
       > *(binop_(_val) > -preop_(_val) > atom_(_r1, _val))
       > lit(")")[phoenix::bind(&Expression::finalize, _val)]
     );
+
+    //BOOST_SPIRIT_DEBUG_NODE(atom_);
+    //BOOST_SPIRIT_DEBUG_NODE(preop_);
+    //BOOST_SPIRIT_DEBUG_NODE(binop_);
+    //BOOST_SPIRIT_DEBUG_NODE(exp_);
   }
 
 private:

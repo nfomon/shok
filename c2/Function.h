@@ -59,7 +59,7 @@ struct FunctionParser
   : qi::grammar<Iterator, Function(const Scope&), ascii::space_type> {
 public:
   FunctionParser(ExpParser<Iterator>& exp_)
-    : FunctionParser::base_type(function_, "function parser"),
+    : FunctionParser::base_type(function_, "Function"),
       exp_(exp_),
       body_(exp_) {
     using phoenix::ref;
@@ -69,13 +69,6 @@ public:
     using qi::_r1;
     using qi::char_;
     using qi::lit;
-
-    body_.name("body");
-    identifier_.name("identifier");
-    arg_.name("arg");
-    args_.name("args");
-    returns_.name("returns");
-    function_.name("function");
 
     identifier_ %= lit("ID:'") > +char_("0-9A-Za-z_") > lit('\'');
 
@@ -105,6 +98,11 @@ public:
       > body_(phoenix::bind(&Function::scope, _val))[phoenix::bind(&Function::attach_body, _val, _1)]
       > lit(')')
     );
+
+    //BOOST_SPIRIT_DEBUG_NODE(arg_);
+    //BOOST_SPIRIT_DEBUG_NODE(args_);
+    //BOOST_SPIRIT_DEBUG_NODE(returns_);
+    //BOOST_SPIRIT_DEBUG_NODE(function_);
   }
 
 private:

@@ -57,7 +57,7 @@ template <typename Iterator>
 struct NewInitParser : qi::grammar<Iterator, NewInit(Scope&), ascii::space_type> {
 public:
   NewInitParser(ExpParser<Iterator>& exp_)
-    : NewInitParser::base_type(newinit_, "newinit parser"),
+    : NewInitParser::base_type(newinit_, "NewInit"),
       exp_(exp_) {
     using phoenix::ref;
     using qi::_1;
@@ -65,9 +65,6 @@ public:
     using qi::_val;
     using qi::char_;
     using qi::lit;
-
-    identifier_.name("identifier");
-    newinit_.name("newinit");
 
     identifier_ %= lit("ID:'") > +char_("0-9A-Za-z_") > lit('\'');
     newinit_ = (
@@ -77,6 +74,8 @@ public:
       > -exp_(_r1, std::string("exp"))[phoenix::bind(&NewInit::attach_exp, _val, _1)]
       > lit(")")[phoenix::bind(&NewInit::finalize, _val)]
     );
+
+    //BOOST_SPIRIT_DEBUG_NODE(newinit_);
   }
 
 private:

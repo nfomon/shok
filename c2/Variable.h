@@ -53,15 +53,13 @@ struct VariableParser
   : qi::grammar<Iterator, Variable(const Scope&), ascii::space_type> {
 public:
   VariableParser()
-    : VariableParser::base_type(variable_, "variable parser") {
+    : VariableParser::base_type(variable_, "Variable") {
     using phoenix::ref;
     using qi::_1;
     using qi::_r1;
     using qi::_val;
     using qi::char_;
     using qi::lit;
-
-    variable_.name("variable");
 
     identifier_ %= lit("ID:'") > +char_("0-9A-Za-z_") > lit('\'');
     variable_ = (
@@ -70,6 +68,8 @@ public:
       > *(identifier_[phoenix::bind(&Variable::attach_member, _val, _1)])
       > lit(')')
     );
+
+    //BOOST_SPIRIT_DEBUG_NODE(variable_);
   }
 
 private:
