@@ -1,0 +1,18 @@
+// Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
+// directory of this distribution and at http://shok.io/code/copyright.html
+
+#include "Instruction.h"
+
+#include "VMError.h"
+
+#include "util/Util.h"
+
+using namespace vm;
+
+void Exec_Instruction::operator() (const New& n) const {
+  n.exec(m_symbols);
+}
+
+void Exec_Instruction::operator() (const Del& del) const {
+  del.exec(m_symbols);
+}

@@ -7,9 +7,8 @@
 
 #include "util/Util.h"
 
-#include <string>
+#include <memory>
 using std::auto_ptr;
-using std::string;
 
 // debug
 #include <iostream>
@@ -18,12 +17,12 @@ using std::endl;
 
 using namespace vm;
 
-void Exec_New::operator() (const New& n, qi::unused_type, qi::unused_type) const {
-  cout << "New: name=" << n.name << endl;
-  Exec_Exp exec_Exp(m_symbols);
-  auto_ptr<Object> value = boost::apply_visitor(exec_Exp, n.exp);
-  if (m_symbols.find(n.name) != m_symbols.end()) {
-    throw VMError("Cannot insert symbol " + n.name + "; already exists");
+void New::exec(symbol_map& symbols) const {
+  cout << "New: name=" << name << endl;
+  Exec_Exp exec_Exp(symbols);
+  auto_ptr<Object> value = boost::apply_visitor(exec_Exp, exp);
+  if (symbols.find(name) != symbols.end()) {
+    throw VMError("Cannot insert symbol " + name + "; already exists");
   }
-  m_symbols.insert(n.name, value);
+  symbols.insert(name, value);
 }

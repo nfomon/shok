@@ -3,9 +3,11 @@
 
 #include "Executor.h"
 
+#include "Call.h"
 #include "Cmd.h"
 #include "Del.h"
 #include "Expression.h"
+#include "Instruction.h"
 #include "New.h"
 #include "StdLib.h"
 #include "VMError.h"
@@ -36,11 +38,6 @@ using std::istream;
 using std::string;
 using std::vector;
 
-// debug
-#include <iostream>
-using std::cout;
-using std::endl;
-
 using namespace vm;
 
 Executor::Executor(Log& log, istream& input)
@@ -59,6 +56,17 @@ BOOST_FUSION_ADAPT_STRUCT(
   New,
   (std::string, name)
   (Expression, exp)
+)
+
+BOOST_FUSION_ADAPT_STRUCT(
+  Del,
+  (std::string, name)
+)
+
+BOOST_FUSION_ADAPT_STRUCT(
+  Call,
+  (Expression, function)
+  (std::vector<Expression>, args)
 )
 
 BOOST_FUSION_ADAPT_STRUCT(
@@ -83,31 +91,22 @@ bool Executor::execute() {
   forward_iterator_type fwd_begin = spirit::make_default_multi_pass(in_begin);
   forward_iterator_type fwd_end;
 
-  CmdParser<forward_iterator_type> cmd_;
-  NewParser<forward_iterator_type> new_;
-  DelParser<forward_iterator_type> del_;
-  //CallParser<forward_iterator_type> call_;
   typedef qi::rule<forward_iterator_type, ascii::space_type> Rule;
-
-  // Statement visitors
-  Exec_New exec_New(m_symbols);
-  Exec_Del exec_Del(m_symbols);
-  //Exec_Call exec_Call(m_symbols);
+  CmdParser<forward_iterator_type> cmd_;
+  InstructionParser<forward_iterator_type> instruction_;
   Exec_Cmd exec_Cmd(m_symbols);
+  Exec_Instruction exec_Instruction(m_symbols);
 
-  Rule Statement_ =
-    new_[exec_New]
-    | del_[exec_Del]
-    //| call_[exec_Call]
-  ;
-  Rule Bytecode_ = +(
-    Statement_
-    | cmd_[exec_Cmd]
+  Rule bytecode_ = *(
+    cmd_[exec_Cmd]
+    | instruction_[exec_Instruction]
   );
+
+  //BOOST_SPIRIT_DEBUG_NODE(bytecode_);
 
   bool r = qi::phrase_parse(
     fwd_begin, fwd_end,
-    Bytecode_,
+    bytecode_,
     ascii::space
   );
 

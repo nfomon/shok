@@ -59,6 +59,10 @@ struct ObjectLiteral {
 
 /*
 struct FunctionLiteral {
+  typedef std::vector<Instruction> statement_vec;
+  typedef statement_vec::const_iterator statement_iter;
+
+  statement_vec body;
 };
 */
 
@@ -79,7 +83,7 @@ private:
 template <typename Iterator>
 struct ExpParser : qi::grammar<Iterator, Expression(), ascii::space_type> {
 public:
-  ExpParser() : ExpParser::base_type(exp_, "expression parser") {
+  ExpParser() : ExpParser::base_type(exp_, "Expression") {
     using qi::char_;
     using qi::lexeme;
     using qi::lit;
@@ -89,13 +93,18 @@ public:
     methodcall_ = lit("(call") > exp_ > identifier_ > *exp_ > lit(')');
     member_ = lit("(member") > identifier_ > identifier_ > lit(')');
     object_ = lit("(object") > *member_ > lit(')');
-    //function_ = lit("(function") > +statement_ > lit(')');  // TODO
+    //function_ = lit("(function") > +instruction_ > lit(')');
     exp_ %= (
       identifier_
       | methodcall_
       | object_
-      //| function_
+      // | function_
     );
+
+    //BOOST_SPIRIT_DEBUG_NODE(methodcall_);
+    //BOOST_SPIRIT_DEBUG_NODE(member_);
+    //BOOST_SPIRIT_DEBUG_NODE(object_);
+    //BOOST_SPIRIT_DEBUG_NODE(exp_);
   }
 
 private:

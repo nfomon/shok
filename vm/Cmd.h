@@ -51,7 +51,7 @@ private:
 template <typename Iterator>
 struct CmdParser : qi::grammar<Iterator, Cmd(), ascii::space_type> {
 public:
-  CmdParser() : CmdParser::base_type(cmd_, "cmd parser") {
+  CmdParser() : CmdParser::base_type(cmd_, "Cmd") {
     using qi::char_;
     using qi::int_;
     using qi::lit;
@@ -59,6 +59,9 @@ public:
 
     runcmd_ %= lit("CMD:[") > +no_skip[~char_("]")] > lit(']');
     cmd_ %= *(lit("EXP:") > exp_) >> runcmd_;
+
+    //BOOST_SPIRIT_DEBUG_NODE(runcmd_);
+    //BOOST_SPIRIT_DEBUG_NODE(cmd_);
   }
 
 private:

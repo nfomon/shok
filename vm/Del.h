@@ -21,30 +21,19 @@ namespace qi = spirit::qi;
 namespace ascii = spirit::ascii;
 
 #include <string>
-#include <vector>
-
-// debug
-#include <iostream>
-using std::cout;
-using std::endl;
 
 namespace vm {
 
-struct Exec_Del {
+struct Del {
 public:
-  Exec_Del(symbol_map& symbols)
-    : m_symbols(symbols) {}
-
-  void operator() (const std::string& name, qi::unused_type, qi::unused_type) const;
-
-private:
-  symbol_map& m_symbols;
+  void exec(symbol_map& symbols) const;
+  std::string name;
 };
 
 template <typename Iterator>
-struct DelParser : qi::grammar<Iterator, std::string(), ascii::space_type> {
+struct DelParser : qi::grammar<Iterator, Del(), ascii::space_type> {
 public:
-  DelParser() : DelParser::base_type(del_, "del parser") {
+  DelParser() : DelParser::base_type(del_, "Del") {
     using qi::char_;
     using qi::lexeme;
     using qi::lit;
@@ -55,10 +44,12 @@ public:
       > identifier_
       > lit(')')
     ;
+
+    //BOOST_SPIRIT_DEBUG_NODE(del_);
   }
 
 private:
-  qi::rule<Iterator, std::string(), ascii::space_type> del_;
+  qi::rule<Iterator, Del(), ascii::space_type> del_;
   qi::rule<Iterator, std::string(), ascii::space_type> identifier_;
 };
 

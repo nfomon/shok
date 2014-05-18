@@ -7,10 +7,6 @@
 
 #include "util/Util.h"
 
-#include <string>
-using std::auto_ptr;
-using std::string;
-
 // debug
 #include <iostream>
 using std::cout;
@@ -18,11 +14,11 @@ using std::endl;
 
 using namespace vm;
 
-void Exec_Del::operator() (const std::string& name, qi::unused_type, qi::unused_type) const {
+void Del::exec(symbol_map& symbols) const {
   cout << "Del: name=" << name << endl;
-  symbol_mod_iter s = m_symbols.find(name);
-  if (m_symbols.end() == s) {
+  symbol_mod_iter s = symbols.find(name);
+  if (symbols.end() == s) {
     throw VMError("No such symbol " + name + " to delete");
   }
-  m_symbols.erase(s);
+  symbols.erase(s);
 }

@@ -1,10 +1,10 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _New_h_
-#define _New_h_
+#ifndef _Call_h_
+#define _Call_h_
 
-/* A New instruction: defines a symbol (name, type, value) */
+/* A "procedure" call, i.e. a function call that isn't a method call. */
 
 #include "Expression.h"
 #include "Object.h"
@@ -21,41 +21,50 @@ namespace qi = spirit::qi;
 namespace ascii = spirit::ascii;
 
 #include <string>
+#include <vector>
 
 namespace vm {
 
-struct New {
-  void exec(symbol_map& symbols) const;
-  std::string name;
-  Expression exp;
+struct Call {
+  Expression function;
+  std::vector<Expression> args;
+};
+
+struct Exec_Call {
+public:
+  Exec_Call(symbol_map& symbols)
+    : m_symbols(symbols) {}
+
+  void operator() (const Call& n, qi::unused_type, qi::unused_type) const;
+
+private:
+  symbol_map& m_symbols;
 };
 
 template <typename Iterator>
-struct NewParser : qi::grammar<Iterator, New(), ascii::space_type> {
+struct CallParser : qi::grammar<Iterator, Call(), ascii::space_type> {
 public:
-  NewParser() : NewParser::base_type(new_, "New") {
+  CallParser() : CallParser::base_type(call_, "Call") {
     using qi::char_;
     using qi::lexeme;
     using qi::lit;
     using qi::graph;
 
-    identifier_ %= lexeme[ char_("A-Za-z_") > *char_("0-9A-Za-z_:") ];
-    new_ %=
-      lit("(new")
-      > identifier_
+    call_ %=
+      lit("(call")
       > exp_
+      > *exp_
       > lit(')')
     ;
 
-    //BOOST_SPIRIT_DEBUG_NODE(new_);
+    //BOOST_SPIRIT_DEBUG_NODE(call_);
   }
 
 private:
   ExpParser<Iterator> exp_;
-  qi::rule<Iterator, New(), ascii::space_type> new_;
-  qi::rule<Iterator, std::string(), ascii::space_type> identifier_;
+  qi::rule<Iterator, Call(), ascii::space_type> call_;
 };
 
 }
 
-#endif // _New_h_
+#endif // _Call_h_
