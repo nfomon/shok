@@ -23,6 +23,7 @@ namespace spirit = boost::spirit;
 namespace ascii = spirit::ascii;
 namespace qi = spirit::qi;
 
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -39,6 +40,11 @@ private:
   const Scope* m_scope;
   std::string m_bytecode;
 };
+
+inline std::ostream& operator<<(std::ostream& out, const Call& call) {
+  out << "(call: " << call.bytecode() << ")";
+  return out;
+}
 
 /* The CodeParser is provided a scope for the block.  This is so that the
  * Compiler can own the global scope (code-blocks just "swap" into it), and
@@ -69,7 +75,7 @@ public:
     call_ = lit("(call")[phoenix::bind(&Call::init, _a, _r1)]
       > variable_(_r1)[phoenix::bind(&Call::attach_source, _a, _1)]
       > *exp_(_r1, std::string("exp"))[phoenix::bind(&Call::attach_arg, _a, _1)]
-      > lit(")")[_val = phoenix::bind(&Call::bytecode, _a)];
+      > lit(")")[_val += phoenix::bind(&Call::bytecode, _a)];
 
     statement_ %=
       new_(_r1)

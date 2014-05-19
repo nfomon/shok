@@ -20,6 +20,7 @@
 #include <boost/utility.hpp>
 
 #include <memory>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -80,6 +81,11 @@ public:
 protected:
   const Object& m_object;
 };
+
+inline std::ostream& operator<<(std::ostream& out, const Scope& scope) {
+  out << "(scope)";
+  return out;
+}
 
 }
 

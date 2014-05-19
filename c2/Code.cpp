@@ -13,7 +13,7 @@ using namespace compiler;
 
 void Call::init(const Scope& scope) {
   m_scope = &scope;
-  m_bytecode = "(call ";
+  m_bytecode = " (call ";
 }
 
 void Call::attach_source(const Variable& var) {
