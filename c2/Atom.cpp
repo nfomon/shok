@@ -16,7 +16,7 @@ using std::string;
 using namespace compiler;
 
 std::string Atom_bytecode::operator() (const Variable& var) const {
-  return " " + var.fullname();
+  return " " + var.bytename();
 }
 
 std::string Atom_bytecode::operator() (const Object& object) const {

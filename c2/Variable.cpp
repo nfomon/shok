@@ -57,3 +57,11 @@ std::string Variable::fullname() const {
   }
   return name;
 }
+
+std::string Variable::bytename() const {
+  std::string name = m_scope->bytename(m_name);
+  for (member_iter i = m_members.begin(); i != m_members.end(); ++i) {
+    name += "." + *i;
+  }
+  return name;
+}

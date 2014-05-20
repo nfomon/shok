@@ -50,7 +50,7 @@ void NewInit::finalize() {
     }
   } else {
     if (!m_exp.get()) {
-      m_bytecode = "object";
+      m_bytecode = Scope::LocalityPrefix(Scope::GLOBAL) + "object";
     }
     const Type* object = m_scope->findRoot("object");
     if (!object) {
@@ -62,9 +62,9 @@ void NewInit::finalize() {
 }
 
 string NewInit::bytecode_asNew() const {
-  return " (new " + m_name + (m_scope->depth() > 0 ? ":"+lexical_cast<string>(m_scope->depth()) : "") + " " + m_bytecode + ")";
+  return " (new " + m_scope->bytename(m_name) + " " + m_bytecode + ")";
 }
 
 string NewInit::bytecode_asMember() const {
-  return " (member " + m_name + (m_scope->depth() > 0 ? ":"+lexical_cast<string>(m_scope->depth()) : "") + " " + m_bytecode + ")";
+  return " (member " + m_scope->bytename(m_name) + " " + m_bytecode + ")";
 }

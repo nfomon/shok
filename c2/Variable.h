@@ -36,6 +36,8 @@ public:
 
   const Type& type() const;
   std::string fullname() const;
+  // A scope-aware name appropriate for the bytecode
+  std::string bytename() const;
 
 private:
   typedef std::vector<std::string> member_vec;

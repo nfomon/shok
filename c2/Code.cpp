@@ -18,7 +18,7 @@ void Call::init(const Scope& scope) {
 
 void Call::attach_source(const Variable& var) {
   // TODO validate that var is callable
-  m_bytecode += var.fullname();
+  m_bytecode += var.bytename();
 }
 
 void Call::attach_arg(const Expression& arg) {

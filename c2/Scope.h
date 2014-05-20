@@ -31,7 +31,19 @@ class Object;
 
 class Scope : public boost::noncopyable {
 public:
+  enum Locality {
+    GLOBAL,
+    LOCAL
+  };
   typedef int Depth;
+
+  static std::string LocalityPrefix(Locality locality) {
+    switch (locality) {
+    case GLOBAL: return "";
+    case LOCAL: return "L:";
+    default: throw CompileError("Unknown locality " + boost::lexical_cast<std::string>(locality));
+    }
+  }
 
   Scope(const Scope* parent = NULL);
   virtual ~Scope() {}
@@ -39,7 +51,12 @@ public:
   void reParent(const Scope& parent);
 
   Depth depth() const { return m_depth; }
+  Locality locality() const { return m_locality; }
   const Scope& root() const { return *m_root; }
+  // Variable name appropriate for bytecode (includes locality and depth)
+  std::string bytename(const std::string& varname) const {
+    return varnamePrefix() + varname + varnameSuffix();
+  }
 
   void insert(const std::string& name, std::auto_ptr<Type> type);
   virtual const Type* find(const std::string& name) const;
@@ -49,10 +66,13 @@ public:
 
 protected:
   Scope(const Scope&);
+  std::string varnamePrefix() const;
+  std::string varnameSuffix() const;
 
   const Scope* m_parent;
   const Scope* m_root;
   Depth m_depth;
+  Locality m_locality;
   symbol_map m_locals;
 };
 
