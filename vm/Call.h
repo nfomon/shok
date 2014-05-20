@@ -28,13 +28,17 @@ namespace vm {
 struct Call {
   void exec(Context& context) const;
   Expression function;
-  std::vector<Expression> args;
+  argexps_vec argexps;
 };
+
+template <typename Iterator> struct ExpParser;
 
 template <typename Iterator>
 struct CallParser : qi::grammar<Iterator, Call(), ascii::space_type> {
 public:
-  CallParser() : CallParser::base_type(call_, "Call") {
+  CallParser(ExpParser<Iterator>& exp_)
+    : CallParser::base_type(call_, "Call"),
+      exp_(exp_) {
     using qi::char_;
     using qi::lexeme;
     using qi::lit;
@@ -51,7 +55,8 @@ public:
   }
 
 private:
-  ExpParser<Iterator> exp_;
+  ExpParser<Iterator>& exp_;
+
   qi::rule<Iterator, Call(), ascii::space_type> call_;
 };
 

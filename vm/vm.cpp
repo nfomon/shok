@@ -7,6 +7,7 @@
  */
 
 #include "Executor.h"
+#include "Instructions.h"
 #include "VMError.h"
 
 #include "util/Log.h"

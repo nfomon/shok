@@ -48,10 +48,14 @@ private:
   Context& m_context;
 };
 
+template <typename Iterator> struct ExpParser;
+
 template <typename Iterator>
 struct CmdParser : qi::grammar<Iterator, Cmd(), ascii::space_type> {
 public:
-  CmdParser() : CmdParser::base_type(cmd_, "Cmd") {
+  CmdParser(ExpParser<Iterator>& exp_)
+    : CmdParser::base_type(cmd_, "Cmd"),
+      exp_(exp_) {
     using qi::char_;
     using qi::int_;
     using qi::lit;
@@ -65,7 +69,8 @@ public:
   }
 
 private:
-  ExpParser<Iterator> exp_;
+  ExpParser<Iterator>& exp_;
+
   qi::rule<Iterator, std::string(), ascii::space_type> runcmd_;
   qi::rule<Iterator, Cmd(), ascii::space_type> cmd_;
 };

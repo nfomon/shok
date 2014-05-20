@@ -3,6 +3,7 @@
 
 #include "New.h"
 
+#include "Instructions.h"
 #include "VMError.h"
 
 #include "util/Util.h"
@@ -21,7 +22,7 @@ void New::exec(Context& context) const {
   cout << "New: name=" << name << endl;
   Exec_Exp exec_Exp(context);
   auto_ptr<Object> value = boost::apply_visitor(exec_Exp, exp);
-  if (context.locals().find(name) != context.end()) {
+  if (context.find(name)) {
     throw VMError("Cannot insert symbol " + name + "; already exists");
   }
   context.locals().insert(name, value);

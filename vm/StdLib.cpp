@@ -3,6 +3,7 @@
 
 #include "StdLib.h"
 
+#include "Instructions.h"
 #include "Object.h"
 #include "VMError.h"
 
@@ -13,10 +14,19 @@ using std::string;
 
 using namespace vm;
 
-void StdLib::Initialize(symbol_map& symbols) {
-  auto_ptr<Object> object(new Object());
-  symbols.insert("object", object);
+std::string StdLib::OBJECT = "object";
+std::string StdLib::FUNCTION = "@";
 
-  auto_ptr<Object> function(new Object());
-  symbols.insert("@", function);
+void StdLib::Initialize(symbol_map& symbols) {
+  {
+    auto_ptr<Object> object(new Object());
+    symbols.insert(OBJECT, object);
+  }
+  symbol_iter object = symbols.find(OBJECT);
+
+  {
+    auto_ptr<Object> function(new Object(*object->second));
+    symbols.insert(FUNCTION, function);
+  }
+  //symbol_iter function = symbols.find(FUNCTION);
 }

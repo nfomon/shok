@@ -7,7 +7,7 @@
 /* Del instruction: delete an object */
 
 #include "Context.h"
-#include "Expression.h"
+#include "Identifier.h"
 
 #include "util/Log.h"
 
@@ -37,7 +37,6 @@ public:
     using qi::lexeme;
     using qi::lit;
 
-    identifier_ %= lexeme[ char_("A-Za-z_@") > *char_("0-9A-Za-z_:") ];
     del_ %=
       lit("(del")
       > identifier_
@@ -48,8 +47,8 @@ public:
   }
 
 private:
+  IdentifierParser<Iterator> identifier_;
   qi::rule<Iterator, Del(), ascii::space_type> del_;
-  qi::rule<Iterator, std::string(), ascii::space_type> identifier_;
 };
 
 }

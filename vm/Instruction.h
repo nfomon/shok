@@ -6,10 +6,7 @@
 
 /* Executable instructions */
 
-#include "Call.h"
 #include "Context.h"
-#include "Del.h"
-#include "New.h"
 
 #include "util/Log.h"
 
@@ -27,10 +24,14 @@ namespace ascii = spirit::ascii;
 
 namespace vm {
 
+struct Call;
+struct Del;
+struct New;
+
 typedef boost::variant<
-  New,
-  Del,
-  Call
+  boost::recursive_wrapper<New>,
+  boost::recursive_wrapper<Del>,
+  boost::recursive_wrapper<Call>
 > Instruction;
 
 struct Exec_Instruction : public boost::static_visitor<> {
@@ -47,27 +48,6 @@ public:
 
 private:
   Context& m_context;
-};
-
-template <typename Iterator>
-struct InstructionParser : qi::grammar<Iterator, Instruction(), ascii::space_type> {
-public:
-  InstructionParser() : InstructionParser::base_type(instruction_, "Instruction") {
-
-    instruction_ %=
-      new_
-      | del_
-      | call_
-    ;
-
-    //BOOST_SPIRIT_DEBUG_NODE(instruction_);
-  }
-
-private:
-  NewParser<Iterator> new_;
-  DelParser<Iterator> del_;
-  CallParser<Iterator> call_;
-  qi::rule<Iterator, Instruction(), ascii::space_type> instruction_;
 };
 
 }

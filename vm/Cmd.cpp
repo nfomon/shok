@@ -3,6 +3,7 @@
 
 #include "Cmd.h"
 
+#include "Instructions.h"
 #include "VMError.h"
 
 #include "util/Util.h"

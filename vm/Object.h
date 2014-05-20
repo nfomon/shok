@@ -6,27 +6,45 @@
 
 /* Object */
 
-#include <boost/ptr_container/ptr_map.hpp>
+#include "Context.h"
+#include "Instruction.h"
+#include "Symbol.h"
+
+#include <boost/optional.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/variant.hpp>
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace vm {
 
-class Object;
+typedef std::vector<Instruction> function_vec;
+typedef function_vec::const_iterator function_iter;
 
-typedef boost::ptr_map<std::string,Object> symbol_map;
-typedef symbol_map::const_iterator symbol_iter;
-typedef symbol_map::iterator symbol_mod_iter;
+typedef boost::ptr_vector<Object> args_vec;
+typedef args_vec::const_iterator args_iter;
 
 class Object {
 public:
+  Object();
+  Object(const Object&);
+  Object& operator= (const Object&);
+  ~Object();
+
+  const Object* find(const std::string& name) const;
+  Object* find(const std::string& name);
+
   void insert(const std::string& name, std::auto_ptr<Object> value);
   void assign(const std::string& name, std::auto_ptr<Object> value);
 
-private:
+  void insertFunction(std::auto_ptr<function_vec> function);
+  std::auto_ptr<Object> callFunction(Context& context, const args_vec& args) const;
+
+protected:
   symbol_map m_members;
+  std::auto_ptr<function_vec> m_function;
 };
 
 }

@@ -6,7 +6,7 @@
 
 /* A runtime symbol table */
 
-#include "Object.h"
+#include "Symbol.h"
 
 #include <map>
 #include <string>
@@ -15,6 +15,9 @@ namespace vm {
 
 class StdLib {
 public:
+  static std::string OBJECT;
+  static std::string FUNCTION;
+
   static void Initialize(symbol_map& symbols);
 };
 

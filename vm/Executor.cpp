@@ -6,8 +6,10 @@
 #include "Call.h"
 #include "Cmd.h"
 #include "Del.h"
+#include "ExpParser.h"
 #include "Expression.h"
 #include "Instruction.h"
+#include "InstructionParser.h"
 #include "New.h"
 #include "StdLib.h"
 #include "VMError.h"
@@ -66,19 +68,24 @@ BOOST_FUSION_ADAPT_STRUCT(
 BOOST_FUSION_ADAPT_STRUCT(
   Call,
   (Expression, function)
-  (std::vector<Expression>, args)
+  (argexps_vec, argexps)
 )
 
 BOOST_FUSION_ADAPT_STRUCT(
   MethodCall,
   (Expression, source)
   (std::string, method)
-  (std::vector<Expression>, args)
+  (argexps_vec, argexps)
 )
 
 BOOST_FUSION_ADAPT_STRUCT(
   ObjectLiteral,
   (ObjectLiteral::member_vec, members)
+)
+
+BOOST_FUSION_ADAPT_STRUCT(
+  FunctionLiteral,
+  (std::vector<Instruction>, body)
 )
 
 bool Executor::execute() {
@@ -92,8 +99,9 @@ bool Executor::execute() {
   forward_iterator_type fwd_end;
 
   typedef qi::rule<forward_iterator_type, ascii::space_type> Rule;
-  CmdParser<forward_iterator_type> cmd_;
-  InstructionParser<forward_iterator_type> instruction_;
+  ExpParser<forward_iterator_type> exp_;
+  CmdParser<forward_iterator_type> cmd_(exp_);
+  InstructionParser<forward_iterator_type> instruction_(exp_);
   Exec_Cmd exec_Cmd(m_context);
   Exec_Instruction exec_Instruction(m_context);
 

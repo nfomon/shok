@@ -3,6 +3,8 @@
 
 #include "Del.h"
 
+#include "Instructions.h"
+#include "Symbol.h"
 #include "VMError.h"
 
 #include "util/Util.h"
@@ -17,7 +19,7 @@ using namespace vm;
 void Del::exec(Context& context) const {
   cout << "Del: name=" << name << endl;
   symbol_mod_iter s = context.locals().find(name);
-  if (context.end() == s) {
+  if (context.locals().end() == s) {
     throw VMError("No such local symbol " + name + " to delete");
   }
   context.locals().erase(s);

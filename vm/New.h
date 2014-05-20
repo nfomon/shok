@@ -8,6 +8,7 @@
 
 #include "Context.h"
 #include "Expression.h"
+#include "Identifier.h"
 
 #include "util/Log.h"
 
@@ -30,16 +31,19 @@ struct New {
   Expression exp;
 };
 
+template <typename Iterator> struct ExpParser;
+
 template <typename Iterator>
 struct NewParser : qi::grammar<Iterator, New(), ascii::space_type> {
 public:
-  NewParser() : NewParser::base_type(new_, "New") {
+  NewParser(ExpParser<Iterator>& exp_)
+    : NewParser::base_type(new_, "New"),
+      exp_(exp_) {
     using qi::char_;
     using qi::lexeme;
     using qi::lit;
     using qi::graph;
 
-    identifier_ %= lexeme[ char_("A-Za-z_") > *char_("0-9A-Za-z_:") ];
     new_ %=
       lit("(new")
       > identifier_
@@ -51,9 +55,10 @@ public:
   }
 
 private:
-  ExpParser<Iterator> exp_;
+  ExpParser<Iterator>& exp_;
+
+  IdentifierParser<Iterator> identifier_;
   qi::rule<Iterator, New(), ascii::space_type> new_;
-  qi::rule<Iterator, std::string(), ascii::space_type> identifier_;
 };
 
 }
