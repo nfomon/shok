@@ -36,7 +36,7 @@ Object& Object::operator=(const Object& rhs) {
 }
 
 Object::~Object() {
-  cout << "Object deleted" << endl;
+  cout << " - object deleted" << endl;
 }
 
 const Object* Object::find(const std::string& name) const {

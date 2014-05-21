@@ -63,5 +63,5 @@ const Type& Function::type() const {
 }
 
 string Function::bytecode() const {
-  return " (function" + m_bytecode + ")";
+  return " (function" + m_bytecode + m_scope->bytecode() + ")";
 }
