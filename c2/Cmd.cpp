@@ -6,8 +6,6 @@
 #include "CompileError.h"
 #include "Expression.h"
 
-#include "util/Util.h"
-
 #include <string>
 #include <utility>
 #include <vector>

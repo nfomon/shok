@@ -7,8 +7,6 @@
 #include "Symbol.h"
 #include "VMError.h"
 
-#include "util/Util.h"
-
 // debug
 #include <iostream>
 using std::cout;

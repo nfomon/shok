@@ -7,8 +7,6 @@
 #include "Object.h"
 #include "VMError.h"
 
-#include "util/Util.h"
-
 using namespace vm;
 
 const symbol_map& Context::globals() const {

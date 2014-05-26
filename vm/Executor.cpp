@@ -14,8 +14,6 @@
 #include "StdLib.h"
 #include "VMError.h"
 
-#include "util/Util.h"
-
 #include <boost/bind.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>

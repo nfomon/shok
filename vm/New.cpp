@@ -6,8 +6,6 @@
 #include "Instructions.h"
 #include "VMError.h"
 
-#include "util/Util.h"
-
 #include <memory>
 using std::auto_ptr;
 

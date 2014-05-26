@@ -36,20 +36,18 @@ def Replace(rule,name,new):
 # Language token groups
 Keyword = Or('keyword', [
   # Symbol table modifiers
-  ('NEW', 'new'), ('RENEW', 'renew'), ('DEL', 'del'),
-  ('ISVAR', 'isvar'), ('TYPEOF', 'typeof'),
+  'new', 'renew', 'del', 'isvar', #'typeof',
   # Functions
-  ('VOID', 'void'), ('RETURN', 'return'), ('YIELD', 'yield'),
+  'return', # 'void', 'yield',
   # Branch constructs
-  ('IF', 'if'), ('ELIF', 'elif'), ('ELSE', 'else'),
-  ('SWITCH', 'switch'), ('CASE', 'case'), ('DEFAULT', 'default'),
+  'if', 'elif', 'else',
+  #'switch', 'case', 'default',
   # Loop constructs
-  ('WHILE', 'while'), ('LOOP', 'loop'), ('TIMES', 'times'),
-  ('EACH', 'each'), ('IN', 'in'), ('WHERE', 'where'),
-  ('BREAK', 'break'), ('CONTINUE', 'continue'),
+  'while', 'loop', 'times',
+  #'each', 'in', 'where',
+  #'break', 'continue',
   # Logical operators
-  ('NOT', 'not'), ('NOR', 'nor'), ('AND', 'and'), ('OR', 'or'),
-  ('XOR', 'xor'), ('XNOR', 'xnor'),
+  'not', 'nor', 'and', 'or', 'xor', 'xnor'
 ])
 
 Op = Or('op', [
@@ -284,19 +282,19 @@ NewAssign = (Seq('newassign',
 Replace(Member, 'NewAssign', NewAssign)
 
 New = (Seq('new',
-  [('NEW',''), n, NewAssign,
+  [('new',''), n, NewAssign,
   Star('news', Seq('commanew', [w, ('COMMA',' '), n, NewAssign]))
 ]), '(new %s)')
 
 # Renew
 Renew = (Seq('renew',
-  [('RENEW',''), n, NewAssign,
+  [('renew',''), n, NewAssign,
   Star('renews', Seq('commarenew', [w, ('COMMA',' '), n, NewAssign]))
 ]), '(renew %s)')
 
 # Del
 Del = (Seq('del',
-  [('DEL',''), n, 'ID',
+  [('del',''), n, 'ID',
   Star('dels', Seq('commadel', [w, ('COMMA',' '), n, 'ID']))
 ]), '(del %s)')
 
@@ -308,7 +306,7 @@ StmtNew = Or('stmtnew', [
 
 # IsVar statement
 StmtIsVar = (Seq('isvar',
-  [('ISVAR',''), n, 'ID',
+  [('isvar',''), n, 'ID',
   Star('isvarprops', Seq('isvarprop', [w, ('DOT',' '), n, 'ID']))]
 ), '(isvar %s)')
 
@@ -353,12 +351,12 @@ BranchPred = Or('branchpred', [
 ])
 
 If = (Seq('if',
-  [('IF',''), n, (Exp,'%s '), BranchPred]
+  [('if',''), n, (Exp,'%s '), BranchPred]
 ), '(if %s)')
 
 # Elif
 Elif = (Seq('elif',
-  [('ELIF',''), n, (Exp,'%s '), BranchPred]
+  [('elif',''), n, (Exp,'%s '), BranchPred]
 ), '(elif %s)')
 
 # Else
@@ -368,7 +366,7 @@ ElsePred = Or('elsepred', [
 ])
 
 Else = (Seq('else',
-  [('ELSE',''), ElsePred]
+  [('else',''), ElsePred]
 ), '(else %s)')
 
 
@@ -376,7 +374,7 @@ Else = (Seq('else',
 LoopPred = BranchPred
 
 LoopTimes = Seq('looptimes',
-  [w, Exp, w, ('TIMES','')]
+  [w, Exp, w, ('times','')]
 )
 LoopCond = Or('loopcond', [
   Seq('loopcondtimes', [(LoopTimes,'(times %s) '), LoopPred]),
@@ -384,13 +382,13 @@ LoopCond = Or('loopcond', [
 ])
 
 Loop = (Seq('loop',
-  [('LOOP',''), LoopCond]
+  [('loop',''), LoopCond]
 ), '(loop %s)')
 #LabelLoop = 'SLOOP'   # TODO
 
-While = (Seq('while',
-  [('WHILE',''), w, Exp, LoopPred]
-), '(while %s)')
+#While = (Seq('while',
+#  ['while', w, Exp, LoopPred]
+#), '(while %s)')
 
 #TypedVars = ...
 #
@@ -407,23 +405,23 @@ While = (Seq('while',
 StmtLoop = Or('stmtloop', [
   Loop,
   #LabelLoop,
-  While,
+  #While,
   #Each,
 ])
 
 
 # Break constructs
 StmtBreak = Or('stmtbreak', [
-  ('BREAK','break'),
+  #'break',
   #Seq('breaklabel',
-  #  [('BREAK','break'), ws, ('<LABEL>','<label>')]),
-  ('CONTINUE','continue'),
+  #  ['break', ws, '<label>']),
+  #'continue',
   #Seq('continuelabel',
-  #  [('CONTINUE','continue'), ws, ('LABEL','<label>')]),
+  #  ['continue', ws, '<label>']),
   Seq('return',
-    [('RETURN','return'), Opt(Seq('returnexp', [(ws,''), (Exp,' %s')]))]),
-  Seq('yield',
-    [('YIELD','yield'), ws, Exp]),
+    ['return', Opt(Seq('returnexp', [(ws,''), (Exp,' %s')]))]),
+  #Seq('yield',
+  #  ['yield', ws, Exp]),
 ])
 
 

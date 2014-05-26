@@ -6,8 +6,6 @@
 #include "Instructions.h"
 #include "VMError.h"
 
-#include "util/Util.h"
-
 using namespace vm;
 
 void Exec_Instruction::operator() (const New& n) const {

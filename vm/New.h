@@ -10,8 +10,6 @@
 #include "Expression.h"
 #include "Identifier.h"
 
-#include "util/Log.h"
-
 #include <boost/utility.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>

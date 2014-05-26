@@ -6,8 +6,6 @@
 #include "Instructions.h"
 #include "VMError.h"
 
-#include "util/Util.h"
-
 #include <string>
 #include <vector>
 using std::auto_ptr;

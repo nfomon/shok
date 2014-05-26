@@ -10,8 +10,6 @@
 #include "Context.h"
 #include "Expression.h"
 
-#include "util/Log.h"
-
 #include <boost/optional.hpp>
 #include <boost/utility.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>

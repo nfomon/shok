@@ -17,8 +17,11 @@
 #include "util/Proc.h"
 #include "util/Util.h"
 
+#include <boost/lexical_cast.hpp>
 #include <boost/tokenizer.hpp>
 
+#include <sys/wait.h>
+#include <errno.h>
 #include <iostream>
 #include <stdlib.h>
 #include <string>
@@ -134,13 +137,13 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  Proc lexer("./shok_lexer");
+  Proc lexer("shok_lexer");
   lexer.run();
 
-  Proc parser("./shok_parser");
+  Proc parser("shok_parser");
   parser.run();
 
-  Proc eval("./shok_eval");
+  Proc eval("shok_eval");
   eval.run();
 
   cout << PROMPT;

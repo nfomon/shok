@@ -7,8 +7,6 @@
 #include "Object.h"
 #include "VMError.h"
 
-#include "util/Util.h"
-
 #include <boost/ptr_container/ptr_vector.hpp>
 
 #include <string>

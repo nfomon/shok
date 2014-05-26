@@ -1,0 +1,10 @@
+#!/usr/bin/env python2
+
+import sys
+sys.path.insert(1, '@pythondir@')
+
+from shokparser.ParserRunner import ParserRunner
+
+if __name__ == "__main__":
+    runner = ParserRunner(package="@PACKAGE@", version="@VERSION@")
+    runner.run()

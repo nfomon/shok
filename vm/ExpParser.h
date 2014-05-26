@@ -11,8 +11,6 @@
 #include "InstructionParser.h"
 #include "VMError.h"
 
-#include "util/Log.h"
-
 #include <boost/fusion/include/sequence.hpp>
 #include <boost/fusion/sequence.hpp>
 #include <boost/spirit/include/qi.hpp>
