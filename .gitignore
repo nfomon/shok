@@ -2,6 +2,7 @@
 
 # C extensions
 *.so
+*.o
 
 # Packages
 *.egg
@@ -39,3 +40,21 @@ lexer/tiny_lexer_st*
 
 # vim swp files
 .*.swp
+
+# autotools build files
+configure
+Makefile
+*.in
+config.h
+config.log
+config.status
+libtool
+aclocal.m4
+.deps
+m4/libtool.m4
+m4/ltoptions.m4
+m4/ltsugar.m4
+m4/ltversion.m4
+m4/lt~obsolete.m4
+stamp-h1
+autom4te.cache
