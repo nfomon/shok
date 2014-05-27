@@ -1,5 +1,16 @@
 *.py[cod]
 
+# shok
+lexer/shok_lexer
+parser/shok_parser
+c2/shok_c2
+vm/shok_vm
+shell/shok_shell
+lexer.log
+parser.log
+compiler.log
+vm.log
+
 # C extensions
 *.so
 *.o
