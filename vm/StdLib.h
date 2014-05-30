@@ -17,6 +17,8 @@ class StdLib {
 public:
   static std::string OBJECT;
   static std::string FUNCTION;
+  static std::string INTEGER;
+  static std::string STRING;
 
   static void Initialize(symbol_map& symbols);
 };

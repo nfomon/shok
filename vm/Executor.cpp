@@ -77,6 +77,16 @@ BOOST_FUSION_ADAPT_STRUCT(
 )
 
 BOOST_FUSION_ADAPT_STRUCT(
+  IntLiteral,
+  (std::string, num)
+)
+
+BOOST_FUSION_ADAPT_STRUCT(
+  StringLiteral,
+  (std::string, str)
+)
+
+BOOST_FUSION_ADAPT_STRUCT(
   ObjectLiteral,
   (ObjectLiteral::member_vec, members)
 )

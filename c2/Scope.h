@@ -59,7 +59,8 @@ public:
   }
 
   void insert(const std::string& name, std::auto_ptr<Type> type);
-  virtual const Type* find(const std::string& name) const;
+  const Type* find(const std::string& name) const;
+  virtual const Scope* findScope(const std::string& name) const;
   virtual const Type* findLocal(const std::string& name) const;
   const Type* findRoot(const std::string& name) const;
   std::string bytecode() const;
@@ -82,7 +83,7 @@ class FunctionScope : public Scope {
 public:
   FunctionScope(const Scope& parent, const Function& function);
 
-  virtual const Type* find(const std::string& name) const;
+  virtual const Scope* findScope(const std::string& name) const;
   virtual const Type* findLocal(const std::string& name) const;
 
 protected:
@@ -95,7 +96,7 @@ class ObjectScope : public Scope {
 public:
   ObjectScope(const Scope& parent, const Object& object);
 
-  virtual const Type* find(const std::string& name) const;
+  virtual const Scope* findScope(const std::string& name) const;
   virtual const Type* findLocal(const std::string& name) const;
 
 protected:

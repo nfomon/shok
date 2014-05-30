@@ -22,6 +22,9 @@ shok_c2_SOURCES = $(COMMON_SRCS) \
     Expression.h \
     Function.cpp \
     Function.h \
+    IntLiteral.cpp \
+    IntLiteral.h \
+    Literal.h \
     NewInit.cpp \
     NewInit.h \
     Object.cpp \
@@ -30,13 +33,17 @@ shok_c2_SOURCES = $(COMMON_SRCS) \
     Operator.h \
     Scope.cpp \
     Scope.h \
+    StdLib.cpp \
     StdLib.h \
+    StringLiteral.cpp \
+    StringLiteral.h \
     SymbolTable.h \
     Type.cpp \
     Type.h \
     Variable.cpp \
     Variable.h \
     compiler.cpp
+#shok_c2_CPPFLAGS = $(BOOST_CPPFLAGS) -DBOOST_SPIRIT_DEBUG
 shok_c2_CPPFLAGS = $(BOOST_CPPFLAGS)
 shok_c2_LDFLAGS = $(BOOST_IOSTREAMS_LDFLAGS)
 LIBS = $(BOOST_IOSTREAMS_LIBS)

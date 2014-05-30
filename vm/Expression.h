@@ -31,8 +31,18 @@ struct MethodCall;
 struct ObjectLiteral;
 struct FunctionLiteral;
 
+typedef std::string Variable;
+struct IntLiteral {
+  std::string num;
+};
+struct StringLiteral {
+  std::string str;
+};
+
 typedef boost::variant<
-    std::string,
+    Variable,
+    IntLiteral,
+    StringLiteral,
     boost::recursive_wrapper<MethodCall>,
     boost::recursive_wrapper<ObjectLiteral>,
     boost::recursive_wrapper<FunctionLiteral>
@@ -65,7 +75,9 @@ class Exec_Exp : public boost::static_visitor<std::auto_ptr<Object> > {
 public:
   Exec_Exp(Context& context);
 
-  std::auto_ptr<Object> operator() (const std::string& var);
+  std::auto_ptr<Object> operator() (const Variable& var);
+  std::auto_ptr<Object> operator() (const IntLiteral& lit);
+  std::auto_ptr<Object> operator() (const StringLiteral& lit);
   std::auto_ptr<Object> operator() (const MethodCall& methodCall);
   std::auto_ptr<Object> operator() (const ObjectLiteral& object);
   std::auto_ptr<Object> operator() (const FunctionLiteral& function);

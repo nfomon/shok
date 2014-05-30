@@ -13,7 +13,8 @@ using std::string;
 using namespace compiler;
 
 Variable::Variable()
-  : m_scope(NULL) {
+  : m_scope(NULL),
+    m_varScope(NULL) {
 }
 
 void Variable::init(const Scope& scope) {
@@ -22,9 +23,13 @@ void Variable::init(const Scope& scope) {
 
 void Variable::attach_name(const std::string& name) {
   m_name = name;
-  const Type* type = m_scope->find(name);
-  if (!type) {
+  m_varScope = m_scope->findScope(name);
+  if (!m_varScope) {
     throw CompileError("Variable " + name + " does not exist in scope at depth " + lexical_cast<string>(m_scope->depth()));
+  }
+  const Type* type = m_varScope->findLocal(name);
+  if (!type) {
+    throw CompileError("Lookup failure for variable " + name + " in scope at depth " + lexical_cast<string>(m_varScope->depth()));
   }
   m_type.reset(type->duplicate().release());
 }
@@ -35,7 +40,7 @@ void Variable::attach_member(const std::string& member) {
   }
   const Type* type = m_type->findMember(member);
   if (!type) {
-    throw CompileError("Variable member " + fullname() + " does not exist in scope at depth " + lexical_cast<string>(m_scope->depth()));
+    throw CompileError("Variable member " + fullname() + " does not exist");
   }
   m_type = type->duplicate();
   m_members.push_back(member);
@@ -57,7 +62,7 @@ std::string Variable::fullname() const {
 }
 
 std::string Variable::bytename() const {
-  std::string name = m_scope->bytename(m_name);
+  std::string name = m_varScope->bytename(m_name);
   for (member_iter i = m_members.begin(); i != m_members.end(); ++i) {
     name += "." + *i;
   }

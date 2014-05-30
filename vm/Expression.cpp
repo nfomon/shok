@@ -27,12 +27,32 @@ Exec_Exp::Exec_Exp(Context& context)
   }
 }
 
-auto_ptr<Object> Exec_Exp::operator() (const string& var) {
+auto_ptr<Object> Exec_Exp::operator() (const Variable& var) {
   Object *o = m_context.find(var);
   if (!o) {
     throw VMError("Variable " + var + " not found");
   }
   return auto_ptr<Object>(new Object(*o));
+}
+
+auto_ptr<Object> Exec_Exp::operator() (const IntLiteral& lit) {
+  Object *o = m_context.find(StdLib::INTEGER);
+  if (!o) {
+    throw VMError("Failed to find the root integer type " + StdLib::INTEGER);
+  }
+  auto_ptr<Object> i(new Object(*o));
+  i->insertBuiltin(boost::lexical_cast<int>(lit.num));
+  return i;
+}
+
+auto_ptr<Object> Exec_Exp::operator() (const StringLiteral& lit) {
+  Object *o = m_context.find(StdLib::STRING);
+  if (!o) {
+    throw VMError("Failed to find the root integer type " + StdLib::STRING);
+  }
+  auto_ptr<Object> i(new Object(*o));
+  i->insertBuiltin(lit.str);
+  return i;
 }
 
 auto_ptr<Object> Exec_Exp::operator() (const MethodCall& methodCall) {

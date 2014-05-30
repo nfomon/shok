@@ -68,8 +68,8 @@ enum TokenIDs {
 
   // Literals
   T_INT,
-  T_FIXED,
-  //T_STR,
+  //T_FIXED,
+  T_STR,
   //T_REGEXP,
   //T_LABEL,
   //T_USEROP,
@@ -81,14 +81,16 @@ enum TokenIDs {
 
 template <typename L>
 struct Tokenizer : lex::lexer<L> {
-  Tokenizer() {
-    using lex::_start;
-    using lex::_end;
+  Tokenizer()
+    : Tokenizer::base_type(lex::match_flags::match_not_dot_newline) {
 
     this->self.add_pattern
       ("ID", "[a-zA-Z_][a-zA-Z0-9_]*")
       ("INT", "[0-9]+")
-      ("FIXED", "[0-9]+\\.[0-9]+")
+      //("FIXED", "[0-9]+\\.[0-9]+")
+      ("SQSTR", "\\\'([^\\\'\\\\\\\\]|\\\\.)*\\\'")
+      ("DQSTR", "\\\"([^\\\"\\\\\\\\]|\\\\.)*\\\"")
+      ("STR", "{SQSTR}|{DQSTR}")
       ("WS", "[ \t\r]+")
     ;
 
@@ -179,7 +181,8 @@ struct Tokenizer : lex::lexer<L> {
 
       // Literals
       ("{INT}", T_INT)
-      ("{FIXED}", T_FIXED)
+      //("{FIXED}", T_FIXED)
+      ("{STR}", T_STR)
       ("{ID}", T_ID)
 
       // Whitespace

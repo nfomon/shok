@@ -26,6 +26,11 @@ typedef function_vec::const_iterator function_iter;
 typedef boost::ptr_vector<Object> args_vec;
 typedef args_vec::const_iterator args_iter;
 
+typedef boost::variant<
+  int,
+  std::string
+> BuiltinData;
+
 class Object {
 public:
   Object();
@@ -42,9 +47,15 @@ public:
   void insertFunction(std::auto_ptr<function_vec> function);
   std::auto_ptr<Object> callFunction(Context& context, const args_vec& args) const;
 
+  void insertBuiltin(const BuiltinData& builtin) {
+    m_builtin = builtin;
+  }
+  boost::optional<BuiltinData> builtinData() const { return m_builtin; }
+
 protected:
   symbol_map m_members;
   std::auto_ptr<function_vec> m_function;
+  boost::optional<BuiltinData> m_builtin;
 };
 
 }

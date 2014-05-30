@@ -32,15 +32,21 @@ void Scope::insert(const std::string& name, std::auto_ptr<Type> type) {
 }
 
 const Type* Scope::find(const string& name) const {
+  const Scope* scope = findScope(name);
+  if (scope) { return scope->findLocal(name); }
+  return NULL;
+}
+
+const Scope* Scope::findScope(const string& name) const {
   symbol_iter s = m_locals.find(name);
-  if (s != m_locals.end()) return s->second;
-  if (m_parent) return m_parent->find(name);
+  if (s != m_locals.end()) { return this; }
+  if (m_parent) { return m_parent->findScope(name); }
   return NULL;
 }
 
 const Type* Scope::findLocal(const string& name) const {
   symbol_iter s = m_locals.find(name);
-  if (s != m_locals.end()) return s->second;
+  if (s != m_locals.end()) { return s->second; }
   return NULL;
 }
 
@@ -85,10 +91,10 @@ FunctionScope::FunctionScope(const Scope& parent, const Function& function)
   m_locality = LOCAL;
 }
 
-const Type* FunctionScope::find(const string& name) const {
+const Scope* FunctionScope::findScope(const string& name) const {
   const Type* t = m_function.type().findMember(name);
-  if (t) return t;
-  return m_parent->find(name);
+  if (t) { return this; }
+  return m_parent->findScope(name);
 }
 
 const Type* FunctionScope::findLocal(const string& name) const {
@@ -104,10 +110,10 @@ ObjectScope::ObjectScope(const Scope& parent, const Object& object)
   // ObjectScope locality is inherited (and probably irrelevant anyway)
 }
 
-const Type* ObjectScope::find(const string& name) const {
+const Scope* ObjectScope::findScope(const string& name) const {
   const Type* t = m_object.type().findMember(name);
-  if (t) return t;
-  return m_parent->find(name);
+  if (t) { return this; }
+  return m_parent->findScope(name);
 }
 
 const Type* ObjectScope::findLocal(const string& name) const {

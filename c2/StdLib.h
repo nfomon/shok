@@ -6,6 +6,10 @@
 
 /* shok standard library */
 
+#include "Scope.h"
+#include "Type.h"
+
+#include <memory>
 #include <string>
 
 namespace compiler {
@@ -14,6 +18,10 @@ namespace StdLib {
 
 const std::string OBJECT = "object";
 const std::string FUNCTION = "@";
+const std::string INTEGER = "int";
+const std::string STRING = "str";
+
+void Init(Scope& scope);
 
 }
 

@@ -16,6 +16,8 @@ using namespace vm;
 
 std::string StdLib::OBJECT = "object";
 std::string StdLib::FUNCTION = "@";
+std::string StdLib::INTEGER = "int";
+std::string StdLib::STRING = "str";
 
 void StdLib::Initialize(symbol_map& symbols) {
   {
@@ -28,5 +30,24 @@ void StdLib::Initialize(symbol_map& symbols) {
     auto_ptr<Object> function(new Object(*object->second));
     symbols.insert(FUNCTION, function);
   }
-  //symbol_iter function = symbols.find(FUNCTION);
+  symbol_iter function = symbols.find(FUNCTION);
+
+  {
+    auto_ptr<Object> int_(new Object(*object->second));
+    symbols.insert(INTEGER, int_);
+  }
+  //symbol_iter int_ = symbols.find(INTEGER);
+
+  {
+    auto_ptr<Object> str(new Object(*object->second));
+    symbols.insert(STRING, str);
+  }
+  //symbol_iter str = symbols.find(STRING);
+
+  {
+    auto_ptr<Object> print(new Object(*function->second));
+    symbols.insert("print", print);
+  }
+  //symbol_iter print = symbols.find("print");
+  // TODO insert code for print statement
 }

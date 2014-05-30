@@ -6,6 +6,7 @@
 
 /* Atom */
 
+#include "Literal.h"
 #include "Type.h"
 
 #include <boost/variant.hpp>
@@ -22,6 +23,7 @@ class Variable;
 
 typedef boost::variant<
   Variable,
+  Literal,
   boost::recursive_wrapper<Object>,
   boost::recursive_wrapper<Function>
 > Atom;
@@ -29,6 +31,7 @@ typedef boost::variant<
 class Atom_bytecode : public boost::static_visitor<std::string> {
 public:
   std::string operator() (const Variable& var) const;
+  std::string operator() (const Literal& var) const;
   std::string operator() (const Object& object) const;
   std::string operator() (const Function& function) const;
 };
@@ -36,6 +39,7 @@ public:
 class Atom_type : public boost::static_visitor<const Type&> {
 public:
   const Type& operator() (const Variable& var) const;
+  const Type& operator() (const Literal& var) const;
   const Type& operator() (const Object& object) const;
   const Type& operator() (const Function& function) const;
 };

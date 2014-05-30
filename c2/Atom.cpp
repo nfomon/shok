@@ -17,6 +17,10 @@ std::string Atom_bytecode::operator() (const Variable& var) const {
   return " " + var.bytename();
 }
 
+std::string Atom_bytecode::operator() (const Literal& lit) const {
+  return " " + boost::apply_visitor(Literal_bytecode(), lit);
+}
+
 std::string Atom_bytecode::operator() (const Object& object) const {
   return object.bytecode();
 }
@@ -27,6 +31,10 @@ std::string Atom_bytecode::operator() (const Function& function) const {
 
 const Type& Atom_type::operator() (const Variable& var) const {
   return var.type();
+}
+
+const Type& Atom_type::operator() (const Literal& lit) const {
+  return boost::apply_visitor(Literal_type(), lit);
 }
 
 const Type& Atom_type::operator() (const Object& object) const {

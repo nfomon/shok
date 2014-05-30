@@ -8,6 +8,7 @@
 #include "CompileError.h"
 #include "ExpParser.h"
 #include "Scope.h"
+#include "StdLib.h"
 
 #include <boost/bind.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
@@ -55,10 +56,7 @@ bool Compiler::execute() {
   forward_iterator_type fwd_end;
 
   Scope globalScope;
-  // Stdlib objects
-  globalScope.insert("object", auto_ptr<Type>(new RootType()));
-  globalScope.insert("@", auto_ptr<Type>(new BasicType(
-      globalScope.find("object")->duplicate(), "object")));
+  StdLib::Init(globalScope);
 
   ExpParser<forward_iterator_type> exp_;
 

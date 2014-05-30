@@ -8,6 +8,7 @@
 
 #include "Expression.h"
 #include "Function.h"
+#include "Literal.h"
 #include "Object.h"
 #include "Scope.h"
 #include "Variable.h"
@@ -51,6 +52,7 @@ public:
 
     atom_ = (
       variable_(_r1)
+      | literal_(_r1)
       | object_(_r1)
       | function_(_r1)
     )[phoenix::bind(&Expression::attach_atom, _r2, _1)];
@@ -78,6 +80,7 @@ public:
 
 private:
   VariableParser<Iterator> variable_;
+  LiteralParser<Iterator> literal_;
   ObjectParser<Iterator> object_;
   FunctionParser<Iterator> function_;
   qi::rule<Iterator, void(const Scope&, Expression&), ascii::space_type> atom_;

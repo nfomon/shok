@@ -44,6 +44,7 @@ private:
   typedef member_vec::const_iterator member_iter;
 
   const Scope* m_scope;
+  const Scope* m_varScope;
   std::string m_name;
   member_vec m_members;
   // This could probably be a bare const Type*
