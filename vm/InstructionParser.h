@@ -7,6 +7,7 @@
 /* Instruction parser */
 
 #include "Call.h"
+#include "Cmd.h"
 #include "Context.h"
 #include "Del.h"
 #include "Instruction.h"
@@ -35,6 +36,7 @@ public:
   InstructionParser(ExpParser<Iterator>& exp_)
     : InstructionParser::base_type(instruction_, "Instruction"),
       exp_(exp_),
+      cmd_(exp_),
       new_(exp_),
       call_(exp_) {
 
@@ -42,6 +44,7 @@ public:
       new_
       | del_
       | call_
+      | cmd_
     ;
 
     //BOOST_SPIRIT_DEBUG_NODE(instruction_);
@@ -50,6 +53,7 @@ public:
 private:
   ExpParser<Iterator>& exp_;
 
+  CmdParser<Iterator> cmd_;
   NewParser<Iterator> new_;
   DelParser<Iterator> del_;
   CallParser<Iterator> call_;

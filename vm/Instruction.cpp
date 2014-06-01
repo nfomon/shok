@@ -6,7 +6,15 @@
 #include "Instructions.h"
 #include "VMError.h"
 
+#include <boost/spirit/include/qi.hpp>
+namespace qi = boost::spirit::qi;
+
 using namespace vm;
+
+void Exec_Instruction::operator() (const Cmd& cmd) const {
+  Exec_Cmd exec_Cmd(m_context);
+  exec_Cmd(cmd, NULL, NULL);
+}
 
 void Exec_Instruction::operator() (const New& n) const {
   n.exec(m_context);

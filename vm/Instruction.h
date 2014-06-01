@@ -23,10 +23,12 @@ namespace ascii = spirit::ascii;
 namespace vm {
 
 struct Call;
+struct Cmd;
 struct Del;
 struct New;
 
 typedef boost::variant<
+  boost::recursive_wrapper<Cmd>,
   boost::recursive_wrapper<New>,
   boost::recursive_wrapper<Del>,
   boost::recursive_wrapper<Call>
@@ -40,6 +42,7 @@ public:
   void operator() (const Instruction& instruction, qi::unused_type, qi::unused_type) const {
     boost::apply_visitor(*this, instruction);
   }
+  void operator() (const Cmd& cmd) const;
   void operator() (const New& n) const;
   void operator() (const Del& del) const;
   void operator() (const Call& call) const;

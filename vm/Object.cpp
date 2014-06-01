@@ -23,9 +23,11 @@ Object::Object() {
 }
 
 Object::Object(const Object& rhs) {
+  m_members = rhs.m_members;
   if (rhs.m_function.get()) {
     m_function.reset(new function_vec(*rhs.m_function.get()));
   }
+  m_builtin = rhs.m_builtin;
 }
 
 Object& Object::operator=(const Object& rhs) {
@@ -36,7 +38,7 @@ Object& Object::operator=(const Object& rhs) {
 }
 
 Object::~Object() {
-  cout << " - object deleted" << endl;
+  //cout << " - object deleted" << endl;  // debug
 }
 
 const Object* Object::find(const std::string& name) const {
@@ -72,15 +74,17 @@ void Object::assign(const string& name, auto_ptr<Object> value) {
 }
 
 auto_ptr<Object> Object::callFunction(Context& context,
-                                      const args_vec& args) const {
+                                      args_vec& args) const {
   if (!m_function.get()) {
     throw VMError("Cannot call non-function Object");
   }
   cout << "Calling function" << endl;
   const function_vec& function = *m_function.get();
   context.addFrame();
-  // TODO assign named args
-  // TODO run function body
+  // TODO named args
+  for (size_t i = 0; i < args.size(); ++i) {
+    context.locals().insert(".arg" + boost::lexical_cast<string>(i+1), auto_ptr<Object>(args.release(args.begin()).release()));
+  }
   Exec_Instruction exec_Instruction(context);
   for (function_iter i = function.begin(); i != function.end(); ++i) {
     boost::apply_visitor(exec_Instruction, *i);

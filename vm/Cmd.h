@@ -31,7 +31,10 @@ using std::endl;
 namespace vm {
 
 struct Cmd {
-  std::vector<Expression> exps;
+  typedef std::vector<Expression> exp_vec;
+  typedef exp_vec::const_iterator exp_iter;
+
+  exp_vec exps;
   std::string cmd;
 };
 
@@ -40,7 +43,7 @@ public:
   Exec_Cmd(Context& context)
     : m_context(context) {}
 
-  void operator() (const Cmd& n, qi::unused_type, qi::unused_type) const;
+  void operator() (const Cmd& c, qi::unused_type, qi::unused_type) const;
 
 private:
   Context& m_context;
@@ -59,8 +62,12 @@ public:
     using qi::lit;
     using qi::no_skip;
 
-    runcmd_ %= lit("CMD:[") > +no_skip[~char_("]")] > lit(']');
-    cmd_ %= *(lit("EXP:") > exp_) >> runcmd_;
+    runcmd_ %= lit('[') > +no_skip[~char_("]")] > lit(']');
+    cmd_ %=
+      lit("(cmd")
+      > *(lit("(exp") > exp_ > ")")
+      > runcmd_
+      > lit(')');
 
     //BOOST_SPIRIT_DEBUG_NODE(runcmd_);
     //BOOST_SPIRIT_DEBUG_NODE(cmd_);

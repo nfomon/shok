@@ -45,7 +45,7 @@ public:
   void assign(const std::string& name, std::auto_ptr<Object> value);
 
   void insertFunction(std::auto_ptr<function_vec> function);
-  std::auto_ptr<Object> callFunction(Context& context, const args_vec& args) const;
+  std::auto_ptr<Object> callFunction(Context& context, args_vec& args) const;
 
   void insertBuiltin(const BuiltinData& builtin) {
     m_builtin = builtin;

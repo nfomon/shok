@@ -20,10 +20,10 @@ void Cmd::attach_text(const std::string& text) {
 }
 
 void Cmd::attach_exp(const Expression& exp) {
-  m_expcode += "EXP:" + exp.bytecode() + "\n";
+  m_expcode += " (exp" + exp.bytecode() + ")";
   m_cmdtext += "{}";
 }
 
 std::string Cmd::bytecode() const {
-  return m_expcode + "CMD:[" + m_cmdtext + "]";
+  return " (cmd" + m_expcode + " [" + m_cmdtext + "])";
 }

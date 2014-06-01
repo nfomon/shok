@@ -3,6 +3,7 @@
 
 #include "StdLib.h"
 
+#include "Expression.h"
 #include "Instructions.h"
 #include "Object.h"
 #include "VMError.h"
@@ -47,7 +48,14 @@ void StdLib::Initialize(symbol_map& symbols) {
   {
     auto_ptr<Object> print(new Object(*function->second));
     symbols.insert("print", print);
+  } {
+    symbol_mod_iter print = symbols.find("print");
+    auto_ptr<function_vec> function(new function_vec());
+    Cmd c;
+    Variable arg(".arg1");
+    c.exps.push_back(arg);
+    c.cmd = "echo {}";
+    function->push_back(c);
+    print->second->insertFunction(function);
   }
-  //symbol_iter print = symbols.find("print");
-  // TODO insert code for print statement
 }

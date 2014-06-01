@@ -5,6 +5,7 @@
 #define _Instructions_h_
 
 #include "Call.h"
+#include "Cmd.h"
 #include "Del.h"
 #include "New.h"
 
