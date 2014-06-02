@@ -6,30 +6,21 @@
 
 /* shok compiler */
 
-#include <boost/function.hpp>
-#include <boost/spirit/home/support/unused.hpp>
-#include <boost/spirit/include/qi.hpp>
-
 #include <istream>
-#include <map>
+#include <ostream>
 
 namespace compiler {
 
 class Compiler {
 public:
-  Compiler(std::istream& input);
+  Compiler(std::istream& input, std::ostream& output);
 
   // returns true on full successful compile
   bool execute();
 
 private:
   std::istream& m_input;
-
-  // member-function aliases bound to their exec_x counterparts at construction
-  boost::function<void (const std::string&, boost::spirit::qi::unused_type, boost::spirit::qi::unused_type)> on_cmdline;
-
-  // semantic actions
-  void emit(const std::string& bytecode);
+  std::ostream& m_output;
 };
 
 }

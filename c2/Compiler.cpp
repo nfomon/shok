@@ -18,28 +18,19 @@ namespace spirit = boost::spirit;
 namespace qi = spirit::qi;
 namespace ascii = spirit::ascii;
 
-#include <iostream>
 #include <istream>
-#include <memory>
+#include <ostream>
 #include <string>
-#include <utility>
-#include <vector>
-using std::auto_ptr;
-using std::cout;
 using std::endl;
 using std::istream;
+using std::ostream;
 using std::string;
-using std::vector;
 
 using namespace compiler;
 
-Compiler::Compiler(istream& input)
+Compiler::Compiler(istream& input, ostream& output)
   : m_input(input),
-    on_cmdline(boost::bind(&Compiler::emit, this, _1)) {
-}
-
-void Compiler::emit(const std::string& bytecode) {
-  cout << bytecode << endl;
+    m_output(output) {
 }
 
 bool Compiler::execute() {
@@ -55,23 +46,26 @@ bool Compiler::execute() {
   forward_iterator_type fwd_begin = spirit::make_default_multi_pass(in_begin);
   forward_iterator_type fwd_end;
 
+  // Initialize global scope
   Scope globalScope;
   StdLib::Init(globalScope);
 
+  // Parsers
   ExpParser<forward_iterator_type> exp_;
-
   CmdParser<forward_iterator_type> cmd_(exp_, globalScope);
   CodeParser<forward_iterator_type> code_(exp_);
 
   typedef qi::rule<forward_iterator_type, std::string(), ascii::space_type> StringRule;
   typedef qi::rule<forward_iterator_type, ascii::space_type> VoidRule;
-
-  StringRule cmdline_ = (
+  StringRule cmdline_ =
     lit('[')
     > (cmd_ | code_(ref(globalScope)))
     > lit(']')
+  ;
+  VoidRule program_ = +(
+    cmdline_[ref(m_output) << qi::_1]
+    > -qi::no_skip[ lit("\n")[ref(m_output) << endl] ]
   );
-  VoidRule program_ = +(cmdline_[on_cmdline]);
 
   //BOOST_SPIRIT_DEBUG_NODE(cmdline_);
   //BOOST_SPIRIT_DEBUG_NODE(program_);
@@ -87,7 +81,7 @@ bool Compiler::execute() {
   }
 
   // Cleanup the global scope :)
-  emit(globalScope.bytecode());
+  m_output << globalScope.bytecode() << endl;
 
   return r;
 }
