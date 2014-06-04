@@ -36,6 +36,7 @@ Compiler::Compiler(istream& input, ostream& output)
 bool Compiler::execute() {
   using phoenix::ref;
   using qi::lit;
+  using qi::no_skip;
 
   // iterate over stream input
   typedef std::istreambuf_iterator<char> base_iterator_type;
@@ -64,7 +65,7 @@ bool Compiler::execute() {
   ;
   VoidRule program_ = +(
     cmdline_[ref(m_output) << qi::_1]
-    > -qi::no_skip[ lit("\n")[ref(m_output) << endl] ]
+    > -no_skip[ lit("\n")[ref(m_output) << endl] ]
   );
 
   //BOOST_SPIRIT_DEBUG_NODE(cmdline_);
