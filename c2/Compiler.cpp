@@ -53,14 +53,14 @@ bool Compiler::execute() {
 
   // Parsers
   ExpParser<forward_iterator_type> exp_;
-  CmdParser<forward_iterator_type> cmd_(exp_, globalScope);
+  CmdParser<forward_iterator_type> cmd_(exp_);
   CodeParser<forward_iterator_type> code_(exp_);
 
   typedef qi::rule<forward_iterator_type, std::string(), ascii::space_type> StringRule;
   typedef qi::rule<forward_iterator_type, ascii::space_type> VoidRule;
   StringRule cmdline_ =
     lit('[')
-    > (cmd_ | code_(ref(globalScope)))
+    > (cmd_(ref(globalScope)) | code_(ref(globalScope)))
     > lit(']')
   ;
   VoidRule program_ = +(

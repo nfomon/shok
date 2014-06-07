@@ -39,16 +39,15 @@ private:
 };
 
 template <typename Iterator>
-struct CmdParser : qi::grammar<Iterator, std::string(), qi::locals<Cmd>, ascii::space_type> {
+struct CmdParser : qi::grammar<Iterator, std::string(Scope&), qi::locals<Cmd>, ascii::space_type> {
 public:
-  CmdParser(ExpParser<Iterator>& exp_,
-            Scope& globalScope)
+  CmdParser(ExpParser<Iterator>& exp_)
     : CmdParser::base_type(cmd_, "Cmd"),
-      m_globalScope(globalScope),
       exp_(exp_) {
     using qi::_1;
     using qi::_a;
     using qi::_r1;
+    using qi::_r2;
     using qi::_val;
     using qi::char_;
     using qi::lit;
@@ -58,14 +57,14 @@ public:
 
     expblock_ %= (
       lit('{')
-      > exp_(ref(m_globalScope), std::string("exp"))[phoenix::bind(&Cmd::attach_exp, _r1, _1)]
+      > exp_(_r1, std::string("exp"))[phoenix::bind(&Cmd::attach_exp, _r2, _1)]
       > lit('}')
     );
 
     cmdchars_ %= (+(~char_("{]")));
     cmdtext_ = cmdchars_[phoenix::bind(&Cmd::attach_text, _r1, _1)];
-    cmdwhole_ = cmdtext_(_r1) > *(expblock_(_r1) > -cmdtext_(_r1));
-    cmd_ = cmdwhole_(_a)[_val = phoenix::bind(&Cmd::bytecode, _a)];
+    cmdwhole_ = cmdtext_(_r2) > *(expblock_(_r1, _r2) > -cmdtext_(_r2));
+    cmd_ = cmdwhole_(_r1, _a)[_val = phoenix::bind(&Cmd::bytecode, _a)];
 
     //BOOST_SPIRIT_DEBUG_NODE(expblock_);
     //BOOST_SPIRIT_DEBUG_NODE(cmdtext_);
@@ -74,14 +73,13 @@ public:
   }
 
 private:
-  Scope& m_globalScope;
   ExpParser<Iterator>& exp_;
 
-  qi::rule<Iterator, void(Cmd&), ascii::space_type> expblock_;
+  qi::rule<Iterator, void(Scope&,Cmd&), ascii::space_type> expblock_;
   qi::rule<Iterator, std::string()> cmdchars_;
   qi::rule<Iterator, void(Cmd&)> cmdtext_;
-  qi::rule<Iterator, void(Cmd&), ascii::space_type> cmdwhole_;
-  qi::rule<Iterator, std::string(), qi::locals<Cmd>, ascii::space_type> cmd_;
+  qi::rule<Iterator, void(Scope&,Cmd&), ascii::space_type> cmdwhole_;
+  qi::rule<Iterator, std::string(Scope&), qi::locals<Cmd>, ascii::space_type> cmd_;
 };
 
 }

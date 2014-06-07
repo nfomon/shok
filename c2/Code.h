@@ -6,6 +6,7 @@
 
 /* Code block */
 
+#include "Cmd.h"
 #include "Common.h"
 #include "Expression.h"
 #include "NewInit.h"
@@ -59,6 +60,7 @@ public:
   CodeParser(ExpParser<Iterator>& exp_)
     : CodeParser::base_type(code_, "Code"),
       exp_(exp_),
+      cmd_(exp_),
       newinit_(exp_) {
     using phoenix::ref;
     using qi::_1;
@@ -70,16 +72,21 @@ public:
 
     new_ = lit("(new")
       > +newinit_(_r1)[_val += phoenix::bind(&NewInit::bytecode_asNew, _1)]
-      > lit(")");
+      > lit(')');
 
     call_ = lit("(call")[phoenix::bind(&Call::init, _a, _r1)]
       > variable_(_r1)[phoenix::bind(&Call::attach_source, _a, _1)]
       > *exp_(_r1, std::string("exp"))[phoenix::bind(&Call::attach_arg, _a, _1)]
-      > lit(")")[_val += phoenix::bind(&Call::bytecode, _a)];
+      > lit(')')[_val += phoenix::bind(&Call::bytecode, _a)];
+
+    cmdstmt_ = lit("(cmd") > lit('[')
+      > cmd_(_r1)[_val += _1]
+       > lit(']') > lit(')');
 
     statement_ %=
       new_(_r1)
-      | call_(_r1);
+      | call_(_r1)
+      | cmdstmt_(_r1);
 
     block_ =
       lit('{')[phoenix::bind(&Scope::reParent, _a, _r1)]
@@ -99,6 +106,7 @@ public:
 
     //BOOST_SPIRIT_DEBUG_NODE(new_);
     //BOOST_SPIRIT_DEBUG_NODE(call_);
+    //BOOST_SPIRIT_DEBUG_NODE(cmdstmt_);
     //BOOST_SPIRIT_DEBUG_NODE(statement_);
     //BOOST_SPIRIT_DEBUG_NODE(block_);
     //BOOST_SPIRIT_DEBUG_NODE(code_);
@@ -107,10 +115,12 @@ public:
 private:
   ExpParser<Iterator>& exp_;
 
+  CmdParser<Iterator> cmd_;
   NewInitParser<Iterator> newinit_;
   VariableParser<Iterator> variable_;
   qi::rule<Iterator, std::string(Scope&), ascii::space_type> new_;
   qi::rule<Iterator, std::string(Scope&), qi::locals<Call>, ascii::space_type> call_;
+  qi::rule<Iterator, std::string(Scope&), ascii::space_type> cmdstmt_;
   qi::rule<Iterator, std::string(Scope&), ascii::space_type> statement_;
   qi::rule<Iterator, std::string(Scope&), qi::locals<Scope>, ascii::space_type> block_;
   qi::rule<Iterator, std::string(Scope&), ascii::space_type> code_;

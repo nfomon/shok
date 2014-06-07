@@ -35,7 +35,6 @@ struct InstructionParser
 public:
   InstructionParser(ExpParser<Iterator>& exp_)
     : InstructionParser::base_type(instruction_, "Instruction"),
-      exp_(exp_),
       cmd_(exp_),
       new_(exp_),
       call_(exp_) {
@@ -51,8 +50,6 @@ public:
   }
 
 private:
-  ExpParser<Iterator>& exp_;
-
   CmdParser<Iterator> cmd_;
   NewParser<Iterator> new_;
   DelParser<Iterator> del_;

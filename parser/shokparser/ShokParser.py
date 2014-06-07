@@ -425,6 +425,12 @@ StmtBreak = Or('stmtbreak', [
 ])
 
 
+# Command statement
+StmtCmd = (Seq('stmtcmd',
+  [('COLON',''), w, Future('ProgramInvocation')]
+), '(cmd [%s])')
+
+
 # Statements
 Stmt = Or('stmt', [
   StmtNew,
@@ -436,6 +442,7 @@ Stmt = Or('stmt', [
   #Seq('stmtstmtbranch', [StmtBranch, Endl]),
   StmtLoop,
   StmtBreak,
+  StmtCmd,
 ])
 Replace(BranchPred.items[0], 'Stmt', Stmt)
 Replace(ElsePred.items[0], 'Stmt', Stmt)
@@ -537,6 +544,7 @@ Program = Seq('program',
 ProgramInvocation = Seq('programinvocation',
   [Program, ProgramArgs]
 )
+Replace(StmtCmd[0], 'ProgramInvocation', ProgramInvocation)
 
 CmdLine = Or('cmdline', [
   wn,
