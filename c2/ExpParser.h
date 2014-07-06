@@ -13,7 +13,6 @@
 #include "Scope.h"
 #include "Variable.h"
 
-#include <boost/fusion/include/std_pair.hpp>
 #include <boost/optional.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/shared_ptr.hpp>

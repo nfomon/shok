@@ -11,12 +11,13 @@
 #include "StdLib.h"
 
 #include <boost/bind.hpp>
-#include <boost/fusion/include/adapt_struct.hpp>
+#include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/support_multi_pass.hpp>
+namespace phoenix = boost::phoenix;
 namespace spirit = boost::spirit;
-namespace qi = spirit::qi;
 namespace ascii = spirit::ascii;
+namespace qi = spirit::qi;
 
 #include <istream>
 #include <ostream>

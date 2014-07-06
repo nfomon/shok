@@ -16,12 +16,12 @@
 
 #include <boost/bind.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
+#include <boost/fusion/include/std_pair.hpp>
 #include <boost/spirit/include/phoenix_bind.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
-#include <boost/fusion/include/std_pair.hpp>
 #include <boost/spirit/include/support_multi_pass.hpp>
 #include <boost/variant.hpp>
 
@@ -32,7 +32,6 @@ namespace qi = spirit::qi;
 
 #include <istream>
 #include <string>
-#include <utility>
 #include <vector>
 using std::istream;
 using std::string;

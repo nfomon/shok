@@ -11,12 +11,8 @@
 #include "InstructionParser.h"
 #include "VMError.h"
 
-#include <boost/fusion/include/sequence.hpp>
-#include <boost/fusion/sequence.hpp>
 #include <boost/spirit/include/qi.hpp>
-#include <boost/fusion/include/std_pair.hpp>
 #include <boost/variant.hpp>
-namespace fusion = boost::fusion;
 namespace spirit = boost::spirit;
 namespace qi = spirit::qi;
 namespace ascii = spirit::ascii;
