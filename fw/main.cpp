@@ -6,8 +6,9 @@
 #include "Char.h"
 #include "Connector.h"
 #include "DS.h"
+#include "Keyword.h"
 #include "Or.h"
-#include "Literal.h"
+#include "Rule.h"
 
 #include "util/Log.h"
 
@@ -25,6 +26,27 @@ namespace {
   const string LOGFILE = "fw.log";
 }
 
+class Lexer {
+public:
+  Lexer(Log& log, const std::string& name)
+    : m_log(log),
+      m_name(name),
+      m_machine(log, name) {
+    //RegexpRule identifier_("[A-Za-z_][0-9A-Za-z_]");
+    std::auto_ptr<Rule> new_(new KeywordRule(log, "new"));
+    m_machine.AddChild(new_);
+    std::auto_ptr<Rule> x_(new KeywordRule(log, "x"));
+    m_machine.AddChild(x_);
+  }
+
+  Rule& Machine() { return m_machine; }
+
+private:
+  Log& m_log;
+  string m_name;
+  OrRule m_machine;
+};
+
 int main(int argc, char *argv[]) {
   if (argc < 1 || argc > 2) {
     cout << "usage: " << PROGRAM_NAME << " [log level]" << endl;
@@ -37,24 +59,36 @@ int main(int argc, char *argv[]) {
       log.setLevel(argv[1]);
     }
 
-    // Lexer machine
-    OrNode lexer(log, "lexer");
-    //RegexpNode identifier_("[A-Za-z_][0-9A-Za-z_]");
-    std::auto_ptr<MachineNode> new_(new LiteralNode(log, "new"));
-    lexer.AddChild(new_);
-    std::auto_ptr<MachineNode> x_(new LiteralNode(log, "x"));
-    lexer.AddChild(x_);
+    // Lexer
+    Lexer lexer(log, "lexer");
+    log.info("Lexer: " + lexer.Machine().print());
+    Connector<ListDS> lexerConnector(log, lexer.Machine());
 
-    // Lexer connector
-    Connector<ListDS> lexerConnector(log, lexer);
-
-    // Insert a character
-    ListDS c1(std::auto_ptr<State>(new CharState('{')));
-    lexerConnector.Insert(c1);
-    ListDS c2(std::auto_ptr<State>(new CharState('e')));
-    c1.right = &c2;
-    c2.left = &c1;
-    lexerConnector.Insert(c2);
+    ListDS* start = NULL;
+    ListDS* prev = NULL;
+    string line;
+    while (getline(cin, line)) {
+      line += "\n";
+      for (int i=0; i < line.size(); ++i) {
+        ListDS* c = new ListDS(std::auto_ptr<State>(new CharState(line.at(i))));
+        if (!start) { start = c; }
+        if (prev) {
+          prev->right = c;
+          c->left = prev;
+        }
+        log.info("");
+        log.info("Lexer input: " + c->print());
+        lexerConnector.Insert(*c);
+        prev = c;
+      }
+    }
+    log.info("Clearing input");
+    ListDS* i = start;
+    while (i) {
+      ListDS* j = i->right;
+      delete i;
+      i = j;
+    }
 
   } catch (const FWError& e) {
     log.error(string("Compilation framework error: ") + e.what());

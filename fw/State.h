@@ -4,6 +4,10 @@
 #ifndef _State_h_
 #define _State_h_
 
+#include <boost/lexical_cast.hpp>
+
+#include <string>
+
 namespace fw {
 
 struct State {
@@ -18,6 +22,17 @@ struct State {
       done(false),
       locked(false) {}
   virtual ~State() {}
+
+  virtual void Clear() {
+    ok = false;
+    bad = false;
+    done = false;
+    locked = false;
+  }
+
+  virtual operator std::string() const { return "[State:" + StateFlags() + "]"; }
+
+  std::string StateFlags() const { return boost::lexical_cast<std::string>(ok) + "/" + boost::lexical_cast<std::string>(bad) + "/" + boost::lexical_cast<std::string>(done) + "/" + boost::lexical_cast<std::string>(locked) + "]"; }
 };
 
 }

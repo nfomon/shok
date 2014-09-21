@@ -12,10 +12,11 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     Connector.h \
     DS.h \
     FWError.h \
-    Literal.h \
-    Machine.cpp \
-    Machine.h \
+    Keyword.h \
+    ListenerTable.h \
     Or.cpp \
     Or.h \
+    Rule.cpp \
+    Rule.h \
     State.h \
     main.cpp

@@ -25,10 +25,21 @@ struct DS {
   }
   virtual ~DS() {}
 
+  virtual operator std::string() const = 0;
+  virtual std::string print() const = 0;
+
   State& GetState() const { return *m_state.get(); }
-  const DS* istart;
-  const DS* iend;
-  size_t size;
+  template <typename StateType>
+  StateType& GetState() const {
+    StateType* state = dynamic_cast<StateType*>(m_state.get());
+    if (!state) {
+      throw FWError("Cannot retrieve state to incorrect type");
+    }
+    return *state;
+  }
+  const DS* istart; // starting inode
+  const DS* iend;   // inode that makes us bad after we were done, or last inode
+  size_t size;      // number of inodes that make us good (count: iend - istart)
 
 private:
   std::auto_ptr<State> m_state;
@@ -40,9 +51,17 @@ struct ListDS : public DS {
          ListDS* right = NULL)
     : DS(state),
       left(left),
-      right(right),
-      size(1) {}
+      right(right) {}
   virtual ~ListDS() {}
+
+  virtual operator std::string() const { return "(ListDS " + std::string(GetState()) + ")"; }
+  virtual std::string print() const {
+    std::string s = "<" + std::string(GetState()) + ">";
+    if (right) {
+      s += "-" + right->print();
+    }
+    return s;
+  }
 
   ListDS* left;
   ListDS* right;
@@ -55,12 +74,42 @@ struct TreeDS : public DS {
 
   TreeDS* parent;
   child_vec children;
+  unsigned int depth;
 
   TreeDS(std::auto_ptr<State> state,
-         TreeDS* parent = NULL)
+         TreeDS* parent)
     : DS(state),
-      parent(parent) {}
+      parent(parent),
+      depth(parent ? parent->depth + 1 : 0) {}
   virtual ~TreeDS() {}
+
+  virtual operator std::string() const { return "(TreeDS " + std::string(GetState()) + ")"; }
+  virtual std::string print() const {
+    std::string s(GetState());
+    for (child_iter i = children.begin(); i != children.end(); ++i) {
+      s += " (" + i->print() + ")";
+    }
+  }
+
+  void Clear() {
+    State& state = GetState();
+    state.Clear();
+    istart = NULL;
+    iend = NULL;
+    size = 0;
+  }
+};
+
+struct TreeDSDepthComparator {
+  bool operator() (TreeDS* a, TreeDS* b) const {
+    return a->depth < b->depth;
+  }
+};
+
+struct TreeDSInverseDepthComparator {
+  bool operator() (TreeDS* a, TreeDS* b) const {
+    return a->depth > b->depth;
+  }
 };
 
 }

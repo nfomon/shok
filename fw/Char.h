@@ -4,8 +4,9 @@
 #ifndef _Char_h_
 #define _Char_h_
 
-#include "Machine.h"
 #include "State.h"
+
+#include <string>
 
 namespace fw {
 
@@ -15,6 +16,8 @@ public:
     : c(c) {}
   virtual ~CharState() {}
   const char c;
+
+  virtual operator std::string() const { return std::string("[CharState '") + c + "':" + StateFlags() + "]"; }
 };
 
 }

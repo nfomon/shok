@@ -4,53 +4,86 @@
 #ifndef _Connector_h_
 #define _Connector_h_
 
-#include "Machine.h"
 #include "DS.h"
+#include "ListenerTable.h"
+#include "Rule.h"
 
 #include "util/Log.h"
 
 #include <map>
+#include <set>
 
 namespace fw {
 
 template <typename INode>
 class Connector {
 public:
-  Connector(Log& log, const MachineNode& machine)
+  Connector(Log& log, const Rule& rule)
     : m_log(log),
-      m_root(machine.MakeState()) {}
+      m_root(rule.MakeState(), NULL) {}
 
-  // Call Insert() or Delete() AFTER you update the inode's connections in the
-  // input DS, but before deleting the node.  Connector will update its links.
+  // Insert() a new inode, AFTER attaching its connections in the input DS.
   void Insert(const INode& inode);
+  // Delete() an inode.  Call this AFTER updating its left and right to point
+  // to each other, but leave this inode's left and right pointers intact.
   void Delete(const INode& inode);
 
-  // Updates a node, forming and/or updating its children as needed, then
-  // determining the node's state.  Does not move "upwards" after that.  Called
-  // by Update() and also by the MachineNode::Update()s for the children.
-  void UpdateNode(TreeDS& x, const INode* inode);
+  // Reposition or Update a single node.  Used internally by the Connector but
+  // can be called by a rule for convenience sake as well.  The Connector
+  // assures that the children will have already been updated if necessary.
+  void RepositionNode(TreeDS& x, const INode& inode) {
+    m_log.info("Connector: Repositioning " + std::string(x) + " with inode " + std::string(inode));
+    RuleState& state = x.GetState<RuleState>();
+    state.rule.Reposition(*this, x, inode);
+  }
+  bool UpdateNode(TreeDS& x, const INode& inode) {
+    m_log.info("Connector: Updating " + std::string(x) + " with inode " + std::string(inode));
+    RuleState& state = x.GetState<RuleState>();
+    return state.rule.Update(*this, x, inode);
+  }
+  void ClearNode(TreeDS& x) {
+    m_log.info("Connector: Clearing " + std::string(x));
+    x.Clear();
+  }
+
+  // Called from a rule/state regarding its DS node.  Listens for updates to
+  // this inode.
+  void Listen(TreeDS& x, const INode& inode) {
+    m_log.info("Connector: " + std::string(x) + " will listen to " + std::string(inode));
+    m_listeners.AddListener(&inode, &x);
+  }
+  void Unlisten(TreeDS& x, const INode& inode) {
+    m_log.info("Connector: " + std::string(x) + " will NOT listen to " + std::string(inode));
+    m_listeners.RemoveListener(&inode, &x);
+  }
 
 private:
-  typedef std::map<const INode*, TreeDS*> fwdlink_map;
-  typedef typename fwdlink_map::const_iterator fwdlink_iter;
+  typedef typename ListenerTable<const INode*, TreeDS*>::listener_set listener_set;
+  typedef typename ListenerTable<const INode*, TreeDS*>::listener_iter listener_iter;
 
-  // Update a node (via UpdateNode) and move "up" the output tree if it changes
-  // its bounds.
-  void Update(TreeDS& x, const INode* inode);
-
-  // Set the fwd link from the inode to this output node
-  void MakeFwdLink(const INode& inode, TreeDS& x);
+  // Convenience core for Insert() and Delete().  Updates all listeners to the
+  // left (and if any and distinct, to the right) of the inode, about the inode.
+  void UpdateListeners(const INode& inode);
 
   Log& m_log;
   TreeDS m_root;
-  fwdlink_map m_fwdlinks;
+  ListenerTable<const INode*, TreeDS*> m_listeners;
 };
 
 template <>
 void Connector<ListDS>::Insert(const ListDS& inode);
-
 template <>
 void Connector<TreeDS>::Insert(const TreeDS& inode);
+
+template <>
+void Connector<ListDS>::Delete(const ListDS& inode);
+template <>
+void Connector<TreeDS>::Delete(const TreeDS& inode);
+
+template <>
+void Connector<ListDS>::UpdateListeners(const ListDS& inode);
+template <>
+void Connector<TreeDS>::UpdateListeners(const TreeDS& inode);
 
 }
 

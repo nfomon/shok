@@ -2,9 +2,19 @@
 // directory of this distribution and at http://shok.io/code/copyright.html
 
 #include "Connector.h"
-#include "DS.h"
 
+#include "DS.h"
+#include "Rule.h"
+
+#include <boost/lexical_cast.hpp>
+using boost::lexical_cast;
+
+#include <set>
+#include <string>
 #include <utility>
+using std::multiset;
+using std::pair;
+using std::string;
 
 using namespace fw;
 
@@ -12,45 +22,20 @@ using namespace fw;
 
 template <>
 void Connector<ListDS>::Insert(const ListDS& inode) {
-  // Left side
-  TreeDS* x = NULL;
-  if (inode.left) {
-    fwdlink_iter fwdlink = m_fwdlinks.find(inode.left);
-    if (m_fwdlinks.end() == fwdlink) {
-      throw FWError("Inserting inode: Cannot find left link");
-    }
-    x = fwdlink->second;
+  m_log.info("Inserting inode " + string(inode));
+
+  // If !inode.left, just reposition the root.
+  if (!inode.left) {
+    RepositionNode(m_root, inode);
   } else {
-    x = &m_root;
-    x->istart = &inode;
+    UpdateListeners(inode);
   }
 
-  // Right side
-  TreeDS* y = NULL;
-  if (inode.right) {
-    fwdlink_iter fwdlink = m_fwdlinks.find(inode.right);
-    if (m_fwdlinks.end() == fwdlink) {
-      throw FWError("Inserting inode: Cannot find right link");
-    }
-    y = fwdlink->second;
-  } else {
-    y = &m_root;
+  // Assert that the inode has at least one listener in the updated set.
+  if (!m_listeners.HasAnyListeners(&inode)) {
+    throw FWError("Unrecognized input '" + string(inode) + "'");
   }
-
-  const DS* const old_iend = x->iend;
-  Update(*x, &inode);
-  // If the left and right sides point to different output-nodes and the left
-  // side is unaffected, update the right-side instead.
-  if (x != y && old_iend == x->iend) {
-    if (m_fwdlinks.find(&inode) != m_fwdlinks.end()) {
-      throw FWError("Inserting inode on left side gave it a fwdlink but did not move the left iend");
-    }
-    Update(*y, &inode);
-  }
-
-  if (m_fwdlinks.end() == m_fwdlinks.find(&inode)) {
-    throw FWError("Inserting inode failed to associate a fwd link");
-  }
+  // Stronger check: every inode has at least one listener :)
 }
 
 template <>
@@ -59,62 +44,66 @@ void Connector<TreeDS>::Insert(const TreeDS& inode) {
   throw FWError("Connector<TreeDS>::Insert(const TreeDS&) is unimplemented");
 }
 
-template <typename INode>
-void Connector<INode>::Delete(const INode& inode) {
-  fwdlink_iter fwdlink = m_fwdlinks.find(inode);
-  if (m_fwdlinks.end() == fwdlink) {
-    throw FWError("Deleting inode: Cannot find onode link");
-  }
-  Update(*fwdlink->second, &inode);
-}
+template <>
+void Connector<ListDS>::Delete(const ListDS& inode) {
+  m_log.info("Deleting inode " + string(inode));
 
-template <typename INode>
-void Connector<INode>::UpdateNode(TreeDS& x, const INode* inode) {
-  // Get state
-  State& state = x.GetState();
-  MachineState* mstate = dynamic_cast<MachineState*>(&state);
-  if (!mstate) {
-    throw FWError("UpdateNode expected MachineState");
-  }
+  m_listeners.RemoveAllListeners(&inode);
 
-  // Form children if necessary
-  if (!mstate->formed) {
-    m_log.info("Forming " + std::string(mstate->node));
-    for (MachineNode::child_iter c = mstate->node.children_begin();
-         c != mstate->node.children_end(); ++c) {
-      x.children.push_back(new TreeDS(c->MakeState(), &x));
-    }
-  }
-
-  if (mstate->node.Update(*this, x, inode)) {
-    MakeFwdLink(*inode, x);
+  if (!inode.left && !inode.right) {
+    ClearNode(m_root);
+  } else {
+    UpdateListeners(inode);
   }
 }
 
-template <typename INode>
-void Connector<INode>::MakeFwdLink(const INode& inode, TreeDS& x) {
-  m_fwdlinks.insert(std::make_pair(&inode, &x));
+template <>
+void Connector<TreeDS>::Delete(const TreeDS& inode) {
+  // TODO
+  throw FWError("Connector<TreeDS>::Delete(const TreeDS&) is unimplemented");
 }
 
 /* private */
 
-template <typename INode>
-void Connector<INode>::Update(TreeDS& x, const INode* inode) {
-  const DS* old_iend = x.iend;
-  UpdateNode(x, inode);
-  if (x.parent) {
-    if (x.iend != old_iend) {
-      Update(*x.parent, dynamic_cast<const INode*>(x.iend));
-    } else {
-      UpdateSize(x);
+template <>
+void Connector<ListDS>::UpdateListeners(const ListDS& inode) {
+  typedef multiset<TreeDS*, TreeDSInverseDepthComparator> depth_set;
+  typedef depth_set::const_iterator depth_iter;
+  depth_set listeners;
+
+  // TODO Unnecessary copy
+  listener_set left_listeners = m_listeners.GetListeners(inode.left);
+  listeners.insert(left_listeners.begin(), left_listeners.end());
+
+  // If inode.right and inode.right != inode.left, merge the left and right listeners, depth-ordered.
+  if (inode.right && inode.right != inode.left) {
+    // TODO Unnecessary copy
+    listener_set right_listeners = m_listeners.GetListeners(inode.right);
+    listeners.insert(right_listeners.begin(), right_listeners.end());
+  }
+
+  while (!listeners.empty()) {
+    // Update the deepest depth of our listeners set
+    int depth = (*listeners.begin())->depth;
+    m_log.debug("Connector: Updating listeners at depth " + lexical_cast<string>(depth));
+    pair<depth_iter, depth_iter> iters = listeners.equal_range(*listeners.begin());
+    for (depth_iter i = iters.first; i != iters.second; ++i) {
+      bool changed = UpdateNode(**i, inode);
+      if (changed) {
+        m_log.debug(string(" - ") + string(**i) + " changed; update its parent?");
+        TreeDS* parent = (*i)->parent;
+        if (parent) {
+          m_log.debug(" - - yes!");
+          listeners.insert(parent);
+        }
+      }
     }
+    listeners.erase(iters.first, iters.second);
   }
 }
 
-template <typename INode>
-void Connector<INode>::UpdateSize(TreeDS& ix) {
-  TreeDS* x = ix;
-  while (x) {
-    x = x.parent;
-  }
+template <>
+void Connector<TreeDS>::UpdateListeners(const TreeDS& inode) {
+  // TODO
+  throw FWError("Connector<TreeDS>::UpdateListeners(const TreeDS&) is unimplemented");
 }

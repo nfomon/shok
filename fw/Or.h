@@ -4,9 +4,7 @@
 #ifndef _Or_h_
 #define _Or_h_
 
-#include "Machine.h"
-
-#include <boost/ptr_container/ptr_vector.hpp>
+#include "Rule.h"
 
 #include <memory>
 #include <utility>
@@ -14,21 +12,26 @@
 
 namespace fw {
 
-struct OrNode : public MachineNode {
-  OrNode(Log& log, const std::string& name = "")
-    : MachineNode(log, name) {}
-  virtual ~OrNode() {}
-  virtual bool Update(Connector<ListDS>& connector, TreeDS& x, const ListDS* inode) const;
-  virtual bool Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS* inode) const;
-  virtual void UpdateSize(TreeDS& x) const;
+struct OrState;
+
+struct OrRule : public Rule {
+  OrRule(Log& log, const std::string& name = "")
+    : Rule(log, name) {}
+  virtual ~OrRule() {}
+  virtual void Reposition(Connector<ListDS>& connector, TreeDS& x, const ListDS& inode) const;
+  virtual void Reposition(Connector<TreeDS>& connector, TreeDS& x, const TreeDS& inode) const;
+  virtual bool Update(Connector<ListDS>& connector, TreeDS& x, const ListDS& inode) const;
+  virtual bool Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS& inode) const;
   virtual std::auto_ptr<State> MakeState() const;
 };
 
-struct OrState : public MachineState {
+struct OrState : public RuleState {
 public:
-  OrState(const OrNode& node)
-    : MachineState(node) {}
+  OrState(const OrRule& rule)
+    : RuleState(rule) {}
   virtual ~OrState() {}
+
+  virtual operator std::string() const { return "[OrState:" + StateFlags() + "]"; }
 };
 
 }
