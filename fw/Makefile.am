@@ -18,5 +18,8 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     Or.h \
     Rule.cpp \
     Rule.h \
+    Star.cpp \
+    Star.h \
     State.h \
+    Token.h \
     main.cpp

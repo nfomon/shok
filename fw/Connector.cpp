@@ -21,52 +21,57 @@ using namespace fw;
 /* public */
 
 template <>
-void Connector<ListDS>::Insert(const ListDS& inode) {
+const TreeDS* Connector<ListDS>::Insert(const ListDS& inode) {
   m_log.info("Inserting inode " + string(inode));
+
+  const TreeDS* ancestor = NULL;
 
   // If !inode.left, just reposition the root.
   if (!inode.left) {
     RepositionNode(m_root, inode);
+    ancestor = &m_root;
   } else {
-    UpdateListeners(inode);
+    ancestor = UpdateListeners(inode);
   }
 
   // Assert that the inode has at least one listener in the updated set.
   if (!m_listeners.HasAnyListeners(&inode)) {
-    throw FWError("Unrecognized input '" + string(inode) + "'");
+    State& state = m_root.GetState();
+    state.ok = false;
+    state.bad = true;
+    state.done = false;
+    ancestor = &m_root;
   }
   // Stronger check: every inode has at least one listener :)
+  return ancestor;
 }
 
 template <>
-void Connector<TreeDS>::Insert(const TreeDS& inode) {
-  // TODO
-  throw FWError("Connector<TreeDS>::Insert(const TreeDS&) is unimplemented");
-}
-
-template <>
-void Connector<ListDS>::Delete(const ListDS& inode) {
+const TreeDS* Connector<ListDS>::Delete(const ListDS& inode) {
   m_log.info("Deleting inode " + string(inode));
 
   m_listeners.RemoveAllListeners(&inode);
 
+  const TreeDS* ancestor = NULL;
   if (!inode.left && !inode.right) {
     ClearNode(m_root);
+    ancestor = &m_root;
   } else {
-    UpdateListeners(inode);
+    ancestor = UpdateListeners(inode);
   }
+  return ancestor;
 }
 
 template <>
-void Connector<TreeDS>::Delete(const TreeDS& inode) {
+const TreeDS* Connector<TreeDS>::Update(const TreeDS& inode) {
   // TODO
-  throw FWError("Connector<TreeDS>::Delete(const TreeDS&) is unimplemented");
+  throw FWError("Connector<TreeDS>::Update(const TreeDS&) is unimplemented");
 }
 
 /* private */
 
 template <>
-void Connector<ListDS>::UpdateListeners(const ListDS& inode) {
+const TreeDS* Connector<ListDS>::UpdateListeners(const ListDS& inode) {
   typedef multiset<TreeDS*, TreeDSInverseDepthComparator> depth_set;
   typedef depth_set::const_iterator depth_iter;
   depth_set listeners;
@@ -82,6 +87,7 @@ void Connector<ListDS>::UpdateListeners(const ListDS& inode) {
     listeners.insert(right_listeners.begin(), right_listeners.end());
   }
 
+  const TreeDS* ancestor = NULL;
   while (!listeners.empty()) {
     // Update the deepest depth of our listeners set
     int depth = (*listeners.begin())->depth;
@@ -90,20 +96,36 @@ void Connector<ListDS>::UpdateListeners(const ListDS& inode) {
     for (depth_iter i = iters.first; i != iters.second; ++i) {
       bool changed = UpdateNode(**i, inode);
       if (changed) {
-        m_log.debug(string(" - ") + string(**i) + " changed; update its parent?");
+        if (!ancestor) {
+          ancestor = *i;
+        } else {
+          const TreeDS* search = *i;
+          while (search != ancestor) {
+            if (search->depth > ancestor->depth) {
+              search = search->parent;
+            } else {
+              ancestor = ancestor->parent;
+            }
+            if (!search || !ancestor) {
+              throw FWError("Connector nodes did not share an ancestor");
+            }
+          }
+        }
+        //m_log.debug(string(" - ") + string(**i) + " changed; update its parent?");
         TreeDS* parent = (*i)->parent;
         if (parent) {
-          m_log.debug(" - - yes!");
+          //m_log.debug(" - - yes!");
           listeners.insert(parent);
         }
       }
     }
     listeners.erase(iters.first, iters.second);
   }
+  return ancestor;
 }
 
 template <>
-void Connector<TreeDS>::UpdateListeners(const TreeDS& inode) {
+const TreeDS* Connector<TreeDS>::UpdateListeners(const TreeDS& inode) {
   // TODO
   throw FWError("Connector<TreeDS>::UpdateListeners(const TreeDS&) is unimplemented");
 }

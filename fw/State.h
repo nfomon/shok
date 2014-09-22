@@ -17,14 +17,14 @@ struct State {
   bool locked;
 
   State()
-    : ok(false),
+    : ok(true),
       bad(false),
       done(false),
       locked(false) {}
   virtual ~State() {}
 
   virtual void Clear() {
-    ok = false;
+    ok = true;
     bad = false;
     done = false;
     locked = false;

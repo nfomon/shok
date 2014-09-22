@@ -101,7 +101,7 @@ public:
       return false;
     }
     const t1_set& t1s = i->second;
-    for (t1_iter j = t1s.begin(); j != t1s.end(); ++j) {
+    for (t1_set_iter j = t1s.begin(); j != t1s.end(); ++j) {
       RemoveListener(*j, t2);
     }
     m_t2_map.erase(i);

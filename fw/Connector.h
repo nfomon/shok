@@ -22,11 +22,15 @@ public:
     : m_log(log),
       m_root(rule.MakeState(), NULL) {}
 
+  // These return the common ancestor of all nodes that were changed, if any.
   // Insert() a new inode, AFTER attaching its connections in the input DS.
-  void Insert(const INode& inode);
+  const TreeDS* Insert(const INode& inode);
   // Delete() an inode.  Call this AFTER updating its left and right to point
   // to each other, but leave this inode's left and right pointers intact.
-  void Delete(const INode& inode);
+  const TreeDS* Delete(const INode& inode);
+  // Update() an inode.  Call this on the common ancestor of any updated nodes
+  // in a TreeDS, AFTER updating all connections in the children.
+  const TreeDS* Update(const INode& inode);
 
   // Reposition or Update a single node.  Used internally by the Connector but
   // can be called by a rule for convenience sake as well.  The Connector
@@ -43,6 +47,11 @@ public:
   }
   void ClearNode(TreeDS& x) {
     m_log.info("Connector: Clearing " + std::string(x));
+    for (TreeDS::child_mod_iter i = x.children.begin();
+         i != x.children.end(); ++i) {
+      ClearNode(*i);
+    }
+    m_listeners.RemoveAllListenings(&x);
     x.Clear();
   }
 
@@ -63,7 +72,8 @@ private:
 
   // Convenience core for Insert() and Delete().  Updates all listeners to the
   // left (and if any and distinct, to the right) of the inode, about the inode.
-  void UpdateListeners(const INode& inode);
+  // Returns the common ancestor of all nodes that were changed, if any.
+  const TreeDS* UpdateListeners(const INode& inode);
 
   Log& m_log;
   TreeDS m_root;
@@ -71,19 +81,18 @@ private:
 };
 
 template <>
-void Connector<ListDS>::Insert(const ListDS& inode);
-template <>
-void Connector<TreeDS>::Insert(const TreeDS& inode);
+const TreeDS* Connector<ListDS>::Insert(const ListDS& inode);
 
 template <>
-void Connector<ListDS>::Delete(const ListDS& inode);
-template <>
-void Connector<TreeDS>::Delete(const TreeDS& inode);
+const TreeDS* Connector<ListDS>::Delete(const ListDS& inode);
 
 template <>
-void Connector<ListDS>::UpdateListeners(const ListDS& inode);
+const TreeDS* Connector<TreeDS>::Update(const TreeDS& inode);
+
 template <>
-void Connector<TreeDS>::UpdateListeners(const TreeDS& inode);
+const TreeDS* Connector<ListDS>::UpdateListeners(const ListDS& inode);
+template <>
+const TreeDS* Connector<TreeDS>::UpdateListeners(const TreeDS& inode);
 
 }
 

@@ -5,7 +5,6 @@
 
 #include "Connector.h"
 
-#include <algorithm>
 #include <string>
 #include <vector>
 using std::string;
@@ -18,18 +17,19 @@ void OrRule::Reposition(Connector<ListDS>& connector, TreeDS& x, const ListDS& i
   x.Clear();
   x.istart = &inode;
   x.iend = &inode;
-  if (x.children.size() == m_children.size()) {
-    for (TreeDS::child_mod_iter i = x.children.begin();
-         i != x.children.end(); ++i) {
-      connector.RepositionNode(*i, inode);
-    }
-  } else {
-    x.children.clear();
+  if (x.children.empty()) {
     for (child_iter i = m_children.begin(); i != m_children.end(); ++i) {
       std::auto_ptr<TreeDS> child(new TreeDS(i->MakeState(), &x));
       connector.RepositionNode(*child.get(), inode);
       x.children.push_back(child);
     }
+  } else if (x.children.size() == m_children.size()) {
+    for (TreeDS::child_mod_iter i = x.children.begin();
+         i != x.children.end(); ++i) {
+      connector.RepositionNode(*i, inode);
+    }
+  } else {
+    throw FWError("Inappropriate # children in Or node " + string(x));
   }
   (void) Update(connector, x, inode);
 }

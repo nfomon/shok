@@ -61,9 +61,9 @@ public:
     state.bad = false;
     state.done = false;
     bool done = false;
-    for (const ListDS* i = istart; i != NULL; i = i->right) {
+    const ListDS* i = istart;
+    for (; i != NULL; i = i->right) {
       //m_log.debug(" - checking inode " + std::string(*i));
-      x.iend = i;
       if (done) {
         state.ok = false;
         state.bad = false;
@@ -88,6 +88,7 @@ public:
       }
       connector.Listen(x, *i);
     }
+    x.iend = i;
     x.size = matched.size();
     m_log.debug("Keyword " + std::string(*this) + " now: " + std::string(x));
     return old_iend != x.iend;

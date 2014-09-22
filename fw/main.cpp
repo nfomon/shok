@@ -8,7 +8,10 @@
 #include "DS.h"
 #include "Keyword.h"
 #include "Or.h"
+//#include "Regexp.h"
 #include "Rule.h"
+#include "Star.h"
+#include "Token.h"
 
 #include "util/Log.h"
 
@@ -33,10 +36,12 @@ public:
       m_name(name),
       m_machine(log, name) {
     //RegexpRule identifier_("[A-Za-z_][0-9A-Za-z_]");
+    std::auto_ptr<Rule> or_(new OrRule(log, "or"));
     std::auto_ptr<Rule> new_(new KeywordRule(log, "new"));
-    m_machine.AddChild(new_);
+    or_->AddChild(new_);
     std::auto_ptr<Rule> x_(new KeywordRule(log, "x"));
-    m_machine.AddChild(x_);
+    or_->AddChild(x_);
+    m_machine.AddChild(or_);
   }
 
   Rule& Machine() { return m_machine; }
@@ -44,7 +49,25 @@ public:
 private:
   Log& m_log;
   string m_name;
-  OrRule m_machine;
+  StarRule m_machine;
+};
+
+class Parser {
+public:
+  Parser(Log& log, const std::string& name)
+    : m_log(log),
+      m_name(name),
+      m_machine(log, name) {
+    std::auto_ptr<Rule> new_(new TokenRule(log, "new"));
+    m_machine.AddChild(new_);
+  }
+
+  Rule& Machine() { return m_machine; }
+
+private:
+  Log& m_log;
+  string m_name;
+  StarRule m_machine;
 };
 
 int main(int argc, char *argv[]) {
@@ -64,6 +87,11 @@ int main(int argc, char *argv[]) {
     log.info("Lexer: " + lexer.Machine().print());
     Connector<ListDS> lexerConnector(log, lexer.Machine());
 
+    // Parser
+    Parser parser(log, "parser");
+    log.info("Parser: " + parser.Machine().print());
+    Connector<TreeDS> parserConnector(log, parser.Machine());
+
     ListDS* start = NULL;
     ListDS* prev = NULL;
     string line;
@@ -78,7 +106,10 @@ int main(int argc, char *argv[]) {
         }
         log.info("");
         log.info("Lexer input: " + c->print());
-        lexerConnector.Insert(*c);
+        const TreeDS* update = lexerConnector.Insert(*c);
+        if (update) {
+          parserConnector.Update(*update);
+        }
         prev = c;
       }
     }
