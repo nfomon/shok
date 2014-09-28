@@ -20,7 +20,7 @@ void OrRule::Reposition(Connector<ListDS>& connector, TreeDS& x, const ListDS& i
   if (x.children.empty()) {
     for (child_iter i = m_children.begin(); i != m_children.end(); ++i) {
       std::auto_ptr<TreeDS> child(new TreeDS(i->MakeState(), &x));
-      connector.RepositionNode(*child.get(), inode);
+      connector.InsertNode(*child.get(), inode);
       x.children.push_back(child);
     }
   } else if (x.children.size() == m_children.size()) {
@@ -31,15 +31,16 @@ void OrRule::Reposition(Connector<ListDS>& connector, TreeDS& x, const ListDS& i
   } else {
     throw FWError("Inappropriate # children in Or node " + string(x));
   }
-  (void) Update(connector, x, inode);
+  (void) Update(connector, x, NULL);
 }
 
 void OrRule::Reposition(Connector<TreeDS>& connector, TreeDS& x, const TreeDS& inode) const {
   // TODO (identical to Reposition<ListDS>?)
+  throw FWError("OrRule<TreeDS>::Reposition() is unimplemented");
 }
 
-bool OrRule::Update(Connector<ListDS>& connector, TreeDS& x, const ListDS& inode) const {
-  m_log.debug("Updating OrRule<ListDS> " + string(*this) + " at " + string(x) + " with inode " + string(inode));
+bool OrRule::Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* child) const {
+  m_log.debug("Updating OrRule<ListDS> " + string(*this) + " at " + string(x) + " with child " + (child ? string(*child) : "<null>"));
 
   const DS* old_iend = x.iend;
 
@@ -96,9 +97,9 @@ bool OrRule::Update(Connector<ListDS>& connector, TreeDS& x, const ListDS& inode
   return old_iend != x.iend;
 }
 
-bool OrRule::Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS& inode) const {
+bool OrRule::Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS* child) const {
   // TODO
-  return true;
+  throw FWError("OrRule<TreeDS>::Update() is unimplemented");
 }
 
 std::auto_ptr<State> OrRule::MakeState() const {

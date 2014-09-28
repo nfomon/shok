@@ -15,10 +15,10 @@ namespace fw {
 
 struct DS {
   DS(std::auto_ptr<State> state)
-    : m_state(state),
-      istart(NULL),
+    : istart(NULL),
       iend(NULL),
-      size(0) {
+      size(0),
+      m_state(state) {
     if (!m_state.get()) {
       throw FWError("Cannot create DS node with NULL state");
     }
@@ -68,13 +68,14 @@ struct ListDS : public DS {
 };
 
 struct TreeDS : public DS {
+  typedef unsigned int depth_t;
   typedef boost::ptr_vector<TreeDS> child_vec;
   typedef child_vec::const_iterator child_iter;
   typedef child_vec::iterator child_mod_iter;
 
   TreeDS* parent;
   child_vec children;
-  unsigned int depth;
+  depth_t depth;
 
   TreeDS(std::auto_ptr<State> state,
          TreeDS* parent)
@@ -89,6 +90,7 @@ struct TreeDS : public DS {
     for (child_iter i = children.begin(); i != children.end(); ++i) {
       s += " (" + i->print() + ")";
     }
+    return s;
   }
 
   void Clear() {

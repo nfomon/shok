@@ -11,7 +11,8 @@
 //#include "Regexp.h"
 #include "Rule.h"
 #include "Star.h"
-#include "Token.h"
+//#include "Token.h"
+#include "TreeChangeset.h"
 
 #include "util/Log.h"
 
@@ -58,8 +59,8 @@ public:
     : m_log(log),
       m_name(name),
       m_machine(log, name) {
-    std::auto_ptr<Rule> new_(new TokenRule(log, "new"));
-    m_machine.AddChild(new_);
+    //std::auto_ptr<Rule> new_(new TokenRule(log, "new"));
+    //m_machine.AddChild(new_);
   }
 
   Rule& Machine() { return m_machine; }
@@ -97,7 +98,7 @@ int main(int argc, char *argv[]) {
     string line;
     while (getline(cin, line)) {
       line += "\n";
-      for (int i=0; i < line.size(); ++i) {
+      for (size_t i=0; i < line.size(); ++i) {
         ListDS* c = new ListDS(std::auto_ptr<State>(new CharState(line.at(i))));
         if (!start) { start = c; }
         if (prev) {
@@ -106,10 +107,13 @@ int main(int argc, char *argv[]) {
         }
         log.info("");
         log.info("Lexer input: " + c->print());
-        const TreeDS* update = lexerConnector.Insert(*c);
-        if (update) {
-          parserConnector.Update(*update);
+        lexerConnector.Insert(*c);
+        const TreeChangeset::changeset_map& changeset = lexerConnector.GetChangeset();
+        if (!changeset.empty()) {
+          log.info("Sending updates to parser");
+          //parserConnector.Update(*update);
         }
+        lexerConnector.ClearChangeset();
         prev = c;
       }
     }

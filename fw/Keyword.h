@@ -44,15 +44,15 @@ public:
     x.Clear();
     x.istart = &inode;
     x.iend = &inode;
-    (void) Update(connector, x, inode);
+    (void) Update(connector, x, NULL);
   }
 
   virtual void Reposition(Connector<TreeDS>& connector, TreeDS& x, const TreeDS& inode) const {
     throw FWError("KeywordRule::Reposition<TreeDS> is unimplemented");
   }
 
-  virtual bool Update(Connector<ListDS>& connector, TreeDS& x, const ListDS& inode) const {
-    m_log.info("Keyword: updating " + std::string(*this) + " at " + std::string(x) + " with inode " + std::string(inode));
+  virtual bool Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* child) const {
+    m_log.info("Keyword: updating " + std::string(*this) + " at " + std::string(x) + " with child " + (child ? std::string(*child) : "<null>"));
     const DS* old_iend = x.iend;
     const ListDS* istart = dynamic_cast<const ListDS*>(x.istart);
     KeywordState& state = x.GetState<KeywordState>();
@@ -63,7 +63,6 @@ public:
     bool done = false;
     const ListDS* i = istart;
     for (; i != NULL; i = i->right) {
-      //m_log.debug(" - checking inode " + std::string(*i));
       if (done) {
         state.ok = false;
         state.bad = false;
@@ -94,7 +93,7 @@ public:
     return old_iend != x.iend;
   }
 
-  virtual bool Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS& inode) const {
+  virtual bool Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS* child) const {
     throw FWError("Inappropriate TreeDS Update of KeywordRule");
   }
 

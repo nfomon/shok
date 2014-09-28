@@ -7,6 +7,7 @@
 #include "DS.h"
 #include "ListenerTable.h"
 #include "Rule.h"
+#include "TreeChangeset.h"
 
 #include "util/Log.h"
 
@@ -24,27 +25,52 @@ public:
 
   // These return the common ancestor of all nodes that were changed, if any.
   // Insert() a new inode, AFTER attaching its connections in the input DS.
-  const TreeDS* Insert(const INode& inode);
+  void Insert(const INode& inode);
   // Delete() an inode.  Call this AFTER updating its left and right to point
   // to each other, but leave this inode's left and right pointers intact.
-  const TreeDS* Delete(const INode& inode);
-  // Update() an inode.  Call this on the common ancestor of any updated nodes
-  // in a TreeDS, AFTER updating all connections in the children.
-  const TreeDS* Update(const INode& inode);
+  void Delete(const INode& inode);
 
-  // Reposition or Update a single node.  Used internally by the Connector but
-  // can be called by a rule for convenience sake as well.  The Connector
-  // assures that the children will have already been updated if necessary.
-  void RepositionNode(TreeDS& x, const INode& inode) {
-    m_log.info("Connector: Repositioning " + std::string(x) + " with inode " + std::string(inode));
+  // Insert() and Delete() will track a changeset of tree updates that have
+  // occurred.  Use these to get or clear the changeset.
+  const TreeChangeset::changeset_map& GetChangeset() const { return m_changeset.GetChangeset(); }
+  void ClearChangeset() { m_changeset.Clear(); }
+
+  // Insert, Reposition, or Update a single node.  Either called internally by
+  // the Connector or by a rule that wants to process a relative.
+  // Insert does not wire up the TreeDS nodes, but it adds an "Insert"
+  // operation to our changeset, and positions the node.
+  void InsertNode(TreeDS& x, const INode& inode) {
+    m_log.info("Connector: Inserting " + std::string(x) + " with inode " + std::string(inode));
     RuleState& state = x.GetState<RuleState>();
+    m_changeset.AddTreeChange(TreeChange(TreeChange::INSERT, x));
     state.rule.Reposition(*this, x, inode);
   }
-  bool UpdateNode(TreeDS& x, const INode& inode) {
-    m_log.info("Connector: Updating " + std::string(x) + " with inode " + std::string(inode));
+
+  // Set the "starting" inode.  The rule's Reposition() may RepositionNode() on
+  // its children.
+  void RepositionNode(TreeDS& x, const INode& inode) {
+    m_log.info("Connector: Repositioning " + std::string(x) + " with inode " + std::string(inode));
+    if (x.istart == &inode) {
+      m_log.info(" - already at the right position; skipping");
+      return;
+    }
     RuleState& state = x.GetState<RuleState>();
-    return state.rule.Update(*this, x, inode);
+    m_changeset.AddTreeChange(TreeChange(TreeChange::UPDATE, x));
+    state.rule.Reposition(*this, x, inode);
   }
+
+  // Recalculate state based on a change to a child.  Child could be NULL
+  // meaning the update is called by a direct-subscription.
+  bool UpdateNode(TreeDS& x, const TreeDS* child) {
+    m_log.info("Connector: Updating " + std::string(x) + " with child " + (child ? std::string(*child) : "<null>"));
+    RuleState& state = x.GetState<RuleState>();
+    bool changed = state.rule.Update(*this, x, child);
+    if (changed) {
+      m_changeset.AddTreeChange(TreeChange(TreeChange::UPDATE, x));
+    }
+    return changed;
+  }
+
   void ClearNode(TreeDS& x) {
     m_log.info("Connector: Clearing " + std::string(x));
     for (TreeDS::child_mod_iter i = x.children.begin();
@@ -53,6 +79,7 @@ public:
     }
     m_listeners.RemoveAllListenings(&x);
     x.Clear();
+    m_changeset.AddTreeChange(TreeChange(TreeChange::DELETE, x));
   }
 
   // Called from a rule/state regarding its DS node.  Listens for updates to
@@ -72,27 +99,28 @@ private:
 
   // Convenience core for Insert() and Delete().  Updates all listeners to the
   // left (and if any and distinct, to the right) of the inode, about the inode.
-  // Returns the common ancestor of all nodes that were changed, if any.
-  const TreeDS* UpdateListeners(const INode& inode);
+  void UpdateListeners(const INode& inode);
 
   Log& m_log;
   TreeDS m_root;
   ListenerTable<const INode*, TreeDS*> m_listeners;
+  TreeChangeset m_changeset;
 };
 
 template <>
-const TreeDS* Connector<ListDS>::Insert(const ListDS& inode);
+void Connector<ListDS>::Insert(const ListDS& inode);
+template <>
+void Connector<TreeDS>::Insert(const TreeDS& inode);
 
 template <>
-const TreeDS* Connector<ListDS>::Delete(const ListDS& inode);
+void Connector<ListDS>::Delete(const ListDS& inode);
+template <>
+void Connector<TreeDS>::Delete(const TreeDS& inode);
 
 template <>
-const TreeDS* Connector<TreeDS>::Update(const TreeDS& inode);
-
+void Connector<ListDS>::UpdateListeners(const ListDS& inode);
 template <>
-const TreeDS* Connector<ListDS>::UpdateListeners(const ListDS& inode);
-template <>
-const TreeDS* Connector<TreeDS>::UpdateListeners(const TreeDS& inode);
+void Connector<TreeDS>::UpdateListeners(const TreeDS& inode);
 
 }
 

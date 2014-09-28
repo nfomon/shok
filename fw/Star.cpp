@@ -33,15 +33,15 @@ void StarRule::Reposition(Connector<ListDS>& connector, TreeDS& x, const ListDS&
   }
   x.istart = &inode;
   connector.RepositionNode(x.children.at(0), inode);
-  (void) Update(connector, x, inode);
+  (void) Update(connector, x, NULL);
 }
 
 void StarRule::Reposition(Connector<TreeDS>& connector, TreeDS& x, const TreeDS& inode) const {
   // TODO (identical to Reposition<ListDS>?)
 }
 
-bool StarRule::Update(Connector<ListDS>& connector, TreeDS& x, const ListDS& inode) const {
-  m_log.debug("Updating StarRule<ListDS> " + string(*this) + " at " + string(x) + " with inode " + string(inode));
+bool StarRule::Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* updated_child) const {
+  m_log.debug("Updating StarRule<ListDS> " + string(*this) + " at " + string(x) + " with child " + (updated_child ? string(*updated_child) : "<null>"));
 
   const DS* old_iend = x.iend;
   x.iend = x.istart;
@@ -107,9 +107,9 @@ bool StarRule::Update(Connector<ListDS>& connector, TreeDS& x, const ListDS& ino
   return old_iend != x.iend;
 }
 
-bool StarRule::Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS& inode) const {
+bool StarRule::Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS* child) const {
   // TODO
-  return true;
+  throw FWError("StarRule<TreeDS>::Update() is unimplemented");
 }
 
 std::auto_ptr<State> StarRule::MakeState() const {

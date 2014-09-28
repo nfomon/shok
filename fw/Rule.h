@@ -38,12 +38,16 @@ public:
   //  2. Listen/Unlisten for updates as appropriate (leaves only)
   //  3. Compute new state flags based on children
   //  4. Update size and begin/end inodes
+  // Reposition should InsertNode() and/or RepositionNode() its children as
+  // necessary to then calculate its own state.
   virtual void Reposition(Connector<ListDS>& connector, TreeDS& x, const ListDS& inode) const = 0;
   virtual void Reposition(Connector<TreeDS>& connector, TreeDS& x, const TreeDS& inode) const = 0;
 
+  // Calculate local state flags based on children's state, under the
+  // assumption that the children are already up-to-date.
   // Returns true if the node was changed
-  virtual bool Update(Connector<ListDS>& connector, TreeDS& x, const ListDS& inode) const = 0;
-  virtual bool Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS& inode) const = 0;
+  virtual bool Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* child) const = 0;
+  virtual bool Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS* child) const = 0;
 
   void AddChild(std::auto_ptr<Rule> child) {
     //m_log.debug("Rule: Adding child " + std::string(*child.get()) + " to " + std::string(*this));

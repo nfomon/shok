@@ -16,8 +16,8 @@ struct StarRule : public Rule {
   virtual ~StarRule() {}
   virtual void Reposition(Connector<ListDS>& connector, TreeDS& x, const ListDS& inode) const;
   virtual void Reposition(Connector<TreeDS>& connector, TreeDS& x, const TreeDS& inode) const;
-  virtual bool Update(Connector<ListDS>& connector, TreeDS& x, const ListDS& inode) const;
-  virtual bool Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS& inode) const;
+  virtual bool Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* child) const;
+  virtual bool Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS* child) const;
   virtual std::auto_ptr<State> MakeState() const;
 };
 

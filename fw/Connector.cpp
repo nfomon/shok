@@ -12,6 +12,7 @@ using boost::lexical_cast;
 #include <set>
 #include <string>
 #include <utility>
+using std::make_pair;
 using std::multiset;
 using std::pair;
 using std::string;
@@ -21,17 +22,14 @@ using namespace fw;
 /* public */
 
 template <>
-const TreeDS* Connector<ListDS>::Insert(const ListDS& inode) {
-  m_log.info("Inserting inode " + string(inode));
-
-  const TreeDS* ancestor = NULL;
+void Connector<ListDS>::Insert(const ListDS& inode) {
+  m_log.info("Inserting list inode " + string(inode));
 
   // If !inode.left, just reposition the root.
   if (!inode.left) {
     RepositionNode(m_root, inode);
-    ancestor = &m_root;
   } else {
-    ancestor = UpdateListeners(inode);
+    UpdateListeners(inode);
   }
 
   // Assert that the inode has at least one listener in the updated set.
@@ -40,92 +38,102 @@ const TreeDS* Connector<ListDS>::Insert(const ListDS& inode) {
     state.ok = false;
     state.bad = true;
     state.done = false;
-    ancestor = &m_root;
   }
   // Stronger check: every inode has at least one listener :)
-  return ancestor;
 }
 
 template <>
-const TreeDS* Connector<ListDS>::Delete(const ListDS& inode) {
-  m_log.info("Deleting inode " + string(inode));
+void Connector<TreeDS>::Insert(const TreeDS& inode) {
+  m_log.info("Inserting tree inode " + string(inode));
+  throw FWError("Connector<TreeDS>::Insert(const TreeDS&) is unimplemented");
+}
+
+template <>
+void Connector<ListDS>::Delete(const ListDS& inode) {
+  m_log.info("Deleting list inode " + string(inode));
 
   m_listeners.RemoveAllListeners(&inode);
 
-  const TreeDS* ancestor = NULL;
   if (!inode.left && !inode.right) {
     ClearNode(m_root);
-    ancestor = &m_root;
   } else {
-    ancestor = UpdateListeners(inode);
+    UpdateListeners(inode);
   }
-  return ancestor;
 }
 
 template <>
-const TreeDS* Connector<TreeDS>::Update(const TreeDS& inode) {
+void Connector<TreeDS>::Delete(const TreeDS& inode) {
   // TODO
-  throw FWError("Connector<TreeDS>::Update(const TreeDS&) is unimplemented");
+  throw FWError("Connector<TreeDS>::Delete(const TreeDS&) is unimplemented");
 }
 
 /* private */
 
 template <>
-const TreeDS* Connector<ListDS>::UpdateListeners(const ListDS& inode) {
-  typedef multiset<TreeDS*, TreeDSInverseDepthComparator> depth_set;
-  typedef depth_set::const_iterator depth_iter;
-  depth_set listeners;
+void Connector<ListDS>::UpdateListeners(const ListDS& inode) {
+  typedef std::pair<TreeDS*, const TreeDS*> change_pair;
+  typedef std::vector<change_pair> change_vec;
+  typedef change_vec::const_iterator change_iter;
+  typedef std::map<TreeDS::depth_t, change_vec> change_map;
+  change_map changes_by_depth;
 
   // TODO Unnecessary copy
   listener_set left_listeners = m_listeners.GetListeners(inode.left);
-  listeners.insert(left_listeners.begin(), left_listeners.end());
+  for (listener_iter i = left_listeners.begin(); i != left_listeners.end(); ++i) {
+    changes_by_depth[(*i)->depth].push_back(change_pair(*i, NULL));
+  }
 
   // If inode.right and inode.right != inode.left, merge the left and right listeners, depth-ordered.
   if (inode.right && inode.right != inode.left) {
     // TODO Unnecessary copy
     listener_set right_listeners = m_listeners.GetListeners(inode.right);
-    listeners.insert(right_listeners.begin(), right_listeners.end());
+    for (listener_iter i = right_listeners.begin(); i != right_listeners.end(); ++i) {
+      changes_by_depth[(*i)->depth].push_back(change_pair(*i, NULL));
+    }
   }
 
-  const TreeDS* ancestor = NULL;
-  while (!listeners.empty()) {
-    // Update the deepest depth of our listeners set
-    int depth = (*listeners.begin())->depth;
-    m_log.debug("Connector: Updating listeners at depth " + lexical_cast<string>(depth));
+  while (!changes_by_depth.empty()) {
+    // Update the deepest depth of our changeset
+    int depth = changes_by_depth.rbegin()->first;
+    change_vec changes = changes_by_depth.rbegin()->second;
+    m_log.debug("Connector: Updating changes at depth " + lexical_cast<string>(depth));
+    for (change_iter i = changes.begin(); i != changes.end(); ++i) {
+      bool changed = UpdateNode(*i->first, i->second);
+      if (changed) {
+        //m_log.debug(string(" - ") + string(i->node) + " changed; update its parent?");
+        TreeDS* parent = i->first->parent;
+        if (parent) {
+          //m_log.debug(" - - yes!");
+          changes_by_depth[parent->depth].push_back(make_pair(parent, i->first));
+        }
+      }
+    }
+    changes_by_depth.erase(depth);
+  }
+
+/*
     pair<depth_iter, depth_iter> iters = listeners.equal_range(*listeners.begin());
     for (depth_iter i = iters.first; i != iters.second; ++i) {
       bool changed = UpdateNode(**i, inode);
       if (changed) {
-        if (!ancestor) {
-          ancestor = *i;
-        } else {
-          const TreeDS* search = *i;
-          while (search != ancestor) {
-            if (search->depth > ancestor->depth) {
-              search = search->parent;
-            } else {
-              ancestor = ancestor->parent;
-            }
-            if (!search || !ancestor) {
-              throw FWError("Connector nodes did not share an ancestor");
-            }
-          }
-        }
         //m_log.debug(string(" - ") + string(**i) + " changed; update its parent?");
         TreeDS* parent = (*i)->parent;
         if (parent) {
           //m_log.debug(" - - yes!");
+          // Instead of receiving the inode, these might want to receive which
+          // of their children have changed.  Note that OrRule::Update and Keyword::Update both ignore the inode, currently.  Maybe they do just want "which child caused this Update(), or NULL if we got this Update via subscription".  But note that multiple children may have changed, and these should I guess cause multiple Update() calls, which is ok.
+          // So Reposition() takes an inode, whereas Update() takes a child.  Makes sense I think!!
+          // Is it only leaves that ever subscribe?  We might want to re-think the whole flow, and separate leaves from bodynodes.
           listeners.insert(parent);
         }
       }
     }
     listeners.erase(iters.first, iters.second);
-  }
-  return ancestor;
+*/
 }
 
 template <>
-const TreeDS* Connector<TreeDS>::UpdateListeners(const TreeDS& inode) {
+void Connector<TreeDS>::UpdateListeners(const TreeDS& inode) {
   // TODO
   throw FWError("Connector<TreeDS>::UpdateListeners(const TreeDS&) is unimplemented");
 }
