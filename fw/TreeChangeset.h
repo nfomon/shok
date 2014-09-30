@@ -35,8 +35,10 @@ struct TreeChange {
 class TreeChangeset {
 public:
   typedef std::vector<TreeChange> change_vec;
+  typedef change_vec::const_iterator change_iter;
   typedef std::map<TreeDS::depth_t, change_vec> changeset_map;
   typedef changeset_map::const_iterator changeset_iter;
+  typedef changeset_map::const_reverse_iterator changeset_rev_iter;
   typedef changeset_map::iterator changeset_mod_iter;
 
   TreeChangeset() {}

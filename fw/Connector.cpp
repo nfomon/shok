@@ -25,11 +25,11 @@ template <>
 void Connector<ListDS>::Insert(const ListDS& inode) {
   m_log.info("Inserting list inode " + string(inode));
 
-  // If !inode.left, just reposition the root.
-  if (!inode.left) {
-    RepositionNode(m_root, inode);
+  if (inode.left) {
+    UpdateListeners(*inode.left);
   } else {
-    UpdateListeners(inode);
+    // Just reposition the root.
+    RepositionNode(m_root, inode);
   }
 
   // Assert that the inode has at least one listener in the updated set.
@@ -45,7 +45,27 @@ void Connector<ListDS>::Insert(const ListDS& inode) {
 template <>
 void Connector<TreeDS>::Insert(const TreeDS& inode) {
   m_log.info("Inserting tree inode " + string(inode));
-  throw FWError("Connector<TreeDS>::Insert(const TreeDS&) is unimplemented");
+
+  // If we are the leftmost child of any ancestor, reposition that ancestor.
+  // Oldest ancestor possible, going up to the root.
+  // TODO FIXME...
+  const TreeDS* child = &inode;
+  const TreeDS* ancestor = child->parent;
+  while (ancestor && child == &ancestor->children.front()) {
+    child = ancestor;
+    ancestor = child->parent;
+  }
+  if (ancestor == NULL) {
+  }
+
+  // Assert that the inode has at least one listener in the updated set.
+  if (!m_listeners.HasAnyListeners(&inode)) {
+    State& state = m_root.GetState();
+    state.ok = false;
+    state.bad = true;
+    state.done = false;
+  }
+  // Stronger check: every inode has at least one listener :)
 }
 
 template <>

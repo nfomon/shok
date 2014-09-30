@@ -111,9 +111,9 @@ int main(int argc, char *argv[]) {
         const TreeChangeset::changeset_map& changeset = lexerConnector.GetChangeset();
         if (!changeset.empty()) {
           log.info("Sending updates to parser");
-          //parserConnector.Update(*update);
+          parserConnector.Change(changeset);
+          lexerConnector.ClearChangeset();
         }
-        lexerConnector.ClearChangeset();
         prev = c;
       }
     }

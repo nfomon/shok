@@ -30,6 +30,32 @@ public:
   // to each other, but leave this inode's left and right pointers intact.
   void Delete(const INode& inode);
 
+  // These wrap Insert()s, Delete()s, and UpdateListeners()s, for Tree-Tree only
+  void Change(const TreeChange& change) {
+    switch (change.type) {
+    case TreeChange::INSERT:
+      Insert(*change.node);
+      break;
+    case TreeChange::UPDATE:
+      UpdateListeners(*change.node);
+      break;
+    case TreeChange::DELETE:
+      Delete(*change.node);
+      break;
+    default:
+      throw FWError("Connector::Update: Unsupported Update type");
+    }
+  }
+  void Change(const TreeChangeset::changeset_map& changeset) {
+    for (TreeChangeset::changeset_rev_iter i = changeset.rbegin();
+         i != changeset.rend(); ++i) {
+      for (TreeChangeset::change_iter j = i->second.begin();
+           j != i->second.end(); ++j) {
+        Change(*j);
+      }
+    }
+  }
+
   // Insert() and Delete() will track a changeset of tree updates that have
   // occurred.  Use these to get or clear the changeset.
   const TreeChangeset::changeset_map& GetChangeset() const { return m_changeset.GetChangeset(); }
@@ -98,7 +124,8 @@ private:
   typedef typename ListenerTable<const INode*, TreeDS*>::listener_iter listener_iter;
 
   // Convenience core for Insert() and Delete().  Updates all listeners to the
-  // left (and if any and distinct, to the right) of the inode, about the inode.
+  // left (and if any and distinct, to the right) of the inode, about the
+  // inode.  For TreeDS, updates all listeners of the parent of the inode.
   void UpdateListeners(const INode& inode);
 
   Log& m_log;
