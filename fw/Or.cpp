@@ -13,14 +13,14 @@ using std::vector;
 using namespace fw;
 
 void OrRule::Reposition(Connector<ListDS>& connector, TreeDS& x, const ListDS& inode) const {
-  //m_log.debug("Repositioning OrRule<ListDS> " + string(*this));
+  m_log.debug("Repositioning OrRule<ListDS> " + string(*this) + " at " + string(x) + " with inode " + string(inode));
   x.Clear();
   x.istart = &inode;
   x.iend = &inode;
   if (x.children.empty()) {
     for (child_iter i = m_children.begin(); i != m_children.end(); ++i) {
       std::auto_ptr<TreeDS> child(new TreeDS(i->MakeState(), &x));
-      connector.InsertNode(*child.get(), inode);
+      connector.RepositionNode(*child.get(), inode);
       x.children.push_back(child);
     }
   } else if (x.children.size() == m_children.size()) {
@@ -54,7 +54,8 @@ bool OrRule::Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* child
   vector<const TreeDS*> bads;
   vector<const TreeDS*> dones;
   vector<const TreeDS*> completes;  // done and not ok
-  for (TreeDS::child_iter i = x.children.begin(); i != x.children.end(); ++i) {
+  for (TreeDS::child_mod_iter i = x.children.begin();
+       i != x.children.end(); ++i) {
     State& istate = i->GetState();
     if (istate.ok || istate.done) {
       if (i->size > x.size) {
@@ -74,6 +75,10 @@ bool OrRule::Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* child
     if (istate.done) {
       dones.push_back(&*i);
     }
+
+    // No matter the state of the child, we want its hotlist
+    x.hotlist.insert(i->hotlist.begin(), i->hotlist.end());
+    i->hotlist.clear();
   }
   if (dones.size() > 1) {
     state.ok = true;
@@ -94,7 +99,7 @@ bool OrRule::Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* child
   }
 
   m_log.debug("OrRule " + string(*this) + " now at " + string(x));
-  return old_iend != x.iend;
+  return old_iend != x.iend || !x.hotlist.empty();
 }
 
 bool OrRule::Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS* child) const {

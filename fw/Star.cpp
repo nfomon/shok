@@ -16,7 +16,7 @@ using std::vector;
 using namespace fw;
 
 void StarRule::Reposition(Connector<ListDS>& connector, TreeDS& x, const ListDS& inode) const {
-  //m_log.debug("Repositioning StarRule<ListDS> " + string(*this));
+  m_log.debug("Repositioning StarRule<ListDS> " + string(*this) + " at " + string(x) + " with " + string(inode));
   if (x.children.empty()) {
     if (m_children.size() != 1) {
       throw FWError("StarRule must have exactly one child; found " + lexical_cast<string>(m_children.size()));
@@ -38,6 +38,7 @@ void StarRule::Reposition(Connector<ListDS>& connector, TreeDS& x, const ListDS&
 
 void StarRule::Reposition(Connector<TreeDS>& connector, TreeDS& x, const TreeDS& inode) const {
   // TODO (identical to Reposition<ListDS>?)
+  throw FWError("StarRule<TreeDS>::Reposition unimplemented");
 }
 
 bool StarRule::Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* updated_child) const {
@@ -53,16 +54,25 @@ bool StarRule::Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* upd
   state.bad = false;
   state.done = true;
 
-  // Iterate over children, either existing or being created, so long as our
-  // last child is complete.
+  if (x.children.empty()) {
+    throw FWError("StarRule<ListDS>::Update: StarState " + string(x) + " must have children");
+  }
+
+  // Iterate over children, either existing or being created, starting at the
+  // updated_child, so long as our last child is complete.
   bool finished = false;
   TreeDS::child_mod_iter child = x.children.begin();
+  if (updated_child) {
+    for (child = x.children.begin(); child != x.children.end(); ++child) {
+      if (updated_child == &*child) { break; }
+    }
+  }
   while (!finished) {
     if (child != x.children.end()) {
       // Existing child
       if (x.iend != child->istart) {
-        m_log.warning("StarRule " + string(*this) + " found iend->istart mismatch; correcting");
-        connector.RepositionNode(*child, *dynamic_cast<const ListDS*>(x.iend));
+        throw FWError("StarRule " + string(*this) + " found iend->istart mismatch; we could correct this, but let's not...");
+        //connector.RepositionNode(*child, *dynamic_cast<const ListDS*>(x.iend));   // Could correct it like this
       }
     } else {
       // New child
@@ -73,6 +83,12 @@ bool StarRule::Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* upd
     }
     x.iend = child->iend;
 
+    // The child has updated, and no matter what state it's in, we should take
+    // its hotlist.
+    x.hotlist.insert(child->hotlist.begin(), child->hotlist.end());
+    child->hotlist.clear();
+
+    // Now check the child's state, and see if we can keep going.
     State& istate = child->GetState();
     if (istate.bad) {
       m_log.debug("StarRule " + string(*this) + " has gone bad");
@@ -88,7 +104,6 @@ bool StarRule::Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* upd
     } else if (istate.done && !istate.ok) {
       // Cool, keep going!
     } else if (istate.ok) {
-      m_log.debug("StarRule " + string(*this) + " is ok");
       if (child->iend != NULL) {
         throw FWError("StarRule found incomplete inode that is only ok; not allowed");
       }
@@ -103,8 +118,8 @@ bool StarRule::Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* upd
     ++child;
   }
 
-  m_log.debug("StarRule " + string(*this) + " now at " + string(x));
-  return old_iend != x.iend;
+  m_log.debug("StarRule " + string(*this) + " done update; now has state " + string(x) + " and hotlist size is " + boost::lexical_cast<string>(x.hotlist.size()));
+  return old_iend != x.iend || !x.hotlist.empty();
 }
 
 bool StarRule::Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS* child) const {

@@ -7,7 +7,6 @@
 #include "DS.h"
 #include "ListenerTable.h"
 #include "Rule.h"
-#include "TreeChangeset.h"
 
 #include "util/Log.h"
 
@@ -23,6 +22,9 @@ public:
     : m_log(log),
       m_root(rule.MakeState(), NULL) {}
 
+  const Hotlist& GetHotlist() const { return m_hotlist; }
+  void ClearHotlist() { m_hotlist.clear(); }
+
   // These return the common ancestor of all nodes that were changed, if any.
   // Insert() a new inode, AFTER attaching its connections in the input DS.
   void Insert(const INode& inode);
@@ -30,47 +32,19 @@ public:
   // to each other, but leave this inode's left and right pointers intact.
   void Delete(const INode& inode);
 
-  // These wrap Insert()s, Delete()s, and UpdateListeners()s, for Tree-Tree only
-  void Change(const TreeChange& change) {
-    switch (change.type) {
-    case TreeChange::INSERT:
-      Insert(*change.node);
-      break;
-    case TreeChange::UPDATE:
-      UpdateListeners(*change.node);
-      break;
-    case TreeChange::DELETE:
-      Delete(*change.node);
-      break;
-    default:
-      throw FWError("Connector::Update: Unsupported Update type");
-    }
-  }
-  void Change(const TreeChangeset::changeset_map& changeset) {
-    for (TreeChangeset::changeset_rev_iter i = changeset.rbegin();
-         i != changeset.rend(); ++i) {
-      for (TreeChangeset::change_iter j = i->second.begin();
-           j != i->second.end(); ++j) {
-        Change(*j);
+  void UpdateWithHotlist(const Hotlist& hotlist) {
+    for (Hotlist_iter i = hotlist.begin(); i != hotlist.end(); ++i) {
+      State& state = (*i)->GetState();
+      if (state.done) {
+        Insert(**i);
+      } else {
+        Delete(**i);
       }
     }
   }
 
-  // Insert() and Delete() will track a changeset of tree updates that have
-  // occurred.  Use these to get or clear the changeset.
-  const TreeChangeset::changeset_map& GetChangeset() const { return m_changeset.GetChangeset(); }
-  void ClearChangeset() { m_changeset.Clear(); }
-
-  // Insert, Reposition, or Update a single node.  Either called internally by
-  // the Connector or by a rule that wants to process a relative.
-  // Insert does not wire up the TreeDS nodes, but it adds an "Insert"
-  // operation to our changeset, and positions the node.
-  void InsertNode(TreeDS& x, const INode& inode) {
-    m_log.info("Connector: Inserting " + std::string(x) + " with inode " + std::string(inode));
-    RuleState& state = x.GetState<RuleState>();
-    m_changeset.AddTreeChange(TreeChange(TreeChange::INSERT, x));
-    state.rule.Reposition(*this, x, inode);
-  }
+  // Reposition or Update a single node.  Either called internally by the
+  // Connector or by a rule that wants to process a relative.
 
   // Set the "starting" inode.  The rule's Reposition() may RepositionNode() on
   // its children.
@@ -81,7 +55,6 @@ public:
       return;
     }
     RuleState& state = x.GetState<RuleState>();
-    m_changeset.AddTreeChange(TreeChange(TreeChange::UPDATE, x));
     state.rule.Reposition(*this, x, inode);
   }
 
@@ -90,11 +63,7 @@ public:
   bool UpdateNode(TreeDS& x, const TreeDS* child) {
     m_log.info("Connector: Updating " + std::string(x) + " with child " + (child ? std::string(*child) : "<null>"));
     RuleState& state = x.GetState<RuleState>();
-    bool changed = state.rule.Update(*this, x, child);
-    if (changed) {
-      m_changeset.AddTreeChange(TreeChange(TreeChange::UPDATE, x));
-    }
-    return changed;
+    return state.rule.Update(*this, x, child);
   }
 
   void ClearNode(TreeDS& x) {
@@ -105,7 +74,6 @@ public:
     }
     m_listeners.RemoveAllListenings(&x);
     x.Clear();
-    m_changeset.AddTreeChange(TreeChange(TreeChange::DELETE, x));
   }
 
   // Called from a rule/state regarding its DS node.  Listens for updates to
@@ -129,9 +97,10 @@ private:
   void UpdateListeners(const INode& inode);
 
   Log& m_log;
+  // Root of the output tree.  Tells us the root of the rule tree.
   TreeDS m_root;
   ListenerTable<const INode*, TreeDS*> m_listeners;
-  TreeChangeset m_changeset;
+  Hotlist m_hotlist;
 };
 
 template <>

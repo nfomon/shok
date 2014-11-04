@@ -23,12 +23,14 @@ using namespace fw;
 
 template <>
 void Connector<ListDS>::Insert(const ListDS& inode) {
-  m_log.info("Inserting list inode " + string(inode));
+  m_log.info("Connector: Inserting ListDS: " + string(inode));
 
   if (inode.left) {
+    m_log.debug(" - Found left inode: updating listeners of " + string(*inode.left));
     UpdateListeners(*inode.left);
   } else {
     // Just reposition the root.
+    m_log.debug(" - No left inode: just repositioning the root");
     RepositionNode(m_root, inode);
   }
 
@@ -40,32 +42,45 @@ void Connector<ListDS>::Insert(const ListDS& inode) {
     state.done = false;
   }
   // Stronger check: every inode has at least one listener :)
+
+  m_hotlist.insert(m_root.hotlist.begin(), m_root.hotlist.end());
+  m_log.debug("Connector: Insert done, hotlist now has size " + boost::lexical_cast<string>(m_hotlist.size()));
 }
 
 template <>
 void Connector<TreeDS>::Insert(const TreeDS& inode) {
-  m_log.info("Inserting tree inode " + string(inode));
+  m_log.info("Connector: Inserting TreeDS: " + string(inode));
 
-  // If we are the leftmost child of any ancestor, reposition that ancestor.
-  // Oldest ancestor possible, going up to the root.
-  // TODO FIXME...
-  const TreeDS* child = &inode;
-  const TreeDS* ancestor = child->parent;
-  while (ancestor && child == &ancestor->children.front()) {
-    child = ancestor;
-    ancestor = child->parent;
+  // Our goals here:  UpdateListeners(inode) -- only that input
+  // OR RepositionNode(ROOT, inode)
+
+/*
+  TreeDS* pinode = &inode;
+  while (pinode && !m_listeners.HasAnyListeners(pinode)) {
+    pinode = inode->parent;
   }
-  if (ancestor == NULL) {
+  if (pinode) {
+    m_log.debug(" - Found inode " + string(*pinode) + " with listeners: updating them regarding " + string(inode));
+    UpdateListeners(*pinode);
+  } else {
+    // No listeners on any inode.  Must not have any otree.
+    m_log.debug(" - No inode has listeners: just repositioning the root");
+    RepositionNode(m_root, inode);
   }
 
   // Assert that the inode has at least one listener in the updated set.
   if (!m_listeners.HasAnyListeners(&inode)) {
+    m_log.debug(" - Failed to assign any listeners for inserted inode " + string(inode) + "; failing the root");
     State& state = m_root.GetState();
     state.ok = false;
     state.bad = true;
     state.done = false;
   }
   // Stronger check: every inode has at least one listener :)
+
+  m_hotlist.insert(m_root.hotlist.begin(), m_root.hotlist.end());
+  m_log.debug("Connector: Insert done, hotlist now has size " + boost::lexical_cast<string>(m_hotlist.size()));
+*/
 }
 
 template <>
@@ -79,12 +94,16 @@ void Connector<ListDS>::Delete(const ListDS& inode) {
   } else {
     UpdateListeners(inode);
   }
+
+  m_hotlist.insert(m_root.hotlist.begin(), m_root.hotlist.end());
 }
 
 template <>
 void Connector<TreeDS>::Delete(const TreeDS& inode) {
   // TODO
   throw FWError("Connector<TreeDS>::Delete(const TreeDS&) is unimplemented");
+
+  //m_hotlist.insert(m_root.hotlist.begin(), m_root.hotlist.end());
 }
 
 /* private */
@@ -118,9 +137,14 @@ void Connector<ListDS>::UpdateListeners(const ListDS& inode) {
     change_vec changes = changes_by_depth.rbegin()->second;
     m_log.debug("Connector: Updating changes at depth " + lexical_cast<string>(depth));
     for (change_iter i = changes.begin(); i != changes.end(); ++i) {
+      // Clear all the nodes' hot lists at this level.  They can't do it in
+      // Update() because they might have multiple child updates coming in.
+      // TODO but eventually we'll trust them to clear their children, so that
+      // the Connector only needs to clear the root when it takes from it.
+      i->first->hotlist.clear();
       bool changed = UpdateNode(*i->first, i->second);
       if (changed) {
-        //m_log.debug(string(" - ") + string(i->node) + " changed; update its parent?");
+        //m_log.debug(string(" - ") + string(*i->first) + " changed; update its parent?");
         TreeDS* parent = i->first->parent;
         if (parent) {
           //m_log.debug(" - - yes!");
@@ -130,30 +154,45 @@ void Connector<ListDS>::UpdateListeners(const ListDS& inode) {
     }
     changes_by_depth.erase(depth);
   }
-
-/*
-    pair<depth_iter, depth_iter> iters = listeners.equal_range(*listeners.begin());
-    for (depth_iter i = iters.first; i != iters.second; ++i) {
-      bool changed = UpdateNode(**i, inode);
-      if (changed) {
-        //m_log.debug(string(" - ") + string(**i) + " changed; update its parent?");
-        TreeDS* parent = (*i)->parent;
-        if (parent) {
-          //m_log.debug(" - - yes!");
-          // Instead of receiving the inode, these might want to receive which
-          // of their children have changed.  Note that OrRule::Update and Keyword::Update both ignore the inode, currently.  Maybe they do just want "which child caused this Update(), or NULL if we got this Update via subscription".  But note that multiple children may have changed, and these should I guess cause multiple Update() calls, which is ok.
-          // So Reposition() takes an inode, whereas Update() takes a child.  Makes sense I think!!
-          // Is it only leaves that ever subscribe?  We might want to re-think the whole flow, and separate leaves from bodynodes.
-          listeners.insert(parent);
-        }
-      }
-    }
-    listeners.erase(iters.first, iters.second);
-*/
 }
 
 template <>
-void Connector<TreeDS>::UpdateListeners(const TreeDS& inode) {
-  // TODO
-  throw FWError("Connector<TreeDS>::UpdateListeners(const TreeDS&) is unimplemented");
+void Connector<TreeDS>::UpdateListeners(const TreeDS& inode/*, const TreeDS* ichild*/) {
+/*
+  typedef std::pair<TreeDS*, const TreeDS*> change_pair;
+  typedef std::vector<change_pair> change_vec;
+  typedef change_vec::const_iterator change_iter;
+  typedef std::map<TreeDS::depth_t, change_vec> change_map;
+  change_map changes_by_depth;
+
+  // TODO Unnecessary copy
+  listener_set listeners = m_listeners.GetListeners(inode);
+  for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
+    changes_by_depth[(*i)->depth].push_back(change_pair(*i, NULL));
+  }
+
+  while (!changes_by_depth.empty()) {
+    // Update the deepest depth of our changeset
+    int depth = changes_by_depth.rbegin()->first;
+    change_vec changes = changes_by_depth.rbegin()->second;
+    m_log.debug("Connector: Updating changes at depth " + lexical_cast<string>(depth));
+    for (change_iter i = changes.begin(); i != changes.end(); ++i) {
+      // Clear all the nodes' hot lists at this level.  They can't do it in
+      // Update() because they might have multiple child updates coming in.
+      // TODO but eventually we'll trust them to clear their children, so that
+      // the Connector only needs to clear the root when it takes from it.
+      i->first->hotlist.clear();
+      bool changed = UpdateNode(*i->first, i->second);
+      if (changed) {
+        //m_log.debug(string(" - ") + string(*i->first) + " changed; update its parent?");
+        TreeDS* parent = i->first->parent;
+        if (parent) {
+          //m_log.debug(" - - yes!");
+          changes_by_depth[parent->depth].push_back(make_pair(parent, i->first));
+        }
+      }
+    }
+    changes_by_depth.erase(depth);
+  }
+*/
 }

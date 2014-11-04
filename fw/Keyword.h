@@ -56,10 +56,12 @@ public:
     const DS* old_iend = x.iend;
     const ListDS* istart = dynamic_cast<const ListDS*>(x.istart);
     KeywordState& state = x.GetState<KeywordState>();
+    bool was_done = state.done;
     std::string matched;
     state.ok = true;
     state.bad = false;
     state.done = false;
+    x.hotlist.clear();
     bool done = false;
     const ListDS* i = istart;
     for (; i != NULL; i = i->right) {
@@ -89,8 +91,11 @@ public:
     }
     x.iend = i;
     x.size = matched.size();
+    if (was_done != state.done) {
+      x.hotlist.insert(&x);
+    }
     m_log.debug("Keyword " + std::string(*this) + " now: " + std::string(x));
-    return old_iend != x.iend;
+    return old_iend != x.iend || !x.hotlist.empty();    // Should just be: has the state changed at all
   }
 
   virtual bool Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS* child) const {

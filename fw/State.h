@@ -7,8 +7,11 @@
 #include <boost/lexical_cast.hpp>
 
 #include <string>
+#include <vector>
 
 namespace fw {
+
+struct DS;
 
 struct State {
   bool ok;

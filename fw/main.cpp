@@ -6,13 +6,13 @@
 #include "Char.h"
 #include "Connector.h"
 #include "DS.h"
+#include "Hotlist.h"
 #include "Keyword.h"
 #include "Or.h"
 //#include "Regexp.h"
 #include "Rule.h"
 #include "Star.h"
 //#include "Token.h"
-#include "TreeChangeset.h"
 
 #include "util/Log.h"
 
@@ -106,13 +106,13 @@ int main(int argc, char *argv[]) {
           c->left = prev;
         }
         log.info("");
-        log.info("Lexer input: " + c->print());
+        log.info("main: Inserting character '" + c->print() + "' into lexer");
         lexerConnector.Insert(*c);
-        const TreeChangeset::changeset_map& changeset = lexerConnector.GetChangeset();
-        if (!changeset.empty()) {
-          log.info("Sending updates to parser");
-          parserConnector.Change(changeset);
-          lexerConnector.ClearChangeset();
+        const Hotlist& tokenHotlist = lexerConnector.GetHotlist();
+        if (!tokenHotlist.empty()) {
+          log.info("Lexer returned " + boost::lexical_cast<string>(tokenHotlist.size()) + " hotlist items: sending to parser");
+          parserConnector.UpdateWithHotlist(tokenHotlist);
+          lexerConnector.ClearHotlist();
         }
         prev = c;
       }

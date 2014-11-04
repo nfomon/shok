@@ -12,6 +12,7 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     Connector.h \
     DS.h \
     FWError.h \
+    Hotlist.h \
     Keyword.h \
     ListenerTable.h \
     Or.cpp \
@@ -21,7 +22,6 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     Star.cpp \
     Star.h \
     State.h \
-    TreeChangeset.h \
     main.cpp
 
 shok_fw_CXXFLAGS = -ggdb -Wall -pedantic

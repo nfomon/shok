@@ -4,12 +4,14 @@
 #ifndef _DS_h_
 #define _DS_h_
 
+#include "Hotlist.h"
 #include "State.h"
 #include "FWError.h"
 
 #include <boost/ptr_container/ptr_vector.hpp>
 
 #include <memory>
+#include <vector>
 
 namespace fw {
 
@@ -40,6 +42,7 @@ struct DS {
   const DS* istart; // starting inode
   const DS* iend;   // inode that makes us bad after we were done, or last inode
   size_t size;      // number of inodes that make us good (count: iend - istart)
+  Hotlist hotlist;
 
 private:
   std::auto_ptr<State> m_state;
