@@ -4,17 +4,25 @@
 #ifndef _Hotlist_h_
 #define _Hotlist_h_
 
-/* A set of TreeDS leaf nodes that are "hot", meaning their done-ness has
- * changed.  They can be Insert()ed or Delete()d on the next Connector.
+/* A set of IList nodes that are "hot", meaning their done-ness has changed.
+ * They can be Insert()ed or Delete()d on the next Connector.
  */
 
 #include <set>
+#include <utility>
 
 namespace fw {
 
-struct TreeDS;
+struct IList;
 
-typedef std::set<const TreeDS*> Hotlist;
+enum HOT_OP {
+  OP_INSERT,
+  OP_DELETE
+};
+
+typedef std::pair<const IList*, HOT_OP> hotpair;
+
+typedef std::set<hotpair> Hotlist;
 typedef Hotlist::const_iterator Hotlist_iter;
 
 }

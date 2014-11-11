@@ -12,11 +12,11 @@ using std::vector;
 
 using namespace fw;
 
-void OrRule::Reposition(Connector<ListDS>& connector, TreeDS& x, const ListDS& inode) const {
-  m_log.debug("Repositioning OrRule<ListDS> " + string(*this) + " at " + string(x) + " with inode " + string(inode));
+void OrRule::Reposition(Connector& connector, TreeDS& x, const IList& inode) const {
+  m_log.debug("Repositioning OrRule " + string(*this) + " at " + string(x) + " with inode " + string(inode));
   x.Clear();
-  x.istart = &inode;
-  x.iend = &inode;
+  x.iconnection.istart = &inode;
+  x.iconnection.iend = NULL;
   if (x.children.empty()) {
     for (child_iter i = m_children.begin(); i != m_children.end(); ++i) {
       std::auto_ptr<TreeDS> child(new TreeDS(i->MakeState(), &x));
@@ -34,18 +34,15 @@ void OrRule::Reposition(Connector<ListDS>& connector, TreeDS& x, const ListDS& i
   (void) Update(connector, x, NULL);
 }
 
-void OrRule::Reposition(Connector<TreeDS>& connector, TreeDS& x, const TreeDS& inode) const {
-  // TODO (identical to Reposition<ListDS>?)
-  throw FWError("OrRule<TreeDS>::Reposition() is unimplemented");
-}
+bool OrRule::Update(Connector& connector, TreeDS& x, const TreeDS* child) const {
+  m_log.debug("Updating OrRule " + string(*this) + " at " + string(x) + " with child " + (child ? string(*child) : "<null>"));
 
-bool OrRule::Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* child) const {
-  m_log.debug("Updating OrRule<ListDS> " + string(*this) + " at " + string(x) + " with child " + (child ? string(*child) : "<null>"));
-
-  const DS* old_iend = x.iend;
+  const IList* old_iend = x.iconnection.iend;
 
   // Compute new state flags
-  x.size = 0;
+  x.iconnection.iend = NULL;
+  x.iconnection.size = 0;
+  x.oconnection.Clear();
   OrState& state = x.GetState<OrState>();
   state.ok = true;
   state.bad = false;
@@ -54,13 +51,22 @@ bool OrRule::Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* child
   vector<const TreeDS*> bads;
   vector<const TreeDS*> dones;
   vector<const TreeDS*> completes;  // done and not ok
-  for (TreeDS::child_mod_iter i = x.children.begin();
-       i != x.children.end(); ++i) {
+
+  if (x.children.empty()) {
+    throw FWError("Cannot update OrRule " + string(*this) + " that has no children");
+  }
+
+  TreeDS::child_mod_iter i = x.children.begin();
+  for (; i != x.children.end(); ++i) {
     State& istate = i->GetState();
     if (istate.ok || istate.done) {
-      if (i->size > x.size) {
-        x.size = i->size;
-        x.iend = i->iend;
+      // This disambiguation is perhaps silly.
+      if (i->iconnection.size > x.iconnection.size) {
+        if (i->iconnection.istart != x.iconnection.istart) {
+          throw FWError("OrRule " + string(*this) + " and a child disagree about istart");
+        }
+        x.iconnection.iend = i->iconnection.iend;
+        x.iconnection.size = i->iconnection.size;
       }
     }
     if (istate.ok) {
@@ -76,9 +82,14 @@ bool OrRule::Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* child
       dones.push_back(&*i);
     }
 
-    // No matter the state of the child, we want its hotlist
-    x.hotlist.insert(i->hotlist.begin(), i->hotlist.end());
-    i->hotlist.clear();
+    // We want the hotlists of all children, no matter their state
+    x.oconnection.hotlist.insert(i->oconnection.hotlist.begin(), i->oconnection.hotlist.end());
+    i->oconnection.hotlist.clear();
+  }
+  if (1 == dones.size()) {
+    x.oconnection.ostart = dones.at(0)->oconnection.ostart;
+    x.oconnection.oend = dones.at(0)->oconnection.oend;
+    x.oconnection.size = dones.at(0)->oconnection.size;
   }
   if (dones.size() > 1) {
     state.ok = true;
@@ -99,12 +110,7 @@ bool OrRule::Update(Connector<ListDS>& connector, TreeDS& x, const TreeDS* child
   }
 
   m_log.debug("OrRule " + string(*this) + " now at " + string(x));
-  return old_iend != x.iend || !x.hotlist.empty();
-}
-
-bool OrRule::Update(Connector<TreeDS>& connector, TreeDS& x, const TreeDS* child) const {
-  // TODO
-  throw FWError("OrRule<TreeDS>::Update() is unimplemented");
+  return old_iend != x.iconnection.iend || !x.oconnection.hotlist.empty();
 }
 
 std::auto_ptr<State> OrRule::MakeState() const {

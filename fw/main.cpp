@@ -40,7 +40,7 @@ public:
     std::auto_ptr<Rule> or_(new OrRule(log, "or"));
     std::auto_ptr<Rule> new_(new KeywordRule(log, "new"));
     or_->AddChild(new_);
-    std::auto_ptr<Rule> x_(new KeywordRule(log, "x"));
+    std::auto_ptr<Rule> x_(new KeywordRule(log, "del"));
     or_->AddChild(x_);
     m_machine.AddChild(or_);
   }
@@ -59,8 +59,12 @@ public:
     : m_log(log),
       m_name(name),
       m_machine(log, name) {
-    //std::auto_ptr<Rule> new_(new TokenRule(log, "new"));
-    //m_machine.AddChild(new_);
+    std::auto_ptr<Rule> or_(new OrRule(log, "or"));
+    std::auto_ptr<Rule> new_(new KeywordMetaRule(log, "new"));
+    or_->AddChild(new_);
+    std::auto_ptr<Rule> del_(new KeywordMetaRule(log, "del"));
+    or_->AddChild(del_);
+    m_machine.AddChild(or_);
   }
 
   Rule& Machine() { return m_machine; }
@@ -86,20 +90,20 @@ int main(int argc, char *argv[]) {
     // Lexer
     Lexer lexer(log, "lexer");
     log.info("Lexer: " + lexer.Machine().print());
-    Connector<ListDS> lexerConnector(log, lexer.Machine());
+    Connector lexerConnector(log, lexer.Machine());
 
     // Parser
     Parser parser(log, "parser");
     log.info("Parser: " + parser.Machine().print());
-    Connector<TreeDS> parserConnector(log, parser.Machine());
+    Connector parserConnector(log, parser.Machine());
 
-    ListDS* start = NULL;
-    ListDS* prev = NULL;
+    IList* start = NULL;
+    IList* prev = NULL;
     string line;
     while (getline(cin, line)) {
       line += "\n";
       for (size_t i=0; i < line.size(); ++i) {
-        ListDS* c = new ListDS(std::auto_ptr<State>(new CharState(line.at(i))));
+        IList* c = new IList(std::auto_ptr<OData>(new CharData(line.at(i))));
         if (!start) { start = c; }
         if (prev) {
           prev->right = c;
@@ -118,9 +122,9 @@ int main(int argc, char *argv[]) {
       }
     }
     log.info("Clearing input");
-    ListDS* i = start;
+    IList* i = start;
     while (i) {
-      ListDS* j = i->right;
+      IList* j = i->right;
       delete i;
       i = j;
     }

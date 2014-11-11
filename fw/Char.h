@@ -4,20 +4,20 @@
 #ifndef _Char_h_
 #define _Char_h_
 
-#include "State.h"
+#include "OData.h"
 
 #include <string>
 
 namespace fw {
 
-class CharState : public State {
+class CharData : public OData {
 public:
-  CharState(const char c)
+  CharData(const char c)
     : c(c) {}
-  virtual ~CharState() {}
+  virtual ~CharData() {}
   const char c;
 
-  virtual operator std::string() const { return std::string("[CharState '") + c + "':" + StateFlags() + "]"; }
+  virtual operator std::string() const { return std::string("[CharData '") + c; }
 };
 
 }

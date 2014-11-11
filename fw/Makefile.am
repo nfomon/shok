@@ -15,6 +15,7 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     Hotlist.h \
     Keyword.h \
     ListenerTable.h \
+    OData.h \
     Or.cpp \
     Or.h \
     Rule.cpp \

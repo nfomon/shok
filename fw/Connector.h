@@ -5,6 +5,7 @@
 #define _Connector_h_
 
 #include "DS.h"
+#include "Hotlist.h"
 #include "ListenerTable.h"
 #include "Rule.h"
 
@@ -15,30 +16,33 @@
 
 namespace fw {
 
-template <typename INode>
 class Connector {
 public:
   Connector(Log& log, const Rule& rule)
     : m_log(log),
       m_root(rule.MakeState(), NULL) {}
 
-  const Hotlist& GetHotlist() const { return m_hotlist; }
-  void ClearHotlist() { m_hotlist.clear(); }
+  const Hotlist& GetHotlist() const { return m_oconnection.hotlist; }
+  void ClearHotlist() { m_oconnection.hotlist.clear(); }
 
   // These return the common ancestor of all nodes that were changed, if any.
-  // Insert() a new inode, AFTER attaching its connections in the input DS.
-  void Insert(const INode& inode);
+  // Insert() a new inode, AFTER attaching its connections in the input list.
+  void Insert(const IList& inode);
   // Delete() an inode.  Call this AFTER updating its left and right to point
   // to each other, but leave this inode's left and right pointers intact.
-  void Delete(const INode& inode);
+  void Delete(const IList& inode);
 
   void UpdateWithHotlist(const Hotlist& hotlist) {
     for (Hotlist_iter i = hotlist.begin(); i != hotlist.end(); ++i) {
-      State& state = (*i)->GetState();
-      if (state.done) {
-        Insert(**i);
-      } else {
-        Delete(**i);
+      switch (i->second) {
+      case OP_INSERT:
+        Insert(*i->first);
+        break;
+      case OP_DELETE:
+        Delete(*i->first);
+        break;
+      default:
+        throw FWError("Cannot update with hotlist with unknown hot operation");
       }
     }
   }
@@ -48,9 +52,9 @@ public:
 
   // Set the "starting" inode.  The rule's Reposition() may RepositionNode() on
   // its children.
-  void RepositionNode(TreeDS& x, const INode& inode) {
+  void RepositionNode(TreeDS& x, const IList& inode) {
     m_log.info("Connector: Repositioning " + std::string(x) + " with inode " + std::string(inode));
-    if (x.istart == &inode) {
+    if (x.iconnection.istart == &inode) {
       m_log.info(" - already at the right position; skipping");
       return;
     }
@@ -76,47 +80,32 @@ public:
     x.Clear();
   }
 
-  // Called from a rule/state regarding its DS node.  Listens for updates to
-  // this inode.
-  void Listen(TreeDS& x, const INode& inode) {
+  // Called from a rule/state regarding its DS node.
+  // Listens for updates to this inode.
+  void Listen(TreeDS& x, const IList& inode) {
     m_log.info("Connector: " + std::string(x) + " will listen to " + std::string(inode));
     m_listeners.AddListener(&inode, &x);
   }
-  void Unlisten(TreeDS& x, const INode& inode) {
+  void Unlisten(TreeDS& x, const IList& inode) {
     m_log.info("Connector: " + std::string(x) + " will NOT listen to " + std::string(inode));
     m_listeners.RemoveListener(&inode, &x);
   }
 
 private:
-  typedef typename ListenerTable<const INode*, TreeDS*>::listener_set listener_set;
-  typedef typename ListenerTable<const INode*, TreeDS*>::listener_iter listener_iter;
+  typedef typename ListenerTable<const IList*, TreeDS*>::listener_set listener_set;
+  typedef typename ListenerTable<const IList*, TreeDS*>::listener_iter listener_iter;
 
   // Convenience core for Insert() and Delete().  Updates all listeners to the
   // left (and if any and distinct, to the right) of the inode, about the
   // inode.  For TreeDS, updates all listeners of the parent of the inode.
-  void UpdateListeners(const INode& inode);
+  void UpdateListeners(const IList& inode);
 
   Log& m_log;
   // Root of the output tree.  Tells us the root of the rule tree.
   TreeDS m_root;
-  ListenerTable<const INode*, TreeDS*> m_listeners;
-  Hotlist m_hotlist;
+  ListenerTable<const IList*, TreeDS*> m_listeners;
+  OConnection m_oconnection;
 };
-
-template <>
-void Connector<ListDS>::Insert(const ListDS& inode);
-template <>
-void Connector<TreeDS>::Insert(const TreeDS& inode);
-
-template <>
-void Connector<ListDS>::Delete(const ListDS& inode);
-template <>
-void Connector<TreeDS>::Delete(const TreeDS& inode);
-
-template <>
-void Connector<ListDS>::UpdateListeners(const ListDS& inode);
-template <>
-void Connector<TreeDS>::UpdateListeners(const TreeDS& inode);
 
 }
 
