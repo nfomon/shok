@@ -137,14 +137,19 @@ int main(int argc, char *argv[]) {
           c->left = prev;
         }
         log.info("");
-        log.info("main: Inserting character '" + c->print() + "' into lexer");
+        log.info("* main: Inserting character '" + c->print() + "' into lexer");
         lexerConnector.Insert(*c);
         const Hotlist& tokenHotlist = lexerConnector.GetHotlist();
         if (!tokenHotlist.empty()) {
-          log.info("Lexer returned " + boost::lexical_cast<string>(tokenHotlist.size()) + " hotlist items: sending to parser");
+          log.info("* main: Lexer returned " + boost::lexical_cast<string>(tokenHotlist.size()) + " hotlist items: sending to parser");
           parserConnector.UpdateWithHotlist(tokenHotlist);
           lexerConnector.ClearHotlist();
+          log.info("* main: No parser consumer; done with input character.");
+          parserConnector.ClearHotlist();
+        } else {
+          log.info("* main: Lexer returned no hotlist items.");
         }
+
         prev = c;
       }
     }

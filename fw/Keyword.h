@@ -165,21 +165,25 @@ public:
     state.done = false;
     const IList* first = x.iconnection.istart;
     const KeywordData* firstData = dynamic_cast<KeywordData*>(&first->GetData());
-    if (firstData && firstData->str == m_keyword) {
-      connector.Listen(x, *first);
-      state.ok = true;
-      state.bad = false;
-      state.done = true;
-      x.iconnection.size = 1;
-      const IList* second = first->right;
-      if (second) {
-        connector.Listen(x, *second);
-        state.ok = false;
+    if (firstData) {
+      if (firstData->str == m_keyword) {
+        connector.Listen(x, *first);
+        state.ok = true;
         state.bad = false;
         state.done = true;
-        x.iconnection.iend = second;
+        x.iconnection.size = 1;
+        const IList* second = first->right;
+        if (second) {
+          connector.Listen(x, *second);
+          state.ok = false;
+          state.bad = false;
+          state.done = true;
+          x.iconnection.iend = second;
+        } else {
+          x.iconnection.iend = NULL;
+        }
       } else {
-        x.iconnection.iend = NULL;
+        connector.Listen(x, *first);
       }
     }
     if (state.done && !was_done) {

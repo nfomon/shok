@@ -25,8 +25,8 @@ void Connector::Insert(const IList& inode) {
   m_log.info("Connector: Inserting IList: " + string(inode));
 
   if (inode.left) {
-    m_log.debug(" - Found left inode: updating listeners of " + string(*inode.left));
-    UpdateListeners(*inode.left);
+    m_log.debug(" - Found left inode: updating listeners of " + string(inode) + "'s left and (if present) right");
+    UpdateListeners(inode);
   } else {
     // Just reposition the root.
     m_log.debug(" - No left inode: just repositioning the root");
@@ -69,6 +69,10 @@ void Connector::UpdateListeners(const IList& inode) {
   typedef std::map<TreeDS::depth_t, change_vec> change_map;
   change_map changes_by_depth;
 
+  if (!inode.left) {
+    throw FWError("Cannot update listeners of inode " + string(inode) + " with nothing to its left");
+  }
+
   // TODO Unnecessary copy
   listener_set left_listeners = m_listeners.GetListeners(inode.left);
   for (listener_iter i = left_listeners.begin(); i != left_listeners.end(); ++i) {
@@ -82,6 +86,10 @@ void Connector::UpdateListeners(const IList& inode) {
     for (listener_iter i = right_listeners.begin(); i != right_listeners.end(); ++i) {
       changes_by_depth[(*i)->depth].push_back(change_pair(*i, NULL));
     }
+  }
+
+  if (changes_by_depth.empty()) {
+    m_log.info("Connector: No listeners of " + string(inode) + " (" + boost::lexical_cast<string>(&inode) + ") to update.");
   }
 
   while (!changes_by_depth.empty()) {

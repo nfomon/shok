@@ -53,10 +53,12 @@ bool SeqRule::Update(Connector& connector, TreeDS& x, const TreeDS* updated_chil
 
   if (x.children.empty()) {
     throw FWError("SeqRule::Update: SeqState " + string(x) + " must have children");
+  } else if (x.children.size() > m_children.size()) {
+    throw FWError("SeqRule::Update: SeqState " + string(x) + " has more children than the rule");
   }
 
-  // Iterate over children, either existing or being created, starting at the
-  // updated_child, so long as our last child is complete.
+  // Iterate over node children, either existing or being created, starting at
+  // the updated_child, so long as our last child is complete.
   bool finished = false;
   unsigned int child_index = 0;
   TreeDS::child_mod_iter child = x.children.begin();
@@ -93,6 +95,9 @@ bool SeqRule::Update(Connector& connector, TreeDS& x, const TreeDS* updated_chil
   }
 
   while (!finished) {
+    if (child_index >= m_children.size()) {
+      throw FWError("SeqRule " + string(*this) + " evaluated too many children beyond the rule");
+    }
     if (child != x.children.end()) {
       // Existing child
       if (prev_child) {
@@ -101,6 +106,10 @@ bool SeqRule::Update(Connector& connector, TreeDS& x, const TreeDS* updated_chil
           //connector.RepositionNode(*child, *prev_child->iconnection.iend);    // Could correct it like this
         }
       }
+    } else if (x.children.size() > m_children.size()) {
+      throw FWError("SeqRule::Update: SeqState " + string(x) + " has more children than the rule");
+    } else if (child_index >= m_children.size()) {
+      throw FWError("SeqRule::Update: child index >= Rule size");
     } else {
       // New child
       std::auto_ptr<TreeDS> newChild(new TreeDS(m_children.at(child_index).MakeState(), &x));
@@ -152,7 +161,16 @@ bool SeqRule::Update(Connector& connector, TreeDS& x, const TreeDS* updated_chil
       x.children.erase(child, x.children.end());
       finished = true;
     } else if (istate.done && !istate.ok) {
-      // Cool, keep going!
+      // Are we complete at the end of our sequence?
+      if (child_index == m_children.size() - 1) {
+        // We're complete
+        state.ok = false;
+        state.bad = false;
+        state.done = true;
+        finished = true;
+      } else {
+        // Cool, keep going!
+      }
     } else if (istate.ok) {
       if (child->iconnection.iend != NULL) {
         throw FWError("SeqRule found incomplete inode that is only ok; not allowed");
