@@ -11,6 +11,7 @@
 #include "Or.h"
 //#include "Regexp.h"
 #include "Rule.h"
+#include "Seq.h"
 #include "Star.h"
 //#include "Token.h"
 
@@ -32,6 +33,13 @@ namespace {
 
 class Lexer {
 public:
+  // Lexer Tree:
+  //       Star
+  //         |
+  //        Or
+  //   |-----|-----|
+  //  new   del    x
+
   Lexer(Log& log, const std::string& name)
     : m_log(log),
       m_name(name),
@@ -40,7 +48,9 @@ public:
     std::auto_ptr<Rule> or_(new OrRule(log, "or"));
     std::auto_ptr<Rule> new_(new KeywordRule(log, "new"));
     or_->AddChild(new_);
-    std::auto_ptr<Rule> x_(new KeywordRule(log, "del"));
+    std::auto_ptr<Rule> del_(new KeywordRule(log, "del"));
+    or_->AddChild(del_);
+    std::auto_ptr<Rule> x_(new KeywordRule(log, "x"));
     or_->AddChild(x_);
     m_machine.AddChild(or_);
   }
@@ -55,15 +65,32 @@ private:
 
 class Parser {
 public:
+  // Parser Tree:
+  //       Star
+  //        |
+  //        Or
+  //   |----------|
+  //  Seq1       Seq2
+  // |----|     |----|
+  // new  x    del   x
+
   Parser(Log& log, const std::string& name)
     : m_log(log),
       m_name(name),
       m_machine(log, name) {
     std::auto_ptr<Rule> or_(new OrRule(log, "or"));
+    std::auto_ptr<Rule> seq1_(new SeqRule(log, "seq1"));
     std::auto_ptr<Rule> new_(new KeywordMetaRule(log, "new"));
-    or_->AddChild(new_);
+    std::auto_ptr<Rule> x1_(new KeywordMetaRule(log, "x"));
+    seq1_->AddChild(new_);
+    seq1_->AddChild(x1_);
+    or_->AddChild(seq1_);
+    std::auto_ptr<Rule> seq2_(new SeqRule(log, "seq2"));
     std::auto_ptr<Rule> del_(new KeywordMetaRule(log, "del"));
-    or_->AddChild(del_);
+    std::auto_ptr<Rule> x2_(new KeywordMetaRule(log, "x"));
+    seq2_->AddChild(del_);
+    seq2_->AddChild(x2_);
+    or_->AddChild(seq2_);
     m_machine.AddChild(or_);
   }
 
