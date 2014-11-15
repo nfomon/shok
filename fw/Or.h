@@ -20,7 +20,6 @@ struct OrRule : public Rule {
 };
 
 struct OrState : public RuleState {
-public:
   OrState(const OrRule& rule)
     : RuleState(rule) {}
   virtual ~OrState() {}

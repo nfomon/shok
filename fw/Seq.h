@@ -20,10 +20,9 @@ struct SeqRule : public Rule {
 };
 
 struct SeqState : public RuleState {
-  SeqState(const SeqRule& rule);
+  SeqState(const SeqRule& rule)
+    : RuleState(rule) {}
   virtual ~SeqState() {}
-
-  virtual void Clear();
 
   virtual operator std::string() const { return "[SeqState:" + StateFlags() + "]"; }
 };

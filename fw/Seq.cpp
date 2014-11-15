@@ -179,15 +179,3 @@ bool SeqRule::Update(Connector& connector, TreeDS& x, const TreeDS* updated_chil
 std::auto_ptr<State> SeqRule::MakeState() const {
   return std::auto_ptr<State>(new SeqState(*this));
 }
-
-SeqState::SeqState(const SeqRule& rule)
-  : RuleState(rule) {
-  done = true;
-}
-
-void SeqState::Clear() {
-  ok = true;
-  bad = false;
-  done = true;
-  locked = false;
-}
