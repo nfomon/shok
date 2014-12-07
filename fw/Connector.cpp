@@ -169,14 +169,6 @@ void Connector::UpdateListeners(const IList& inode) {
     change_vec changes = changes_by_depth.rbegin()->second;
     m_log.debug("Connector: Updating changes at depth " + lexical_cast<string>(depth));
     for (change_iter i = changes.begin(); i != changes.end(); ++i) {
-/*
-      // Clear all the nodes' hot lists at this level.  They can't do it in
-      // Update() because they might have multiple child updates coming in.
-      // TODO but eventually we'll trust them to clear their children, so that
-      // the Connector only needs to clear the root when it takes from it.
-      // (That might already be the case!)
-      i->first->oconnection.hotlist.clear();
-*/
       bool changed = UpdateNode(*i->first, i->second);
       if (changed) {
         TreeDS* parent = i->first->parent;

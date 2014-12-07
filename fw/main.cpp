@@ -164,20 +164,6 @@ int main(int argc, char *argv[]) {
           log.info("* main: Lexer returned no hotlist items.");
         }
 
-/*
-        if (start) {
-          grapher.AddIList("lexer", *start, "Input");
-          grapher.AddOTree("lexer", lexerConnector.GetRoot(), "Lex");
-          grapher.AddIListeners("lexer", lexerConnector, *start);
-          if (astStart) {
-            grapher.AddIList("parser", *astStart, "Tokens");
-            grapher.AddOTree("parser", parserConnector.GetRoot(), "Parse");
-            grapher.AddIListeners("parser", parserConnector, *astStart);
-          }
-          grapher.SaveAndClear();
-        }
-*/
-
         prev = c;
       }
     }
