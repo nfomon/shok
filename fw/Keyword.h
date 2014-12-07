@@ -4,6 +4,14 @@
 #ifndef _Keyword_h_
 #define _Keyword_h_
 
+/* Keyword and KeywordMeta rules
+ *
+ * Keywords recognize CharData input nodes, and match a specific string.
+ *
+ * KeywordMeta recognizes Keyword input nodes, and matches a specific keyword
+ * node.
+ */
+
 #include "Connector.h"
 #include "FWError.h"
 #include "OData.h"
@@ -22,12 +30,12 @@ struct KeywordData : public OData {
     : str(str) {}
   virtual ~KeywordData() {}
   std::string str;
-  virtual operator std::string() const { return "[KeywordData:" + str + "]"; }
+  virtual operator std::string() const { return str; }
 };
 
 class KeywordRule;
 
-struct KeywordState : public RuleState {
+struct KeywordState : public State {
   KeywordState(const KeywordRule& rule);
   virtual ~KeywordState() {}
 
@@ -56,7 +64,6 @@ public:
     x.oconnection.oleaf.reset(new IList(std::auto_ptr<OData>(new KeywordData(m_str))));
     x.oconnection.ostart = x.oconnection.oleaf.get();
     x.oconnection.oend = x.oconnection.oleaf.get();
-    x.oconnection.size = 1;
     (void) Update(connector, x, NULL);
   }
 
@@ -64,43 +71,32 @@ public:
     m_log.info("Keyword: updating " + std::string(*this) + " at " + std::string(x) + " with child " + (child ? std::string(*child) : "<null>"));
     const IList* old_iend = x.iconnection.iend;
     KeywordState& state = x.GetState<KeywordState>();
-    bool was_done = state.done;
+    bool was_emitting = state.IsEmitting();
+    state.Clear();
     std::string matched;
-    state.ok = true;
-    state.bad = false;
-    state.done = false;
     bool done = false;
     const IList* i = x.iconnection.istart;
     for (; i != NULL; i = i->right) {
       if (done) {
-        state.ok = false;
-        state.bad = false;
-        state.done = true;
-        //m_log.debug (" - - done break");
+        state.GoComplete();
         break;
       }
       CharData idata = i->GetData<CharData>();
       matched += idata.c;
       if (m_str == matched) {
-        state.ok = true;
-        state.bad = false;
-        state.done = true;
+        state.GoDone();
         done = true;
-        //m_log.debug (" - - matched continue");
       } else if (m_str.substr(0, matched.size()) != matched) {
-        state.ok = false;
-        state.bad = true;
-        state.done = false;
-        //m_log.debug (" - - bad break: '" + m_str.substr(0, matched.size()) + "' - '" + matched + "'");
+        state.GoBad();
         break;
       }
       connector.Listen(x, *i);
     }
     x.iconnection.iend = i;
     x.iconnection.size = matched.size();
-    if (state.done && !was_done) {
+    if (state.IsEmitting() && !was_emitting) {
       x.oconnection.hotlist.insert(std::make_pair(x.oconnection.oleaf.get(), OP_INSERT));
-    } else if (!state.done && was_done) {
+    } else if (!state.IsEmitting() && was_emitting) {
       x.oconnection.hotlist.insert(std::make_pair(x.oconnection.oleaf.get(), OP_DELETE));
     }
     m_log.debug("Keyword " + std::string(*this) + " now: " + std::string(x));
@@ -114,11 +110,11 @@ private:
 };
 
 KeywordState::KeywordState(const KeywordRule& rule)
-  : RuleState(rule) {}
+  : State(rule) {}
 
 const KeywordRule& KeywordState::GetKeywordRule() const { return *dynamic_cast<const KeywordRule*>(&rule); }
 
-KeywordState::operator std::string() const { return "[KeywordState \"" + GetKeywordRule().GetString() + "\":" + StateFlags() + "]"; }
+KeywordState::operator std::string() const { return "kw " + rule.Name() + " (" + GetKeywordRule().GetString() + "):" + Print(); }
 
 std::auto_ptr<State> KeywordRule::MakeState() const {
   return std::auto_ptr<State>(new KeywordState(*this));
@@ -126,7 +122,7 @@ std::auto_ptr<State> KeywordRule::MakeState() const {
 
 class KeywordMetaRule;
 
-struct KeywordMetaState : public RuleState {
+struct KeywordMetaState : public State {
   KeywordMetaState(const KeywordMetaRule& rule);
   virtual ~KeywordMetaState() {}
 
@@ -137,7 +133,7 @@ struct KeywordMetaState : public RuleState {
 
 class KeywordMetaRule : public Rule {
 public:
-  KeywordMetaRule(Log& log, const std::string& keyword, const std::string& name = "")
+  KeywordMetaRule(Log& log, const std::string& keyword, const std::string& name)
     : Rule(log, name),
       m_keyword(keyword) {}
   virtual ~KeywordMetaRule() {}
@@ -151,44 +147,32 @@ public:
     x.oconnection.oleaf.reset(new IList(std::auto_ptr<OData>(new KeywordData(m_keyword))));
     x.oconnection.ostart = x.oconnection.oleaf.get();
     x.oconnection.oend = x.oconnection.oleaf.get();
-    x.oconnection.size = 1;
     (void) Update(connector, x, NULL);
   }
 
   virtual bool Update(Connector& connector, TreeDS& x, const TreeDS* child) const {
     m_log.info("KeywordMeta: updating " + std::string(*this) + " at " + std::string(x) + " with child " + (child ? std::string(*child) : "<null>"));
     const IList* old_iend = x.iconnection.iend;
-    RuleState& state = x.GetState<RuleState>();
-    bool was_done = state.done;
-    state.ok = false;
-    state.bad = true;
-    state.done = false;
+    State& state = x.GetState();
+    state.GoBad();
+    bool was_emitting = state.IsEmitting();
     const IList* first = x.iconnection.istart;
     const KeywordData* firstData = dynamic_cast<KeywordData*>(&first->GetData());
-    if (firstData) {
-      if (firstData->str == m_keyword) {
-        connector.Listen(x, *first);
-        state.ok = true;
-        state.bad = false;
-        state.done = true;
-        x.iconnection.size = 1;
-        const IList* second = first->right;
-        if (second) {
-          connector.Listen(x, *second);
-          state.ok = false;
-          state.bad = false;
-          state.done = true;
-          x.iconnection.iend = second;
-        } else {
-          x.iconnection.iend = NULL;
-        }
+    if (firstData && firstData->str == m_keyword) {
+      connector.Listen(x, *first);
+      state.GoDone();
+      x.iconnection.size = 1;
+      const IList* second = first->right;
+      if (second) {
+        state.GoComplete();
+        x.iconnection.iend = second;
       } else {
-        connector.Listen(x, *first);
+        x.iconnection.iend = NULL;
       }
     }
-    if (state.done && !was_done) {
+    if (state.IsEmitting() && !was_emitting) {
       x.oconnection.hotlist.insert(std::make_pair(x.oconnection.oleaf.get(), OP_INSERT));
-    } else if (!state.done && was_done) {
+    } else if (!state.IsEmitting() && was_emitting) {
       x.oconnection.hotlist.insert(std::make_pair(x.oconnection.oleaf.get(), OP_DELETE));
     }
     m_log.debug("KeywordMeta " + std::string(*this) + " now: " + std::string(x));
@@ -202,11 +186,11 @@ private:
 };
 
 KeywordMetaState::KeywordMetaState(const KeywordMetaRule& rule)
-  : RuleState(rule) {}
+  : State(rule) {}
 
 const KeywordMetaRule& KeywordMetaState::GetKeywordMetaRule() const { return *dynamic_cast<const KeywordMetaRule*>(&rule); }
 
-KeywordMetaState::operator std::string() const { return "[KeywordMetaState \"" + GetKeywordMetaRule().GetString() + "\":" + StateFlags() + "]"; }
+KeywordMetaState::operator std::string() const { return "kwmeta " + rule.Name() + " (" + GetKeywordMetaRule().GetString() + "):" + Print(); }
 
 std::auto_ptr<State> KeywordMetaRule::MakeState() const {
   return std::auto_ptr<State>(new KeywordMetaState(*this));

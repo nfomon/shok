@@ -13,7 +13,7 @@ namespace fw {
 
 struct OData {
   virtual ~OData() {}
-  virtual operator std::string() const { return "[Data:empty]"; }
+  virtual operator std::string() const { return "(Data:empty)"; }
 };
 
 }

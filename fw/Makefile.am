@@ -1,7 +1,11 @@
 UTIL_DIR = ../util
 UTIL_SRCS = \
+    $(UTIL_DIR)/Graphviz.cpp \
+    $(UTIL_DIR)/Graphviz.h \
     $(UTIL_DIR)/Log.cpp \
-    $(UTIL_DIR)/Log.h
+    $(UTIL_DIR)/Log.h \
+    $(UTIL_DIR)/Util.cpp \
+    $(UTIL_DIR)/Util.h
 
 COMMON_SRCS = $(UTIL_SRCS)
 
@@ -10,8 +14,11 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     Char.h \
     Connector.cpp \
     Connector.h \
+    DS.cpp \
     DS.h \
     FWError.h \
+    Grapher.cpp \
+    Grapher.h \
     Hotlist.h \
     Keyword.h \
     ListenerTable.h \

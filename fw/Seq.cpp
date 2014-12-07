@@ -46,9 +46,7 @@ bool SeqRule::Update(Connector& connector, TreeDS& x, const TreeDS* updated_chil
   x.iconnection.iend = NULL;
   x.iconnection.size = 0;
   SeqState& state = x.GetState<SeqState>();
-  state.ok = true;
-  state.bad = false;
-  state.done = false;
+  state.Clear();
   x.oconnection.Clear();
 
   if (x.children.empty()) {
@@ -69,7 +67,7 @@ bool SeqRule::Update(Connector& connector, TreeDS& x, const TreeDS* updated_chil
     for (child = x.children.begin(); child != x.children.end(); ++child, ++child_index) {
       if (updated_child == &*child) { break; }
       State& istate = child->GetState();
-      if (istate.bad || istate.ok || !istate.done) {
+      if (!istate.IsComplete()) {
         throw FWError("SeqRule " + string(*this) + " found 'skippable' child that was not complete");
       }
       if (!child->oconnection.hotlist.empty()) {
@@ -89,7 +87,6 @@ bool SeqRule::Update(Connector& connector, TreeDS& x, const TreeDS* updated_chil
       }
       x.iconnection.size += child->iconnection.size;
       x.oconnection.oend = child->oconnection.oend;
-      x.oconnection.size += child->oconnection.size;
       prev_child = &*child;
     }
   }
@@ -126,14 +123,13 @@ bool SeqRule::Update(Connector& connector, TreeDS& x, const TreeDS* updated_chil
     }
     x.iconnection.size += child->iconnection.size;
     x.oconnection.oend = child->oconnection.oend;
-    x.oconnection.size += child->oconnection.size;
     x.oconnection.hotlist.insert(child->oconnection.hotlist.begin(), child->oconnection.hotlist.end());
     child->oconnection.hotlist.clear();
 
     // Now check the child's state, and see if we can keep going.
     State& istate = child->GetState();
 
-    if (istate.done) {
+    if (istate.IsEmitting()) {
       // Link the prev_child's oend and the new child's ostart.
       // prev_child is complete, so it has an oend.  But this child might not
       // be complete so might not have an ostart.
@@ -145,41 +141,38 @@ bool SeqRule::Update(Connector& connector, TreeDS& x, const TreeDS* updated_chil
         child->oconnection.ostart->left = prev_child->oconnection.oend;
       }
     }
-    if (istate.bad) {
+    if (istate.IsBad()) {
       m_log.debug("SeqRule " + string(*this) + " has gone bad");
-      state.ok = false;
-      state.bad = true;
-      state.done = false;
+      state.GoBad();
       x.iconnection.iend = child->iconnection.iend;
       x.oconnection.ostart = NULL;
       x.oconnection.oend = NULL;
-      x.oconnection.size = 0;
       // Clear any subsequent children
-      for (TreeDS::child_mod_iter i = child; i != x.children.end(); ++i) {
+      for (TreeDS::child_mod_iter i = child+1; i != x.children.end(); ++i) {
         connector.ClearNode(*i);
       }
-      x.children.erase(child, x.children.end());
+      x.children.erase(child+1, x.children.end());
       finished = true;
-    } else if (istate.done && !istate.ok) {
+    } else if (istate.IsComplete()) {
       // Are we complete at the end of our sequence?
       if (child_index == m_children.size() - 1) {
-        // We're complete
-        state.ok = false;
-        state.bad = false;
-        state.done = true;
+        state.GoComplete();
+        x.iconnection.iend = child->iconnection.iend;
         finished = true;
       } else {
         // Cool, keep going!
       }
-    } else if (istate.ok) {
+    } else if (istate.IsAccepting()) {
       if (child->iconnection.iend != NULL) {
-        throw FWError("SeqRule found incomplete inode that is only ok; not allowed");
+        throw FWError("SeqRule found incomplete inode that is only ok or done; not allowed");
       } else if (x.iconnection.iend) {
         throw FWError("OrRule reached eoi but tried to set an iend.. silly internal check");
       }
-      state.ok = true;
-      state.bad = false;
-      state.done = false;
+      if (istate.IsDone() && child_index == m_children.size() - 1) {
+        state.GoDone();
+      } else {
+        state.GoOK();
+      }
       finished = true;
     } else {
       throw FWError("SeqRule " + string(*this) + " child is in unexpected state");

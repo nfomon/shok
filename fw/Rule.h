@@ -4,9 +4,7 @@
 #ifndef _Rule_h_
 #define _Rule_h_
 
-#include "DS.h"
 #include "FWError.h"
-#include "State.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -17,16 +15,18 @@ namespace fw {
 
 class Connector;
 
-class RuleState;
+class IList;
+class State;
+class TreeDS;
 
 class Rule {
 public:
   typedef boost::ptr_vector<Rule> child_vec;
   typedef child_vec::const_iterator child_iter;
 
-  Rule(Log& log, const std::string& name = "")
+  Rule(Log& log, const std::string& debugName)
     : m_log(log),
-      m_name(name),
+      m_name(debugName),
       m_parent(NULL) {}
   virtual ~Rule() {}
 
@@ -52,19 +52,13 @@ public:
     m_children.push_back(child);
   }
 
-  virtual operator std::string() const { return "(" + m_name + ":" + boost::lexical_cast<std::string>(m_children.size()) + ")"; }
-  virtual std::string print() const {
-    std::string s(m_name);
-    if (!m_children.empty()) {
-      s += " (";
-      for (child_iter i = m_children.begin(); i != m_children.end(); ++i) {
-        if (i != m_children.begin()) { s += ", "; }
-        s += i->print();
-      }
-      s += ")";
-    }
-    return s;
+  std::string Name() const { return m_name; }
+
+  virtual operator std::string() const {
+    return m_name + ":" + boost::lexical_cast<std::string>(m_children.size());
   }
+  std::string print() const;
+  virtual std::string DrawNode(const std::string& context) const;
 
 protected:
   void setParent(Rule* parent) {
@@ -75,15 +69,6 @@ protected:
   std::string m_name;
   Rule* m_parent;
   child_vec m_children;
-};
-
-struct RuleState : public State {
-  const Rule& rule;
-  RuleState(const Rule& rule)
-    : rule(rule) {}
-  virtual ~RuleState() {}
-
-  virtual operator std::string() const { return "[RuleState:" + StateFlags() + "]"; }
 };
 
 }

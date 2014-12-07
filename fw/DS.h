@@ -9,6 +9,9 @@
 #include "OData.h"
 #include "State.h"
 
+#include "util/Graphviz.h"
+
+#include <boost/lexical_cast.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 
 #include <memory>
@@ -37,20 +40,17 @@ struct IConnection {
 struct OConnection {
   OConnection()
     : ostart(NULL),
-      oend(NULL),
-      size(0) {}
+      oend(NULL) {}
   // If leaf node, this is the output list node for the leaf.
   std::auto_ptr<IList> oleaf;
-  IList* ostart;  // Non-leaf node: first oleaf node that is spanned
-  IList* oend;    // Non-leaf node: last oleaf node that is spanned
-  size_t size;    // number of oleaf nodes that are spanned
-  Hotlist hotlist;  // oleaf nodes that have been added/removed from the list
+  IList* ostart;    // first emittable oleaf node that is spanned
+  IList* oend;      // last emittable oleaf node that is spanned
+  Hotlist hotlist;  // oleaf nodes that have been inserted/deleted from the list
 
   void Clear() {
     oleaf.reset();
     ostart = NULL;
     oend = NULL;
-    size = 0;
     hotlist.clear();
   }
 };
@@ -86,6 +86,8 @@ public:
     }
     return s;
   }
+
+  std::string DrawNode(const std::string& context) const;
 
   IList* left;
   IList* right;
@@ -126,7 +128,7 @@ public:
     return *state;
   }
 
-  operator std::string() const { return "(TreeDS " + std::string(GetState()) + ")"; }
+  operator std::string() const { return GetState(); }
   std::string print() const {
     std::string s(GetState());
     for (child_iter i = children.begin(); i != children.end(); ++i) {
@@ -134,6 +136,8 @@ public:
     }
     return s;
   }
+
+  std::string DrawNode(const std::string& context) const;
 
   // Clear all state and connection information.  Maintains tree structure.
   void Clear() {

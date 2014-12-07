@@ -1,0 +1,65 @@
+// Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
+// directory of this distribution and at http://shok.io/code/copyright.html
+
+#include "DS.h"
+
+#include "util/Graphviz.h"
+using Util::dotVar;
+
+#include <string>
+using std::string;
+
+using namespace fw;
+
+string IList::DrawNode(const string& context) const {
+  string s;
+  s = dotVar(this, context) + " [label=\"" + string(GetData()) + "\", style=\"filled\", fillcolor=\"#dddddd\", fontsize=12.0];\n";
+  if (right) {
+    s += dotVar(this, context) + " -> " + dotVar(right, context) + ";\n";
+    s += right->DrawNode(context);
+  }
+  return s;
+}
+
+string TreeDS::DrawNode(const string& context) const {
+  string s;
+  // Style the node to indicate its State
+  string fillcolor = "#88ffaa";
+  if (m_state->IsBad()) {
+    fillcolor = "#ff9999";
+  } else if (m_state->IsDone()) {
+    fillcolor = "#eeee66";
+  } else if (m_state->IsComplete()) {
+    fillcolor = "#9999cc";
+  }
+
+  string hotness = "";
+  if (!oconnection.hotlist.empty()) {
+    //hotness = ", fontcolor=\"#cc0066\"";
+  }
+
+  s += dotVar(this, context) + " [label=\"" + m_state->rule.Name() + "\", style=\"filled\", fillcolor=\"" + fillcolor + "\", fontsize=12.0" + hotness + "];\n";
+  // Connect the node to its IConnection
+  string istartcolor = "#006600";
+  string iendcolor = "#660000";
+  if (m_state->IsBad()) {
+    istartcolor = "#66cc66";
+    iendcolor = "#cc6666";
+  }
+  if (iconnection.istart) {
+    s += dotVar(this, context) + " -> " + dotVar(iconnection.istart, context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + istartcolor + "\"];\n";
+  } else {
+    s += dotVar(this, context) + " -> " + dotVar(this, context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + istartcolor + "\"];\n";
+  }
+  if (iconnection.iend) {
+    s += dotVar(this, context) + " -> " + dotVar(iconnection.iend, context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + iendcolor + "\"];\n";
+  } else {
+    s += dotVar(this, context) + " -> " + dotVar(this, context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + iendcolor + "\"];\n";
+  }
+  // Add its child connections, and draw the children
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
+    s += dotVar(this, context) + " -> " + dotVar(&*i, context) + ";\n";
+    s += i->DrawNode(context);
+  }
+  return s;
+}

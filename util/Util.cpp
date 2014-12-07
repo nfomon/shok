@@ -29,18 +29,28 @@ vector<string> Util::split(const string& s, char delim) {
   return v;
 }
 
-std::string Util::ltrim_space(std::string s) {
+string Util::ltrim_space(const string& _s) {
+  string s(_s);
   size_t startpos = s.find_first_not_of(' ');
-  if (startpos != std::string::npos) {
+  if (startpos != string::npos) {
     return s.substr(startpos);
   }
   return "";
 }
 
-std::string Util::rtrim_space(std::string s) {
+string Util::rtrim_space(const string& _s) {
+  string s(_s);
   size_t endpos = s.find_last_not_of(' ');
-  if (endpos != std::string::npos) {
+  if (endpos != string::npos) {
     return s.substr(0, endpos+1);
   }
   return "";
+}
+
+string Util::pad_str(const string& _s, char c, size_t len) {
+  string s(_s);
+  while (s.size() < len) {
+    s = c + s;
+  }
+  return s;
 }

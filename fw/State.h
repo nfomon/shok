@@ -4,38 +4,71 @@
 #ifndef _State_h_
 #define _State_h_
 
+#include "Rule.h"
+
 #include <boost/lexical_cast.hpp>
 
 #include <string>
-#include <vector>
 
 namespace fw {
 
 struct DS;
 
-struct State {
-  bool ok;
-  bool bad;
-  bool done;
-  bool locked;
+class State {
+public:
+  const Rule& rule;
 
-  State()
-    : ok(true),
-      bad(false),
-      done(false),
-      locked(false) {}
+  State(const Rule& rule,
+        bool startDone = false)
+    : rule(rule),
+      m_startDone(startDone) {
+    Clear();
+  }
   virtual ~State() {}
 
-  virtual void Clear() {
-    ok = true;
-    bad = false;
-    done = false;
-    locked = false;
+  void Clear() {
+    if (m_startDone) {
+      m_station = ST_DONE;
+    } else {
+      m_station = ST_OK;
+    }
   }
 
-  virtual operator std::string() const { return "[State:" + StateFlags() + "]"; }
+  bool IsOK() const { return ST_OK == m_station; }
+  bool IsBad() const { return ST_BAD == m_station; }
+  bool IsDone() const { return ST_DONE == m_station; }
+  bool IsComplete() const { return ST_COMPLETE == m_station; }
+  bool IsAccepting() const { return ST_OK == m_station || ST_DONE == m_station; }
+  bool IsEmitting() const { return ST_DONE == m_station || ST_COMPLETE == m_station; }
 
-  std::string StateFlags() const { return boost::lexical_cast<std::string>(ok) + "/" + boost::lexical_cast<std::string>(bad) + "/" + boost::lexical_cast<std::string>(done) + "/" + boost::lexical_cast<std::string>(locked) + "]"; }
+  void GoOK() { m_station = ST_OK; }
+  void GoBad() { m_station = ST_BAD; }
+  void GoDone() { m_station = ST_DONE; }
+  void GoComplete() { m_station = ST_COMPLETE; }
+
+  virtual operator std::string() const { return Print(); }
+  std::string Print() const { return UnMapStation(m_station); }
+
+private:
+  enum Station {
+    ST_OK,
+    ST_BAD,
+    ST_DONE,
+    ST_COMPLETE
+  };
+
+  static std::string UnMapStation(Station st) {
+    switch (st) {
+    case ST_OK:       return "ok";
+    case ST_BAD:      return "bad";
+    case ST_DONE:     return "done";
+    case ST_COMPLETE: return "complete";
+    default: throw FWError("Failed to unmap Station " + boost::lexical_cast<std::string>(st));
+    }
+  }
+
+  bool m_startDone;
+  Station m_station;
 };
 
 }

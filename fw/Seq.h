@@ -5,6 +5,7 @@
 #define _Seq_h_
 
 #include "Rule.h"
+#include "State.h"
 
 #include <memory>
 
@@ -19,12 +20,12 @@ struct SeqRule : public Rule {
   virtual std::auto_ptr<State> MakeState() const;
 };
 
-struct SeqState : public RuleState {
+struct SeqState : public State {
   SeqState(const SeqRule& rule)
-    : RuleState(rule) {}
+    : State(rule) {}
   virtual ~SeqState() {}
 
-  virtual operator std::string() const { return "[SeqState:" + StateFlags() + "]"; }
+  virtual operator std::string() const { return "Seq " + rule.Name() + ":" + Print(); }
 };
 
 }

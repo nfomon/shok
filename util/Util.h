@@ -20,10 +20,13 @@ std::pair<std::string,std::string> break_word(std::string s);
 std::vector<std::string> split(const std::string& s, char delim = ' ');
 
 // Trim whitespace from the left of s
-std::string ltrim_space(std::string s);
+std::string ltrim_space(const std::string& s);
 
 // Trim whitespace from the right of s
-std::string rtrim_space(std::string s);
+std::string rtrim_space(const std::string& s);
+
+// Pad a string with a character on the left until it is of a minimum size
+std::string pad_str(const std::string& s, char c, size_t len);
 
 }
 

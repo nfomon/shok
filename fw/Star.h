@@ -5,6 +5,7 @@
 #define _Star_h_
 
 #include "Rule.h"
+#include "State.h"
 
 #include <memory>
 
@@ -19,13 +20,12 @@ struct StarRule : public Rule {
   virtual std::auto_ptr<State> MakeState() const;
 };
 
-struct StarState : public RuleState {
-  StarState(const StarRule& rule);
+struct StarState : public State {
+  StarState(const StarRule& rule)
+    : State(rule, /*startDone*/ true) {}
   virtual ~StarState() {}
 
-  virtual void Clear();
-
-  virtual operator std::string() const { return "[StarState:" + StateFlags() + "]"; }
+  virtual operator std::string() const { return "Star " + rule.Name() + ":" + Print(); }
 };
 
 }

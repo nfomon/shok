@@ -6,6 +6,7 @@
 #include "Char.h"
 #include "Connector.h"
 #include "DS.h"
+#include "Grapher.h"
 #include "Hotlist.h"
 #include "Keyword.h"
 #include "Or.h"
@@ -13,7 +14,6 @@
 #include "Rule.h"
 #include "Seq.h"
 #include "Star.h"
-//#include "Token.h"
 
 #include "util/Log.h"
 
@@ -29,6 +29,7 @@ using namespace fw;
 namespace {
   const string PROGRAM_NAME = "shok_fw";
   const string LOGFILE = "fw.log";
+  const string GRAPHDIR = "graphs";
 }
 
 class Lexer {
@@ -80,14 +81,14 @@ public:
       m_machine(log, name) {
     std::auto_ptr<Rule> or_(new OrRule(log, "or"));
     std::auto_ptr<Rule> seq1_(new SeqRule(log, "seq1"));
-    std::auto_ptr<Rule> new_(new KeywordMetaRule(log, "new"));
-    std::auto_ptr<Rule> x1_(new KeywordMetaRule(log, "x"));
+    std::auto_ptr<Rule> new_(new KeywordMetaRule(log, "new", "new"));
+    std::auto_ptr<Rule> x1_(new KeywordMetaRule(log, "x", "x"));
     seq1_->AddChild(new_);
     seq1_->AddChild(x1_);
     or_->AddChild(seq1_);
     std::auto_ptr<Rule> seq2_(new SeqRule(log, "seq2"));
-    std::auto_ptr<Rule> del_(new KeywordMetaRule(log, "del"));
-    std::auto_ptr<Rule> x2_(new KeywordMetaRule(log, "x"));
+    std::auto_ptr<Rule> del_(new KeywordMetaRule(log, "del", "del"));
+    std::auto_ptr<Rule> x2_(new KeywordMetaRule(log, "x", "x"));
     seq2_->AddChild(del_);
     seq2_->AddChild(x2_);
     or_->AddChild(seq2_);
@@ -115,17 +116,24 @@ int main(int argc, char *argv[]) {
     }
 
     // Lexer
-    Lexer lexer(log, "lexer");
+    Lexer lexer(log, "Star: lexer");
     log.info("Lexer: " + lexer.Machine().print());
-    Connector lexerConnector(log, lexer.Machine());
+    Grapher lexerGrapher(GRAPHDIR, "lexer_");
+    lexerGrapher.AddMachine("Lexer", lexer.Machine());
+    lexerGrapher.SaveAndClear();
+    Connector lexerConnector(log, lexer.Machine(), "Lexer", &lexerGrapher);
 
     // Parser
-    Parser parser(log, "parser");
+    Parser parser(log, "Star: parser");
     log.info("Parser: " + parser.Machine().print());
-    Connector parserConnector(log, parser.Machine());
+    Grapher parserGrapher(GRAPHDIR, "parser_");
+    parserGrapher.AddMachine("Parser", parser.Machine());
+    parserGrapher.SaveAndClear();
+    Connector parserConnector(log, parser.Machine(), "Parser", &parserGrapher);
 
     IList* start = NULL;
     IList* prev = NULL;
+    const IList* astStart = NULL;
     string line;
     while (getline(cin, line)) {
       line += "\n";
@@ -142,6 +150,12 @@ int main(int argc, char *argv[]) {
         const Hotlist& tokenHotlist = lexerConnector.GetHotlist();
         if (!tokenHotlist.empty()) {
           log.info("* main: Lexer returned " + boost::lexical_cast<string>(tokenHotlist.size()) + " hotlist items: sending to parser");
+          for (Hotlist_iter i = tokenHotlist.begin(); i != tokenHotlist.end(); ++i) {
+            log.debug("Hotlist item: " + string(*i->first) + ", op: " + (i->second == OP_INSERT ? "insert" : "delete"));
+          }
+          if (!astStart) {
+            astStart = tokenHotlist.begin()->first;
+          }
           parserConnector.UpdateWithHotlist(tokenHotlist);
           lexerConnector.ClearHotlist();
           log.info("* main: No parser consumer; done with input character.");
@@ -149,6 +163,20 @@ int main(int argc, char *argv[]) {
         } else {
           log.info("* main: Lexer returned no hotlist items.");
         }
+
+/*
+        if (start) {
+          grapher.AddIList("lexer", *start, "Input");
+          grapher.AddOTree("lexer", lexerConnector.GetRoot(), "Lex");
+          grapher.AddIListeners("lexer", lexerConnector, *start);
+          if (astStart) {
+            grapher.AddIList("parser", *astStart, "Tokens");
+            grapher.AddOTree("parser", parserConnector.GetRoot(), "Parse");
+            grapher.AddIListeners("parser", parserConnector, *astStart);
+          }
+          grapher.SaveAndClear();
+        }
+*/
 
         prev = c;
       }

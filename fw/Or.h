@@ -5,6 +5,7 @@
 #define _Or_h_
 
 #include "Rule.h"
+#include "State.h"
 
 #include <memory>
 
@@ -19,12 +20,12 @@ struct OrRule : public Rule {
   virtual std::auto_ptr<State> MakeState() const;
 };
 
-struct OrState : public RuleState {
+struct OrState : public State {
   OrState(const OrRule& rule)
-    : RuleState(rule) {}
+    : State(rule) {}
   virtual ~OrState() {}
 
-  virtual operator std::string() const { return "[OrState:" + StateFlags() + "]"; }
+  virtual operator std::string() const { return "Or " + rule.Name() + ":" + Print(); }
 };
 
 }

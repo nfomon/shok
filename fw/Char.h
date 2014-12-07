@@ -17,7 +17,15 @@ public:
   virtual ~CharData() {}
   const char c;
 
-  virtual operator std::string() const { return std::string("[CharData '") + c; }
+  virtual operator std::string() const {
+    std::string s("\'");
+    if (c == 10 || c == 13) {
+      s += ".";
+    } else {
+      s += c + std::string("\'");
+    }
+    return s;
+  }
 };
 
 }
