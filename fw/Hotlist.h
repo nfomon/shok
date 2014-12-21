@@ -9,21 +9,49 @@
  */
 
 #include <set>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace fw {
 
 struct IList;
 
-enum HOT_OP {
-  OP_INSERT,
-  OP_DELETE
+class Hotlist {
+public:
+  enum HOT_OP {
+    OP_INSERT,
+    OP_UPDATE,
+    OP_DELETE
+  };
+
+  static std::string UnMapHotOp(const HOT_OP& hotop);
+
+  typedef std::pair<const IList*, HOT_OP> hotpair;
+  typedef std::vector<hotpair> hotlist_vec;
+  typedef hotlist_vec::const_iterator hotlist_iter;
+  typedef std::set<const IList*> hot_set;
+  typedef hot_set::const_iterator hotset_iter;
+
+  Hotlist() {}
+
+  const hotlist_vec& GetHotlist() const { return m_hotlist; }
+  const hot_set& GetInserted() const { return m_inserted; }
+  const hot_set& GetDeleted() const { return m_deleted; }
+
+  void Insert(const IList& inode);
+  void Update(const IList& inode);
+  void Delete(const IList& inode);
+  void Accept(const hotlist_vec& hotlist);
+  void Clear();
+
+  std::string Print() const;
+
+private:
+  hotlist_vec m_hotlist;
+  hot_set m_inserted;
+  hot_set m_deleted;
 };
-
-typedef std::pair<const IList*, HOT_OP> hotpair;
-
-typedef std::set<hotpair> Hotlist;
-typedef Hotlist::const_iterator Hotlist_iter;
 
 }
 

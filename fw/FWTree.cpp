@@ -1,7 +1,7 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#include "DS.h"
+#include "FWTree.h"
 
 #include "util/Graphviz.h"
 using Util::dotVar;
@@ -11,17 +11,7 @@ using std::string;
 
 using namespace fw;
 
-string IList::DrawNode(const string& context) const {
-  string s;
-  s = dotVar(this, context) + " [label=\"" + string(GetData()) + "\", style=\"filled\", fillcolor=\"#dddddd\", fontsize=12.0];\n";
-  if (right) {
-    s += dotVar(this, context) + " -> " + dotVar(right, context) + ";\n";
-    s += right->DrawNode(context);
-  }
-  return s;
-}
-
-string TreeDS::DrawNode(const string& context) const {
+string FWTree::DrawNode(const string& context) const {
   string s;
   // Style the node to indicate its State
   string fillcolor = "#88ffaa";
@@ -33,12 +23,7 @@ string TreeDS::DrawNode(const string& context) const {
     fillcolor = "#9999cc";
   }
 
-  string hotness = "";
-  if (!oconnection.hotlist.empty()) {
-    //hotness = ", fontcolor=\"#cc0066\"";
-  }
-
-  s += dotVar(this, context) + " [label=\"" + m_state->rule.Name() + "\", style=\"filled\", fillcolor=\"" + fillcolor + "\", fontsize=12.0" + hotness + "];\n";
+  s += dotVar(this, context) + " [label=\"" + m_state->rule.Name() + "\", style=\"filled\", fillcolor=\"" + fillcolor + "\", fontsize=12.0];\n";
   // Connect the node to its IConnection
   string istartcolor = "#006600";
   string iendcolor = "#660000";
@@ -61,5 +46,6 @@ string TreeDS::DrawNode(const string& context) const {
     s += dotVar(this, context) + " -> " + dotVar(&*i, context) + ";\n";
     s += i->DrawNode(context);
   }
+  s += m_oconnection->DrawOConnection(context);
   return s;
 }

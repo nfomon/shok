@@ -14,3 +14,21 @@ using namespace Util;
 string Util::dotVar(const void* x, const std::string& context) {
   return context + "_" + lexical_cast<string>(x);
 }
+
+bool Util::isSafeLabelChar(char c) {
+  return c >= 21 && c <= 126;
+}
+
+char Util::safeLabelChar(char c) {
+  return isSafeLabelChar(c) ? c : '.';
+}
+
+string Util::safeLabelStr(const string& str) {
+  string s = str;
+  for (size_t i = 0; i < s.length(); ++i) {
+    if (!isSafeLabelChar(s[i])) {
+      s[i] = '.';
+    }
+  }
+  return s;
+}

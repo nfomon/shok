@@ -4,6 +4,9 @@
 #ifndef _Or_h_
 #define _Or_h_
 
+#include "Connection.h"
+#include "FWTree.h"
+#include "IList.h"
 #include "Rule.h"
 #include "State.h"
 
@@ -15,9 +18,10 @@ struct OrRule : public Rule {
   OrRule(Log& log, const std::string& name = "")
     : Rule(log, name) {}
   virtual ~OrRule() {}
-  virtual void Reposition(Connector& connector, TreeDS& x, const IList& inode) const;
-  virtual bool Update(Connector& connector, TreeDS& x, const TreeDS* child) const;
+  virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const;
+  virtual void Update(Connector& connector, FWTree& x, const FWTree* child) const;
   virtual std::auto_ptr<State> MakeState() const;
+  virtual std::auto_ptr<OConnection> MakeOConnection(const FWTree& x) const;
 };
 
 struct OrState : public State {

@@ -4,8 +4,9 @@
 #include "Grapher.h"
 
 #include "Connector.h"
-#include "DS.h"
 #include "FWError.h"
+#include "FWTree.h"
+#include "IList.h"
 #include "Rule.h"
 
 #include "util/Graphviz.h"
@@ -43,7 +44,7 @@ void Grapher::AddIList(const std::string& context, const IList& inode, const std
   m_isDirty = true;
 }
 
-void Grapher::AddOTree(const std::string& context, const TreeDS& onode, const std::string& label) {
+void Grapher::AddOTree(const std::string& context, const FWTree& onode, const std::string& label) {
   m_graph += "subgraph cluster_" + context + dotVar(&onode, context) + " {\n";
   if (!label.empty()) {
     m_graph += "label=\"" + label + "\";\n";

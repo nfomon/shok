@@ -6,6 +6,8 @@
 
 #include "OData.h"
 
+#include "util/Graphviz.h"
+
 #include <string>
 
 namespace fw {
@@ -18,13 +20,7 @@ public:
   const char c;
 
   virtual operator std::string() const {
-    std::string s("\'");
-    if (c == 10 || c == 13) {
-      s += ".";
-    } else {
-      s += c + std::string("\'");
-    }
-    return s;
+    return std::string("'") + Util::safeLabelChar(c) + std::string("'");
   }
 };
 

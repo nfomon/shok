@@ -5,17 +5,20 @@
 
 #include "Char.h"
 #include "Connector.h"
-#include "DS.h"
 #include "Grapher.h"
 #include "Hotlist.h"
+#include "IList.h"
 #include "Keyword.h"
+#include "Name.h"
 #include "Or.h"
-//#include "Regexp.h"
+#include "Regexp.h"
 #include "Rule.h"
 #include "Seq.h"
 #include "Star.h"
 
 #include "util/Log.h"
+
+#include <boost/regex.hpp>
 
 #include <iostream>
 #include <string>
@@ -38,21 +41,20 @@ public:
   //       Star
   //         |
   //        Or
-  //   |-----|-----|
-  //  new   del    x
+  //   |-----|-------|
+  //  new   del  identifier
 
   Lexer(Log& log, const std::string& name)
     : m_log(log),
       m_name(name),
       m_machine(log, name) {
-    //RegexpRule identifier_("[A-Za-z_][0-9A-Za-z_]");
     std::auto_ptr<Rule> or_(new OrRule(log, "or"));
     std::auto_ptr<Rule> new_(new KeywordRule(log, "new"));
     or_->AddChild(new_);
     std::auto_ptr<Rule> del_(new KeywordRule(log, "del"));
     or_->AddChild(del_);
-    std::auto_ptr<Rule> x_(new KeywordRule(log, "x"));
-    or_->AddChild(x_);
+    std::auto_ptr<Rule> identifier_(new RegexpRule(log, "ID", boost::regex("[A-Za-z_][0-9A-Za-z_]*")));
+    or_->AddChild(identifier_);
     m_machine.AddChild(or_);
   }
 
@@ -73,7 +75,7 @@ public:
   //   |----------|
   //  Seq1       Seq2
   // |----|     |----|
-  // new  x    del   x
+  // new  id    del  id
 
   Parser(Log& log, const std::string& name)
     : m_log(log),
@@ -82,13 +84,13 @@ public:
     std::auto_ptr<Rule> or_(new OrRule(log, "or"));
     std::auto_ptr<Rule> seq1_(new SeqRule(log, "seq1"));
     std::auto_ptr<Rule> new_(new KeywordMetaRule(log, "new", "new"));
-    std::auto_ptr<Rule> x1_(new KeywordMetaRule(log, "x", "x"));
+    std::auto_ptr<Rule> x1_(new NameRule(log, "ID", "identifier"));
     seq1_->AddChild(new_);
     seq1_->AddChild(x1_);
     or_->AddChild(seq1_);
     std::auto_ptr<Rule> seq2_(new SeqRule(log, "seq2"));
     std::auto_ptr<Rule> del_(new KeywordMetaRule(log, "del", "del"));
-    std::auto_ptr<Rule> x2_(new KeywordMetaRule(log, "x", "x"));
+    std::auto_ptr<Rule> x2_(new NameRule(log, "ID", "identifier"));
     seq2_->AddChild(del_);
     seq2_->AddChild(x2_);
     or_->AddChild(seq2_);
@@ -122,6 +124,7 @@ int main(int argc, char *argv[]) {
     lexerGrapher.AddMachine("Lexer", lexer.Machine());
     lexerGrapher.SaveAndClear();
     Connector lexerConnector(log, lexer.Machine(), "Lexer", &lexerGrapher);
+    log.info("Made a lexer connector");
 
     // Parser
     Parser parser(log, "Star: parser");
@@ -147,19 +150,17 @@ int main(int argc, char *argv[]) {
         log.info("");
         log.info("* main: Inserting character '" + c->print() + "' into lexer");
         lexerConnector.Insert(*c);
-        const Hotlist& tokenHotlist = lexerConnector.GetHotlist();
+        const Hotlist::hotlist_vec& tokenHotlist = lexerConnector.GetHotlist();
         if (!tokenHotlist.empty()) {
           log.info("* main: Lexer returned " + boost::lexical_cast<string>(tokenHotlist.size()) + " hotlist items: sending to parser");
-          for (Hotlist_iter i = tokenHotlist.begin(); i != tokenHotlist.end(); ++i) {
-            log.debug("Hotlist item: " + string(*i->first) + ", op: " + (i->second == OP_INSERT ? "insert" : "delete"));
+          for (Hotlist::hotlist_iter i = tokenHotlist.begin(); i != tokenHotlist.end(); ++i) {
+            log.debug("Hotlist item: " + string(*i->first) + ", op: " + (i->second == Hotlist::OP_INSERT ? "insert" : "update|delete"));
           }
           if (!astStart) {
             astStart = tokenHotlist.begin()->first;
           }
           parserConnector.UpdateWithHotlist(tokenHotlist);
-          lexerConnector.ClearHotlist();
           log.info("* main: No parser consumer; done with input character.");
-          parserConnector.ClearHotlist();
         } else {
           log.info("* main: Lexer returned no hotlist items.");
         }

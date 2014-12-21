@@ -12,19 +12,26 @@ COMMON_SRCS = $(UTIL_SRCS)
 bin_PROGRAMS = shok_fw
 shok_fw_SOURCES = $(COMMON_SRCS) \
     Char.h \
+    Connection.cpp \
+    Connection.h \
     Connector.cpp \
     Connector.h \
-    DS.cpp \
-    DS.h \
     FWError.h \
+    FWTree.cpp \
+    FWTree.h \
     Grapher.cpp \
     Grapher.h \
+    Hotlist.cpp \
     Hotlist.h \
+    IList.cpp \
+    IList.h \
     Keyword.h \
     ListenerTable.h \
+    Name.h \
     OData.h \
     Or.cpp \
     Or.h \
+    Regexp.h \
     Rule.cpp \
     Rule.h \
     Seq.cpp \
@@ -34,4 +41,6 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     State.h \
     main.cpp
 
-shok_fw_CXXFLAGS = -ggdb -Wall -pedantic
+shok_fw_CXXFLAGS = -ggdb -Wall -pedantic $(BOOST_CXXFLAGS)
+shok_fw_LDFLAGS = $(BOOST_REGEX_LDFLAGS)
+LIBS = $(BOOST_REGEX_LIBS)

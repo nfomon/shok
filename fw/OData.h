@@ -11,9 +11,11 @@
 
 namespace fw {
 
+struct FWTree;
+
 struct OData {
   virtual ~OData() {}
-  virtual operator std::string() const { return "(Data:empty)"; }
+  virtual operator std::string() const = 0;
 };
 
 }

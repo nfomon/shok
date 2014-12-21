@@ -5,6 +5,7 @@
 #define _Rule_h_
 
 #include "FWError.h"
+#include "OData.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -16,8 +17,9 @@ namespace fw {
 class Connector;
 
 class IList;
+class OConnection;
 class State;
-class TreeDS;
+class FWTree;
 
 class Rule {
 public:
@@ -31,6 +33,8 @@ public:
   virtual ~Rule() {}
 
   virtual std::auto_ptr<State> MakeState() const;
+  virtual std::auto_ptr<OData> MakeData(const FWTree& x) const { return std::auto_ptr<OData>(); }
+  virtual std::auto_ptr<OConnection> MakeOConnection(const FWTree& x) const = 0;
 
   // Reposition and Update have some responsibilities:
   //  1. Clean up / clear out state as appropriate
@@ -39,12 +43,12 @@ public:
   //  4. Update size and begin/end inodes
   // Reposition should InsertNode() and/or RepositionNode() its children as
   // necessary to then calculate its own state.
-  virtual void Reposition(Connector& connector, TreeDS& x, const IList& inode) const = 0;
+  virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const = 0;
 
   // Calculate local state flags based on children's state, under the
   // assumption that the children are already up-to-date.
   // Returns true if the node was changed
-  virtual bool Update(Connector& connector, TreeDS& x, const TreeDS* child) const = 0;
+  virtual void Update(Connector& connector, FWTree& x, const FWTree* child) const = 0;
 
   void AddChild(std::auto_ptr<Rule> child) {
     //m_log.debug("Rule: Adding child " + std::string(*child.get()) + " to " + std::string(*this));
@@ -64,6 +68,12 @@ protected:
   void setParent(Rule* parent) {
     m_parent = parent;
   }
+
+  // Convenience methods for some rules
+  //void ClearNodeChildren(Connector& connector, FWTree& x);    // unused
+  void AddChildToNode(FWTree& x, const Rule& child) const;
+  void RepositionFirstChildOfNode(Connector& connector, FWTree& x, const IList& inode) const;
+  void RepositionAllChildrenOfNode(Connector& connector, FWTree& x, const IList& inode) const;
 
   Log& m_log;
   std::string m_name;

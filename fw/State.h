@@ -21,7 +21,9 @@ public:
   State(const Rule& rule,
         bool startDone = false)
     : rule(rule),
-      m_startDone(startDone) {
+      m_startDone(startDone),
+      m_isLocked(false),
+      m_station(ST_BAD) {
     Clear();
   }
   virtual ~State() {}
@@ -32,6 +34,7 @@ public:
     } else {
       m_station = ST_OK;
     }
+    Unlock();
   }
 
   bool IsOK() const { return ST_OK == m_station; }
@@ -40,11 +43,14 @@ public:
   bool IsComplete() const { return ST_COMPLETE == m_station; }
   bool IsAccepting() const { return ST_OK == m_station || ST_DONE == m_station; }
   bool IsEmitting() const { return ST_DONE == m_station || ST_COMPLETE == m_station; }
+  bool IsLocked() const { return m_isLocked; }
 
   void GoOK() { m_station = ST_OK; }
   void GoBad() { m_station = ST_BAD; }
   void GoDone() { m_station = ST_DONE; }
   void GoComplete() { m_station = ST_COMPLETE; }
+  void Lock() { m_isLocked = true; }
+  void Unlock() { m_isLocked = false; }
 
   virtual operator std::string() const { return Print(); }
   std::string Print() const { return UnMapStation(m_station); }
@@ -68,6 +74,7 @@ private:
   }
 
   bool m_startDone;
+  bool m_isLocked;
   Station m_station;
 };
 

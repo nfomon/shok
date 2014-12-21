@@ -5,7 +5,8 @@
 #define _Grapher_h_
 
 #include "Connector.h"
-#include "DS.h"
+#include "FWTree.h"
+#include "IList.h"
 #include "Rule.h"
 
 #include <string>
@@ -24,7 +25,7 @@ public:
 
   void AddMachine(const std::string& context, const Rule& machineRoot);
   void AddIList(const std::string& context, const IList& start, const std::string& label = "");
-  void AddOTree(const std::string& context, const TreeDS& root, const std::string& label = "");
+  void AddOTree(const std::string& context, const FWTree& root, const std::string& label = "");
   void AddIListeners(const std::string& context, const Connector& connector, const IList& start);
   void Signal(const std::string& context, const void*, bool isUpdate = false);
 

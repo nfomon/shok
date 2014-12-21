@@ -10,6 +10,9 @@
 
 namespace Util {
   std::string dotVar(const void*, const std::string& context);
+  bool isSafeLabelChar(char c);
+  char safeLabelChar(char c);
+  std::string safeLabelStr(const std::string& str);
 }
 
 #endif // _Graphviz_h_

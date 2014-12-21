@@ -3,8 +3,10 @@
 
 #include "Connector.h"
 
-#include "DS.h"
+#include "FWTree.h"
 #include "Grapher.h"
+#include "Hotlist.h"
+#include "IList.h"
 #include "Rule.h"
 
 #include <boost/lexical_cast.hpp>
@@ -16,6 +18,7 @@ using boost::lexical_cast;
 using std::make_pair;
 using std::multiset;
 using std::pair;
+using std::set;
 using std::string;
 
 using namespace fw;
@@ -24,7 +27,7 @@ using namespace fw;
 
 Connector::Connector(Log& log, const Rule& rule, const std::string& name, Grapher* grapher)
   : m_log(log),
-    m_root(rule.MakeState(), NULL),
+    m_root(log, rule.MakeState(), NULL),
     m_name(name),
     m_grapher(grapher),
     m_istart(NULL) {
@@ -32,6 +35,7 @@ Connector::Connector(Log& log, const Rule& rule, const std::string& name, Graphe
 
 void Connector::Insert(const IList& inode) {
   m_log.info("Connector: Inserting IList: " + string(inode));
+  FlipNodes();
 
   if (!m_istart) {
     m_istart = &inode;
@@ -39,7 +43,7 @@ void Connector::Insert(const IList& inode) {
 
   if (inode.left) {
     m_log.debug(" - Found left inode: updating listeners of " + string(inode) + "'s left and (if present) right");
-    UpdateListeners(inode);
+    UpdateListeners(inode, true);
   } else {
     // Just reposition the root.
     m_log.debug(" - No left inode: just repositioning the root");
@@ -53,12 +57,12 @@ void Connector::Insert(const IList& inode) {
   }
   // Stronger check: every inode has at least one listener :)
 
-  m_oconnection = m_root.oconnection;
-  m_log.debug("Connector: Insert done, hotlist now has size " + boost::lexical_cast<string>(m_oconnection.hotlist.size()));
+  m_log.debug("Connector: Insert done, hotlist now has size " + boost::lexical_cast<string>(GetHotlist().size()));
 }
 
 void Connector::Delete(const IList& inode) {
   m_log.info("Deleting list inode " + string(inode));
+  FlipNodes();
 
   m_listeners.RemoveAllListeners(&inode);
 
@@ -66,20 +70,23 @@ void Connector::Delete(const IList& inode) {
     ClearNode(m_root);
     m_istart = NULL;
   } else {
-    UpdateListeners(inode);
+    UpdateListeners(inode, true);
   }
 
-  m_oconnection = m_root.oconnection;
+  m_log.debug("Connector: Delete done, hotlist now has size " + boost::lexical_cast<string>(GetHotlist().size()));
 }
 
-void Connector::UpdateWithHotlist(const Hotlist& hotlist) {
-  for (Hotlist_iter i = hotlist.begin(); i != hotlist.end(); ++i) {
+void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
+  for (Hotlist::hotlist_iter i = hotlist.begin(); i != hotlist.end(); ++i) {
     switch (i->second) {
-    case OP_INSERT:
+    case Hotlist::OP_INSERT:
       Insert(*i->first);
       break;
-    case OP_DELETE:
+    case Hotlist::OP_DELETE:
       Delete(*i->first);
+      break;
+    case Hotlist::OP_UPDATE:
+      UpdateListeners(*i->first, false);
       break;
     default:
       throw FWError("Cannot update with hotlist with unknown hot operation");
@@ -87,80 +94,101 @@ void Connector::UpdateWithHotlist(const Hotlist& hotlist) {
   }
 }
 
-void Connector::RepositionNode(TreeDS& x, const IList& inode) {
+void Connector::RepositionNode(FWTree& x, const IList& inode) {
   m_log.info("Connector: Repositioning " + std::string(x) + " with inode " + std::string(inode));
   if (x.iconnection.istart == &inode) {
-    m_log.info(" - already at the right position; skipping");
+    m_log.warning(" - already at the right position; skipping");    // IS THIS OK?
     return;
   }
   DrawGraph(x, &inode);
+  x.iconnection.Clear();
+  x.iconnection.istart = &inode;
+  x.iconnection.iend = NULL;
+  x.iconnection.size = 0;
+  x.GetOConnection().Clear();
   State& state = x.GetState();
+  state.Unlock();
   state.rule.Reposition(*this, x, inode);
+  AddNodeToFlip(x);
 }
 
 // Recalculate state based on a change to a child.  Child could be NULL
 // meaning the update is called by a direct-subscription.
-bool Connector::UpdateNode(TreeDS& x, const TreeDS* child) {
+bool Connector::UpdateNode(FWTree& x, const FWTree* child) {
   m_log.info("Connector: Updating " + std::string(x) + " with child " + (child ? std::string(*child) : "<null>"));
   State& state = x.GetState();
-  bool r = state.rule.Update(*this, x, child);
+  const IList* old_iend = x.iconnection.iend;
+  state.rule.Update(*this, x, child);
   DrawGraph(x);
-  return r;
+  bool hasChanged = old_iend != x.iconnection.iend || !x.GetOConnection().GetHotlist().empty();
+  if (hasChanged) {
+    AddNodeToFlip(x);
+  }
+  return hasChanged;
 }
 
-void Connector::ClearNode(TreeDS& x) {
+void Connector::ClearNode(FWTree& x) {
   m_log.info("Connector: Clearing " + std::string(x));
-  for (TreeDS::child_mod_iter i = x.children.begin();
+  // TODO we should clear out the OConnections properly here somehow
+  for (FWTree::child_mod_iter i = x.children.begin();
        i != x.children.end(); ++i) {
     ClearNode(*i);
   }
+  x.GetOConnection().Clear();
   m_listeners.RemoveAllListenings(&x);
   x.Clear();
 }
 
-void Connector::Listen(TreeDS& x, const IList& inode) {
+void Connector::Listen(FWTree& x, const IList& inode) {
   m_log.info("Connector: " + std::string(x) + " will listen to " + std::string(inode));
   m_listeners.AddListener(&inode, &x);
 }
 
-void Connector::Unlisten(TreeDS& x, const IList& inode) {
+void Connector::Unlisten(FWTree& x, const IList& inode) {
   m_log.info("Connector: " + std::string(x) + " will NOT listen to " + std::string(inode));
   m_listeners.RemoveListener(&inode, &x);
 }
 
 /* private */
 
-void Connector::UpdateListeners(const IList& inode) {
-  typedef std::pair<TreeDS*, const TreeDS*> change_pair;
+void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListeners) {
+  typedef std::pair<FWTree*, const FWTree*> change_pair;
   typedef std::vector<change_pair> change_vec;
   typedef change_vec::const_iterator change_iter;
-  typedef std::map<TreeDS::depth_t, change_vec> change_map;
+  typedef std::map<FWTree::depth_t, change_vec> change_map;
   change_map changes_by_depth;
 
-  if (!inode.left) {
-    throw FWError("Cannot update listeners of inode " + string(inode) + " with nothing to its left");
-  }
+  if (updateNeighbourListeners) {
+    if (!inode.left) {
+      throw FWError("Cannot update listeners of inode " + string(inode) + " with nothing to its left");
+    }
 
-  // TODO Unnecessary copy
-  listener_set left_listeners = m_listeners.GetListeners(inode.left);
-  for (listener_iter i = left_listeners.begin();
-       i != left_listeners.end(); ++i) {
-    changes_by_depth[(*i)->depth].push_back(change_pair(*i, NULL));
-  }
-
-  // If inode.right and inode.right != inode.left, merge the left and right
-  // listeners, depth-ordered.
-  if (inode.right && inode.right != inode.left) {
     // TODO Unnecessary copy
-    listener_set right_listeners = m_listeners.GetListeners(inode.right);
-    for (listener_iter i = right_listeners.begin();
-         i != right_listeners.end(); ++i) {
+    listener_set left_listeners = m_listeners.GetListeners(inode.left);
+    for (listener_iter i = left_listeners.begin();
+         i != left_listeners.end(); ++i) {
+      changes_by_depth[(*i)->depth].push_back(change_pair(*i, NULL));
+    }
+
+    // If inode.right and inode.right != inode.left, merge the left and right
+    // listeners, depth-ordered.
+    if (inode.right && inode.right != inode.left) {
+      // TODO Unnecessary copy
+      listener_set right_listeners = m_listeners.GetListeners(inode.right);
+      for (listener_iter i = right_listeners.begin();
+           i != right_listeners.end(); ++i) {
+        changes_by_depth[(*i)->depth].push_back(change_pair(*i, NULL));
+      }
+    }
+  } else {
+    listener_set listeners = m_listeners.GetListeners(&inode);
+    for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
       changes_by_depth[(*i)->depth].push_back(change_pair(*i, NULL));
     }
   }
 
   if (changes_by_depth.empty()) {
-    m_log.info("Connector: No listeners of " + string(inode) + " (left: " + string(*inode.left) + "; right: " + (inode.right ? string(*inode.right) : "<null>") + " to update.");
+    m_log.info("Connector: No " + string(updateNeighbourListeners ? "neighbouring" : "direct") + " listeners of " + string(inode) + " (left: " + (inode.left ? string(*inode.left) : "<null>") + "; right: " + (inode.right ? string(*inode.right) : "<null>") + ") to update.");
   }
 
   while (!changes_by_depth.empty()) {
@@ -171,7 +199,7 @@ void Connector::UpdateListeners(const IList& inode) {
     for (change_iter i = changes.begin(); i != changes.end(); ++i) {
       bool changed = UpdateNode(*i->first, i->second);
       if (changed) {
-        TreeDS* parent = i->first->parent;
+        FWTree* parent = i->first->parent;
         if (parent) {
           changes_by_depth[parent->depth].push_back(make_pair(parent, i->first));
         }
@@ -181,7 +209,7 @@ void Connector::UpdateListeners(const IList& inode) {
   }
 }
 
-void Connector::DrawGraph(const TreeDS& onode, const IList* inode) {
+void Connector::DrawGraph(const FWTree& onode, const IList* inode) {
   if (!m_istart) {
     return;
   }
@@ -195,4 +223,16 @@ void Connector::DrawGraph(const TreeDS& onode, const IList* inode) {
     m_grapher->Signal(m_name, &onode, true);
   }
   m_grapher->SaveAndClear();
+}
+
+void Connector::AddNodeToFlip(FWTree& x) {
+  m_nodesToFlip.insert(&x);
+}
+
+void Connector::FlipNodes() {
+  for (set<FWTree*>::const_iterator i = m_nodesToFlip.begin();
+       i != m_nodesToFlip.end(); ++i) {
+    (*i)->GetOConnection().Reset();
+  }
+  m_nodesToFlip.clear();
 }

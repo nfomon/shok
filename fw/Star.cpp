@@ -15,80 +15,55 @@ using std::vector;
 
 using namespace fw;
 
-void StarRule::Reposition(Connector& connector, TreeDS& x, const IList& inode) const {
+void StarRule::Reposition(Connector& connector, FWTree& x, const IList& inode) const {
   m_log.debug("Repositioning StarRule " + string(*this) + " at " + string(x) + " with " + string(inode));
-  if (x.children.empty()) {
-    if (m_children.size() != 1) {
-      throw FWError("StarRule must have exactly one child; found " + lexical_cast<string>(m_children.size()));
-    }
-    std::auto_ptr<TreeDS> child(new TreeDS(m_children.at(0).MakeState(), &x));
-    x.children.push_back(child);
-  } else if (x.children.size() > 1) {
-    // Remove all children > 1
-    for (TreeDS::child_mod_iter i = x.children.begin() + 1;
-         i != x.children.end(); ++i) {
-      connector.ClearNode(*i);
-    }
-    x.children.erase(x.children.begin() + 1, x.children.end());
-  }
-  x.iconnection.Clear();
-  x.iconnection.istart = &inode;
-  connector.RepositionNode(x.children.at(0), inode);
-  (void) Update(connector, x, NULL);
+  RepositionFirstChildOfNode(connector, x, inode);
+  Update(connector, x, &x.children.at(0));
 }
 
-bool StarRule::Update(Connector& connector, TreeDS& x, const TreeDS* updated_child) const {
+void StarRule::Update(Connector& connector, FWTree& x, const FWTree* updated_child) const {
   m_log.debug("Updating StarRule " + string(*this) + " at " + string(x) + " with child " + (updated_child ? string(*updated_child) : "<null>"));
-
-  const IList* old_iend = x.iconnection.iend;
 
   // Initialize state flags
   x.iconnection.iend = NULL;
   x.iconnection.size = 0;
   StarState& state = x.GetState<StarState>();
   state.Clear();
-  x.oconnection.Clear();
 
   if (x.children.empty()) {
-    throw FWError("StarRule::Update: StarState " + string(x) + " must have children");
+    throw FWError("StarRule::Update: Star node " + string(x) + " must have children");
   }
 
   // Iterate over children, either existing or being created, starting at the
   // updated_child, so long as our last child is complete.
   bool finished = false;
-  TreeDS::child_mod_iter child = x.children.begin();
-  x.oconnection.ostart = child->oconnection.ostart;
+  FWTree::child_mod_iter child = x.children.begin();
   // Skip ahead to the updated child
-  TreeDS* prev_child = NULL;
+  FWTree* prev_child = NULL;
   if (updated_child) {
     for (child = x.children.begin(); child != x.children.end(); ++child) {
       if (updated_child == &*child) { break; }
       State& istate = child->GetState();
+      if (istate.IsLocked()) {
+        state.Lock();
+      }
       if (!istate.IsComplete()) {
         throw FWError("StarRule " + string(*this) + " found 'skippable' child that was not complete");
-      }
-      if (!child->oconnection.hotlist.empty()) {
-        throw FWError("StarRule " + string(*this) + " found 'skippable' child with nonempty hotlist... is that a problem?");
       }
       if (prev_child) {
         if (prev_child->iconnection.iend != child->iconnection.istart) {
           throw FWError("StarRule " + string(*this) + " found iend->istart mismatch; we could correct this, but let's not...");
           //connector.RepositionNode(*child, *prev_child->iconnection.iend);    // Could correct it like this
         }
-        if (!prev_child->oconnection.oend ||
-              (child->oconnection.ostart &&
-                  (prev_child->oconnection.oend->right != child->oconnection.ostart ||
-                  child->oconnection.ostart->left != prev_child->oconnection.oend))) {
-          throw FWError("StarRule " + string(*this) + " found 'skippable' oend->right <-> ostart->left mismatch; we could correct this, but let's not...");
-        }
       }
       x.iconnection.size += child->iconnection.size;
-      x.oconnection.oend = child->oconnection.oend;
       prev_child = &*child;
     }
   }
 
+  bool wasComplete = false;
   while (!finished) {
+    bool isNewChild = false;
     if (child != x.children.end()) {
       // Existing child
       if (prev_child) {
@@ -99,7 +74,8 @@ bool StarRule::Update(Connector& connector, TreeDS& x, const TreeDS* updated_chi
       }
     } else {
       // New child
-      std::auto_ptr<TreeDS> newChild(new TreeDS(m_children.at(0).MakeState(), &x));
+      isNewChild = true;
+      std::auto_ptr<FWTree> newChild(new FWTree(m_log, m_children.at(0).MakeState(), &x));
       x.children.push_back(newChild);
       child = x.children.end() - 1;
       if (prev_child) {
@@ -112,40 +88,38 @@ bool StarRule::Update(Connector& connector, TreeDS& x, const TreeDS* updated_chi
       }
     }
     x.iconnection.size += child->iconnection.size;
-    x.oconnection.oend = child->oconnection.oend;
-    x.oconnection.hotlist.insert(child->oconnection.hotlist.begin(), child->oconnection.hotlist.end());
-    child->oconnection.hotlist.clear();
 
     // Now check the child's state, and see if we can keep going.
     State& istate = child->GetState();
 
-    if (istate.IsEmitting()) {
-      // Link the prev_child's oend and the new child's ostart.
-      // prev_child is complete, so it has an oend.  But this child might not
-      // be complete so might not have an ostart.
-      if (!child->oconnection.ostart) {
-        throw FWError("StarRule " + string(*this) + " found done child " + string(*child) + " that does not have an ostart");
-      }
-      if (prev_child) {
-        prev_child->oconnection.oend->right = child->oconnection.ostart;
-        child->oconnection.ostart->left = prev_child->oconnection.oend;
-      }
+    if (istate.IsLocked()) {
+      state.Lock();
     }
+
+    if (istate.IsEmitting()) {
+      x.GetOConnection<OConnectionSequence>().AddNextChild(*child, isNewChild);
+    }
+
     if (istate.IsBad()) {
-      m_log.debug("StarRule " + string(*this) + " has gone bad");
-      state.GoBad();
+      if (wasComplete) {
+        m_log.debug("StarRule " + string(*this) + " has gone bad but its last child was complete, so now it's complete");
+        state.GoComplete();
+      } else {
+        m_log.debug("StarRule " + string(*this) + " has gone bad");
+        state.GoBad();
+      }
       x.iconnection.iend = child->iconnection.iend;
-      x.oconnection.ostart = NULL;
-      x.oconnection.oend = NULL;
       // Clear any subsequent children
-      for (TreeDS::child_mod_iter i = child+1; i != x.children.end(); ++i) {
+      for (FWTree::child_mod_iter i = child+1; i != x.children.end(); ++i) {
         connector.ClearNode(*i);
       }
       x.children.erase(child+1, x.children.end());
       finished = true;
     } else if (istate.IsComplete()) {
+      wasComplete = true;
       // Cool, keep going!
     } else if (istate.IsAccepting()) {
+      wasComplete = false;
       if (child->iconnection.iend != NULL) {
         throw FWError("StarRule found incomplete inode that is only ok; not allowed");
       } else if (x.iconnection.iend) {
@@ -165,10 +139,17 @@ bool StarRule::Update(Connector& connector, TreeDS& x, const TreeDS* updated_chi
     ++child;
   }
 
-  m_log.debug("StarRule " + string(*this) + " done update; now has state " + string(x) + " and hotlist size is " + boost::lexical_cast<string>(x.oconnection.hotlist.size()));
-  return old_iend != x.iconnection.iend || !x.oconnection.hotlist.empty();
+  if (!prev_child) {
+    throw FWError("StarRule " + string(*this) + " should have assigned a previous child at some point");
+  }
+
+  m_log.debug("StarRule " + string(*this) + " done update; now has state " + string(x) + " and hotlist size is " + boost::lexical_cast<string>(x.GetOConnection().GetHotlist().size()));
 }
 
 std::auto_ptr<State> StarRule::MakeState() const {
   return std::auto_ptr<State>(new StarState(*this));
+}
+
+std::auto_ptr<OConnection> StarRule::MakeOConnection(const FWTree& x) const {
+  return std::auto_ptr<OConnection>(new OConnectionSequence(m_log, x));
 }
