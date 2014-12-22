@@ -1,12 +1,12 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _Name_h_
-#define _Name_h_
+#ifndef _Meta_h_
+#define _Meta_h_
 
-/* Name rule
+/* Meta rule
  *
- * Recognizes a node by its name.
+ * Recognizes a node output by another rule, by its name.
  */
 
 #include "Connector.h"
@@ -21,23 +21,23 @@
 
 namespace fw {
 
-class NameRule;
+class MetaRule;
 
-struct NameState : public State {
-  NameState(const NameRule& rule);
-  virtual ~NameState() {}
+struct MetaState : public State {
+  MetaState(const MetaRule& rule);
+  virtual ~MetaState() {}
 
-  const NameRule& GetNameRule() const;
+  const MetaRule& GetMetaRule() const;
 
   virtual operator std::string() const;
 };
 
-class NameRule : public Rule {
+class MetaRule : public Rule {
 public:
-  NameRule(Log& log, const std::string& searchName, const std::string& name)
+  MetaRule(Log& log, const std::string& searchName, const std::string& name)
     : Rule(log, name),
       m_searchName(searchName) {}
-  virtual ~NameRule() {}
+  virtual ~MetaRule() {}
 
   const std::string& GetString() const { return m_searchName; }
 
@@ -46,12 +46,12 @@ public:
   }
 
   virtual void Update(Connector& connector, FWTree& x) const {
-    m_log.info("Name: updating " + std::string(*this) + " at " + std::string(x));
+    m_log.info("Meta: updating " + std::string(*this) + " at " + std::string(x));
     State& state = x.GetState();
     state.GoBad();
     const IList* first = x.iconnection.istart;
     if (!first->owner) {
-      throw FWError("NameRule " + std::string(*this) + " first INode has no owner");
+      throw FWError("MetaRule " + std::string(*this) + " first INode has no owner");
     }
     if (first->owner->GetState().rule.Name() == m_searchName) {
       connector.Listen(x, *first);
@@ -65,7 +65,7 @@ public:
         x.iconnection.iend = NULL;
       }
     }
-    m_log.debug("Name" + std::string(*this) + " now: " + std::string(x));
+    m_log.debug("Meta" + std::string(*this) + " now: " + std::string(x));
   }
 
   virtual std::auto_ptr<State> MakeState() const;
@@ -75,21 +75,21 @@ private:
   std::string m_searchName;
 };
 
-NameState::NameState(const NameRule& rule)
+MetaState::MetaState(const MetaRule& rule)
   : State(rule) {}
 
-const NameRule& NameState::GetNameRule() const { return *dynamic_cast<const NameRule*>(&rule); }
+const MetaRule& MetaState::GetMetaRule() const { return *dynamic_cast<const MetaRule*>(&rule); }
 
-NameState::operator std::string() const { return "Name " + rule.Name() + " (" + GetNameRule().GetString() + "):" + Print(); }
+MetaState::operator std::string() const { return "Meta " + rule.Name() + " (" + GetMetaRule().GetString() + "):" + Print(); }
 
-std::auto_ptr<State> NameRule::MakeState() const {
-  return std::auto_ptr<State>(new NameState(*this));
+std::auto_ptr<State> MetaRule::MakeState() const {
+  return std::auto_ptr<State>(new MetaState(*this));
 }
 
-std::auto_ptr<OConnection> NameRule::MakeOConnection(const FWTree& x) const {
+std::auto_ptr<OConnection> MetaRule::MakeOConnection(const FWTree& x) const {
   return std::auto_ptr<OConnection>(new OConnectionSingle(m_log, x));
 }
 
 }
 
-#endif // _Name_h_
+#endif // _Meta_h_

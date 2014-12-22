@@ -9,7 +9,7 @@
 #include "Hotlist.h"
 #include "IList.h"
 #include "Keyword.h"
-#include "Name.h"
+#include "Meta.h"
 #include "Or.h"
 #include "Regexp.h"
 #include "Rule.h"
@@ -49,20 +49,27 @@ public:
       m_name(name),
       m_machine(log, name) {
     std::auto_ptr<Rule> or_(new OrRule(log, "or"));
-    std::auto_ptr<Rule> new_(new KeywordRule(log, "new"));
-    or_->AddChild(new_);
-    std::auto_ptr<Rule> del_(new KeywordRule(log, "del"));
-    or_->AddChild(del_);
-    std::auto_ptr<Rule> identifier_(new RegexpRule(log, "ID", boost::regex("[A-Za-z_][0-9A-Za-z_]*")));
-    or_->AddChild(identifier_);
-    std::auto_ptr<Rule> semi_(new KeywordRule(log, ";"));
-    or_->AddChild(semi_);
+    addKeyword(*or_.get(), "new");
+    addKeyword(*or_.get(), "del");
+    addRegexp(*or_.get(), "ID", "[A-Za-z_][0-9A-Za-z_]*");
+    addRegexp(*or_.get(), "INT", "[0-9]+");
+    addRegexp(*or_.get(), "WS", "[ \t\r]+");
+    addKeyword(*or_.get(), ";");
     m_machine.AddChild(or_);
   }
 
   Rule& Machine() { return m_machine; }
 
 private:
+  void addKeyword(Rule& or_, const std::string& keyword) {
+    std::auto_ptr<Rule> kw(new KeywordRule(m_log, keyword));
+    or_.AddChild(kw);
+  }
+  void addRegexp(Rule& or_, const std::string& name, const std::string& regexp) {
+    std::auto_ptr<Rule> re(new RegexpRule(m_log, name, boost::regex(regexp)));
+    or_.AddChild(re);
+  }
+
   Log& m_log;
   string m_name;
   StarRule m_machine;
@@ -85,17 +92,17 @@ public:
       m_machine(log, name) {
     std::auto_ptr<Rule> or_(new OrRule(log, "or"));
     std::auto_ptr<Rule> seq1_(new SeqRule(log, "seq1"));
-    std::auto_ptr<Rule> new_(new KeywordMetaRule(log, "new", "new"));
-    std::auto_ptr<Rule> x1_(new NameRule(log, "ID", "identifier"));
-    std::auto_ptr<Rule> semi1_(new NameRule(log, ";", ";"));
+    std::auto_ptr<Rule> new_(new MetaRule(log, "new", "new"));
+    std::auto_ptr<Rule> x1_(new MetaRule(log, "ID", "identifier"));
+    std::auto_ptr<Rule> semi1_(new MetaRule(log, ";", ";"));
     seq1_->AddChild(new_);
     seq1_->AddChild(x1_);
     seq1_->AddChild(semi1_);
     or_->AddChild(seq1_);
     std::auto_ptr<Rule> seq2_(new SeqRule(log, "seq2"));
-    std::auto_ptr<Rule> del_(new KeywordMetaRule(log, "del", "del"));
-    std::auto_ptr<Rule> x2_(new NameRule(log, "ID", "identifier"));
-    std::auto_ptr<Rule> semi2_(new NameRule(log, ";", ";"));
+    std::auto_ptr<Rule> del_(new MetaRule(log, "del", "del"));
+    std::auto_ptr<Rule> x2_(new MetaRule(log, "ID", "identifier"));
+    std::auto_ptr<Rule> semi2_(new MetaRule(log, ";", ";"));
     seq2_->AddChild(del_);
     seq2_->AddChild(x2_);
     seq2_->AddChild(semi2_);
@@ -123,22 +130,30 @@ int main(int argc, char *argv[]) {
       log.setLevel(argv[1]);
     }
 
+    bool isGraphing = false;
+
     // Lexer
     Lexer lexer(log, "Star: lexer");
     log.info("Lexer: " + lexer.Machine().print());
-    Grapher lexerGrapher(log, GRAPHDIR, "lexer_");
-    lexerGrapher.AddMachine("Lexer", lexer.Machine());
-    lexerGrapher.SaveAndClear();
-    Connector lexerConnector(log, lexer.Machine(), "Lexer", &lexerGrapher);
+    std::auto_ptr<Grapher> lexerGrapher;
+    if (isGraphing) {
+      lexerGrapher.reset(new Grapher(log, GRAPHDIR, "lexer_"));
+      lexerGrapher->AddMachine("Lexer", lexer.Machine());
+      lexerGrapher->SaveAndClear();
+    }
+    Connector lexerConnector(log, lexer.Machine(), "Lexer", lexerGrapher.get());
     log.info("Made a lexer connector");
 
     // Parser
     Parser parser(log, "Star: parser");
     log.info("Parser: " + parser.Machine().print());
-    Grapher parserGrapher(log, GRAPHDIR, "parser_");
-    parserGrapher.AddMachine("Parser", parser.Machine());
-    parserGrapher.SaveAndClear();
-    Connector parserConnector(log, parser.Machine(), "Parser", &parserGrapher);
+    std::auto_ptr<Grapher> parserGrapher;
+    if (isGraphing) {
+      parserGrapher.reset(new Grapher(log, GRAPHDIR, "parser_"));
+      parserGrapher->AddMachine("Parser", parser.Machine());
+      parserGrapher->SaveAndClear();
+    }
+    Connector parserConnector(log, parser.Machine(), "Parser", parserGrapher.get());
 
     IList* start = NULL;
     IList* prev = NULL;

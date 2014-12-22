@@ -212,6 +212,9 @@ void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListener
 }
 
 void Connector::DrawGraph(const FWTree& onode, const IList* inode) {
+  if (!m_grapher) {
+    return;
+  }
   if (!m_istart) {
     return;
   }
