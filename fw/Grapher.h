@@ -15,8 +15,9 @@ namespace fw {
 
 class Grapher {
 public:
-  Grapher(const std::string& out_dir, const std::string& base_filename)
-    : m_out_dir(out_dir),
+  Grapher(Log& log, const std::string& out_dir, const std::string& base_filename)
+    : m_log(log),
+      m_out_dir(out_dir),
       m_base_filename(base_filename),
       m_img_count(0),
       m_isDirty(false) {
@@ -40,6 +41,7 @@ private:
   void Save();
   void Clear();
 
+  Log& m_log;
   std::string m_out_dir;
   std::string m_base_filename;
   std::string m_graph;

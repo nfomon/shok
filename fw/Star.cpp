@@ -18,11 +18,11 @@ using namespace fw;
 void StarRule::Reposition(Connector& connector, FWTree& x, const IList& inode) const {
   m_log.debug("Repositioning StarRule " + string(*this) + " at " + string(x) + " with " + string(inode));
   RepositionFirstChildOfNode(connector, x, inode);
-  Update(connector, x, &x.children.at(0));
+  Update(connector, x);
 }
 
-void StarRule::Update(Connector& connector, FWTree& x, const FWTree* updated_child) const {
-  m_log.debug("Updating StarRule " + string(*this) + " at " + string(x) + " with child " + (updated_child ? string(*updated_child) : "<null>"));
+void StarRule::Update(Connector& connector, FWTree& x) const {
+  m_log.debug("Updating StarRule " + string(*this) + " at " + string(x));
 
   // Initialize state flags
   x.iconnection.iend = NULL;
@@ -34,33 +34,11 @@ void StarRule::Update(Connector& connector, FWTree& x, const FWTree* updated_chi
     throw FWError("StarRule::Update: Star node " + string(x) + " must have children");
   }
 
-  // Iterate over children, either existing or being created, starting at the
-  // updated_child, so long as our last child is complete.
+  // Iterate over children, either existing or being created, so long as our
+  // last child is complete.
   bool finished = false;
   FWTree::child_mod_iter child = x.children.begin();
-  // Skip ahead to the updated child
-  FWTree* prev_child = NULL;
-  if (updated_child) {
-    for (child = x.children.begin(); child != x.children.end(); ++child) {
-      if (updated_child == &*child) { break; }
-      State& istate = child->GetState();
-      if (istate.IsLocked()) {
-        state.Lock();
-      }
-      if (!istate.IsComplete()) {
-        throw FWError("StarRule " + string(*this) + " found 'skippable' child that was not complete");
-      }
-      if (prev_child) {
-        if (prev_child->iconnection.iend != child->iconnection.istart) {
-          throw FWError("StarRule " + string(*this) + " found iend->istart mismatch; we could correct this, but let's not...");
-          //connector.RepositionNode(*child, *prev_child->iconnection.iend);    // Could correct it like this
-        }
-      }
-      x.iconnection.size += child->iconnection.size;
-      prev_child = &*child;
-    }
-  }
-
+  const FWTree* prev_child = NULL;
   bool wasComplete = false;
   while (!finished) {
     bool isNewChild = false;
@@ -68,8 +46,8 @@ void StarRule::Update(Connector& connector, FWTree& x, const FWTree* updated_chi
       // Existing child
       if (prev_child) {
         if (prev_child->iconnection.iend != child->iconnection.istart) {
-          throw FWError("StarRule " + string(*this) + " found iend->istart mismatch; we could correct this, but let's not...");
-          //connector.RepositionNode(*child, *prev_child->iconnection.iend);    // Could correct it like this
+          m_log.info("Star " + string(*this) + " child " + string(*child) + " needs to be repositioned to the prev child's end");
+          connector.RepositionNode(*child, *prev_child->iconnection.iend);
         }
       }
     } else {

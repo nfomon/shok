@@ -18,11 +18,11 @@ using namespace fw;
 void OrRule::Reposition(Connector& connector, FWTree& x, const IList& inode) const {
   m_log.debug("Repositioning OrRule " + string(*this) + " at " + string(x) + " with inode " + string(inode));
   RepositionAllChildrenOfNode(connector, x, inode);
-  Update(connector, x, NULL);
+  Update(connector, x);
 }
 
-void OrRule::Update(Connector& connector, FWTree& x, const FWTree* child) const {
-  m_log.debug("Updating OrRule " + string(*this) + " at " + string(x) + " with child " + (child ? string(*child) : "<null>"));
+void OrRule::Update(Connector& connector, FWTree& x) const {
+  m_log.debug("Updating OrRule " + string(*this) + " at " + string(x));
 
   // Compute new state flags
   x.iconnection.iend = NULL;
@@ -134,6 +134,7 @@ void OrRule::Update(Connector& connector, FWTree& x, const FWTree* child) const 
   }
 
   m_log.debug("OrRule " + string(*this) + " now at " + string(x));
+  m_log.debug(" - and it has istart " + (x.iconnection.istart ? string(*x.iconnection.istart) : "<null>") + " and iend " + (x.iconnection.iend ? string(*x.iconnection.iend): "<null>"));
 }
 
 auto_ptr<State> OrRule::MakeState() const {

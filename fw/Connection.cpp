@@ -29,7 +29,6 @@ void OConnection::ApproveChild(const FWTree& child) {
   m_hotlist.Accept(h);
   const emitting_vec& e = child.GetOConnection().Emitting();
   m_emitting.insert(e.begin(), e.end());
-  m_log.debug(m_hotlist.Print());
 }
 
 void OConnection::InsertChild(const FWTree& child) {
@@ -39,7 +38,6 @@ void OConnection::InsertChild(const FWTree& child) {
     m_hotlist.Insert(**i);
     m_emitting.insert(*i);
   }
-  m_log.debug(m_hotlist.Print());
 }
 
 void OConnection::DeleteChild(const FWTree& child) {
@@ -49,21 +47,24 @@ void OConnection::DeleteChild(const FWTree& child) {
     m_hotlist.Delete(**i);
     m_emitting.erase(*i);
   }
-  m_log.debug(m_hotlist.Print());
 }
 
 string OConnection::DrawOConnection(const string& context) const {
   string s;
   s += "/*OConn*/\n";
+/*
   if (m_ostart) {
     s += dotVar(m_ostart->owner, context) + " -> " + dotVar(&m_node, context) + " [constraint=false, weight=1, arrowsize=1.2, color=\"#22ee22\"];\n";
   }
+*/
   for (emitting_iter i = m_emitting.begin(); i != m_emitting.end(); ++i) {
     s += dotVar((*i)->owner, context) + " -> " + dotVar(&m_node, context) + " [constraint=false, weight=1, arrowsize=1.2, color=\"#cc0044\"];\n";
   }
+/*
   if (m_oend) {
     s += dotVar(m_ostart->owner, context) + " -> " + dotVar(&m_node, context) + " [constraint=false, weight=1, arrowsize=1.2, color=\"#ee2222\"];\n";
   }
+*/
 /*
   // Also draw the previous connections!
   for (emitting_iter i = m_wasEmitting.begin(); i != m_wasEmitting.end(); ++i) {

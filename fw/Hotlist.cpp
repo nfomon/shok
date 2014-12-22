@@ -51,9 +51,9 @@ void Hotlist::Clear() {
 }
 
 string Hotlist::Print() const {
-  string s("~~~~~~~\nHotlist:\n");
+  string s;
   for (hotlist_iter i = m_hotlist.begin(); i != m_hotlist.end(); ++i) {
-    s += UnMapHotOp(i->second) + " - " + string(*i->first) + "\n";
+    s += "\n" + UnMapHotOp(i->second) + " - " + string(*i->first);
   }
   return s;
 }

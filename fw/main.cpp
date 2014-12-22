@@ -55,6 +55,8 @@ public:
     or_->AddChild(del_);
     std::auto_ptr<Rule> identifier_(new RegexpRule(log, "ID", boost::regex("[A-Za-z_][0-9A-Za-z_]*")));
     or_->AddChild(identifier_);
+    std::auto_ptr<Rule> semi_(new KeywordRule(log, ";"));
+    or_->AddChild(semi_);
     m_machine.AddChild(or_);
   }
 
@@ -85,14 +87,18 @@ public:
     std::auto_ptr<Rule> seq1_(new SeqRule(log, "seq1"));
     std::auto_ptr<Rule> new_(new KeywordMetaRule(log, "new", "new"));
     std::auto_ptr<Rule> x1_(new NameRule(log, "ID", "identifier"));
+    std::auto_ptr<Rule> semi1_(new NameRule(log, ";", ";"));
     seq1_->AddChild(new_);
     seq1_->AddChild(x1_);
+    seq1_->AddChild(semi1_);
     or_->AddChild(seq1_);
     std::auto_ptr<Rule> seq2_(new SeqRule(log, "seq2"));
     std::auto_ptr<Rule> del_(new KeywordMetaRule(log, "del", "del"));
     std::auto_ptr<Rule> x2_(new NameRule(log, "ID", "identifier"));
+    std::auto_ptr<Rule> semi2_(new NameRule(log, ";", ";"));
     seq2_->AddChild(del_);
     seq2_->AddChild(x2_);
+    seq2_->AddChild(semi2_);
     or_->AddChild(seq2_);
     m_machine.AddChild(or_);
   }
@@ -120,7 +126,7 @@ int main(int argc, char *argv[]) {
     // Lexer
     Lexer lexer(log, "Star: lexer");
     log.info("Lexer: " + lexer.Machine().print());
-    Grapher lexerGrapher(GRAPHDIR, "lexer_");
+    Grapher lexerGrapher(log, GRAPHDIR, "lexer_");
     lexerGrapher.AddMachine("Lexer", lexer.Machine());
     lexerGrapher.SaveAndClear();
     Connector lexerConnector(log, lexer.Machine(), "Lexer", &lexerGrapher);
@@ -129,7 +135,7 @@ int main(int argc, char *argv[]) {
     // Parser
     Parser parser(log, "Star: parser");
     log.info("Parser: " + parser.Machine().print());
-    Grapher parserGrapher(GRAPHDIR, "parser_");
+    Grapher parserGrapher(log, GRAPHDIR, "parser_");
     parserGrapher.AddMachine("Parser", parser.Machine());
     parserGrapher.SaveAndClear();
     Connector parserConnector(log, parser.Machine(), "Parser", &parserGrapher);
@@ -139,7 +145,51 @@ int main(int argc, char *argv[]) {
     const IList* astStart = NULL;
     string line;
     while (getline(cin, line)) {
-      line += "\n";
+      // check for delete
+      if (line.size() >= 2 && line.size() <= 3 && line[0] == 'D' && line[1] >= '0' && line[1] <= '9') {
+        if (!start) {
+          throw FWError("Cannot delete start of input: no input yet");
+        }
+        int delnum = line[1] - '0';
+        if (line.size() == 3 && line[2] >= '0' && line[2] <= '9') {
+          delnum *= 10;
+          delnum += line[2] - '0';
+        }
+        IList* s = start;
+        if (!s) {
+          throw FWError("Cannot delete entry without start");
+        }
+        if (0 == delnum) {
+          start = start->right;
+        }
+        for (int i = 0; i < delnum; ++i) {
+          s = s->right;
+          if (!s) {
+            throw FWError("Reached end of input before reaching deletion index");
+          }
+        }
+        log.info("");
+        log.info("* main: Deleting character '" + string(*s) + "' from lexer");
+        if (s->left) {
+          s->left->right = s->right;
+        }
+        if (s->right) {
+          s->right->left = s->left;
+        }
+        lexerConnector.Delete(*s);
+        const Hotlist::hotlist_vec& tokenHotlist = lexerConnector.GetHotlist();
+        if (!tokenHotlist.empty()) {
+          log.info("* main: Lexer returned hotlist; sending to parser.  Hotlist: " + lexerConnector.PrintHotlist());
+          if (!astStart) {
+            astStart = tokenHotlist.begin()->first;
+          }
+          parserConnector.UpdateWithHotlist(tokenHotlist);
+          log.info("* main: No parser consumer; done with input character.");
+        } else {
+          log.info("* main: Lexer returned no hotlist items.");
+        }
+        continue;
+      }
       for (size_t i=0; i < line.size(); ++i) {
         IList* c = new IList(std::auto_ptr<OData>(new CharData(line.at(i))));
         if (!start) { start = c; }
@@ -152,10 +202,7 @@ int main(int argc, char *argv[]) {
         lexerConnector.Insert(*c);
         const Hotlist::hotlist_vec& tokenHotlist = lexerConnector.GetHotlist();
         if (!tokenHotlist.empty()) {
-          log.info("* main: Lexer returned " + boost::lexical_cast<string>(tokenHotlist.size()) + " hotlist items: sending to parser");
-          for (Hotlist::hotlist_iter i = tokenHotlist.begin(); i != tokenHotlist.end(); ++i) {
-            log.debug("Hotlist item: " + string(*i->first) + ", op: " + (i->second == Hotlist::OP_INSERT ? "insert" : "update|delete"));
-          }
+          log.info("* main: Lexer returned hotlist; sending to parser.  Hotlist: " + lexerConnector.PrintHotlist());
           if (!astStart) {
             astStart = tokenHotlist.begin()->first;
           }

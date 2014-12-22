@@ -69,6 +69,9 @@ void Connector::Delete(const IList& inode) {
   if (!inode.left && !inode.right) {
     ClearNode(m_root);
     m_istart = NULL;
+  } else if (!inode.left) {
+    m_istart = inode.right;
+    RepositionNode(m_root, *inode.right);
   } else {
     UpdateListeners(inode, true);
   }
@@ -114,11 +117,11 @@ void Connector::RepositionNode(FWTree& x, const IList& inode) {
 
 // Recalculate state based on a change to a child.  Child could be NULL
 // meaning the update is called by a direct-subscription.
-bool Connector::UpdateNode(FWTree& x, const FWTree* child) {
-  m_log.info("Connector: Updating " + std::string(x) + " with child " + (child ? std::string(*child) : "<null>"));
+bool Connector::UpdateNode(FWTree& x) {
+  m_log.info("Connector: Updating " + std::string(x));
   State& state = x.GetState();
   const IList* old_iend = x.iconnection.iend;
-  state.rule.Update(*this, x, child);
+  state.rule.Update(*this, x);
   DrawGraph(x);
   bool hasChanged = old_iend != x.iconnection.iend || !x.GetOConnection().GetHotlist().empty();
   if (hasChanged) {
@@ -152,10 +155,9 @@ void Connector::Unlisten(FWTree& x, const IList& inode) {
 /* private */
 
 void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListeners) {
-  typedef std::pair<FWTree*, const FWTree*> change_pair;
-  typedef std::vector<change_pair> change_vec;
-  typedef change_vec::const_iterator change_iter;
-  typedef std::map<FWTree::depth_t, change_vec> change_map;
+  typedef std::set<FWTree*> change_set;
+  typedef change_set::const_iterator change_iter;
+  typedef std::map<FWTree::depth_t, change_set> change_map;
   change_map changes_by_depth;
 
   if (updateNeighbourListeners) {
@@ -167,7 +169,7 @@ void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListener
     listener_set left_listeners = m_listeners.GetListeners(inode.left);
     for (listener_iter i = left_listeners.begin();
          i != left_listeners.end(); ++i) {
-      changes_by_depth[(*i)->depth].push_back(change_pair(*i, NULL));
+      changes_by_depth[(*i)->depth].insert(*i);
     }
 
     // If inode.right and inode.right != inode.left, merge the left and right
@@ -177,13 +179,13 @@ void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListener
       listener_set right_listeners = m_listeners.GetListeners(inode.right);
       for (listener_iter i = right_listeners.begin();
            i != right_listeners.end(); ++i) {
-        changes_by_depth[(*i)->depth].push_back(change_pair(*i, NULL));
+        changes_by_depth[(*i)->depth].insert(*i);
       }
     }
   } else {
     listener_set listeners = m_listeners.GetListeners(&inode);
     for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
-      changes_by_depth[(*i)->depth].push_back(change_pair(*i, NULL));
+      changes_by_depth[(*i)->depth].insert(*i);
     }
   }
 
@@ -194,14 +196,14 @@ void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListener
   while (!changes_by_depth.empty()) {
     // Update the deepest depth of our changeset
     int depth = changes_by_depth.rbegin()->first;
-    change_vec changes = changes_by_depth.rbegin()->second;
+    change_set changes = changes_by_depth.rbegin()->second;
     m_log.debug("Connector: Updating changes at depth " + lexical_cast<string>(depth));
     for (change_iter i = changes.begin(); i != changes.end(); ++i) {
-      bool changed = UpdateNode(*i->first, i->second);
+      bool changed = UpdateNode(**i);
       if (changed) {
-        FWTree* parent = i->first->parent;
+        FWTree* parent = (*i)->parent;
         if (parent) {
-          changes_by_depth[parent->depth].push_back(make_pair(parent, i->first));
+          changes_by_depth[parent->depth].insert(parent);
         }
       }
     }

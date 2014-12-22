@@ -56,6 +56,7 @@ public:
   }
 
   std::string DrawOConnection(const std::string& context) const;
+  std::string PrintHotlist() const { return m_hotlist.Print(); }
 
 protected:
   void ApproveChild(const FWTree& child);

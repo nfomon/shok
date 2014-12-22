@@ -71,16 +71,20 @@ void Grapher::Signal(const std::string& context, const void* x, bool isUpdate) {
   if (isUpdate) {
     color = "#003399";
   }
-  m_graph += dotVar(x, context) + " [color=\"" + color + "\", penwidth=2.0];\n";
+  m_graph += dotVar(x, context) + " [color=\"" + color + "\", penwidth=3.0];\n";
   m_isDirty = true;
 }
 
 void Grapher::Save() {
   if (!m_isDirty) {
+    m_log.info("GGG Grapher: Not saving graph; not dirty");
     return;
   }
   m_graph += "}\n";
   std::string outfile(m_out_dir + "/" + m_base_filename + Util::pad_str(lexical_cast<string>(m_img_count), '0', 2) + ".dot");
+  m_log.debug("");
+  m_log.debug("GGG Grapher: Saving graph " + outfile);
+  m_log.debug("");
   std::ofstream out(outfile.c_str());
   if (!out) {
     throw FWError("Failed to open output graph file " + outfile);

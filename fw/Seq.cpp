@@ -5,6 +5,8 @@
 
 #include "Connector.h"
 
+#include "util/Graphviz.h"
+
 #include <boost/lexical_cast.hpp>
 using boost::lexical_cast;
 
@@ -18,11 +20,11 @@ using namespace fw;
 void SeqRule::Reposition(Connector& connector, FWTree& x, const IList& inode) const {
   m_log.debug("Repositioning SeqRule " + string(*this) + " at " + string(x) + " with " + string(inode));
   RepositionFirstChildOfNode(connector, x, inode);
-  Update(connector, x, &x.children.at(0));
+  Update(connector, x);
 }
 
-void SeqRule::Update(Connector& connector, FWTree& x, const FWTree* updated_child) const {
-  m_log.debug("Updating SeqRule " + string(*this) + " at " + string(x) + " with child " + (updated_child ? string(*updated_child) : "<null>"));
+void SeqRule::Update(Connector& connector, FWTree& x) const {
+  m_log.debug("Updating SeqRule " + string(*this) + " at " + string(x));
 
   // Initialize state flags
   x.iconnection.iend = NULL;
@@ -36,34 +38,12 @@ void SeqRule::Update(Connector& connector, FWTree& x, const FWTree* updated_chil
     throw FWError("SeqRule::Update: Seq node " + string(x) + " has more children than the rule");
   }
 
-  // Iterate over node children, either existing or being created, starting at
-  // the updated_child, so long as our last child is complete.
+  // Iterate over node children, either existing or being created, so long as
+  // our last child is complete.
   bool finished = false;
   unsigned int child_index = 0;
   FWTree::child_mod_iter child = x.children.begin();
-  // Skip ahead to the updated child
   FWTree* prev_child = NULL;
-  if (updated_child) {
-    for (child = x.children.begin(); child != x.children.end(); ++child, ++child_index) {
-      if (updated_child == &*child) { break; }
-      State& istate = child->GetState();
-      if (istate.IsLocked()) {
-        state.Lock();
-      }
-      if (!istate.IsComplete()) {
-        throw FWError("SeqRule " + string(*this) + " found 'skippable' child that was not complete");
-      }
-      if (prev_child) {
-        if (prev_child->iconnection.iend != child->iconnection.istart) {
-          throw FWError("SeqRule " + string(*this) + " found iend->istart mismatch; we could correct this, but let's not...");
-          //connector.RepositionNode(*child, *prev_child->iconnection.iend);    // Could correct it like this
-        }
-      }
-      x.iconnection.size += child->iconnection.size;
-      prev_child = &*child;
-    }
-  }
-
   while (!finished) {
     if (child_index >= m_children.size()) {
       throw FWError("SeqRule " + string(*this) + " evaluated too many children beyond the rule");
@@ -73,8 +53,8 @@ void SeqRule::Update(Connector& connector, FWTree& x, const FWTree* updated_chil
       // Existing child
       if (prev_child) {
         if (prev_child->iconnection.iend != child->iconnection.istart) {
-          throw FWError("SeqRule " + string(*this) + " found iend->istart mismatch; we could correct this, but let's not...");
-          //connector.RepositionNode(*child, *prev_child->iconnection.iend);    // Could correct it like this
+          m_log.info("Seq " + string(*this) + " child " + string(*child) + " needs to be repositioned to the prev child's end");
+          connector.RepositionNode(*child, *prev_child->iconnection.iend);
         }
       }
     } else if (x.children.size() > m_children.size()) {
@@ -154,6 +134,7 @@ void SeqRule::Update(Connector& connector, FWTree& x, const FWTree* updated_chil
   }
 
   m_log.debug("SeqRule " + string(*this) + " done update; now has state " + string(x) + " and hotlist size is " + boost::lexical_cast<string>(x.GetOConnection().GetHotlist().size()));
+  m_log.debug(" - and it has istart " + (x.iconnection.istart ? string(*x.iconnection.istart) : "<null>") + " and iend " + (x.iconnection.iend ? string(*x.iconnection.iend): "<null>"));
 }
 
 std::auto_ptr<State> SeqRule::MakeState() const {

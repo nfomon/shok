@@ -48,7 +48,7 @@ public:
   // Calculate local state flags based on children's state, under the
   // assumption that the children are already up-to-date.
   // Returns true if the node was changed
-  virtual void Update(Connector& connector, FWTree& x, const FWTree* child) const = 0;
+  virtual void Update(Connector& connector, FWTree& x) const = 0;
 
   void AddChild(std::auto_ptr<Rule> child) {
     //m_log.debug("Rule: Adding child " + std::string(*child.get()) + " to " + std::string(*this));

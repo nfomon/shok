@@ -56,11 +56,11 @@ public:
   const std::string& GetString() const { return m_str; }
 
   virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const {
-    Update(connector, x, NULL);
+    Update(connector, x);
   }
 
-  virtual void Update(Connector& connector, FWTree& x, const FWTree* child) const {
-    m_log.info("Keyword: updating " + std::string(*this) + " at " + std::string(x) + " with child " + (child ? std::string(*child) : "<null>"));
+  virtual void Update(Connector& connector, FWTree& x) const {
+    m_log.info("Keyword: updating " + std::string(*this) + " at " + std::string(x));
     KeywordState& state = x.GetState<KeywordState>();
     state.Clear();
     std::string matched;
@@ -142,11 +142,11 @@ public:
   const std::string& GetString() const { return m_keyword; }
 
   virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const {
-    Update(connector, x, NULL);
+    Update(connector, x);
   }
 
-  virtual void Update(Connector& connector, FWTree& x, const FWTree* child) const {
-    m_log.info("KeywordMeta: updating " + std::string(*this) + " at " + std::string(x) + " with child " + (child ? std::string(*child) : "<null>"));
+  virtual void Update(Connector& connector, FWTree& x) const {
+    m_log.info("KeywordMeta: updating " + std::string(*this) + " at " + std::string(x));
     State& state = x.GetState();
     state.GoBad();
     const IList* first = x.iconnection.istart;

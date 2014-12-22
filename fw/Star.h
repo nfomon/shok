@@ -18,7 +18,7 @@ struct StarRule : public Rule {
     : Rule(log, name) {}
   virtual ~StarRule() {}
   virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const;
-  virtual void Update(Connector& connector, FWTree& x, const FWTree* child) const;
+  virtual void Update(Connector& connector, FWTree& x) const;
   virtual std::auto_ptr<State> MakeState() const;
   virtual std::auto_ptr<OConnection> MakeOConnection(const FWTree& x) const;
 };

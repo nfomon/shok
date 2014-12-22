@@ -42,8 +42,20 @@ string FWTree::DrawNode(const string& context) const {
     s += dotVar(this, context) + " -> " + dotVar(this, context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + iendcolor + "\"];\n";
   }
   // Add its child connections, and draw the children
+  // Make sure the children will be ordered in the output graph
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     s += dotVar(this, context) + " -> " + dotVar(&*i, context) + ";\n";
+  }
+  if (children.size() > 0) {
+    s += "{ rank=same;\n";
+    child_iter prev_child = children.begin();
+    for (child_iter i = children.begin() + 1; i != children.end(); ++i) {
+      s += dotVar(&*prev_child, context) + " -> " + dotVar(&*i, context) + " [style=\"invis\"];\n";
+      prev_child = i;
+    }
+    s += "}\n";
+  }
+  for (child_iter i = children.begin(); i != children.end(); ++i) {
     s += i->DrawNode(context);
   }
   s += m_oconnection->DrawOConnection(context);

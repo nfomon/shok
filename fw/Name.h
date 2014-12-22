@@ -42,11 +42,11 @@ public:
   const std::string& GetString() const { return m_searchName; }
 
   virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const {
-    Update(connector, x, NULL);
+    Update(connector, x);
   }
 
-  virtual void Update(Connector& connector, FWTree& x, const FWTree* child) const {
-    m_log.info("Name: updating " + std::string(*this) + " at " + std::string(x) + " with child " + (child ? std::string(*child) : "<null>"));
+  virtual void Update(Connector& connector, FWTree& x) const {
+    m_log.info("Name: updating " + std::string(*this) + " at " + std::string(x));
     State& state = x.GetState();
     state.GoBad();
     const IList* first = x.iconnection.istart;

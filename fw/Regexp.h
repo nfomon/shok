@@ -55,11 +55,11 @@ public:
   virtual ~RegexpRule() {}
 
   virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const {
-    Update(connector, x, NULL);
+    Update(connector, x);
   }
 
-  virtual void Update(Connector& connector, FWTree& x, const FWTree* child) const {
-    m_log.info("Regexp: updating " + std::string(*this) + " at " + std::string(x) + " with child " + (child ? std::string(*child) : "<null>"));
+  virtual void Update(Connector& connector, FWTree& x) const {
+    m_log.info("Regexp: updating " + std::string(*this) + " at " + std::string(x));
     RegexpState& state = x.GetState<RegexpState>();
     state.Clear();
     std::string str;

@@ -28,6 +28,7 @@ public:
 
   const FWTree& GetRoot() const { return m_root; }
   const Hotlist::hotlist_vec& GetHotlist() const { return m_root.GetOConnection().GetHotlist(); }
+  std::string PrintHotlist() const { return m_root.GetOConnection().PrintHotlist(); }
   listener_set GetListeners(const IList& x) const {
     return m_listeners.GetListeners(&x);
   }
@@ -48,9 +49,8 @@ public:
   // its children.
   void RepositionNode(FWTree& x, const IList& inode);
 
-  // Recalculate state based on a change to a child.  Child could be NULL
-  // meaning the update is called by a direct-subscription.
-  bool UpdateNode(FWTree& x, const FWTree* child);
+  // Recalculate state based on a change to its children
+  bool UpdateNode(FWTree& x);
 
   void ClearNode(FWTree& x);
 
