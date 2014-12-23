@@ -9,6 +9,7 @@
  * Keywords recognize CharData input nodes, and match a specific string.
  */
 
+#include "Char.h"
 #include "Connector.h"
 #include "FWError.h"
 #include "FWTree.h"

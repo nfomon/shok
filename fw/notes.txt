@@ -1,0 +1,382 @@
+Every DSnode needs a size
+The size needs to be the INPUT size, i.e. the size covered by DSnode.istart -> DSnode.iend
+
+DSnode.istart and DSnode.iend need to be maintained by the MachineNode update!
+
+And at each update, we should re-link all the inodes in that range to the node (for LEAFY nodes only! not ORs... ugh.)
+
+--
+
+Each INode needs TWO fwd links.  "Middle" INodes have one link, INodes at the
+boundary of two ONodes get two.  ONodes like to point to the token that makes
+them bad just past a done state.
+
+Insert: INode is peer-linked but no fwd/back links yet.  We follow the FIRST of the fwdlinks; update at that ONode, which WAS pointing to our new inode's right.  If the ONode's iend changes
+
+.......
+
+No fwd links.  Each update starts at the top of the otree.  Each node answers: do I care about this inode?
+Each parent cares about every inode that its children care about.
+Depth-first updates.
+
+There's something different between:
+ - Create with this inode as the start
+ - Update with this inode at the start or middle
+Hmmmm, there oughtn't be... updates at initial pos should still be able to re-use later stuff that doesn't move...
+
+Rename MachineNode -> Rule. ...check.
+Leave child-creation up to the rule, which will interpret/use the rule's children as appropriate.
+ - that's a Reposition().
+It asks the connector to construct the specific child it wants.
+
+Connector::Insert(inode):
+ - if inode.left: Update(root, inode.left)
+    - if inode.right and inode.left != inode.right: Update(root, inode.right)
+ - else: Reposition(root, inode)
+
+Connector::Delete(inode):
+ - if inode.left: Update(root, inode.left)
+    - if inode.right and inode.left != inode.right: Update(root, inode.right)
+ - else if inode.right: Reposition(root, inode.right)
+ - else: Clear(root)
+
+Connector::Update(node, inode):
+ - if I don't care for the node: ignore
+ - node.Update(*this, inode)    # will create and Connector::Reposition and/or Connector::Update
+                                # children as necessary, then determine its own state flags
+ - my care nodes are the union of my children's care nodes
+
+Connector::Reposition(node, inode):
+ - node.Reposition(*this, inode)
+  -- even if we go bad, we will always "accept" (care about) this node.  Since it's the first one, it's both our begin and "end" iter at worst.
+
+Or::Reposition:
+ - Connector::Reposition all children
+ - set flags like any Update
+
+Or::Update:
+ - Connector::Update all children
+ - set flags
+
+Seq::Reposition:
+ - Connector::Repo first child
+ - Connector::Repo subsequent state(s) as appropriate
+ - set overall flags
+
+Seq::Update:
+ - Connector::Update children sequentially until one changes its end-care, and that's when we start Connector::Repo-walking subsequent states
+
+=====
+2k14-09-16
+
+Nodes:
+ - iend points to the node that makes us bad, or to NULL if we're at the end
+ - we're subscribed to all the nodes in that span including the end that makes us bad
+ - Reposition, have a single ok node, and we're at the end of input: size is 1, istart is inode, iend is null
+ - Reposition, have a single bad node, and we're at the end of input: size is 0, istart is inode, iend is null
+  - we should recurse up and *something* should own the end, otherwise it's a root failure
+
+HOW are we doing updates again?
+ - depth-ordering?
+ - when do we "move up"??  Are non-leaf nodes subscribed?  or do children add their parents to the "needs update" set while on-the-go?
+ = Connector's responsibility.  IF a node changes state we live-add its parent to the being-updated set.
+
+1. Clear, and calling this at the right times.  Does this also Unlisten?  What about Destructor?
+ - Connector::ClearNode, Connector decides to clear the DS/State if it's the root and return to zero input.
+ - Rules can choose to clear their x DS/State if they want to, e.g. at RepositionNode.
+2. Or, Keyword update returns bool indicating if changed
+3. Or, Keyword reposition and updates, including Listening and *Unlistening*, and node deletion
+4. Listener set updates need to do proper depth-based ordering including adding parents of changed nodes to the order set
+
+=====
+2k14-09-21
+
+Connector::Insert() and Delete() need to return the topmost parent TreeDS that changed.
+ - NO, we want the FULL set of Insertions/Deletions that were made to the TreeDS.  Yes, Inserts and Deletes.
+
+Implement "Tree" recognizer rules.  OrRule public getter to give you the
+"winning" child.  Seq will probably have to give you the "winning" sequence
+too.  Maybe every Rule has a way to give you its winners, if that makes sense.
+
+=====
+2k14-09-26
+
+Insert<ListDS>() and Delete<ListDS>() populate and return a depth-ordered (really) set of TreeUpdates.
+ -- Consumer wants to iterate over depths, and each depth get a list of TreeUpdates in the order at which those updates were added to the map.
+ -- map<int, vector<TreeUpdate> >
+ -- maybe that's what our listener_set should have been, for the consumer anyway.
+
+Note that before the Insert/Delete calls, inserted nodes were already connected and deleted nodes were disconnected (in the DS, but they keep their outward connections) and alive.  So those nodes are still alive and pending deletion which won't happen until the Connector gets back to the inode-maintainer: yes, thanks for the Delete, we're done with it now.
+
+This update-set is passed to the next Connector.  (Connector now has Update(UpdateBatch) which just Insert()s and Delete()s each of the updates in depth-order.)  Insert<TreeDS>() and Delete<TreeDS>() look very similar to the ListDS counterparts.  We start by taking a leaf-inode but we don't have any onode graph root yet, so we do a Reposition(), which builds out much of the tree parent-first, and along the way subscribes some nodes.  We keep going through the update batch, all of them are relevant, don't do any pruning and it won't have been worth much to try.  Oh, the Lexer root Star was updated?  OK sure, we update the Parser-tree root Tree:Star, and not much changes, we're not looking at any children when that happens, just updating state-flags, so it's almost a no-op.  No problemo.
+
+There *might* be optimizations in here, but they're not worth trying at this point, this algo is right, and actually pretty decent.  What we did with ListDS's already was pretty good about updating the right stuff in the right order.
+
+
+=====
+2k14-09-29
+
+Forget the Insert/Update/Delete TreeChangeset rubbish.
+
+#                                 vv  TODO: maybe necessarily complete?  meh!
+When any rule updates and is done (not necessarily complete), it has a list of winners.  These are its children that are themselves winners.  Some leaf winners know that they themselves are winners if they are done.  Or has a single winner, Seq and Star have a list.
+
+We only need to Insert() or Delete() these LEAF nodes -- the winners.  Insert() looks like this:
+ - If we're not the first child of our parent, UpdateListeners the parent (regarding us).
+    - the parent will have to include this guy, and probably change its iend
+      meaning it's changed, and the changes bubble up.
+    - parent should Listen() for this child if it accepts it, otherwise, as we
+      bubble-up someone else had better do it :)
+ - Otherwise, keep popping up to find the oldest ancestor where we're not the
+   first child.  Reposition the one where this chain is the first child, giving
+   it the LEAF node.
+
+RepositionNode() always takes a LEAF.  Analogous to the ListDS case, we'll push down Repositions (bouncing between Rule::Reposition() and Connector::RepositionNode()) until we get to the leaf of the rule/machine, which presumably accepts the inode, or errors it.  Its acceptance starts an upwards Update() chain.  Each rule will Update() and just needs to validate its current position along the tree: "I'm an Or<TreeDS>" or "I expect a Tree:Star that has no parent because I'm the root" or "I expect a Tree:Keyword("new") with no children because I'm a leaf" or whatever.
+
+So again, the root of the inode tree (Lexer:Star top) has a LIST of winners.  This is an ordered list of leaves!!  But they're part of a tree!  We onlyt need to Insert() or Delete() those leaves, but we get all the behaviour of recognizing a whole tree from that.
+
+It's not clear this will scale to the ParserAST<->Compiler recognition.... but cross that bridge when we get there.  Likely it will  :)
+Because EVERY change involves a leaf change.  Even though we COULD subscribe higher-level nodes to their respective inode counterparts, there WILL be a leaf change for everything, and those changes need to occur and then bubble-up.
+
+=====
+2k14-10-02
+
+Rules need to maintain TreeDS.hotlist properly:
+ - They do NOT clear it -- that's done by the Connector
+ - They simply add to it -- add any child's hotlist!
+ - Preferably just take hotlists from the children that we know actually changed.  Others are irrelevant.
+ - To be clean, clear the child's hotlist once we take from it.
+ - So if we do that right, we won't need to clear anyone in the Connector; just the root!
+
+=====
+2k14-11-06
+
+Connector maps a List to a Tree.  Tree-Leaf nodes contain a ListDS, representing the view that the subsequent Connector will see.  Its next/prev pointers are maintained by Updates() across the Tree.  Non-Leaf Tree nodes have pointers to the start and end Leaf-List nodes that they use to help maintain these extremities.
+
+We do bubble up a "hot list" of which nodes have been inserted/removed from the list.
+
+Compiler: will know that when, say, the type of an object changes, this bubbles updates up (towards the root).  Should be cool  :-)
+
+--
+2k14-11-09
+
+Within a rule: use iconnection to determine our state, set oconnection based on that state (the result of what our ending children tell us).
+
+iconnections should always be maintained for any rule:
+  istart is the inode at which you were Reposition()ed
+  iend is the inode that makes you bad, or NULL if you get to end of input first
+  you should be Listening to istart, iend, and everything in-between
+
+oconnections for leaf nodes can be set permanently:
+ - oleaf is auto_ptr<IList> with leaf data
+ - ostart and oend just refer to oleaf
+ - osize is 1
+ - hotlist is only hot if we went to done from not-done, or vice-versa (note I said done, not complete).
+
+For non-leaf nodes, oconnections should NOT be set unless we're done:
+ - oleaf is always NULL
+ - ostart is our "winning starting child"'s ostart, or NULL if we're not done
+ - oend is our "winning ending child"'s oend, or NULL if we're not done
+ - osize is the sum of the osize of all the winning children, or 0 if we're not done
+ - hotlist is the hotlists of ALL children
+
+Are we dealing with the complete->incomplete transition properly?  e.g. deleting olist nodes?? (hotlist)
+
+bad input:  newxdelx
+causes bad bug to manifest.
+
+But we appear to have Seq working I guess?  We could either plow ahead and see what a Compiler would look like.
+Or go back and try to fix our latent horrible bugs -- either by brute-force, or by autotesting, or by visualization.
+
+-=-=-
+
+When should Seq set its iend?  Should I even be doing special stuff to mark it "finished" ever -- I mean, sure I'm complete and at my end, but I need to eat one more input to determine it's my "bad" iend node.  Oh I think I just need to logic it that way -- try to consume a next bad.... wait.  no.  my last child's x is complete means it already knows the iend that makes it bad, so that's my final iend, end of story.  This should be working correctly.
+
+-----
+2k14-11-16
+
+Ah!  Listening nodes (leaves of Otree listen to IList inputs, themselves likely but not necessarily from leaves of ITree) should only Listen to the nodes they actually like, i.e. that keep them OK/Done.  NOT the IList node that makes them bad.  Connector::UpdateListeners() does the job of updating the node to the *left* of an inserted/deleted node, so we don't need the listeners themselves to care about updates to their end; they'll get the appropriate update anyway.
+
+Also, we can make the Connector decide (based on State) how to make each Rule know when to Listen.  Yaaaay :)
+ - hm, not so easy.  Connector doesn't know about each IList that the ONode iterates over.  Need to Listen(x, inode) but don't know which inodes; Connector just does UpdateNode(x, child[=NULL]).  Would need a more structured interface where Connector really controls the iteration that the Rules want to do.  Maybe that's ok, maybe not, need to try it.
+
+Let's just fix the Rules for now to listen to the right things.
+
+Oh, and remember that it's only OLeafs that will ever Listen.
+
+Ah, and we ARE only listening to the "good" (accepted, not bad-making) ILists in Keyword and KeywordMeta.  OK.
+
+--
+2k14-11-18
+
+IsEmitting: true the node is ready to provide output (done || complete).
+IsHot == IsEmitting ^ wasEmitting;
+
+Let's wrap up Rule things like this, and push shared functionality into the Connector.
+Rules should keep their "partial" state in State; rely much more deeply on State.
+
+=-=-=-=
+2k14-12-07
+
+The way State::Lock/Unlock is implemented, I trust that Rules will *actually* Reposition themselves (err at least update all their state including State.IsLocked and iconnections/oconnections) when we tell them to, and not do a cute "oh I'm already at that position I don't need to repo" check.
+ --- uhhhhhhh I'm doing this in Connector.cpp::RepositionNode() !!!!
+
+Reposition() starts with iconnection.istart = &inode, iconnection.iend=NULL, and iconnection.size=0
+Reposition() and Update() MUST set iconnection.iend and iconnection.size.
+
+Update() starts with iconnection.istart correct, iconnection.iend=NULL, and iconnection.size=0.
+NONONONO Update() is using the initial iconnection.iend in order to compare if it changed state, for hotlist.
+
+We need to re-do the hotlist / output list stuff.  What is the right way?
+ - definitely not what we're doing now! Hotlist items aren't sorted properly.
+
+Simplification: Strategies for OList nodes:
+1. Amalgomate the child OLists in order (Seq, Star)
+2. Pick a winning child (Or)
+3. Constructs its own single OList (Keyword, Regex, parser nodes)
+
+We actually DO need to allow an INode to say:  Hey, I'm updated!  My OData contents are updated!  But I was neither inserted nor deleted from the IList!
+ - easy, just another Hotlist_OP.
+
+Got it:
+ - Nodes know their "previous" set of OList nodes; which ones are ALIVE (emitting).
+  - that's whatever's between ostart and oend
+ - There's a OList helper fw class to help nodes get this right
+  - OConnector methods
+ - On Update(), a node decides what set of OList hot changes there are (deletes, inserts).  It compares against its "previous" OList:
+  - Constructs its own single OList?  easy: Can choose if the old one should be deleted, or simply updated with the new state.
+    - OConnector::GetONode(), then OConnector::SetONode() AND EITHER put a Delete+Insert into the Hotlist, or just an Update.
+  - Amalgomates its child OLists in order? Any child that is newly-ignored (cleared or whatever), we delete all of their previous-alive nodes, and any child that is newly entered into the mix, we link-up its ILists and take its hotlist.
+    - Use OConnector::ClearChildren() on the previous-alive child. That clears its hotlist, then walks ostart..oend and adds a Hotlist Delete for each.
+    - Make sure we take that hotlist immediately! or at least AFTER we do that to the children.
+    - Any newly added child, link up the ILists (one child's oconnector oend's right matches the next child's oconnector ostart's left), and take its hotlist.
+      - Call this OConnector::LinkChildONodes() which also sets our ostart and oend to the first child's ostart and last child's oend (no reason to check if each actually changed first rly)
+      - Make sure to handle special case: we don't have any ostart set yet
+    - Then take the hotlist(s)
+  - Pick a winning child?  If we're changing winners, then delete all the prev-ILists from the old winner-child, and insert the OLists of the new winner-child.  If we're not changing winners, just take the hotlist of the winner child.
+    - OConnector::ClearChildren() on the child that lost
+    - OConnector::LinkChildONodes() on the child that won
+    - Then take the hotlist(s)
+
+Let's try using an API that does what we need, then finish implementing OConnector to meet that.
+First, the amalgoms: Star and Seq
+Then, the winner: Or
+Finally, the leaves: Keyword and Regexp
+- nah, keyword/regexp first :)
+
+
+Wait, hold up...
+
+For single-ONodes (Keyword, Regexp): The OData is all the "State" you need, let's give it methods:
+ - KeywordData holds nothing.
+ - RegexpData holds the amount of matched text; don't care if we're Done or Complete or w/e.
+
+The OData has *methods* for changing its data.  For Regexp this means when you RegexpData::SetMatched("abc"), internally it checks if abc == whatever it had before.  If it's different, then it knows it *would* 
+
+When the State is Done or Complete, then 
+
+.......
+
+Getting there.
+
+KeywordData holds nothing.  RegexpData holds the matched text.
+If you change a Data then its isUpdated flag gets set, necessarily.
+It gets unset by the Connector after everything has yielded, the whole tree, so any updates will need to get queued up for Flipping later.
+When a parent asks the Data for its info, it tells it its Data IF it is in Done or Complete state, and nothing otherwise.  If it's emitting then it will also pass along the "updated" flag, which is only useful if "updated" makes it to the top of the tree but that path was not also newly inserted or ignored along the way.
+
+A composite node needs to know which children were winners before, and which ones are winners now.  The ONLY thing that matters here is tracking the winner children.  Any children that WERE winners but are NO LONGER winners, we'll enqueue all their PREVIOUS data for removal.  Similarly, for any children that are NOW winners (but were not before), we'll enqueue their set of NEW data.  (We do NOT take any "deletions" from those NEWLY-winner children.)  For any children that were previously winners and are still winners, we incorporate all of their changes (delete anything they say we should delete, add anything they say we should add, continue to notice "just updated" children somehow...)
+
+Note that tree Updates come in depth-ordered, so that should halp.
+
+OConnection construction either takes a starting ONode, or it never gets one.
+ - If it has an ONode, it can be updated but we need to tell the OConnection about the update
+ - If it doesn't, then it instead will get updates which are a set of children that we are deferring to instead.
+  - The OConnection will link up the children for its context
+  - You tell it which children are deleted and which are added
+  - But how does it know which "neighbours" to link that child's OConnection list against?
+  - Because the child nodes are in a list!  And if it's the type of node that links its children, presumably they should be ordered in the child ordering! :)
+  - The child interface kinda sucks so we might need to supply: here are my left and right child *s for any child that is updated lol
+  - Or the FWTree needs left/right pointers in all its children, that's ok..........
+  - And we just tell the OConnection: This child is now ignored.  This child is now relevant.
+  - The OConnection can figure out which children are still relevant, and pull their hotlist updates if any.
+
+--
+Now just need OConnection methods to:
+ * Remove all a child's previous onodes (ignore state and hotlist)
+ * Accept all a child's actual onodes (ignore hotlist, but only Done/Complete states should be counted here, might get that for free)
+ - Starting at a specific child, walk along accepting it and all subsequent children, which means taking their hotlists and linking their onodes.
+  - if any are not Done|Complete, error out, we shouldn't be doing that.... though we *could* just skip them.
+  - we could do this "just start at the first child and walk across them only taking the done|complete ones" strategy, except that's def slower than what we're doing instead :)
+  - THIS SEEMS BROKEN.  Two things:
+    1. What if we receive one child update, that brings us bad... then we get another child update, and it makes us good?
+    - NOT a concern!  Silly bear, the children both update before we get their updates.
+    - YES a concern.  We'll receive BOTH those updates from the children as separate Update events, even though we have the same child state from each.
+      - OConnection will track set<emitting>, set<was_emitting, ostart, oend, auto_ptr<onode>, and hotlist.  yup!
+    2. What happens when we go bad, then?  Presumably we still need to tell our parent about our updates (e.g. Del Me Plz!)?  Are we managing this State properly??  I don't think I implemented any state checks in OConnection yet...
+      - The parent takes whatever it likes!  This includes recognizing that we used to matter, and have now gone bad.
+
+We'll also have to enqueue all the OConnector updates with the Connector so that it can clear them out between runs.  Otherwise specifically the "walking along" updates could pull the same hotlist (with "updates" not just insertions/deletions) twice.
+
+
+We NEED to deal with the Third Way (Connector): When we delete the only inode, and thus Clear Out the whole Tree.
+
+---
+Seq and Star are in disrepair; both have interesting insights but are both mid-hack.
+
+When does the OConnector incorporate the State of a node?  Emitting()ness matters when?????
+ - think: Keyword, Regexp.  The *parent* needs to know when to take the child, and that's based on whether or not the child is Emitting.
+
+---
+Update() should not indicate the child that caused the update.  We shouldn't update a node twice.  Update all its children that were updated, then Update the parent a single time.  This will be faster in the end, less code and complexity, and make it simpler to implement the ONode updates.
+
+ - The gain we had wanted was especially that the Lexer's Or should not have to loop every child every character-change.  But we're doing that now *anyway*.  We'd make much better gains by special-caseing that one node to receive, in a single Update() call, the whole list of children that updated that round, but *even* then, every new token means that *every* child will have updated.. n'est-ce pas?
+  - NO, I don't think it was for the Lexer's Or... I think it was for Seq's, because it seemed silly not to, perhaps.  And then we carried it too far or something?
+
+Let's do that simplification now.  It's nearly impossible to implement Or's DeclareWinner() stuff right.
+
+There are a few different OConnection strategies, as we know:
+ - ONode: we have a node that's always emit.  We might flag updates to it, including restarting it.
+ - Or: There's a winning child.  Maybe we should know what that actual *child* is, and we just take from them every time, and delete whatever was winning before had.  The winning child tracks its m_wasEmitting.... ya, that's ok.
+ - Seq/Star: There's a sequence of winning children which starts at our first child and continues through all of our children up to some point that we define.  We'll define the end child.  DeclareLastChild() should be all it takes.
+ - The question is whether to INSERT or APPROVE a child.  Insert means, we take all its m_emitting nodes and put them in our hotlist as Inserts, i.e. we were NOT emitting this child before.  APPROVE means we just take the child's hotlist, because we were already emitting it.
+
+Hmm.  So every node is either emitting an ONode, or emitting a single child, or emitting a vector of children.  We just wanted to avoid the top node from having to walk that whole tree, by doing all these little merges.  Maybe we can just leave that as an optimization for later...
+ - But we also need to know which items are NEW vs. UPDATED.
+ - OrState is tracking the LastWinner, I think that's fine.
+ - SeqState, then, should track LastWinners, a *set*.  That way when we DeclareLastChild(), we can just ask: each child, did we already have it.
+ - That should give us proper "Merging", no delayed walking work for the root node.
+ - Note that this is definitely slower than the Seq/Star, which is already walking its children, adding the ones it likes onto the list.  It's doing more work.  But it's kinda simpler.  Optimize later.
+ - Now I'm not sure of any of these changes.
+
+Connector still needs to Flip the updated OConnections.  It's doing that correct, right?
+
+=====
+
+FWTree: Tree.
+ - Has State which knows its Rule, and stores info relating to an instance of Rule processing; set (not read) by the Rule to provide information to parent Rules.
+ - IConnection
+ - OConnection
+
+IList: List. Owns some data, and also now knows the FWTree* that owns it (could be NULL -- input char list).  That's only for display purposes.
+
+OConnection:
+ - Has its owning Rule and FWTree node.  That's redundant; the Tree node('s State) has its Rule.
+ - Only wants the Tree node so it can walk the input list.
+ - Wants the Rule so that IF it's an OConnection that owns a single ONode, it can create the ONode.
+  - Instead, we clearly have different types of OConnection.  Let's parameterize them somehow, or at least subclass maybe!!
+
+OConnectionSingle: owns a single ONode that it constructs.  Only receives updates.  Up to the Rule to tell us when the node is updated.
+
+OConnectionWinner: Starts with a NULL FWTree* winner.  Is given a winner; we notice if it's different than the one before (in which case we Delete the old's old and Insert the new winner's new), or if it's the same (in which case, we fill out our hotlist with the winner's hotlist).
+
+OConnectionSequence: We're given either StartChild(FWTree& child), UpdateNext(FWTree& child), InsertNext(FWTree& child), or NoChildren().  Each time we put ourselves into good m_ostart / m_oend state.
+
+I can kill Hotlist's m_inserted and m_deleted (yay).
+
+==========
+
+One problem: Nodes below an Or can over-run.  e.g. keyword OR regexp, allow the regexp to win for many characters, then cause the keyword to win instead.  The regex will still be listening to all those future characters!  should probably clear it out.
+
+More serious problem perhaps:  Let's make sure that when a node goes bad, we don't clear out the state of future nodes (e.g. in a Seq).  We want to keep those with their IConnection intact.  If the bad node goes good again, we might not have to re-update many of those later nodes.
+
+

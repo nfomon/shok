@@ -51,7 +51,6 @@ void OConnection::DeleteChild(const FWTree& child) {
 
 string OConnection::DrawOConnection(const string& context) const {
   string s;
-  s += "/*OConn*/\n";
 /*
   if (m_ostart) {
     s += dotVar(m_ostart->owner, context) + " -> " + dotVar(&m_node, context) + " [constraint=false, weight=1, arrowsize=1.2, color=\"#22ee22\"];\n";

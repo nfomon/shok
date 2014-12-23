@@ -10,6 +10,7 @@
 
 #include "util/Graphviz.h"
 using Util::dotVar;
+using Util::safeLabelStr;
 
 #include <memory>
 #include <string>
@@ -37,7 +38,7 @@ string Rule::print() const {
 
 string Rule::DrawNode(const std::string& context) const {
   string s;
-  s += dotVar(this, context) + " [label=\"" + m_name + "\"];\n";
+  s += dotVar(this, context) + " [label=\"" + safeLabelStr(m_name) + "\"];\n";
   for (child_iter i = m_children.begin(); i != m_children.end(); ++i) {
     s += dotVar(this, context) + " -> " + dotVar(&*i, context) + ";\n";
     s += i->DrawNode(context);

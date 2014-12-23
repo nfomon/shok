@@ -23,7 +23,7 @@ string FWTree::DrawNode(const string& context) const {
     fillcolor = "#9999cc";
   }
 
-  s += dotVar(this, context) + " [label=\"" + m_state->rule.Name() + "\", style=\"filled\", fillcolor=\"" + fillcolor + "\", fontsize=12.0];\n";
+  s += dotVar(this, context) + " [label=\"" + Util::safeLabelStr(m_state->rule.Name()) + "\", style=\"filled\", fillcolor=\"" + fillcolor + "\", fontsize=12.0];\n";
   // Connect the node to its IConnection
   string istartcolor = "#006600";
   string iendcolor = "#660000";

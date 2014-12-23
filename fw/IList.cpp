@@ -7,6 +7,7 @@
 
 #include "util/Graphviz.h"
 using Util::dotVar;
+using Util::safeLabelStr;
 
 #include <memory>
 #include <string>
@@ -33,7 +34,7 @@ IList::IList(const FWTree* owner, IList* left, IList* right)
 
 string IList::DrawNode(const string& context) const {
   string s;
-  s = dotVar(this, context) + " [label=\"" + string(GetData()) + "\", style=\"filled\", fillcolor=\"#dddddd\", fontsize=12.0];\n";
+  s = dotVar(this, context) + " [label=\"" + safeLabelStr(string(GetData())) + "\", style=\"filled\", fillcolor=\"#dddddd\", fontsize=12.0];\n";
   if (right) {
     s += dotVar(this, context) + " -> " + dotVar(right, context) + ";\n";
     s += right->DrawNode(context);

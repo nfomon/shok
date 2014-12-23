@@ -8,17 +8,11 @@
 #include "Grapher.h"
 #include "Hotlist.h"
 #include "IList.h"
-#include "Keyword.h"
-#include "Meta.h"
-#include "Or.h"
-#include "Regexp.h"
+#include "Lexer.h"
+#include "Parser.h"
 #include "Rule.h"
-#include "Seq.h"
-#include "Star.h"
 
 #include "util/Log.h"
-
-#include <boost/regex.hpp>
 
 #include <iostream>
 #include <string>
@@ -35,89 +29,6 @@ namespace {
   const string GRAPHDIR = "graphs";
 }
 
-class Lexer {
-public:
-  // Lexer Tree:
-  //       Star
-  //         |
-  //        Or
-  //   |-----|-------|
-  //  new   del  identifier
-
-  Lexer(Log& log, const std::string& name)
-    : m_log(log),
-      m_name(name),
-      m_machine(log, name) {
-    std::auto_ptr<Rule> or_(new OrRule(log, "or"));
-    addKeyword(*or_.get(), "new");
-    addKeyword(*or_.get(), "del");
-    addRegexp(*or_.get(), "ID", "[A-Za-z_][0-9A-Za-z_]*");
-    addRegexp(*or_.get(), "INT", "[0-9]+");
-    addRegexp(*or_.get(), "WS", "[ \t\r]+");
-    addKeyword(*or_.get(), ";");
-    m_machine.AddChild(or_);
-  }
-
-  Rule& Machine() { return m_machine; }
-
-private:
-  void addKeyword(Rule& or_, const std::string& keyword) {
-    std::auto_ptr<Rule> kw(new KeywordRule(m_log, keyword));
-    or_.AddChild(kw);
-  }
-  void addRegexp(Rule& or_, const std::string& name, const std::string& regexp) {
-    std::auto_ptr<Rule> re(new RegexpRule(m_log, name, boost::regex(regexp)));
-    or_.AddChild(re);
-  }
-
-  Log& m_log;
-  string m_name;
-  StarRule m_machine;
-};
-
-class Parser {
-public:
-  // Parser Tree:
-  //       Star
-  //        |
-  //        Or
-  //   |----------|
-  //  Seq1       Seq2
-  // |----|     |----|
-  // new  id    del  id
-
-  Parser(Log& log, const std::string& name)
-    : m_log(log),
-      m_name(name),
-      m_machine(log, name) {
-    std::auto_ptr<Rule> or_(new OrRule(log, "or"));
-    std::auto_ptr<Rule> seq1_(new SeqRule(log, "seq1"));
-    std::auto_ptr<Rule> new_(new MetaRule(log, "new", "new"));
-    std::auto_ptr<Rule> x1_(new MetaRule(log, "ID", "identifier"));
-    std::auto_ptr<Rule> semi1_(new MetaRule(log, ";", ";"));
-    seq1_->AddChild(new_);
-    seq1_->AddChild(x1_);
-    seq1_->AddChild(semi1_);
-    or_->AddChild(seq1_);
-    std::auto_ptr<Rule> seq2_(new SeqRule(log, "seq2"));
-    std::auto_ptr<Rule> del_(new MetaRule(log, "del", "del"));
-    std::auto_ptr<Rule> x2_(new MetaRule(log, "ID", "identifier"));
-    std::auto_ptr<Rule> semi2_(new MetaRule(log, ";", ";"));
-    seq2_->AddChild(del_);
-    seq2_->AddChild(x2_);
-    seq2_->AddChild(semi2_);
-    or_->AddChild(seq2_);
-    m_machine.AddChild(or_);
-  }
-
-  Rule& Machine() { return m_machine; }
-
-private:
-  Log& m_log;
-  string m_name;
-  StarRule m_machine;
-};
-
 int main(int argc, char *argv[]) {
   if (argc < 1 || argc > 2) {
     cout << "usage: " << PROGRAM_NAME << " [log level]" << endl;
@@ -130,36 +41,37 @@ int main(int argc, char *argv[]) {
       log.setLevel(argv[1]);
     }
 
-    bool isGraphing = false;
+    bool isGraphing = true;
 
     // Lexer
-    Lexer lexer(log, "Star: lexer");
-    log.info("Lexer: " + lexer.Machine().print());
+    std::auto_ptr<Rule> lexer = CreateLexer_Moderate(log);
+    log.info("Lexer: " + lexer->print());
     std::auto_ptr<Grapher> lexerGrapher;
     if (isGraphing) {
       lexerGrapher.reset(new Grapher(log, GRAPHDIR, "lexer_"));
-      lexerGrapher->AddMachine("Lexer", lexer.Machine());
+      lexerGrapher->AddMachine("Lexer", *lexer.get());
       lexerGrapher->SaveAndClear();
     }
-    Connector lexerConnector(log, lexer.Machine(), "Lexer", lexerGrapher.get());
+    Connector lexerConnector(log, *lexer.get(), "Lexer", lexerGrapher.get());
     log.info("Made a lexer connector");
 
     // Parser
-    Parser parser(log, "Star: parser");
-    log.info("Parser: " + parser.Machine().print());
+    std::auto_ptr<Rule> parser = CreateParser_Moderate(log);
+    log.info("Parser: " + parser->print());
     std::auto_ptr<Grapher> parserGrapher;
     if (isGraphing) {
       parserGrapher.reset(new Grapher(log, GRAPHDIR, "parser_"));
-      parserGrapher->AddMachine("Parser", parser.Machine());
+      parserGrapher->AddMachine("Parser", *parser.get());
       parserGrapher->SaveAndClear();
     }
-    Connector parserConnector(log, parser.Machine(), "Parser", parserGrapher.get());
+    Connector parserConnector(log, *parser.get(), "Parser", parserGrapher.get());
 
     IList* start = NULL;
     IList* prev = NULL;
     const IList* astStart = NULL;
     string line;
     while (getline(cin, line)) {
+      //line += "\n";
       // check for delete
       if (line.size() >= 2 && line.size() <= 3 && line[0] == 'D' && line[1] >= '0' && line[1] <= '9') {
         if (!start) {

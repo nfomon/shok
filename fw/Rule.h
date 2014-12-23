@@ -50,10 +50,20 @@ public:
   // Returns true if the node was changed
   virtual void Update(Connector& connector, FWTree& x) const = 0;
 
-  void AddChild(std::auto_ptr<Rule> child) {
-    //m_log.debug("Rule: Adding child " + std::string(*child.get()) + " to " + std::string(*this));
+  Rule* AddChild(std::auto_ptr<Rule> child) {
     child->setParent(this);
     m_children.push_back(child);
+    return &m_children.back();
+  }
+  template <typename T>
+  Rule* CreateChild(const std::string& name) {
+    std::auto_ptr<Rule> child(new T(m_log, name));
+    return AddChild(child);
+  }
+  template <typename T, typename A1>
+  Rule* CreateChild(const std::string& name, const A1& a1) {
+    std::auto_ptr<Rule> child(new T(m_log, name, a1));
+    return AddChild(child);
   }
 
   std::string Name() const { return m_name; }

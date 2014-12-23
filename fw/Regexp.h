@@ -71,7 +71,8 @@ public:
         if (str.size() > 1) {
           if (boost::regex_match(str.begin(), str.end()-1, m_regex)) {
             state.GoComplete();
-            x.GetOConnection<OConnectionSingle>().ONodeUpdate<RegexpData>(str);
+            std::string sstr = str.substr(0, str.length()-1);
+            x.GetOConnection<OConnectionSingle>().ONodeUpdate<RegexpData>(sstr);
             break;
           }
         }

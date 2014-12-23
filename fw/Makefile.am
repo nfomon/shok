@@ -26,11 +26,15 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     IList.cpp \
     IList.h \
     Keyword.h \
+    Lexer.cpp \
+    Lexer.h \
     ListenerTable.h \
     Meta.h \
     OData.h \
     Or.cpp \
     Or.h \
+    Parser.cpp \
+    Parser.h \
     Regexp.h \
     Rule.cpp \
     Rule.h \

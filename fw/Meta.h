@@ -34,8 +34,8 @@ struct MetaState : public State {
 
 class MetaRule : public Rule {
 public:
-  MetaRule(Log& log, const std::string& searchName, const std::string& name)
-    : Rule(log, name),
+  MetaRule(Log& log, const std::string& searchName, const std::string& name = "")
+    : Rule(log, (name.empty() ? searchName : name)),
       m_searchName(searchName) {}
   virtual ~MetaRule() {}
 
