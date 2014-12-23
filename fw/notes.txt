@@ -379,4 +379,36 @@ One problem: Nodes below an Or can over-run.  e.g. keyword OR regexp, allow the 
 
 More serious problem perhaps:  Let's make sure that when a node goes bad, we don't clear out the state of future nodes (e.g. in a Seq).  We want to keep those with their IConnection intact.  If the bad node goes good again, we might not have to re-update many of those later nodes.
 
+--
+
+We want the following operations on Rule:
+ - Hush the hotlist (ignored for output)
+ - Prepend a "text" node to our OList (i.e. whenever we're Emitting, start with a "fake" IList that contains text for the next machine to recognize)
+ - Append a "text" node at the end of our OList
+
+The Compiler's root node will need to contain the Scope globalScope.  Nodes will need to inherit some stuff from their parents, e.g. parent scopes.
+
+Compiler doesn't have a super tough job.  It receives stuff like:
+`['`cmd',`ls',`-alh'`]'
+`['`{'`new'`x'`(exp'`+'`12'`47'`)'`}'`]'
+
+Its goal is to transform this into bytecode.  So is the bytecode our OData?  How do we override what it should be?
+
+It needs to reorder expressions, do Scope lookups, type-check, etc.
+
+The actual Compiler Machine tree will look a lot like the Parser's.  But we can ditch all the nodes we set as Ignored For Output in the parser, and attach extra activities in the nodes which will produce the bytecode that we (automatically somehow!?) emit as our OList ONodes.
+
+--
+Parser emits:
+[cmd blah blah blah]
+[(new (type int) (exp (plus 12 17)))]
+
+Compiler constructs tree:
+
+   compiler
+      |
+[ Cmd | New ]
+   |     |
+cmd...  new (type? ..) (exp? ..)
+
 

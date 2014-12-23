@@ -12,6 +12,8 @@ COMMON_SRCS = $(UTIL_SRCS)
 bin_PROGRAMS = shok_fw
 shok_fw_SOURCES = $(COMMON_SRCS) \
     Char.h \
+    Compiler.cpp \
+    Compiler.h \
     Connection.cpp \
     Connection.h \
     Connector.cpp \
