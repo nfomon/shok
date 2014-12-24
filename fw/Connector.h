@@ -60,8 +60,8 @@ public:
   void Unlisten(FWTree& x, const IList& inode);
 
   // Called from a rule to tell us that a node was updated and thus needs to
-  // have its OConnections flipped once the whole Tree is done updating
-  void AddNodeToFlip(FWTree& x);
+  // have its OConnections reset once the whole Tree is done updating
+  void AddNodeToReset(FWTree& x);
 
 private:
   // Convenience core for Insert() and Delete().  Updates all listeners to the
@@ -70,7 +70,7 @@ private:
   void UpdateListeners(const IList& inode, bool updateNeighbourListeners);
   void DrawGraph(const FWTree& onode, const IList* inode = NULL);
 
-  void FlipNodes();   // Flip any nodes-to-flip once a Tree update is done
+  void ResetNodes();    // Reset any nodes-to-reset once a Tree update is done
 
   Log& m_log;
   // Root of the output tree.  Tells us the root of the rule tree.
@@ -79,7 +79,7 @@ private:
   Grapher* m_grapher;
   const IList* m_istart;    // Start of the input list
   ListenerTable<const IList*, FWTree*> m_listeners;
-  std::set<FWTree*> m_nodesToFlip;
+  std::set<FWTree*> m_nodesToReset;
 };
 
 }

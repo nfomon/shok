@@ -35,7 +35,7 @@ Connector::Connector(Log& log, const Rule& rule, const std::string& name, Graphe
 
 void Connector::Insert(const IList& inode) {
   m_log.info("Connector: Inserting IList: " + string(inode));
-  FlipNodes();
+  ResetNodes();
 
   if (!m_istart) {
     m_istart = &inode;
@@ -62,7 +62,7 @@ void Connector::Insert(const IList& inode) {
 
 void Connector::Delete(const IList& inode) {
   m_log.info("Deleting list inode " + string(inode));
-  FlipNodes();
+  ResetNodes();
 
   m_listeners.RemoveAllListeners(&inode);
 
@@ -112,11 +112,10 @@ void Connector::RepositionNode(FWTree& x, const IList& inode) {
   State& state = x.GetState();
   state.Unlock();
   x.GetRule().Reposition(*this, x, inode);
-  AddNodeToFlip(x);
+  AddNodeToReset(x);
 }
 
-// Recalculate state based on a change to a child.  Child could be NULL
-// meaning the update is called by a direct-subscription.
+// Recalculate state based on a change to one or more children
 bool Connector::UpdateNode(FWTree& x) {
   m_log.info("Connector: Updating " + std::string(x));
   const IList* old_iend = x.iconnection.iend;
@@ -124,14 +123,13 @@ bool Connector::UpdateNode(FWTree& x) {
   DrawGraph(x);
   bool hasChanged = old_iend != x.iconnection.iend || !x.GetOConnection().GetHotlist().empty();
   if (hasChanged) {
-    AddNodeToFlip(x);
+    AddNodeToReset(x);
   }
   return hasChanged;
 }
 
 void Connector::ClearNode(FWTree& x) {
   m_log.info("Connector: Clearing " + std::string(x));
-  // TODO we should clear out the OConnections properly here somehow
   for (FWTree::child_mod_iter i = x.children.begin();
        i != x.children.end(); ++i) {
     ClearNode(*i);
@@ -182,6 +180,7 @@ void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListener
       }
     }
   } else {
+    // TODO Unnecessary copy
     listener_set listeners = m_listeners.GetListeners(&inode);
     for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
       changes_by_depth[(*i)->depth].insert(*i);
@@ -229,14 +228,14 @@ void Connector::DrawGraph(const FWTree& onode, const IList* inode) {
   m_grapher->SaveAndClear();
 }
 
-void Connector::AddNodeToFlip(FWTree& x) {
-  m_nodesToFlip.insert(&x);
+void Connector::AddNodeToReset(FWTree& x) {
+  m_nodesToReset.insert(&x);
 }
 
-void Connector::FlipNodes() {
-  for (set<FWTree*>::const_iterator i = m_nodesToFlip.begin();
-       i != m_nodesToFlip.end(); ++i) {
+void Connector::ResetNodes() {
+  for (set<FWTree*>::const_iterator i = m_nodesToReset.begin();
+       i != m_nodesToReset.end(); ++i) {
     (*i)->GetOConnection().Reset();
   }
-  m_nodesToFlip.clear();
+  m_nodesToReset.clear();
 }
