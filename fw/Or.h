@@ -8,7 +8,6 @@
 #include "FWTree.h"
 #include "IList.h"
 #include "Rule.h"
-#include "State.h"
 
 #include <memory>
 
@@ -20,16 +19,7 @@ struct OrRule : public Rule {
   virtual ~OrRule() {}
   virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const;
   virtual void Update(Connector& connector, FWTree& x) const;
-  virtual std::auto_ptr<State> MakeState() const;
   virtual std::auto_ptr<OConnection> MakeOConnection(const FWTree& x) const;
-};
-
-struct OrState : public State {
-  OrState(const OrRule& rule)
-    : State(rule) {}
-  virtual ~OrState() {}
-
-  virtual operator std::string() const { return "Or " + rule.Name() + ":" + Print(); }
 };
 
 }

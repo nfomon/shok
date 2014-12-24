@@ -11,6 +11,7 @@
 #include "FWTree.h"
 #include "OData.h"
 #include "Rule.h"
+#include "State.h"
 
 #include "util/Graphviz.h"
 
@@ -32,17 +33,6 @@ struct RegexpData : public OData {
   std::string matched;
 };
 
-class RegexpRule;
-
-struct RegexpState : public State {
-  RegexpState(const RegexpRule& rule);
-  virtual ~RegexpState() {}
-
-  const RegexpRule& GetRegexpRule() const;
-
-  virtual operator std::string() const;
-};
-
 class RegexpRule : public Rule {
 public:
   RegexpRule(Log& log, const std::string& name, const boost::regex& regex)
@@ -60,7 +50,7 @@ public:
 
   virtual void Update(Connector& connector, FWTree& x) const {
     m_log.info("Regexp: updating " + std::string(*this) + " at " + std::string(x));
-    RegexpState& state = x.GetState<RegexpState>();
+    State& state = x.GetState();
     state.Clear();
     std::string str;
     const IList* i = x.iconnection.istart;
@@ -94,24 +84,12 @@ public:
     m_log.debug("Regexp " + std::string(*this) + " now: " + std::string(x));
   }
 
-  virtual std::auto_ptr<State> MakeState() const;
   virtual std::auto_ptr<OData> MakeData(const FWTree& x) const;
   virtual std::auto_ptr<OConnection> MakeOConnection(const FWTree& x) const;
 
 private:
   const boost::regex m_regex;
 };
-
-RegexpState::RegexpState(const RegexpRule& rule)
-  : State(rule) {}
-
-const RegexpRule& RegexpState::GetRegexpRule() const { return *dynamic_cast<const RegexpRule*>(&rule); }
-
-RegexpState::operator std::string() const { return "RE " + rule.Name() + ":" + Print(); }
-
-std::auto_ptr<State> RegexpRule::MakeState() const {
-  return std::auto_ptr<State>(new RegexpState(*this));
-}
 
 std::auto_ptr<OData> RegexpRule::MakeData(const FWTree& x) const {
   return std::auto_ptr<OData>(new RegexpData());

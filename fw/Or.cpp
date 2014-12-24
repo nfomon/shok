@@ -27,7 +27,7 @@ void OrRule::Update(Connector& connector, FWTree& x) const {
   // Compute new state flags
   x.iconnection.iend = NULL;
   x.iconnection.size = 0;
-  OrState& state = x.GetState<OrState>();
+  State& state = x.GetState();
   state.Clear();
   vector<const FWTree*> oks;
   vector<const FWTree*> bads;
@@ -135,10 +135,6 @@ void OrRule::Update(Connector& connector, FWTree& x) const {
 
   m_log.debug("OrRule " + string(*this) + " now at " + string(x));
   m_log.debug(" - and it has istart " + (x.iconnection.istart ? string(*x.iconnection.istart) : "<null>") + " and iend " + (x.iconnection.iend ? string(*x.iconnection.iend): "<null>"));
-}
-
-auto_ptr<State> OrRule::MakeState() const {
-  return auto_ptr<State>(new OrState(*this));
 }
 
 auto_ptr<OConnection> OrRule::MakeOConnection(const FWTree& x) const {

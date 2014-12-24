@@ -6,7 +6,6 @@
 #include "Connector.h"
 #include "FWTree.h"
 #include "IList.h"
-#include "State.h"
 
 #include "util/Graphviz.h"
 using Util::dotVar;
@@ -19,17 +18,13 @@ using std::string;
 
 using namespace fw;
 
-auto_ptr<State> Rule::MakeState() const {
-  return auto_ptr<State>(new State(*this));
-}
-
-string Rule::print() const {
+string Rule::Print() const {
   string s(m_name);
   if (!m_children.empty()) {
     s += " (";
     for (child_iter i = m_children.begin(); i != m_children.end(); ++i) {
       if (i != m_children.begin()) { s += ", "; }
-      s += i->print();
+      s += i->Print();
     }
     s += ")";
   }
@@ -47,7 +42,7 @@ string Rule::DrawNode(const std::string& context) const {
 }
 
 void Rule::AddChildToNode(FWTree& x, const Rule& child) const {
-  x.children.push_back(auto_ptr<FWTree>(new FWTree(m_log, child.MakeState(), &x)));
+  x.children.push_back(auto_ptr<FWTree>(new FWTree(child, &x)));
 }
 
 void Rule::RepositionFirstChildOfNode(Connector& connector, FWTree& x, const IList& inode) const {

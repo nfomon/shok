@@ -4,29 +4,20 @@
 #ifndef _State_h_
 #define _State_h_
 
-#include "Rule.h"
-
 #include <boost/lexical_cast.hpp>
 
 #include <string>
 
 namespace fw {
 
-struct DS;
-
 class State {
 public:
-  const Rule& rule;
-
-  State(const Rule& rule,
-        bool startDone = false)
-    : rule(rule),
-      m_startDone(startDone),
+  State(bool startDone = false)
+    : m_startDone(startDone),
       m_isLocked(false),
       m_station(ST_BAD) {
     Clear();
   }
-  virtual ~State() {}
 
   void Clear() {
     if (m_startDone) {
@@ -52,8 +43,7 @@ public:
   void Lock() { m_isLocked = true; }
   void Unlock() { m_isLocked = false; }
 
-  virtual operator std::string() const { return Print(); }
-  std::string Print() const { return UnMapStation(m_station); }
+  virtual operator std::string() const { return UnMapStation(m_station); }
 
 private:
   enum Station {

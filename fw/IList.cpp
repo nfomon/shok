@@ -28,8 +28,16 @@ IList::IList(const FWTree* owner, IList* left, IList* right)
     left(left),
     right(right) {
   if (owner) {
-    m_data = owner->GetState().rule.MakeData(*owner);
+    m_data = owner->GetRule().MakeData(*owner);
   }
+}
+
+string IList::Print() const {
+  string s = "<" + string(*this) + ">";
+  if (right) {
+    s += "-" + right->Print();
+  }
+  return s;
 }
 
 string IList::DrawNode(const string& context) const {

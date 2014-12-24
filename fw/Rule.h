@@ -32,7 +32,6 @@ public:
       m_parent(NULL) {}
   virtual ~Rule() {}
 
-  virtual std::auto_ptr<State> MakeState() const;
   virtual std::auto_ptr<OData> MakeData(const FWTree& x) const { return std::auto_ptr<OData>(); }
   virtual std::auto_ptr<OConnection> MakeOConnection(const FWTree& x) const = 0;
 
@@ -71,7 +70,7 @@ public:
   virtual operator std::string() const {
     return m_name + ":" + boost::lexical_cast<std::string>(m_children.size());
   }
-  std::string print() const;
+  std::string Print() const;
   virtual std::string DrawNode(const std::string& context) const;
 
 protected:
@@ -80,7 +79,6 @@ protected:
   }
 
   // Convenience methods for some rules
-  //void ClearNodeChildren(Connector& connector, FWTree& x);    // unused
   void AddChildToNode(FWTree& x, const Rule& child) const;
   void RepositionFirstChildOfNode(Connector& connector, FWTree& x, const IList& inode) const;
   void RepositionAllChildrenOfNode(Connector& connector, FWTree& x, const IList& inode) const;

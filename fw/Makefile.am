@@ -31,6 +31,7 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     Lexer.cpp \
     Lexer.h \
     ListenerTable.h \
+    Meta.cpp \
     Meta.h \
     OData.h \
     Or.cpp \

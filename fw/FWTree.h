@@ -9,7 +9,6 @@
 #include "Hotlist.h"
 #include "State.h"
 
-#include "util/Log.h"
 #include "util/Graphviz.h"
 
 #include <boost/lexical_cast.hpp>
@@ -20,42 +19,33 @@
 
 namespace fw {
 
-struct FWTree {
+class FWTree {
+public:
   typedef unsigned int depth_t;
   typedef boost::ptr_vector<FWTree> child_vec;
   typedef child_vec::const_iterator child_iter;
   typedef child_vec::iterator child_mod_iter;
 
 private:
-  std::auto_ptr<State> m_state;
+  const Rule& m_rule;
+  State m_state;
 
 public:
   FWTree* parent;
   child_vec children;
   depth_t depth;
 
-  FWTree(Log& log,
-         std::auto_ptr<State> state,
-         FWTree* parent)
-    : m_state(state),
+  FWTree(const Rule& rule, FWTree* parent)
+    : m_rule(rule),
       parent(parent),
       depth(parent ? parent->depth + 1 : 0) {
-    if (!m_state.get()) {
-      throw FWError("Cannot create FWTree node with NULL state");
-    }
-    m_oconnection = m_state->rule.MakeOConnection(*this);
+    m_oconnection = rule.MakeOConnection(*this);
   }
   virtual ~FWTree() {}
 
-  State& GetState() const { return *m_state.get(); }
-  template <typename StateType>
-  StateType& GetState() const {
-    StateType* state = dynamic_cast<StateType*>(m_state.get());
-    if (!state) {
-      throw FWError("Cannot retrieve state to incorrect type");
-    }
-    return *state;
-  }
+  const State& GetState() const { return m_state; }
+  State& GetState() { return m_state; }
+  const Rule& GetRule() const { return m_rule; }
 
   OConnection& GetOConnection() const { return *m_oconnection.get(); }
   template <typename OConnType>
@@ -80,8 +70,7 @@ public:
 
   // Clear all state and connection information.  Maintains tree structure.
   void Clear() {
-    State& state = GetState();
-    state.Clear();
+    m_state.Clear();
     iconnection.Clear();
     m_oconnection->Clear();
   }
@@ -90,18 +79,6 @@ public:
 
 private:
   std::auto_ptr<OConnection> m_oconnection;  // Output list representation
-};
-
-struct FWTreeDepthComparator {
-  bool operator() (FWTree* a, FWTree* b) const {
-    return a->depth < b->depth;
-  }
-};
-
-struct FWTreeInverseDepthComparator {
-  bool operator() (FWTree* a, FWTree* b) const {
-    return a->depth > b->depth;
-  }
 };
 
 }

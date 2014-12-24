@@ -8,26 +8,28 @@
 #include <boost/lexical_cast.hpp>
 using boost::lexical_cast;
 
+#include <memory>
 #include <string>
 #include <vector>
+using std::auto_ptr;
 using std::string;
 using std::vector;
 
 using namespace fw;
 
 void StarRule::Reposition(Connector& connector, FWTree& x, const IList& inode) const {
-  m_log.debug("Repositioning StarRule " + string(*this) + " at " + string(x) + " with " + string(inode));
+  m_log.debug("Repositioning Star " + string(*this) + " at " + string(x) + " with " + string(inode));
   RepositionFirstChildOfNode(connector, x, inode);
   Update(connector, x);
 }
 
 void StarRule::Update(Connector& connector, FWTree& x) const {
-  m_log.debug("Updating StarRule " + string(*this) + " at " + string(x));
+  m_log.debug("Updating Star " + string(*this) + " at " + string(x));
 
   // Initialize state flags
   x.iconnection.iend = NULL;
   x.iconnection.size = 0;
-  StarState& state = x.GetState<StarState>();
+  State& state = x.GetState();
   state.Clear();
 
   if (x.children.empty()) {
@@ -53,12 +55,11 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
     } else {
       // New child
       isNewChild = true;
-      std::auto_ptr<FWTree> newChild(new FWTree(m_log, m_children.at(0).MakeState(), &x));
-      x.children.push_back(newChild);
+      x.children.push_back(auto_ptr<FWTree>(new FWTree(m_children.at(0), &x)));
       child = x.children.end() - 1;
       if (prev_child) {
         if (!prev_child->iconnection.iend) {
-          throw FWError("StarRule " + string(*this) + " prev child " + string(*prev_child) + " failed to assign its iend");
+          throw FWError("Star " + string(*this) + " prev child " + string(*prev_child) + " failed to assign its iend");
         }
         connector.RepositionNode(*child, *prev_child->iconnection.iend);
       } else {
@@ -80,10 +81,10 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
 
     if (istate.IsBad()) {
       if (wasComplete) {
-        m_log.debug("StarRule " + string(*this) + " has gone bad but its last child was complete, so now it's complete");
+        m_log.debug("Star " + string(*this) + " has gone bad but its last child was complete, so now it's complete");
         state.GoComplete();
       } else {
-        m_log.debug("StarRule " + string(*this) + " has gone bad");
+        m_log.debug("Star " + string(*this) + " has gone bad");
         state.GoBad();
       }
       x.iconnection.iend = child->iconnection.iend;
@@ -99,9 +100,9 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
     } else if (istate.IsAccepting()) {
       wasComplete = false;
       if (child->iconnection.iend != NULL) {
-        throw FWError("StarRule found incomplete inode that is only ok; not allowed");
+        throw FWError("Star found incomplete inode that is only ok; not allowed");
       } else if (x.iconnection.iend) {
-        throw FWError("OrRule reached eoi but tried to set an iend.. silly internal check");
+        throw FWError("Star reached eoi but tried to set an iend.. silly internal check");
       }
       if (istate.IsDone()) {
         state.GoDone();
@@ -110,7 +111,7 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
       }
       finished = true;
     } else {
-      throw FWError("StarRule " + string(*this) + " child is in unexpected state");
+      throw FWError("Star " + string(*this) + " child is in unexpected state");
     }
 
     prev_child = &*child;
@@ -118,16 +119,12 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
   }
 
   if (!prev_child) {
-    throw FWError("StarRule " + string(*this) + " should have assigned a previous child at some point");
+    throw FWError("Star " + string(*this) + " should have assigned a previous child at some point");
   }
 
-  m_log.debug("StarRule " + string(*this) + " done update; now has state " + string(x) + " and hotlist size is " + boost::lexical_cast<string>(x.GetOConnection().GetHotlist().size()));
+  m_log.debug("Star " + string(*this) + " done update; now has state " + string(x) + " and hotlist size is " + boost::lexical_cast<string>(x.GetOConnection().GetHotlist().size()));
 }
 
-std::auto_ptr<State> StarRule::MakeState() const {
-  return std::auto_ptr<State>(new StarState(*this));
-}
-
-std::auto_ptr<OConnection> StarRule::MakeOConnection(const FWTree& x) const {
-  return std::auto_ptr<OConnection>(new OConnectionSequence(m_log, x));
+auto_ptr<OConnection> StarRule::MakeOConnection(const FWTree& x) const {
+  return auto_ptr<OConnection>(new OConnectionSequence(m_log, x));
 }

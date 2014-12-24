@@ -32,13 +32,7 @@ public:
   }
 
   operator std::string() const { return "(IList " + (m_data.get() ? std::string(GetData()) : "<null>") + ")"; }
-  std::string print() const {
-    std::string s = "<" + std::string(GetData()) + ">";
-    if (right) {
-      s += "-" + right->print();
-    }
-    return s;
-  }
+  std::string Print() const;
 
   std::string DrawNode(const std::string& context) const;
 

@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 
     // Lexer
     std::auto_ptr<Rule> lexer = CreateLexer_Simple(log);
-    log.info("Lexer: " + lexer->print());
+    log.info("Lexer: " + lexer->Print());
     std::auto_ptr<Grapher> lexerGrapher;
     if (isGraphing) {
       lexerGrapher.reset(new Grapher(log, GRAPHDIR, "lexer_"));
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 
     // Parser
     std::auto_ptr<Rule> parser = CreateParser_Simple(log);
-    log.info("Parser: " + parser->print());
+    log.info("Parser: " + parser->Print());
     std::auto_ptr<Grapher> parserGrapher;
     if (isGraphing) {
       parserGrapher.reset(new Grapher(log, GRAPHDIR, "parser_"));
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
 
     // Compiler
     std::auto_ptr<Rule> compiler = CreateCompiler_Simple(log);
-    log.info("Compiler: " + compiler->print());
+    log.info("Compiler: " + compiler->Print());
     std::auto_ptr<Grapher> compilerGrapher;
     if (isGraphing) {
       compilerGrapher.reset(new Grapher(log, GRAPHDIR, "compiler_"));
@@ -140,7 +140,7 @@ int main(int argc, char *argv[]) {
           c->left = prev;
         }
         log.info("");
-        log.info("* main: Inserting character '" + c->print() + "' into lexer");
+        log.info("* main: Inserting character '" + c->Print() + "' into lexer");
         lexerConnector.Insert(*c);
         const Hotlist::hotlist_vec& tokenHotlist = lexerConnector.GetHotlist();
         if (!tokenHotlist.empty()) {

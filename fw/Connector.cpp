@@ -27,7 +27,7 @@ using namespace fw;
 
 Connector::Connector(Log& log, const Rule& rule, const std::string& name, Grapher* grapher)
   : m_log(log),
-    m_root(log, rule.MakeState(), NULL),
+    m_root(rule, NULL),
     m_name(name),
     m_grapher(grapher),
     m_istart(NULL) {
@@ -111,7 +111,7 @@ void Connector::RepositionNode(FWTree& x, const IList& inode) {
   x.GetOConnection().Clear();
   State& state = x.GetState();
   state.Unlock();
-  state.rule.Reposition(*this, x, inode);
+  x.GetRule().Reposition(*this, x, inode);
   AddNodeToFlip(x);
 }
 
@@ -119,9 +119,8 @@ void Connector::RepositionNode(FWTree& x, const IList& inode) {
 // meaning the update is called by a direct-subscription.
 bool Connector::UpdateNode(FWTree& x) {
   m_log.info("Connector: Updating " + std::string(x));
-  State& state = x.GetState();
   const IList* old_iend = x.iconnection.iend;
-  state.rule.Update(*this, x);
+  x.GetRule().Update(*this, x);
   DrawGraph(x);
   bool hasChanged = old_iend != x.iconnection.iend || !x.GetOConnection().GetHotlist().empty();
   if (hasChanged) {

@@ -7,7 +7,6 @@
 #include "FWTree.h"
 #include "IList.h"
 #include "Rule.h"
-#include "State.h"
 
 #include <memory>
 
@@ -19,16 +18,7 @@ struct StarRule : public Rule {
   virtual ~StarRule() {}
   virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const;
   virtual void Update(Connector& connector, FWTree& x) const;
-  virtual std::auto_ptr<State> MakeState() const;
   virtual std::auto_ptr<OConnection> MakeOConnection(const FWTree& x) const;
-};
-
-struct StarState : public State {
-  StarState(const StarRule& rule)
-    : State(rule, /*startDone*/ true) {}
-  virtual ~StarState() {}
-
-  virtual operator std::string() const { return "Star " + rule.Name() + ":" + Print(); }
 };
 
 }

@@ -15,6 +15,7 @@
 #include "FWTree.h"
 #include "OData.h"
 #include "Rule.h"
+#include "State.h"
 
 #include <memory>
 
@@ -27,17 +28,6 @@ struct KeywordData : public OData {
   std::string str;
   virtual operator std::string() const { return str; }
   virtual void Init() {}
-};
-
-class KeywordRule;
-
-struct KeywordState : public State {
-  KeywordState(const KeywordRule& rule);
-  virtual ~KeywordState() {}
-
-  const KeywordRule& GetKeywordRule() const;
-
-  virtual operator std::string() const;
 };
 
 class KeywordRule : public Rule {
@@ -59,7 +49,7 @@ public:
 
   virtual void Update(Connector& connector, FWTree& x) const {
     m_log.info("Keyword: updating " + std::string(*this) + " at " + std::string(x));
-    KeywordState& state = x.GetState<KeywordState>();
+    State& state = x.GetState();
     state.Clear();
     std::string matched;
     bool done = false;
@@ -92,24 +82,12 @@ public:
     m_log.debug("Keyword " + std::string(*this) + " now: " + std::string(x));
   }
 
-  virtual std::auto_ptr<State> MakeState() const;
   virtual std::auto_ptr<OData> MakeData(const FWTree& x) const;
   virtual std::auto_ptr<OConnection> MakeOConnection(const FWTree& x) const;
 
 private:
   const std::string m_str;
 };
-
-KeywordState::KeywordState(const KeywordRule& rule)
-  : State(rule) {}
-
-const KeywordRule& KeywordState::GetKeywordRule() const { return *dynamic_cast<const KeywordRule*>(&rule); }
-
-KeywordState::operator std::string() const { return "kw " + rule.Name() + " (" + GetKeywordRule().GetString() + "):" + Print(); }
-
-std::auto_ptr<State> KeywordRule::MakeState() const {
-  return std::auto_ptr<State>(new KeywordState(*this));
-}
 
 std::auto_ptr<OData> KeywordRule::MakeData(const FWTree& x) const {
   return std::auto_ptr<OData>(new KeywordData(m_str));

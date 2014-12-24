@@ -15,19 +15,19 @@ string FWTree::DrawNode(const string& context) const {
   string s;
   // Style the node to indicate its State
   string fillcolor = "#88ffaa";
-  if (m_state->IsBad()) {
+  if (m_state.IsBad()) {
     fillcolor = "#ff9999";
-  } else if (m_state->IsDone()) {
+  } else if (m_state.IsDone()) {
     fillcolor = "#eeee66";
-  } else if (m_state->IsComplete()) {
+  } else if (m_state.IsComplete()) {
     fillcolor = "#9999cc";
   }
 
-  s += dotVar(this, context) + " [label=\"" + Util::safeLabelStr(m_state->rule.Name()) + "\", style=\"filled\", fillcolor=\"" + fillcolor + "\", fontsize=12.0];\n";
+  s += dotVar(this, context) + " [label=\"" + Util::safeLabelStr(m_rule.Name()) + "\", style=\"filled\", fillcolor=\"" + fillcolor + "\", fontsize=12.0];\n";
   // Connect the node to its IConnection
   string istartcolor = "#006600";
   string iendcolor = "#660000";
-  if (m_state->IsBad()) {
+  if (m_state.IsBad()) {
     istartcolor = "#66cc66";
     iendcolor = "#cc6666";
   }
