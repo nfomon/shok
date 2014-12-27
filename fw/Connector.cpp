@@ -108,11 +108,11 @@ void Connector::RepositionNode(FWTree& x, const IList& inode) {
   x.iconnection.istart = &inode;
   x.iconnection.iend = NULL;
   x.iconnection.size = 0;
-  x.GetOConnection().Clear();
+  x.GetOutputStrategy().Clear();
   State& state = x.GetState();
   state.Unlock();
   x.GetRule().Reposition(*this, x, inode);
-  AddNodeToReset(x);
+  UpdateNode(x);
 }
 
 // Recalculate state based on a change to one or more children
@@ -120,10 +120,15 @@ bool Connector::UpdateNode(FWTree& x) {
   m_log.info("Connector: Updating " + std::string(x));
   const IList* old_iend = x.iconnection.iend;
   x.GetRule().Update(*this, x);
+  m_log.debug(" - - - - Connector: " + string(x) + " updating output strategy");
+  x.GetOutputStrategy().Update();
   DrawGraph(x);
-  bool hasChanged = old_iend != x.iconnection.iend || !x.GetOConnection().GetHotlist().empty();
+  bool hasChanged = old_iend != x.iconnection.iend || !x.GetOutputStrategy().GetHotlist().empty();
   if (hasChanged) {
+    m_log.debug(" - - - - Connector: " + string(x) + " has changed");
     AddNodeToReset(x);
+  } else {
+    m_log.debug(" - - - - Connector: " + string(x) + " has NOT changed");
   }
   return hasChanged;
 }
@@ -134,14 +139,18 @@ void Connector::ClearNode(FWTree& x) {
        i != x.children.end(); ++i) {
     ClearNode(*i);
   }
-  x.GetOConnection().Clear();
+  x.GetOutputStrategy().Clear();
   m_listeners.RemoveAllListenings(&x);
   x.Clear();
 }
 
 void Connector::Listen(FWTree& x, const IList& inode) {
-  m_log.info("Connector: " + std::string(x) + " will listen to " + std::string(inode));
-  m_listeners.AddListener(&inode, &x);
+  if (m_listeners.IsListening(&inode, &x)) {
+    m_log.info("Connector: " + std::string(x) + " is already listening to " + std::string(inode));
+  } else {
+    m_log.info("Connector: " + std::string(x) + " will listen to " + std::string(inode));
+    m_listeners.AddListener(&inode, &x);
+  }
 }
 
 void Connector::Unlisten(FWTree& x, const IList& inode) {
@@ -199,7 +208,7 @@ void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListener
     for (change_iter i = changes.begin(); i != changes.end(); ++i) {
       bool changed = UpdateNode(**i);
       if (changed) {
-        FWTree* parent = (*i)->parent;
+        FWTree* parent = (*i)->GetParent();
         if (parent) {
           changes_by_depth[parent->depth].insert(parent);
         }
@@ -235,7 +244,7 @@ void Connector::AddNodeToReset(FWTree& x) {
 void Connector::ResetNodes() {
   for (set<FWTree*>::const_iterator i = m_nodesToReset.begin();
        i != m_nodesToReset.end(); ++i) {
-    (*i)->GetOConnection().Reset();
+    (*i)->GetOutputStrategy().Reset();
   }
   m_nodesToReset.clear();
 }

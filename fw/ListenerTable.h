@@ -48,11 +48,19 @@ public:
   }
 
   bool HasAnyListeners(const T1& t1) const {
+    return m_t1_map.find(t1) != m_t1_map.end();
+  }
+
+  bool IsListening(const T1& t1, const T2& t2) const {
     t1_iter i = m_t1_map.find(t1);
-    if (m_t1_map.end() == i) {
-      return false;
+    if (i != m_t1_map.end()) {
+      const listener_set& listeners = i->second;
+      listener_iter j = listeners.find(t2);
+      if (j != listeners.end()) {
+        return true;
+      }
     }
-    return !m_t1_map.empty();
+    return false;
   }
 
   void RemoveListener(const T1& t1, const T2& t2) {

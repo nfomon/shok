@@ -9,11 +9,9 @@
  * Keywords recognize CharData input nodes, and match a specific string.
  */
 
-#include "Char.h"
 #include "Connector.h"
 #include "FWError.h"
 #include "FWTree.h"
-#include "OData.h"
 #include "Rule.h"
 #include "State.h"
 
@@ -21,19 +19,10 @@
 
 namespace fw {
 
-struct KeywordData : public OData {
-  KeywordData(const std::string& str)
-    : str(str) {}
-  virtual ~KeywordData() {}
-  std::string str;
-  virtual operator std::string() const { return str; }
-  virtual void Init() {}
-};
-
 class KeywordRule : public Rule {
 public:
   KeywordRule(Log& log, const std::string& str)
-    : Rule(log, str),
+    : Rule(log, str, OS_SINGLE),
       m_str(str) {
     if (m_str.empty()) {
       throw FWError("Cannot create empty Keyword");
@@ -42,10 +31,6 @@ public:
   virtual ~KeywordRule() {}
 
   const std::string& GetString() const { return m_str; }
-
-  virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const {
-    Update(connector, x);
-  }
 
   virtual void Update(Connector& connector, FWTree& x) const {
     m_log.info("Keyword: updating " + std::string(*this) + " at " + std::string(x));
@@ -59,8 +44,7 @@ public:
         state.GoComplete();
         break;
       }
-      CharData idata = i->GetData<CharData>();
-      matched += idata.c;
+      matched += i->value;
       if (m_str == matched) {
         state.GoDone();
         done = true;
@@ -82,20 +66,9 @@ public:
     m_log.debug("Keyword " + std::string(*this) + " now: " + std::string(x));
   }
 
-  virtual std::auto_ptr<OData> MakeData(const FWTree& x) const;
-  virtual std::auto_ptr<OConnection> MakeOConnection(const FWTree& x) const;
-
 private:
   const std::string m_str;
 };
-
-std::auto_ptr<OData> KeywordRule::MakeData(const FWTree& x) const {
-  return std::auto_ptr<OData>(new KeywordData(m_str));
-}
-
-std::auto_ptr<OConnection> KeywordRule::MakeOConnection(const FWTree& x) const {
-  return std::auto_ptr<OConnection>(new OConnectionSingle(m_log, x));
-}
 
 }
 

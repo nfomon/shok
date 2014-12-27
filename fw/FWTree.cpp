@@ -11,16 +11,20 @@ using std::string;
 
 using namespace fw;
 
+FWTree::operator std::string() const {
+  return m_rule.Name() + ":" + string(GetState());
+}
+
 string FWTree::DrawNode(const string& context) const {
   string s;
   // Style the node to indicate its State
-  string fillcolor = "#88ffaa";
+  string fillcolor = "#ffeebb";
   if (m_state.IsBad()) {
     fillcolor = "#ff9999";
   } else if (m_state.IsDone()) {
-    fillcolor = "#eeee66";
+    fillcolor = "#99ffcc";
   } else if (m_state.IsComplete()) {
-    fillcolor = "#9999cc";
+    fillcolor = "#aaddff";
   }
 
   s += dotVar(this, context) + " [label=\"" + Util::safeLabelStr(m_rule.Name()) + "\", style=\"filled\", fillcolor=\"" + fillcolor + "\", fontsize=12.0];\n";
@@ -58,6 +62,6 @@ string FWTree::DrawNode(const string& context) const {
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     s += i->DrawNode(context);
   }
-  s += m_oconnection->DrawOConnection(context);
+  //s += m_outputStrategy->DrawEmitting(context, *this);
   return s;
 }

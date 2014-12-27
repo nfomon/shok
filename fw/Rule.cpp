@@ -18,6 +18,16 @@ using std::string;
 
 using namespace fw;
 
+auto_ptr<OutputStrategy> Rule::MakeOutputStrategy(const FWTree& x) const {
+  switch (m_outputStrategyType) {
+  case OS_SINGLE: return auto_ptr<OutputStrategy>(new OutputStrategySingle(m_log, x));
+  case OS_VALUE: return auto_ptr<OutputStrategy>(new OutputStrategyValue(m_log, x));
+  case OS_WINNER: return auto_ptr<OutputStrategy>(new OutputStrategyWinner(m_log, x));
+  case OS_SEQUENCE: return auto_ptr<OutputStrategy>(new OutputStrategySequence(m_log, x));
+  default: throw FWError("Cannot make OutputStrategy for rule " + string(*this) + " node " + string(x) + "; unknown output strategy type");
+  }
+}
+
 string Rule::Print() const {
   string s(m_name);
   if (!m_children.empty()) {

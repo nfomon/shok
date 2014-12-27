@@ -17,21 +17,23 @@ using namespace fw;
 
 // parser = ((new ;)|(del ;))*
 std::auto_ptr<Rule> fw::CreateParser_Simple(Log& log) {
-  std::auto_ptr<Rule> parser(new StarRule(log, "parser"));
-  Rule* stmts_ = parser->CreateChild<OrRule>("stmts");
+  std::auto_ptr<Rule> parser(new StarRule(log, "* (parser)"));
+  Rule* stmts_ = parser->CreateChild<OrRule>("Or (stmts)");
   Rule* newstmt_ = stmts_->CreateChild<SeqRule>("new stmt");
   newstmt_->CreateChild<MetaRule>("new", "new");
+  //newstmt_->CreateChild<MetaRule>("x", "x");
   newstmt_->CreateChild<MetaRule>(";", ";");
   Rule* delstmt_ = stmts_->CreateChild<SeqRule>("del stmt");
   delstmt_->CreateChild<MetaRule>("del", "del");
+  //delstmt_->CreateChild<MetaRule>("x", "x");
   delstmt_->CreateChild<MetaRule>(";", ";");
   return parser;
 }
 
 // parser = ((new WS ID ;)|(del WS ID ;))*
 std::auto_ptr<Rule> fw::CreateParser_Moderate(Log& log) {
-  std::auto_ptr<Rule> parser(new StarRule(log, "parser"));
-  Rule* stmts_ = parser->CreateChild<OrRule>("stmts");
+  std::auto_ptr<Rule> parser(new StarRule(log, "* (parser)"));
+  Rule* stmts_ = parser->CreateChild<OrRule>("Or (stmts)");
   Rule* newstmt_ = stmts_->CreateChild<SeqRule>("new stmt");
   newstmt_->CreateChild<MetaRule>("new", "new");
   newstmt_->CreateChild<MetaRule>("WS", "WS");
@@ -47,27 +49,27 @@ std::auto_ptr<Rule> fw::CreateParser_Moderate(Log& log) {
 
 // parser = ((cmd|codeblock)end)*
 std::auto_ptr<Rule> fw::CreateParser_Complex(Log& log) {
-  std::auto_ptr<Rule> parser(new StarRule(log, "parser"));
+  std::auto_ptr<Rule> parser(new StarRule(log, "* (parser)"));
   Rule* line = parser->CreateChild<SeqRule>("line");
   //line->CreateChild<MetaRule>("WS", "WS");
-  Rule* cmdorcode = line->CreateChild<OrRule>("cmdorcode");
+  Rule* cmdorcode = line->CreateChild<OrRule>("Or (cmdorcode)");
   Rule* end = line->CreateChild<OrRule>("end");
   end->CreateChild<MetaRule>(";");
   end->CreateChild<MetaRule>("\n");
 
   Rule* cmdline = cmdorcode->CreateChild<SeqRule>("cmdline");
   cmdline->CreateChild<MetaRule>("ID", "program");
-  Rule* cmdargs = cmdline->CreateChild<StarRule>("cmdargs");
+  Rule* cmdargs = cmdline->CreateChild<StarRule>("* (cmdargs)");
   Rule* cmdarg = cmdargs->CreateChild<SeqRule>("cmdarg");
   cmdarg->CreateChild<MetaRule>("WS", "WS");
   cmdarg->CreateChild<MetaRule>("ID", "arg");
 
   Rule* codeblock = cmdorcode->CreateChild<SeqRule>("codeblock");
   codeblock->CreateChild<MetaRule>("{");
-  Rule* stmts = codeblock->CreateChild<StarRule>("stmts");
+  Rule* stmts = codeblock->CreateChild<StarRule>("* (stmts)");
   codeblock->CreateChild<MetaRule>("}");
 
-  Rule* stmt = stmts->CreateChild<OrRule>("stmt");
+  Rule* stmt = stmts->CreateChild<OrRule>("Or (stmt)");
   Rule* newstmt = stmt->CreateChild<SeqRule>("new stmt");
   newstmt->CreateChild<MetaRule>("new", "new");
   newstmt->CreateChild<MetaRule>("WS", "WS");

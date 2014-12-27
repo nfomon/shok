@@ -3,7 +3,6 @@
 
 #include "Or.h"
 
-#include "Connection.h"
 #include "Connector.h"
 
 #include <memory>
@@ -18,7 +17,6 @@ using namespace fw;
 void OrRule::Reposition(Connector& connector, FWTree& x, const IList& inode) const {
   m_log.debug("Repositioning OrRule " + string(*this) + " at " + string(x) + " with inode " + string(inode));
   RepositionAllChildrenOfNode(connector, x, inode);
-  Update(connector, x);
 }
 
 void OrRule::Update(Connector& connector, FWTree& x) const {
@@ -114,14 +112,10 @@ void OrRule::Update(Connector& connector, FWTree& x) const {
     x.iconnection.iend = completes.at(0)->iconnection.iend;
     x.iconnection.size = completes.at(0)->iconnection.size;
     m_log.debug("OrRule " + string(*this) + " declares complete winner " + string(*completes.at(0)));
-    x.GetOConnection<OConnectionWinner>().DeclareWinner(*completes.at(0));
   } else if (1 == dones.size()) {
     x.iconnection.iend = dones.at(0)->iconnection.iend;
     x.iconnection.size = dones.at(0)->iconnection.size;
     m_log.debug("OrRule " + string(*this) + " declares done winner " + string(*dones.at(0)));
-    x.GetOConnection<OConnectionWinner>().DeclareWinner(*dones.at(0));
-  } else {
-    // Nothing needs to happen; the OConnection will be ignored by the parent.
   }
   if (1 == completes.size()) {
     state.GoComplete();
@@ -135,8 +129,4 @@ void OrRule::Update(Connector& connector, FWTree& x) const {
 
   m_log.debug("OrRule " + string(*this) + " now at " + string(x));
   m_log.debug(" - and it has istart " + (x.iconnection.istart ? string(*x.iconnection.istart) : "<null>") + " and iend " + (x.iconnection.iend ? string(*x.iconnection.iend): "<null>"));
-}
-
-auto_ptr<OConnection> OrRule::MakeOConnection(const FWTree& x) const {
-  return auto_ptr<OConnection>(new OConnectionWinner(m_log, x));
 }

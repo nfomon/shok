@@ -14,11 +14,10 @@ namespace fw {
 
 struct SeqRule : public Rule {
   SeqRule(Log& log, const std::string& name = "")
-    : Rule(log, name) {}
+    : Rule(log, name, OS_SEQUENCE) {}
   virtual ~SeqRule() {}
   virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const;
   virtual void Update(Connector& connector, FWTree& x) const;
-  virtual std::auto_ptr<OConnection> MakeOConnection(const FWTree& x) const;
 };
 
 }

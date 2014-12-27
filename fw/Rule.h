@@ -5,20 +5,20 @@
 #define _Rule_h_
 
 #include "FWError.h"
-#include "OData.h"
+#include "IList.h"
+#include "OutputStrategy.h"
+#include "State.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 
 #include <memory>
+#include <string>
 
 namespace fw {
 
 class Connector;
 
-class IList;
-class OConnection;
-class State;
 class FWTree;
 
 class Rule {
@@ -26,23 +26,24 @@ public:
   typedef boost::ptr_vector<Rule> child_vec;
   typedef child_vec::const_iterator child_iter;
 
-  Rule(Log& log, const std::string& debugName)
+  Rule(Log& log, const std::string& debugName, OutputStrategyType ost)
     : m_log(log),
       m_name(debugName),
+      m_outputStrategyType(ost),
       m_parent(NULL) {}
   virtual ~Rule() {}
 
-  virtual std::auto_ptr<OData> MakeData(const FWTree& x) const { return std::auto_ptr<OData>(); }
-  virtual std::auto_ptr<OConnection> MakeOConnection(const FWTree& x) const = 0;
+  std::auto_ptr<OutputStrategy> MakeOutputStrategy(const FWTree& x) const;
 
   // Reposition and Update have some responsibilities:
   //  1. Clean up / clear out state as appropriate
-  //  2. Listen/Unlisten for updates as appropriate (leaves only)
+  //  2. Listen/Unlisten for Input updates as appropriate
   //  3. Compute new state flags based on children
   //  4. Update size and begin/end inodes
-  // Reposition should InsertNode() and/or RepositionNode() its children as
-  // necessary to then calculate its own state.
-  virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const = 0;
+  // Reposition should RepositionNode() its children as necessary to then
+  // calculate its own state.  Connector::UpdateNode() will be automatically
+  // called by Connector::RepositionNode().
+  virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const {}
 
   // Calculate local state flags based on children's state, under the
   // assumption that the children are already up-to-date.
@@ -85,6 +86,7 @@ protected:
 
   Log& m_log;
   std::string m_name;
+  OutputStrategyType m_outputStrategyType;
   Rule* m_parent;
   child_vec m_children;
 };

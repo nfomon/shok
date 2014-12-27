@@ -4,9 +4,11 @@
 #ifndef _FWTree_h_
 #define _FWTree_h_
 
-#include "Connection.h"
+#include "IConnection.h"
 #include "FWError.h"
 #include "Hotlist.h"
+#include "OutputStrategy.h"
+#include "Rule.h"
 #include "State.h"
 
 #include "util/Graphviz.h"
@@ -29,56 +31,41 @@ public:
 private:
   const Rule& m_rule;
   State m_state;
+  FWTree* m_parent;
 
 public:
-  FWTree* parent;
   child_vec children;
   depth_t depth;
 
   FWTree(const Rule& rule, FWTree* parent)
     : m_rule(rule),
-      parent(parent),
-      depth(parent ? parent->depth + 1 : 0) {
-    m_oconnection = rule.MakeOConnection(*this);
+      m_parent(parent),
+      depth(m_parent ? m_parent->depth + 1 : 0),
+      m_outputStrategy(rule.MakeOutputStrategy(*this)) {
   }
   virtual ~FWTree() {}
 
   const State& GetState() const { return m_state; }
   State& GetState() { return m_state; }
   const Rule& GetRule() const { return m_rule; }
+  FWTree* GetParent() const { return m_parent; }
 
-  OConnection& GetOConnection() const { return *m_oconnection.get(); }
-  template <typename OConnType>
-  OConnType& GetOConnection() const {
-    OConnType* oconn = dynamic_cast<OConnType*>(m_oconnection.get());
-    if (!oconn) {
-      throw FWError("Cannot retrieve OConnection to incorrect type");
-    }
-    return *oconn;
-  }
+  OutputStrategy& GetOutputStrategy() const { return *m_outputStrategy.get(); }
 
-  operator std::string() const { return GetState(); }
-  std::string print() const {
-    std::string s(GetState());
-    for (child_iter i = children.begin(); i != children.end(); ++i) {
-      s += " (" + i->print() + ")";
-    }
-    return s;
-  }
-
+  operator std::string() const;
   std::string DrawNode(const std::string& context) const;
 
   // Clear all state and connection information.  Maintains tree structure.
   void Clear() {
     m_state.Clear();
     iconnection.Clear();
-    m_oconnection->Clear();
+    m_outputStrategy->Clear();
   }
 
-  IConnection iconnection;  // Connection to the input list
+  IConnection iconnection;
 
 private:
-  std::auto_ptr<OConnection> m_oconnection;  // Output list representation
+  std::auto_ptr<OutputStrategy> m_outputStrategy;
 };
 
 }

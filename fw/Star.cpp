@@ -20,7 +20,6 @@ using namespace fw;
 void StarRule::Reposition(Connector& connector, FWTree& x, const IList& inode) const {
   m_log.debug("Repositioning Star " + string(*this) + " at " + string(x) + " with " + string(inode));
   RepositionFirstChildOfNode(connector, x, inode);
-  Update(connector, x);
 }
 
 void StarRule::Update(Connector& connector, FWTree& x) const {
@@ -43,7 +42,6 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
   const FWTree* prev_child = NULL;
   bool wasComplete = false;
   while (!finished) {
-    bool isNewChild = false;
     if (child != x.children.end()) {
       // Existing child
       if (prev_child) {
@@ -54,7 +52,6 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
       }
     } else {
       // New child
-      isNewChild = true;
       x.children.push_back(auto_ptr<FWTree>(new FWTree(m_children.at(0), &x)));
       child = x.children.end() - 1;
       if (prev_child) {
@@ -73,10 +70,6 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
 
     if (istate.IsLocked()) {
       state.Lock();
-    }
-
-    if (istate.IsEmitting()) {
-      x.GetOConnection<OConnectionSequence>().AddNextChild(*child, isNewChild);
     }
 
     if (istate.IsBad()) {
@@ -122,9 +115,5 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
     throw FWError("Star " + string(*this) + " should have assigned a previous child at some point");
   }
 
-  m_log.debug("Star " + string(*this) + " done update; now has state " + string(x) + " and hotlist size is " + boost::lexical_cast<string>(x.GetOConnection().GetHotlist().size()));
-}
-
-auto_ptr<OConnection> StarRule::MakeOConnection(const FWTree& x) const {
-  return auto_ptr<OConnection>(new OConnectionSequence(m_log, x));
+  m_log.debug("Star " + string(*this) + " done update; now has state " + string(x));
 }

@@ -5,37 +5,21 @@
 #define _IList_h_
 
 #include "FWError.h"
-#include "OData.h"
 
-#include <memory>
 #include <string>
 
 namespace fw {
 
 struct IList {
-  IList(std::auto_ptr<OData> data, IList* left = NULL, IList* right = NULL);
-  IList(const FWTree* owner, IList* left = NULL, IList* right = NULL);
-  const FWTree* owner;
+  IList(const std::string& name, const std::string& value = "", IList* left = NULL, IList* right = NULL);
 
-private:
-  std::auto_ptr<OData> m_data;
-
-public:
-  OData& GetData() const { return *m_data.get(); }
-  template <typename DataType>
-  DataType& GetData() const {
-    DataType* data = dynamic_cast<DataType*>(m_data.get());
-    if (!data) {
-      throw FWError("Cannot retrieve data to incorrect type");
-    }
-    return *data;
-  }
-
-  operator std::string() const { return "(IList " + (m_data.get() ? std::string(GetData()) : "<null>") + ")"; }
+  operator std::string() const { return "(IList " + name + ":" + value + ")"; }
   std::string Print() const;
 
   std::string DrawNode(const std::string& context) const;
 
+  const std::string name;
+  std::string value;
   IList* left;
   IList* right;
 };

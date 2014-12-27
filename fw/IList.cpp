@@ -16,20 +16,11 @@ using std::string;
 
 using namespace fw;
 
-IList::IList(auto_ptr<OData> data, IList* left, IList* right)
-  : owner(NULL),
+IList::IList(const std::string& name, const std::string& value, IList* left, IList* right)
+  : name(name),
+    value(value),
     left(left),
     right(right) {
-  m_data = data;
-}
-
-IList::IList(const FWTree* owner, IList* left, IList* right)
-  : owner(owner),
-    left(left),
-    right(right) {
-  if (owner) {
-    m_data = owner->GetRule().MakeData(*owner);
-  }
 }
 
 string IList::Print() const {
@@ -42,7 +33,7 @@ string IList::Print() const {
 
 string IList::DrawNode(const string& context) const {
   string s;
-  s = dotVar(this, context) + " [label=\"" + safeLabelStr(string(GetData())) + "\", style=\"filled\", fillcolor=\"#dddddd\", fontsize=12.0];\n";
+  s = dotVar(this, context) + " [label=\"" + safeLabelStr(name + (value.empty() ? "" : (name.empty() ? "" : ":") + value)) + "\", style=\"filled\", fillcolor=\"#dddddd\", fontsize=12.0];\n";
   if (right) {
     s += dotVar(this, context) + " -> " + dotVar(right, context) + ";\n";
     s += right->DrawNode(context);

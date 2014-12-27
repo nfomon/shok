@@ -14,8 +14,6 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     Char.h \
     Compiler.cpp \
     Compiler.h \
-    Connection.cpp \
-    Connection.h \
     Connector.cpp \
     Connector.h \
     FWError.h \
@@ -25,6 +23,7 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     Grapher.h \
     Hotlist.cpp \
     Hotlist.h \
+    IConnection.h \
     IList.cpp \
     IList.h \
     Keyword.h \
@@ -36,8 +35,11 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     OData.h \
     Or.cpp \
     Or.h \
+    OutputStrategy.cpp \
+    OutputStrategy.h \
     Parser.cpp \
     Parser.h \
+    Regexp.cpp \
     Regexp.h \
     Rule.cpp \
     Rule.h \

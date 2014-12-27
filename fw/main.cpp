@@ -3,7 +3,6 @@
 
 /* shok compiler framework example runner */
 
-#include "Char.h"
 #include "Compiler.h"
 #include "Connector.h"
 #include "Grapher.h"
@@ -68,6 +67,7 @@ int main(int argc, char *argv[]) {
     Connector parserConnector(log, *parser.get(), "Parser", parserGrapher.get());
 
     // Compiler
+/*
     std::auto_ptr<Rule> compiler = CreateCompiler_Simple(log);
     log.info("Compiler: " + compiler->Print());
     std::auto_ptr<Grapher> compilerGrapher;
@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
       compilerGrapher->SaveAndClear();
     }
     Connector compilerConnector(log, *compiler.get(), "Compiler", compilerGrapher.get());
+*/
 
     IList* start = NULL;
     IList* prev = NULL;
@@ -117,23 +118,25 @@ int main(int argc, char *argv[]) {
         lexerConnector.Delete(*s);
         const Hotlist::hotlist_vec& tokenHotlist = lexerConnector.GetHotlist();
         if (!tokenHotlist.empty()) {
-          log.info("* main: Lexer returned hotlist; sending to parser.  Hotlist: " + lexerConnector.PrintHotlist());
+          log.info("* main: Lexer returned hotlist; sending to parser.  Hotlist:" + lexerConnector.PrintHotlist());
           parserConnector.UpdateWithHotlist(tokenHotlist);
+/*
           const Hotlist::hotlist_vec& astHotlist = parserConnector.GetHotlist();
           if (!astHotlist.empty()) {
-            log.info("* main: Parser returned hotlist; sending to compiler.  Hotlist: " + parserConnector.PrintHotlist());
+            log.info("* main: Parser returned hotlist; sending to compiler.  Hotlist:" + parserConnector.PrintHotlist());
             compilerConnector.UpdateWithHotlist(astHotlist);
             log.info("* main: No compiler consumer; done with input character.");
           } else {
             log.info("* main: Parser returned no hotlist items.");
           }
+*/
         } else {
           log.info("* main: Lexer returned no hotlist items.");
         }
         continue;
       }
       for (size_t i=0; i < line.size(); ++i) {
-        IList* c = new IList(std::auto_ptr<OData>(new CharData(line.at(i))));
+        IList* c = new IList("", string(1, line.at(i)));
         if (!start) { start = c; }
         if (prev) {
           prev->right = c;
@@ -144,16 +147,18 @@ int main(int argc, char *argv[]) {
         lexerConnector.Insert(*c);
         const Hotlist::hotlist_vec& tokenHotlist = lexerConnector.GetHotlist();
         if (!tokenHotlist.empty()) {
-          log.info("* main: Lexer returned hotlist; sending to parser.  Hotlist: " + lexerConnector.PrintHotlist());
+          log.info("* main: Lexer returned hotlist; sending to parser.  Hotlist:" + lexerConnector.PrintHotlist());
           parserConnector.UpdateWithHotlist(tokenHotlist);
+/*
           const Hotlist::hotlist_vec& astHotlist = parserConnector.GetHotlist();
           if (!astHotlist.empty()) {
-            log.info("* main: Parser returned hotlist; sending to compiler.  Hotlist: " + parserConnector.PrintHotlist());
+            log.info("* main: Parser returned hotlist; sending to compiler.  Hotlist:" + parserConnector.PrintHotlist());
             compilerConnector.UpdateWithHotlist(astHotlist);
             log.info("* main: No compiler consumer; done with input character.");
           } else {
             log.info("* main: Parser returned no hotlist items.");
           }
+*/
         } else {
           log.info("* main: Lexer returned no hotlist items.");
         }

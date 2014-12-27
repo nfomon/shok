@@ -27,8 +27,8 @@ public:
   Connector(Log& log, const Rule& rule, const std::string& name = "", Grapher* grapher = NULL);
 
   const FWTree& GetRoot() const { return m_root; }
-  const Hotlist::hotlist_vec& GetHotlist() const { return m_root.GetOConnection().GetHotlist(); }
-  std::string PrintHotlist() const { return m_root.GetOConnection().PrintHotlist(); }
+  const Hotlist::hotlist_vec& GetHotlist() const { return m_root.GetOutputStrategy().GetHotlist(); }
+  std::string PrintHotlist() const { return m_root.GetOutputStrategy().PrintHotlist(); }
   listener_set GetListeners(const IList& x) const {
     return m_listeners.GetListeners(&x);
   }
@@ -60,7 +60,7 @@ public:
   void Unlisten(FWTree& x, const IList& inode);
 
   // Called from a rule to tell us that a node was updated and thus needs to
-  // have its OConnections reset once the whole Tree is done updating
+  // have its OutputStrategies reset once the whole Tree is done updating
   void AddNodeToReset(FWTree& x);
 
 private:

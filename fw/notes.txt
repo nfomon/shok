@@ -411,4 +411,56 @@ Compiler constructs tree:
    |     |
 cmd...  new (type? ..) (exp? ..)
 
+--
+
+Each Rule provides a default OutputDataType (enum value) and OutputStrategyType (enum value).
+ - you can provide an override for the default, in the Rule constructor.
+OutputStrategy (was: OConnection) has an Update() function that is called by Connector::UpdateNode() after the Rule::Update().
+Each FWTree owns an auto_ptr<IList> which might be NULL.  The OutputStrategy can only look at it, in its Update(), to decide how to update its info (m_emitting, m_ostart, m_oend) and Hotlist.
+
+The FWTree owns an IList to hold its OData if it indeed has any.  An IList MUST have an OData.  Either the FWTree has that IList or it doesn't.
+The OutputStrategy never owns the ILists, it just points to them.  So even an OutputStrategySingle just refers to a single FWTree's IList.... but that means it can easily also get a PrependNode() and AppendNode(), or arbitrarily many of each.
+
+Silent strategy: NULL data
+Single strategy: must have data
+Winner strategy: data is ignored
+Sequence strategy: data is ignored
+
+--
+. Remove Data.  Every IList has a Name and a Value.  For now, they're both strings, but eventually the Name will be replaced by an Enum value (the "Token IDs" of that stage of the compiler process.)
+. Meta currently looks at each IList's Owner's Rule Name.  Forget that.  Instead it will switch on the IList's Name.  It could even check the Value if we want.
+
+Rule has a default Strategy, which you can override.
+
+Leaves are looking at their INodes to determine what to output.
+Non-leaves are looking at their children to determine what to output.
+
+Leaves: we want different ways to ignore or accept the INodes.
+Non-leaves: we want to "surround" the children with synthetic IList nodes, or go silent, or w/e.
+Different strategies for listening to the children.
+
+FWTree does not have its ONode IList.  The OutputStategy might have a "main" ONode IList (Single strategy) with varying parameters.  It might have start and/or end "caps" with varying parameters (e.g. give each their own IList.Name).
+A Rule::Update() might signal to its OutputStrategy: UpdateValue("foo").  The Strategy might care, or it might ignore it, or it might throw an exception ("Rules of type x do not support strategies of type y").
+
+OutputStrategy should know if it takes updates or not.  When UpdateValue() is called, if it takes updates and the provided value != current value, take it and add a Hotlist update.  Otherwise ignore it.  Only the Single Strategy takes updates, and that's separate from the SilentStrategy I guess.
+
+---
+
+A Star goes bad in the middle, after it was emitting lots of later nodes, what happens to the OutputStrategy of those later nodes?  Am I Deleting them out of my hotlist?  Note that the only relevant case is where a middle node goes Bad but my whole Star is still in IsEmitting.  That's totally a thing that can happen.
+
+=====
+2k14-12-26
+
+OutputStrategySingle defines bool m_wasEmitting, which overrides OutputStrategy's emitting_set m_wasEmitting.  Oops.
+
+The bool thing should NOT be necessary.  WHY does OutputStrategySingle think it should only put its Insert in the Hotlist when it changes from not emitting to emitting?  That's wrong.  The parent should detect when it's actually using this child for the first time, and Insert its Emitting() set at that time.  The Keyword doesn't need to know when to Insert at all, really.
+ -- ah, it's because the parent doesn't even get an update if the child doesn't "change".
+Here, a keyword:"new" went from 'ne' to 'new'.  Its hotlist doesn't change.  Its iend doesn't change (NULL -> NULL).  Maybe that iend should really just point to the last ichar we care about.  We can still be listening to the thing past the iend, just consider iend the last valid INode that we span.
+  - LET'S TRY TO FIX THAT :)
+
+So let's sort that out.  Then implement an OS_SILENT.
+
+Then caps for Sequence/Winner strategies (better: for strategies in general?).
+
+Then we can implement our Compiler :)
 

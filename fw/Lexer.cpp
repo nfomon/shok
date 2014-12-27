@@ -16,17 +16,18 @@ using std::auto_ptr;
 using namespace fw;
 
 auto_ptr<Rule> fw::CreateLexer_Simple(Log& log) {
-  auto_ptr<Rule> lexer(new StarRule(log, "lexer"));
-  Rule* or_ = lexer->CreateChild<OrRule>("or");
+  auto_ptr<Rule> lexer(new StarRule(log, "* (lexer)"));
+  Rule* or_ = lexer->CreateChild<OrRule>("Or");
   or_->CreateChild<KeywordRule>("new");
   or_->CreateChild<KeywordRule>("del");
+  //or_->CreateChild<KeywordRule>("x");
   or_->CreateChild<KeywordRule>(";");
   return lexer;
 }
 
 auto_ptr<Rule> fw::CreateLexer_Moderate(Log& log) {
-  auto_ptr<Rule> lexer(new StarRule(log, "lexer"));
-  Rule* or_ = lexer->CreateChild<OrRule>("or");
+  auto_ptr<Rule> lexer(new StarRule(log, "* (lexer)"));
+  Rule* or_ = lexer->CreateChild<OrRule>("Or");
   or_->CreateChild<KeywordRule>("new");
   or_->CreateChild<KeywordRule>("del");
   or_->CreateChild<RegexpRule>("ID", boost::regex("[A-Za-z_][0-9A-Za-z_]*"));
@@ -37,8 +38,8 @@ auto_ptr<Rule> fw::CreateLexer_Moderate(Log& log) {
 }
 
 auto_ptr<Rule> fw::CreateLexer_Complex(Log& log) {
-  auto_ptr<Rule> lexer(new StarRule(log, "lexer"));
-  Rule* or_ = lexer->CreateChild<OrRule>("or");
+  auto_ptr<Rule> lexer(new StarRule(log, "* (lexer)"));
+  Rule* or_ = lexer->CreateChild<OrRule>("Or");
   or_->CreateChild<KeywordRule>("exit");
   or_->CreateChild<KeywordRule>("new");
   or_->CreateChild<KeywordRule>("renew");
