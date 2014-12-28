@@ -38,8 +38,9 @@ public:
     state.Clear();
     std::string matched;
     bool done = false;
-    const IList* i = x.iconnection.istart;
+    const IList* i = &x.IStart();
     for (; i != NULL; i = i->right) {
+      x.GetIConnection().SetEnd(*i);
       if (done) {
         state.GoComplete();
         break;
@@ -56,8 +57,6 @@ public:
       }
       connector.Listen(x, *i);
     }
-    x.iconnection.iend = i;
-    x.iconnection.size = matched.size();
     if (state.IsEmitting()) {
       state.Lock();
     } else {

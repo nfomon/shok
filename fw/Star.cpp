@@ -26,14 +26,13 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
   m_log.debug("Updating Star " + string(*this) + " at " + string(x));
 
   // Initialize state flags
-  x.iconnection.iend = NULL;
-  x.iconnection.size = 0;
   State& state = x.GetState();
   state.Clear();
 
   if (x.children.empty()) {
     throw FWError("StarRule::Update: Star node " + string(x) + " must have children");
   }
+  x.GetIConnection().SetStart(x.children.at(0).IStart());
 
   // Iterate over children, either existing or being created, so long as our
   // last child is complete.
@@ -45,25 +44,28 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
     if (child != x.children.end()) {
       // Existing child
       if (prev_child) {
-        if (prev_child->iconnection.iend != child->iconnection.istart) {
-          m_log.info("Star " + string(*this) + " child " + string(*child) + " needs to be repositioned to the prev child's end");
-          connector.RepositionNode(*child, *prev_child->iconnection.iend);
+        if (!child->IStart().left) {
+          throw FWError("Star " + string(*this) + " child " + string(*child) + " has istart at the start of input, but it is not our first child");
+        }
+        if (&prev_child->IEnd() != &child->IStart()) {
+          m_log.info("Star " + string(*this) + " child " + string(*child) + " needs to be repositioned to the node after the prev child's end");
+          connector.RepositionNode(*child, prev_child->IEnd());
         }
       }
     } else {
       // New child
-      x.children.push_back(auto_ptr<FWTree>(new FWTree(m_children.at(0), &x)));
-      child = x.children.end() - 1;
+      const IList* newIStart = &x.IStart();
       if (prev_child) {
-        if (!prev_child->iconnection.iend) {
-          throw FWError("Star " + string(*this) + " prev child " + string(*prev_child) + " failed to assign its iend");
-        }
-        connector.RepositionNode(*child, *prev_child->iconnection.iend);
-      } else {
-        connector.RepositionNode(*child, *x.iconnection.istart);
+        newIStart = &prev_child->IEnd();
       }
+      if (!newIStart) {
+        throw FWError("Star " + string(*this) + (prev_child ? (" with prev child " + string(*prev_child)) : " with no prev child") + " failed to find new istart for new child");
+      }
+      FWTree* newChild = AddChildToNode(x, m_children.at(0), *newIStart);
+      connector.RepositionNode(*newChild, *newIStart);
+      child = x.children.end() - 1;
     }
-    x.iconnection.size += child->iconnection.size;
+    x.GetIConnection().SetEnd(child->IEnd());
 
     // Now check the child's state, and see if we can keep going.
     State& istate = child->GetState();
@@ -80,7 +82,6 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
         m_log.debug("Star " + string(*this) + " has gone bad");
         state.GoBad();
       }
-      x.iconnection.iend = child->iconnection.iend;
       // Clear any subsequent children
       for (FWTree::child_mod_iter i = child+1; i != x.children.end(); ++i) {
         connector.ClearNode(*i);
@@ -92,10 +93,8 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
       // Cool, keep going!
     } else if (istate.IsAccepting()) {
       wasComplete = false;
-      if (child->iconnection.iend != NULL) {
+      if (child->IEnd().right) {
         throw FWError("Star found incomplete inode that is only ok; not allowed");
-      } else if (x.iconnection.iend) {
-        throw FWError("Star reached eoi but tried to set an iend.. silly internal check");
       }
       if (istate.IsDone()) {
         state.GoDone();
@@ -116,4 +115,5 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
   }
 
   m_log.debug("Star " + string(*this) + " done update; now has state " + string(x));
+  m_log.debug(" - and it has istart " + string(x.IStart()) + " and iend " + string(x.IEnd()));
 }

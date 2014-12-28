@@ -26,9 +26,8 @@ public:
 
   Connector(Log& log, const Rule& rule, const std::string& name = "", Grapher* grapher = NULL);
 
-  const FWTree& GetRoot() const { return m_root; }
-  const Hotlist::hotlist_vec& GetHotlist() const { return m_root.GetOutputStrategy().GetHotlist(); }
-  std::string PrintHotlist() const { return m_root.GetOutputStrategy().PrintHotlist(); }
+  const Hotlist::hotlist_vec& GetHotlist() const { return GetRoot().GetOutputStrategy().GetHotlist(); }
+  std::string PrintHotlist() const { return GetRoot().GetOutputStrategy().PrintHotlist(); }
   listener_set GetListeners(const IList& x) const {
     return m_listeners.GetListeners(&x);
   }
@@ -64,6 +63,13 @@ public:
   void AddNodeToReset(FWTree& x);
 
 private:
+  const FWTree& GetRoot() const {
+    if (!m_root.get()) {
+      throw FWError("Connector " + m_name + "; cannot get root node before it has been initialized");
+    }
+    return *m_root.get();
+  }
+
   // Convenience core for Insert() and Delete().  Updates all listeners to the
   // left (and if any and distinct, to the right) of the inode, about the
   // inode.  For FWTree, updates all listeners of the parent of the inode.
@@ -73,11 +79,12 @@ private:
   void ResetNodes();    // Reset any nodes-to-reset once a Tree update is done
 
   Log& m_log;
-  // Root of the output tree.  Tells us the root of the rule tree.
-  FWTree m_root;
+  // Root of the Rule tree
+  const Rule& m_rule;
+  // Root of the output tree
+  std::auto_ptr<FWTree> m_root;
   std::string m_name;
   Grapher* m_grapher;
-  const IList* m_istart;    // Start of the input list
   ListenerTable<const IList*, FWTree*> m_listeners;
   std::set<FWTree*> m_nodesToReset;
 };

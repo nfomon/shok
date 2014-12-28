@@ -37,10 +37,11 @@ public:
   child_vec children;
   depth_t depth;
 
-  FWTree(const Rule& rule, FWTree* parent)
+  FWTree(const Rule& rule, FWTree* parent, const IList& istart)
     : m_rule(rule),
       m_parent(parent),
       depth(m_parent ? m_parent->depth + 1 : 0),
+      m_iconnection(istart),
       m_outputStrategy(rule.MakeOutputStrategy(*this)) {
   }
   virtual ~FWTree() {}
@@ -49,7 +50,10 @@ public:
   State& GetState() { return m_state; }
   const Rule& GetRule() const { return m_rule; }
   FWTree* GetParent() const { return m_parent; }
+  const IList& IStart() const { return m_iconnection.Start(); }
+  const IList& IEnd() const { return m_iconnection.End(); }
 
+  IConnection& GetIConnection() { return m_iconnection; }
   OutputStrategy& GetOutputStrategy() const { return *m_outputStrategy.get(); }
 
   operator std::string() const;
@@ -58,13 +62,11 @@ public:
   // Clear all state and connection information.  Maintains tree structure.
   void Clear() {
     m_state.Clear();
-    iconnection.Clear();
     m_outputStrategy->Clear();
   }
 
-  IConnection iconnection;
-
 private:
+  IConnection m_iconnection;
   std::auto_ptr<OutputStrategy> m_outputStrategy;
 };
 

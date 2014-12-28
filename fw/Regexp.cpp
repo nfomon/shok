@@ -24,8 +24,9 @@ void RegexpRule::Update(Connector& connector, FWTree& x) const {
   State& state = x.GetState();
   state.Clear();
   std::string str;
-  const IList* i = x.iconnection.istart;
+  const IList* i = &x.IStart();
   for (; i != NULL; i = i->right) {
+    x.GetIConnection().SetEnd(*i);
     str += i->value;
     if (!boost::regex_match(str, m_regex)) {
       if (str.size() > 1) {
@@ -46,7 +47,5 @@ void RegexpRule::Update(Connector& connector, FWTree& x) const {
       state.GoDone();
     }
   }
-  x.iconnection.iend = i;
-  x.iconnection.size = str.size();
   m_log.debug("Regexp " + std::string(*this) + " now: " + std::string(x));
 }

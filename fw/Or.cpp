@@ -23,8 +23,6 @@ void OrRule::Update(Connector& connector, FWTree& x) const {
   m_log.debug("Updating OrRule " + string(*this) + " at " + string(x));
 
   // Compute new state flags
-  x.iconnection.iend = NULL;
-  x.iconnection.size = 0;
   State& state = x.GetState();
   state.Clear();
   vector<const FWTree*> oks;
@@ -36,8 +34,10 @@ void OrRule::Update(Connector& connector, FWTree& x) const {
   if (x.children.empty()) {
     throw FWError("Cannot update OrRule " + string(*this) + " that has no children");
   }
+  x.GetIConnection().SetStart(x.children.at(0).IStart());
 
   FWTree::child_mod_iter i = x.children.begin();
+  bool haveSetEnd = false;
   for (; i != x.children.end(); ++i) {
     State& istate = i->GetState();
     bool thisChildLocked = false;
@@ -52,17 +52,13 @@ void OrRule::Update(Connector& connector, FWTree& x) const {
       thisChildLocked = true;
       state.Lock();
     }
-    if (!istate.IsBad()) {
-      // This disambiguation is perhaps silly, and perhaps we needn't do this
-      // at all here (since we'll assign iend later anyway).
-      if (i->iconnection.size > x.iconnection.size) {
-        if (i->iconnection.istart != x.iconnection.istart) {
-          throw FWError("OrRule " + string(*this) + " and a child disagree about istart");
-        }
-        x.iconnection.iend = i->iconnection.iend;
-        x.iconnection.size = i->iconnection.size;
-        m_log.debug("OrRule " + string(*this) + " assigning iend " + (x.iconnection.iend ? string(*x.iconnection.iend) : "<null>") + " from istate " + string(istate));
+    if (!istate.IsBad() && !haveSetEnd) {
+      if (&i->IStart() != &x.IStart()) {
+        throw FWError("OrRule " + string(*this) + " and a child disagree about istart");
       }
+      x.GetIConnection().SetEnd(i->IEnd());
+      m_log.debug("OrRule " + string(*this) + " assigning iend " + string(x.IEnd()) + " from istate " + string(istate));
+      haveSetEnd = true;
     }
     if (istate.IsOK()) {
       if (thisChildLocked) {
@@ -109,12 +105,10 @@ void OrRule::Update(Connector& connector, FWTree& x) const {
     }
   }
   if (1 == completes.size()) {
-    x.iconnection.iend = completes.at(0)->iconnection.iend;
-    x.iconnection.size = completes.at(0)->iconnection.size;
+    x.GetIConnection().SetEnd(completes.at(0)->IEnd());
     m_log.debug("OrRule " + string(*this) + " declares complete winner " + string(*completes.at(0)));
   } else if (1 == dones.size()) {
-    x.iconnection.iend = dones.at(0)->iconnection.iend;
-    x.iconnection.size = dones.at(0)->iconnection.size;
+    x.GetIConnection().SetEnd(dones.at(0)->IEnd());
     m_log.debug("OrRule " + string(*this) + " declares done winner " + string(*dones.at(0)));
   }
   if (1 == completes.size()) {
@@ -128,5 +122,4 @@ void OrRule::Update(Connector& connector, FWTree& x) const {
   }
 
   m_log.debug("OrRule " + string(*this) + " now at " + string(x));
-  m_log.debug(" - and it has istart " + (x.iconnection.istart ? string(*x.iconnection.istart) : "<null>") + " and iend " + (x.iconnection.iend ? string(*x.iconnection.iend): "<null>"));
 }

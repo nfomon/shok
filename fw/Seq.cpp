@@ -5,8 +5,6 @@
 
 #include "Connector.h"
 
-#include "util/Graphviz.h"
-
 #include <boost/lexical_cast.hpp>
 using boost::lexical_cast;
 
@@ -28,8 +26,6 @@ void SeqRule::Update(Connector& connector, FWTree& x) const {
   m_log.debug("Updating Seq " + string(*this) + " at " + string(x));
 
   // Initialize state flags
-  x.iconnection.iend = NULL;
-  x.iconnection.size = 0;
   State& state = x.GetState();
   state.Clear();
 
@@ -38,6 +34,7 @@ void SeqRule::Update(Connector& connector, FWTree& x) const {
   } else if (x.children.size() > m_children.size()) {
     throw FWError("SeqRule::Update: Seq node " + string(x) + " has more children than the rule");
   }
+  x.GetIConnection().SetStart(x.children.at(0).IStart());
 
   // Iterate over node children, either existing or being created, so long as
   // our last child is complete.
@@ -52,9 +49,12 @@ void SeqRule::Update(Connector& connector, FWTree& x) const {
     if (child != x.children.end()) {
       // Existing child
       if (prev_child) {
-        if (prev_child->iconnection.iend != child->iconnection.istart) {
-          m_log.info("Seq " + string(*this) + " child " + string(*child) + " needs to be repositioned to the prev child's end");
-          connector.RepositionNode(*child, *prev_child->iconnection.iend);
+        if (!child->IStart().left) {
+          throw FWError("Seq " + string(*this) + " child " + string(*child) + " has istart at the start of input, but it's not our first child");
+        }
+        if (&prev_child->IEnd() != &child->IStart()) {
+          m_log.info("Seq " + string(*this) + " child " + string(*child) + " needs to be repositioned to the node after the prev child's end");
+          connector.RepositionNode(*child, prev_child->IEnd());
         }
       }
     } else if (x.children.size() > m_children.size()) {
@@ -63,18 +63,18 @@ void SeqRule::Update(Connector& connector, FWTree& x) const {
       throw FWError("SeqRule::Update: child index >= Rule size");
     } else {
       // New child
-      x.children.push_back(auto_ptr<FWTree>(new FWTree(m_children.at(child_index), &x)));
-      child = x.children.end() - 1;
+      const IList* newIStart = &x.IStart();
       if (prev_child) {
-        if (!prev_child->iconnection.iend) {
-          throw FWError("Seq " + string(*this) + " prev child " + string(*prev_child) + " failed to assign its iend");
-        }
-        connector.RepositionNode(*child, *prev_child->iconnection.iend);
-      } else {
-        connector.RepositionNode(*child, *x.iconnection.istart);
+        newIStart = &prev_child->IEnd();
       }
+      if (!newIStart) {
+        throw FWError("Seq " + string(*this) + (prev_child ? (" with prev child " + string(*prev_child)) : " with no prev child") + " failed to find new istart for new child");
+      }
+      FWTree* newChild = AddChildToNode(x, m_children.at(child_index), *newIStart);
+      connector.RepositionNode(*newChild, *newIStart);
+      child = x.children.end() - 1;
     }
-    x.iconnection.size += child->iconnection.size;
+    x.GetIConnection().SetEnd(child->IEnd());
 
     // Now check the child's state, and see if we can keep going.
     State& istate = child->GetState();
@@ -86,7 +86,6 @@ void SeqRule::Update(Connector& connector, FWTree& x) const {
     if (istate.IsBad()) {
       m_log.debug("Seq " + string(*this) + " has gone bad");
       state.GoBad();
-      x.iconnection.iend = child->iconnection.iend;
       // Clear any subsequent children
       for (FWTree::child_mod_iter i = child+1; i != x.children.end(); ++i) {
         connector.ClearNode(*i);
@@ -97,16 +96,13 @@ void SeqRule::Update(Connector& connector, FWTree& x) const {
       // Are we complete at the end of our sequence?
       if (child_index == m_children.size() - 1) {
         state.GoComplete();
-        x.iconnection.iend = child->iconnection.iend;
         finished = true;
       } else {
         // Cool, keep going!
       }
     } else if (istate.IsAccepting()) {
-      if (child->iconnection.iend != NULL) {
-        throw FWError("Seq found incomplete inode that is only ok or done; not allowed");
-      } else if (x.iconnection.iend) {
-        throw FWError("Seq reached eoi but tried to set an iend.. silly internal check");
+      if (child->IEnd().right) {
+        throw FWError("Seq found incomplete inode that is only ok; not allowed");
       }
       if (istate.IsDone() && child_index == m_children.size() - 1) {
         state.GoDone();
@@ -128,5 +124,5 @@ void SeqRule::Update(Connector& connector, FWTree& x) const {
   }
 
   m_log.debug("Seq " + string(*this) + " done update; now has state " + string(x));
-  m_log.debug(" - and it has istart " + (x.iconnection.istart ? string(*x.iconnection.istart) : "<null>") + " and iend " + (x.iconnection.iend ? string(*x.iconnection.iend): "<null>"));
+  m_log.debug(" - and it has istart " + string(x.IStart()) + " and iend " + string(x.IEnd()));
 }

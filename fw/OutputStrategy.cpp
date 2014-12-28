@@ -108,7 +108,7 @@ void OutputStrategyValue::Update() {
   }
 */
   string value;
-  for (const IList* i = m_node.iconnection.istart; i != NULL; i = i->right) {
+  for (const IList* i = &m_node.IStart(); i != NULL; i = i->right) {
     value += i->value;
   }
 //  if (m_wasEmitting && m_onode.value != value) {

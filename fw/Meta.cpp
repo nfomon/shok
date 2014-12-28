@@ -17,17 +17,16 @@ void MetaRule::Update(Connector& connector, FWTree& x) const {
   m_log.info("Meta: updating " + string(*this) + " at " + string(x));
   State& state = x.GetState();
   state.GoBad();
-  const IList* first = x.iconnection.istart;
-  if (first->name == m_searchName) {
-    connector.Listen(x, *first);
+  const IList& first = x.IStart();
+  if (first.name == m_searchName) {
+    connector.Listen(x, first);
     state.GoDone();
-    x.iconnection.size = 1;
-    const IList* second = first->right;
+    const IList* second = first.right;
     if (second) {
       state.GoComplete();
-      x.iconnection.iend = second;
+      x.GetIConnection().SetEnd(*second);
     } else {
-      x.iconnection.iend = NULL;
+      x.GetIConnection().SetEnd(first);
     }
   }
   m_log.debug("Meta" + string(*this) + " now: " + string(x));

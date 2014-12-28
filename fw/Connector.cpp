@@ -27,18 +27,18 @@ using namespace fw;
 
 Connector::Connector(Log& log, const Rule& rule, const std::string& name, Grapher* grapher)
   : m_log(log),
-    m_root(rule, NULL),
+    m_rule(rule),
     m_name(name),
-    m_grapher(grapher),
-    m_istart(NULL) {
+    m_grapher(grapher) {
 }
 
 void Connector::Insert(const IList& inode) {
-  m_log.info("Connector: Inserting IList: " + string(inode));
+  m_log.info("Connector " + m_name + ": Inserting IList: " + string(inode));
   ResetNodes();
 
-  if (!m_istart) {
-    m_istart = &inode;
+  if (!m_root.get()) {
+    m_log.debug(" - No root; initializing the tree root");
+    m_root.reset(new FWTree(m_rule, NULL, inode));
   }
 
   if (inode.left) {
@@ -47,12 +47,12 @@ void Connector::Insert(const IList& inode) {
   } else {
     // Just reposition the root.
     m_log.debug(" - No left inode: just repositioning the root");
-    RepositionNode(m_root, inode);
+    RepositionNode(*m_root.get(), inode);
   }
 
   // Assert that the inode has at least one listener in the updated set.
   if (!m_listeners.HasAnyListeners(&inode)) {
-    State& state = m_root.GetState();
+    State& state = m_root->GetState();
     state.GoBad();
   }
   // Stronger check: every inode has at least one listener :)
@@ -64,14 +64,16 @@ void Connector::Delete(const IList& inode) {
   m_log.info("Deleting list inode " + string(inode));
   ResetNodes();
 
+  if (!m_root.get()) {
+    throw FWError("Connector " + m_name + ": cannot delete " + string(inode) + " when the root has not been initialized");
+  }
+
   m_listeners.RemoveAllListeners(&inode);
 
   if (!inode.left && !inode.right) {
-    ClearNode(m_root);
-    m_istart = NULL;
+    ClearNode(*m_root.get());
   } else if (!inode.left) {
-    m_istart = inode.right;
-    RepositionNode(m_root, *inode.right);
+    RepositionNode(*m_root.get(), *inode.right);
   } else {
     UpdateListeners(inode, true);
   }
@@ -99,15 +101,8 @@ void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
 
 void Connector::RepositionNode(FWTree& x, const IList& inode) {
   m_log.info("Connector: Repositioning " + std::string(x) + " with inode " + std::string(inode));
-  if (x.iconnection.istart == &inode) {
-    m_log.warning(" - already at the right position; skipping");    // IS THIS OK?
-    return;
-  }
   DrawGraph(x, &inode);
-  x.iconnection.Clear();
-  x.iconnection.istart = &inode;
-  x.iconnection.iend = NULL;
-  x.iconnection.size = 0;
+  x.GetIConnection().SetStart(inode);
   x.GetOutputStrategy().Clear();
   State& state = x.GetState();
   state.Unlock();
@@ -118,12 +113,12 @@ void Connector::RepositionNode(FWTree& x, const IList& inode) {
 // Recalculate state based on a change to one or more children
 bool Connector::UpdateNode(FWTree& x) {
   m_log.info("Connector: Updating " + std::string(x));
-  const IList* old_iend = x.iconnection.iend;
+  const IList& old_iend = x.IEnd();
   x.GetRule().Update(*this, x);
   m_log.debug(" - - - - Connector: " + string(x) + " updating output strategy");
   x.GetOutputStrategy().Update();
   DrawGraph(x);
-  bool hasChanged = old_iend != x.iconnection.iend || !x.GetOutputStrategy().GetHotlist().empty();
+  bool hasChanged = &old_iend != &x.IEnd() || !x.GetOutputStrategy().GetHotlist().empty();
   if (hasChanged) {
     m_log.debug(" - - - - Connector: " + string(x) + " has changed");
     AddNodeToReset(x);
@@ -222,12 +217,12 @@ void Connector::DrawGraph(const FWTree& onode, const IList* inode) {
   if (!m_grapher) {
     return;
   }
-  if (!m_istart) {
+  if (!m_root.get()) {
     return;
   }
-  m_grapher->AddIList(m_name, *m_istart, m_name + " input");
-  m_grapher->AddOTree(m_name, m_root, m_name + " output");
-  m_grapher->AddIListeners(m_name, *this, *m_istart);
+  m_grapher->AddIList(m_name, m_root->IStart(), m_name + " input");
+  m_grapher->AddOTree(m_name, *m_root.get(), m_name + " output");
+  m_grapher->AddIListeners(m_name, *this, m_root->IStart());
   if (inode) {
     m_grapher->Signal(m_name, &onode);
     m_grapher->Signal(m_name, inode);

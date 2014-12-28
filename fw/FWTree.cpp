@@ -20,14 +20,14 @@ string FWTree::DrawNode(const string& context) const {
   // Style the node to indicate its State
   string fillcolor = "#ffeebb";
   if (m_state.IsBad()) {
-    fillcolor = "#ff9999";
+    fillcolor = "#ff8888";
   } else if (m_state.IsDone()) {
     fillcolor = "#99ffcc";
   } else if (m_state.IsComplete()) {
-    fillcolor = "#aaddff";
+    fillcolor = "#aaaaff";
   }
-
   s += dotVar(this, context) + " [label=\"" + Util::safeLabelStr(m_rule.Name()) + "\", style=\"filled\", fillcolor=\"" + fillcolor + "\", fontsize=12.0];\n";
+
   // Connect the node to its IConnection
   string istartcolor = "#006600";
   string iendcolor = "#660000";
@@ -35,16 +35,11 @@ string FWTree::DrawNode(const string& context) const {
     istartcolor = "#66cc66";
     iendcolor = "#cc6666";
   }
-  if (iconnection.istart) {
-    s += dotVar(this, context) + " -> " + dotVar(iconnection.istart, context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + istartcolor + "\"];\n";
-  } else {
-    s += dotVar(this, context) + " -> " + dotVar(this, context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + istartcolor + "\"];\n";
-  }
-  if (iconnection.iend) {
-    s += dotVar(this, context) + " -> " + dotVar(iconnection.iend, context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + iendcolor + "\"];\n";
-  } else {
-    s += dotVar(this, context) + " -> " + dotVar(this, context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + iendcolor + "\"];\n";
-  }
+  s += dotVar(this, context) + " -> " + dotVar(&m_iconnection.Start(), context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + istartcolor + "\"];\n";
+  //s += dotVar(this, context) + " -> " + dotVar(this, context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + istartcolor + "\"];\n";
+  s += dotVar(this, context) + " -> " + dotVar(&m_iconnection.End(), context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + iendcolor + "\"];\n";
+  //s += dotVar(this, context) + " -> " + dotVar(this, context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + iendcolor + "\"];\n";
+
   // Add its child connections, and draw the children
   // Make sure the children will be ordered in the output graph
   for (child_iter i = children.begin(); i != children.end(); ++i) {

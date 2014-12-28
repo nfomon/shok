@@ -458,6 +458,21 @@ The bool thing should NOT be necessary.  WHY does OutputStrategySingle think it 
 Here, a keyword:"new" went from 'ne' to 'new'.  Its hotlist doesn't change.  Its iend doesn't change (NULL -> NULL).  Maybe that iend should really just point to the last ichar we care about.  We can still be listening to the thing past the iend, just consider iend the last valid INode that we span.
   - LET'S TRY TO FIX THAT :)
 
+Oops. I made: iend always points to the last INode of interest; never NULL.
+PROBLEM:  'ne' to 'new', yay I get the update to the parent.  But now I insert make the input:  'new;'.  The ; did not change "new"'s iend, so we don't update its parent (the Sequence that has the ; after).
+NEW ATTEMPT:  iend is always the last INode of interest; either the node that makes us bad, or the last node of interest (if we're at the end of input).  Then watching to see if iend changes should handle every case:
+  - 'ne' to 'new': yep, update, iend changed from 'e' to 'w'.
+  - 'new' to 'new;': yep, update, iend changed from 'w' to ';'.
+  - 'new;' to 'new': yep, update, iend changed from ';' to 'w'.
+
+istart and iend should never be NULL.  Interesting....  Let's enforce that :)
+ - We don't need IConnection::Clear().
+ - When we create a FWTree, it should do the first RepositionNode() immediately, so IConnection can init with a start node.
+ - After that it takes a Restart(inode), so it's always reasonable.  The IEnd might be dumb if it goes bad, but even then, we can make up a reasonable meaning for that and keep it consistent.
+ - Rename Reposition() to Restart().  We can maybe use the OutputStrategy-style pattern for repositions; seems like only a few possible things could happen here, and while you /can/ implement your own, you'll typically want the Rule default.
+  - Eventually: One Rule, with different Restart, Update, and Output strategies for them.  Cool!
+
+
 So let's sort that out.  Then implement an OS_SILENT.
 
 Then caps for Sequence/Winner strategies (better: for strategies in general?).

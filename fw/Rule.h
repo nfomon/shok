@@ -39,7 +39,7 @@ public:
   //  1. Clean up / clear out state as appropriate
   //  2. Listen/Unlisten for Input updates as appropriate
   //  3. Compute new state flags based on children
-  //  4. Update size and begin/end inodes
+  //  4. Update begin/end inodes
   // Reposition should RepositionNode() its children as necessary to then
   // calculate its own state.  Connector::UpdateNode() will be automatically
   // called by Connector::RepositionNode().
@@ -47,7 +47,7 @@ public:
 
   // Calculate local state flags based on children's state, under the
   // assumption that the children are already up-to-date.
-  // Returns true if the node was changed
+  // Returns true if the node was changed.
   virtual void Update(Connector& connector, FWTree& x) const = 0;
 
   Rule* AddChild(std::auto_ptr<Rule> child) {
@@ -80,9 +80,9 @@ protected:
   }
 
   // Convenience methods for some rules
-  void AddChildToNode(FWTree& x, const Rule& child) const;
-  void RepositionFirstChildOfNode(Connector& connector, FWTree& x, const IList& inode) const;
-  void RepositionAllChildrenOfNode(Connector& connector, FWTree& x, const IList& inode) const;
+  FWTree* AddChildToNode(FWTree& x, const Rule& childRule, const IList& istart) const;
+  void RepositionFirstChildOfNode(Connector& connector, FWTree& x, const IList& istart) const;
+  void RepositionAllChildrenOfNode(Connector& connector, FWTree& x, const IList& istart) const;
 
   Log& m_log;
   std::string m_name;
