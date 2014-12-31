@@ -1,7 +1,7 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#include "OutputStrategy.h"
+#include "OutputFunc.h"
 
 #include "FWTree.h"
 #include "IList.h"
@@ -19,33 +19,33 @@ using std::vector;
 
 using namespace fw;
 
-OutputStrategy::OutputStrategy(Log& log, const FWTree& x)
+OutputFunc::OutputFunc(Log& log, const FWTree& x)
   : m_log(log),
     m_node(x),
     m_ostart(NULL),
     m_oend(NULL) {
 }
 
-void OutputStrategy::ApproveChild(const FWTree& child) {
-  m_log.debug("**** OutputStrategy: " + string(m_node) + " Approving child " + string(child));
-  const Hotlist::hotlist_vec& h = child.GetOutputStrategy().GetHotlist();
+void OutputFunc::ApproveChild(const FWTree& child) {
+  m_log.debug("**** OutputFunc: " + string(m_node) + " Approving child " + string(child));
+  const Hotlist::hotlist_vec& h = child.GetOutputFunc().GetHotlist();
   m_hotlist.Accept(h);
-  const emitting_set& e = child.GetOutputStrategy().Emitting();
+  const emitting_set& e = child.GetOutputFunc().Emitting();
   m_emitting.insert(e.begin(), e.end());
 }
 
-void OutputStrategy::InsertChild(const FWTree& child) {
-  m_log.debug("**** OutputStrategy: " + string(m_node) + " Inserting child " + string(child));
-  const emitting_set& e = child.GetOutputStrategy().Emitting();
+void OutputFunc::InsertChild(const FWTree& child) {
+  m_log.debug("**** OutputFunc: " + string(m_node) + " Inserting child " + string(child));
+  const emitting_set& e = child.GetOutputFunc().Emitting();
   for (emitting_iter i = e.begin(); i != e.end(); ++i) {
     m_hotlist.Insert(**i);
     m_emitting.insert(*i);
   }
 }
 
-void OutputStrategy::DeleteChild(const FWTree& child) {
-  m_log.debug("**** OutputStrategy: " + string(m_node) + " Deleting child " + string(child));
-  const emitting_set& we = child.GetOutputStrategy().WasEmitting();
+void OutputFunc::DeleteChild(const FWTree& child) {
+  m_log.debug("**** OutputFunc: " + string(m_node) + " Deleting child " + string(child));
+  const emitting_set& we = child.GetOutputFunc().WasEmitting();
   for (emitting_iter i = we.begin(); i != we.end(); ++i) {
     m_hotlist.Delete(**i);
     m_emitting.erase(*i);
@@ -53,7 +53,7 @@ void OutputStrategy::DeleteChild(const FWTree& child) {
 }
 
 /*
-string OutputStrategy::DrawEmitting(const string& context) const {
+string OutputFunc::DrawEmitting(const string& context) const {
   string s;
   if (m_ostart) {
     s += dotVar(m_ostart->owner, context) + " -> " + dotVar(&m_node, context) + " [constraint=false, weight=1, arrowsize=1.2, color=\"#22ee22\"];\n";
@@ -72,10 +72,10 @@ string OutputStrategy::DrawEmitting(const string& context) const {
 }
 */
 
-/* OutputStrategySingle */
+/* OutputFuncSingle */
 
-OutputStrategySingle::OutputStrategySingle(Log& log, const FWTree& x)
-  : OutputStrategy(log, x),
+OutputFuncSingle::OutputFuncSingle(Log& log, const FWTree& x)
+  : OutputFunc(log, x),
     m_onode(x.GetRule().Name()) {
     m_ostart = &m_onode;
     m_oend = &m_onode;
@@ -83,12 +83,12 @@ OutputStrategySingle::OutputStrategySingle(Log& log, const FWTree& x)
     m_hotlist.Insert(m_onode);
 }
 
-void OutputStrategySingle::Update() {
+void OutputFuncSingle::Update() {
 }
 
-/* OutputStrategyValue */
+/* OutputFuncValue */
 
-void OutputStrategyValue::Update() {
+void OutputFuncValue::Update() {
   string value;
   for (const IList* i = &m_node.IStart(); i != NULL; i = i->right) {
     value += i->value;
@@ -97,24 +97,24 @@ void OutputStrategyValue::Update() {
   m_hotlist.Update(m_onode);
 }
 
-/* OutputStrategyWinner */
+/* OutputFuncWinner */
 
-void OutputStrategyWinner::Clear() {
+void OutputFuncWinner::Clear() {
   m_winner = NULL;
   m_ostart = NULL;
   m_oend = NULL;
 }
 
-void OutputStrategyWinner::Reset() {
+void OutputFuncWinner::Reset() {
   m_wasEmitting = m_emitting;
   m_emitting.clear();
   m_hotlist.Clear();
 }
 
-void OutputStrategyWinner::Update() {
+void OutputFuncWinner::Update() {
   const State& state = m_node.GetState();
   if (!state.IsEmitting()) {
-    m_log.debug("OutputStrategyWinner " + string(m_node) + " is not emitting; skipping update");
+    m_log.debug("OutputFuncWinner " + string(m_node) + " is not emitting; skipping update");
     return;
   }
   bool isComplete = state.IsComplete();
@@ -132,35 +132,35 @@ void OutputStrategyWinner::Update() {
     }
   }
   if (!winner) {
-    throw FWError("OutputStrategyWinner for " + string(m_node) + " failed to find winner");
+    throw FWError("OutputFuncWinner for " + string(m_node) + " failed to find winner");
   }
-  m_log.debug("**** OutputStrategyWinner: " + string(m_node) + " Declaring winner " + string(*winner));
-  m_ostart = winner->GetOutputStrategy().OStart();
-  m_oend = winner->GetOutputStrategy().OEnd();
+  m_log.debug("**** OutputFuncWinner: " + string(m_node) + " Declaring winner " + string(*winner));
+  m_ostart = winner->GetOutputFunc().OStart();
+  m_oend = winner->GetOutputFunc().OEnd();
   if (winner == m_winner) {
     ApproveChild(*winner);
   } else {
     if (m_winner) {
-      m_log.debug("OutputStrategyWinner: un-winning (deleting) old winner " + string(*m_winner));
+      m_log.debug("OutputFuncWinner: un-winning (deleting) old winner " + string(*m_winner));
       DeleteChild(*m_winner);
     }
     InsertChild(*winner);
     m_winner = winner;
   }
 
-  m_log.debug("OutputStrategyWinner " + string(m_node) + " done update; hotlist has size " + boost::lexical_cast<string>(m_hotlist.GetHotlist().size()));
+  m_log.debug("OutputFuncWinner " + string(m_node) + " done update; hotlist has size " + boost::lexical_cast<string>(m_hotlist.GetHotlist().size()));
   m_log.debug(m_hotlist.Print());
 }
 
-/* OutputStrategySequence */
+/* OutputFuncSequence */
 
-void OutputStrategySequence::Clear() {
+void OutputFuncSequence::Clear() {
   m_emitting.clear();
   m_ostart = NULL;
   m_oend = NULL;
 }
 
-void OutputStrategySequence::Reset() {
+void OutputFuncSequence::Reset() {
   m_wasEmitting = m_emitting;
   m_emitting.clear();
   m_hotlist.Clear();
@@ -168,8 +168,8 @@ void OutputStrategySequence::Reset() {
   m_oend = NULL;
 }
 
-void OutputStrategySequence::Update() {
-  m_log.debug("OutputStrategySequence::Update " + string(m_node));
+void OutputFuncSequence::Update() {
+  m_log.debug("OutputFuncSequence::Update " + string(m_node));
   const State& state = m_node.GetState();
   if (!state.IsEmitting()) {
     return;
@@ -185,9 +185,9 @@ void OutputStrategySequence::Update() {
       }
       break;
     }
-    OutputStrategy& iostrat = i->GetOutputStrategy();
+    OutputFunc& iostrat = i->GetOutputFunc();
     if ((iostrat.OStart() && !iostrat.OEnd()) || (!iostrat.OStart() && iostrat.OEnd())) {
-      throw FWError("OutputStrategySequence::Update found " + string(*i) + " with only an ostart or oend, but not both");
+      throw FWError("OutputFuncSequence::Update found " + string(*i) + " with only an ostart or oend, but not both");
     }
     nowEmit.insert(&*i);
     if (!iostrat.OStart()) {
@@ -209,6 +209,6 @@ void OutputStrategySequence::Update() {
   }
   m_emitChildren = nowEmit;
 
-  m_log.debug("OutputStrategySequence " + string(m_node) + " done update; hotlist has size " + boost::lexical_cast<string>(m_hotlist.GetHotlist().size()));
+  m_log.debug("OutputFuncSequence " + string(m_node) + " done update; hotlist has size " + boost::lexical_cast<string>(m_hotlist.GetHotlist().size()));
   m_log.debug(m_hotlist.Print());
 }

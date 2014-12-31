@@ -12,7 +12,7 @@
 
 #include "FWError.h"
 #include "IList.h"
-#include "OutputStrategy.h"
+#include "OutputFunc.h"
 #include "RestartFunc.h"
 #include "State.h"
 
@@ -32,11 +32,11 @@ public:
   typedef boost::ptr_vector<Rule> child_vec;
   typedef child_vec::const_iterator child_iter;
 
-  Rule(Log& log, const std::string& debugName, RestartFuncType rft, OutputStrategyType ost)
+  Rule(Log& log, const std::string& debugName, RestartFuncType rft, OutputFuncType ost)
     : m_log(log),
       m_name(debugName),
       m_restartFuncType(rft),
-      m_outputStrategyType(ost),
+      m_outputFuncType(ost),
       m_parent(NULL) {}
   virtual ~Rule() {}
 
@@ -46,7 +46,7 @@ public:
   FWTree* MakeNode(FWTree& parent, const IList& istart) const;
 
   std::auto_ptr<RestartFunc> MakeRestartFunc(FWTree& x) const;
-  std::auto_ptr<OutputStrategy> MakeOutputStrategy(const FWTree& x) const;
+  std::auto_ptr<OutputFunc> MakeOutputFunc(const FWTree& x) const;
 
   // Reposition and Update have some responsibilities:
   //  1. Clean up / clear out state as appropriate
@@ -95,7 +95,7 @@ protected:
   Log& m_log;
   std::string m_name;
   RestartFuncType m_restartFuncType;
-  OutputStrategyType m_outputStrategyType;
+  OutputFuncType m_outputFuncType;
   Rule* m_parent;
   child_vec m_children;
 };

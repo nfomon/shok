@@ -29,10 +29,10 @@ Connector::Connector(Log& log, const Rule& rule, const std::string& name, Graphe
 }
 
 const Hotlist::hotlist_vec& Connector::GetHotlist() const {
-  return GetRoot().GetOutputStrategy().GetHotlist();
+  return GetRoot().GetOutputFunc().GetHotlist();
 }
 string Connector::PrintHotlist() const {
-  return GetRoot().GetOutputStrategy().PrintHotlist();
+  return GetRoot().GetOutputFunc().PrintHotlist();
 }
 
 void Connector::Insert(const IList& inode) {
@@ -206,7 +206,7 @@ void Connector::AddNodeToReset(FWTree& x) {
 void Connector::ResetNodes() {
   for (set<FWTree*>::const_iterator i = m_nodesToReset.begin();
        i != m_nodesToReset.end(); ++i) {
-    (*i)->GetOutputStrategy().Reset();
+    (*i)->GetOutputFunc().Reset();
   }
   m_nodesToReset.clear();
 }

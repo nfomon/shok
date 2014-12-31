@@ -24,19 +24,19 @@ FWTree::FWTree(Log& log, Connector& connector, const Rule& rule, FWTree* parent)
 }
 
 void FWTree::Init(auto_ptr<RestartFunc> restartFunc,
-                  auto_ptr<OutputStrategy> outputStrategy) {
-  if (m_restartFunc.get() || m_outputStrategy.get()) {
+                  auto_ptr<OutputFunc> outputFunc) {
+  if (m_restartFunc.get() || m_outputFunc.get()) {
     throw FWError("Cannot re-initialize FWTree node " + string(*this));
   }
   m_restartFunc = restartFunc;
-  m_outputStrategy = outputStrategy;
+  m_outputFunc = outputFunc;
 }
 
 void FWTree::RestartNode(const IList& istart) {
   m_log.info("Restarting node " + std::string(*this) + " with inode " + std::string(istart));
   m_iconnection.Restart(istart);
   m_connector.DrawGraph(*this, &istart);
-  m_outputStrategy->Clear();
+  m_outputFunc->Clear();
   m_state.Unlock();
   Restart(istart);
   (void) UpdateNode();
@@ -46,9 +46,9 @@ bool FWTree::UpdateNode() {
   m_log.info("Updating node " + std::string(*this));
   const IList& old_iend = IEnd();
   m_rule.Update(*this);
-  m_outputStrategy->Update();
+  m_outputFunc->Update();
   m_connector.DrawGraph(*this);
-  bool hasChanged = &old_iend != &IEnd() || !m_outputStrategy->GetHotlist().empty();
+  bool hasChanged = &old_iend != &IEnd() || !m_outputFunc->GetHotlist().empty();
   if (hasChanged) {
     m_log.debug(" - - - - " + string(*this) + " has changed");
     m_connector.AddNodeToReset(*this);
@@ -64,7 +64,7 @@ void FWTree::ClearNode() {
     i->ClearNode();
   }
   m_state.Clear();
-  m_outputStrategy->Clear();
+  m_outputFunc->Clear();
   m_connector.ClearNode(*this);
 }
 
@@ -114,7 +114,7 @@ string FWTree::DrawNode(const string& context) const {
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     s += i->DrawNode(context);
   }
-  //s += m_outputStrategy->DrawEmitting(context, *this);
+  //s += m_outputFunc->DrawEmitting(context, *this);
   return s;
 }
 

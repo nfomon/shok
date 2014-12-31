@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _OutputStrategy_h_
-#define _OutputStrategy_h_
+#ifndef _OutputFunc_h_
+#define _OutputFunc_h_
 
 #include "Hotlist.h"
 #include "IList.h"
@@ -17,7 +17,7 @@ namespace fw {
 
 class FWTree;
 
-enum OutputStrategyType {
+enum OutputFuncType {
   OS_SILENT,
   OS_SINGLE,
   OS_VALUE,
@@ -25,13 +25,13 @@ enum OutputStrategyType {
   OS_SEQUENCE
 }; 
 
-class OutputStrategy {
+class OutputFunc {
 public:
   typedef std::set<const IList*> emitting_set;
   typedef emitting_set::const_iterator emitting_iter;
 
-  OutputStrategy(Log& log, const FWTree& x);
-  virtual ~OutputStrategy() {}
+  OutputFunc(Log& log, const FWTree& x);
+  virtual ~OutputFunc() {}
 
   IList* OStart() { return m_ostart; }
   IList* OEnd() { return m_oend; }
@@ -70,10 +70,10 @@ protected:
   Hotlist m_hotlist;  // active olist updates
 };
 
-class OutputStrategySingle : public OutputStrategy {
+class OutputFuncSingle : public OutputFunc {
 public:
-  OutputStrategySingle(Log& log, const FWTree& x);
-  virtual ~OutputStrategySingle() {}
+  OutputFuncSingle(Log& log, const FWTree& x);
+  virtual ~OutputFuncSingle() {}
 
   virtual void Clear() {}
   virtual void Update();
@@ -82,21 +82,21 @@ protected:
   IList m_onode;   // Single output list node
 };
 
-class OutputStrategyValue : public OutputStrategySingle {
+class OutputFuncValue : public OutputFuncSingle {
 public:
-  OutputStrategyValue(Log& log, const FWTree& x)
-    : OutputStrategySingle(log, x) {}
-  virtual ~OutputStrategyValue() {}
+  OutputFuncValue(Log& log, const FWTree& x)
+    : OutputFuncSingle(log, x) {}
+  virtual ~OutputFuncValue() {}
 
   virtual void Update();
 };
 
-class OutputStrategyWinner : public OutputStrategy {
+class OutputFuncWinner : public OutputFunc {
 public:
-  OutputStrategyWinner(Log& log, const FWTree& x)
-    : OutputStrategy(log, x),
+  OutputFuncWinner(Log& log, const FWTree& x)
+    : OutputFunc(log, x),
       m_winner(NULL) {}
-  virtual ~OutputStrategyWinner() {}
+  virtual ~OutputFuncWinner() {}
 
   virtual void Clear();
   virtual void Reset();
@@ -106,11 +106,11 @@ private:
   const FWTree* m_winner;
 };
 
-class OutputStrategySequence : public OutputStrategy {
+class OutputFuncSequence : public OutputFunc {
 public:
-  OutputStrategySequence(Log& log, const FWTree& x)
-    : OutputStrategy(log, x) {}
-  virtual ~OutputStrategySequence() {}
+  OutputFuncSequence(Log& log, const FWTree& x)
+    : OutputFunc(log, x) {}
+  virtual ~OutputFuncSequence() {}
 
   virtual void Clear();
   virtual void Reset();
@@ -125,4 +125,4 @@ private:
 
 }
 
-#endif // _OutputStrategy_h_
+#endif // _OutputFunc_h_

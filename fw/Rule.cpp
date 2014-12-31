@@ -21,14 +21,14 @@ using namespace fw;
 auto_ptr<FWTree> Rule::MakeRootNode(Connector& connector) const {
   auto_ptr<FWTree> node(new FWTree(m_log, connector, *this, NULL));
   node->Init(MakeRestartFunc(*node.get()),
-             MakeOutputStrategy(*node.get()));
+             MakeOutputFunc(*node.get()));
   return node;
 }
 
 FWTree* Rule::MakeNode(FWTree& parent, const IList& istart) const {
   auto_ptr<FWTree> node(new FWTree(m_log, parent.GetConnector(), *this, &parent));
   node->Init(MakeRestartFunc(*node.get()),
-             MakeOutputStrategy(*node.get()));
+             MakeOutputFunc(*node.get()));
   FWTree* r = node.get();
   parent.children.push_back(node);
   r->RestartNode(istart);
@@ -44,13 +44,13 @@ auto_ptr<RestartFunc> Rule::MakeRestartFunc(FWTree& x) const {
   }
 }
 
-auto_ptr<OutputStrategy> Rule::MakeOutputStrategy(const FWTree& x) const {
-  switch (m_outputStrategyType) {
-  case OS_SINGLE: return auto_ptr<OutputStrategy>(new OutputStrategySingle(m_log, x));
-  case OS_VALUE: return auto_ptr<OutputStrategy>(new OutputStrategyValue(m_log, x));
-  case OS_WINNER: return auto_ptr<OutputStrategy>(new OutputStrategyWinner(m_log, x));
-  case OS_SEQUENCE: return auto_ptr<OutputStrategy>(new OutputStrategySequence(m_log, x));
-  default: throw FWError("Cannot make OutputStrategy for rule " + string(*this) + " node " + string(x) + "; unknown output strategy type");
+auto_ptr<OutputFunc> Rule::MakeOutputFunc(const FWTree& x) const {
+  switch (m_outputFuncType) {
+  case OS_SINGLE: return auto_ptr<OutputFunc>(new OutputFuncSingle(m_log, x));
+  case OS_VALUE: return auto_ptr<OutputFunc>(new OutputFuncValue(m_log, x));
+  case OS_WINNER: return auto_ptr<OutputFunc>(new OutputFuncWinner(m_log, x));
+  case OS_SEQUENCE: return auto_ptr<OutputFunc>(new OutputFuncSequence(m_log, x));
+  default: throw FWError("Cannot make OutputFunc for rule " + string(*this) + " node " + string(x) + "; unknown output strategy type");
   }
 }
 

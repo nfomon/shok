@@ -8,7 +8,7 @@
 #include "IConnection.h"
 #include "FWError.h"
 #include "Hotlist.h"
-#include "OutputStrategy.h"
+#include "OutputFunc.h"
 #include "Rule.h"
 #include "State.h"
 
@@ -42,7 +42,7 @@ public:
 
   FWTree(Log& log, Connector& connector, const Rule& rule, FWTree* parent);
   void Init(std::auto_ptr<RestartFunc> restartFunc,
-            std::auto_ptr<OutputStrategy> outputStrategy);
+            std::auto_ptr<OutputFunc> outputFunc);
 
   void RestartNode(const IList& istart);
   bool UpdateNode();
@@ -57,7 +57,7 @@ public:
   const IList& IEnd() const { return m_iconnection.End(); }
 
   IConnection& GetIConnection() { return m_iconnection; }
-  OutputStrategy& GetOutputStrategy() const { return *m_outputStrategy.get(); }
+  OutputFunc& GetOutputFunc() const { return *m_outputFunc.get(); }
 
   operator std::string() const;
   std::string DrawNode(const std::string& context) const;
@@ -67,7 +67,7 @@ private:
 
   std::auto_ptr<RestartFunc> m_restartFunc;
   IConnection m_iconnection;
-  std::auto_ptr<OutputStrategy> m_outputStrategy;
+  std::auto_ptr<OutputFunc> m_outputFunc;
 };
 
 }

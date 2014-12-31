@@ -36,8 +36,8 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     OData.h \
     Or.cpp \
     Or.h \
-    OutputStrategy.cpp \
-    OutputStrategy.h \
+    OutputFunc.cpp \
+    OutputFunc.h \
     Parser.cpp \
     Parser.h \
     Regexp.cpp \

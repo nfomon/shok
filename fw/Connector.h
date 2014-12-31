@@ -51,7 +51,7 @@ public:
   void ClearNode(FWTree& x);
 
   // Called from a rule to tell us that a node was updated and thus needs to
-  // have its OutputStrategies reset once the whole Tree is done updating
+  // have its OutputFuncs reset once the whole Tree is done updating
   void AddNodeToReset(FWTree& x);
 
   void DrawGraph(const FWTree& onode, const IList* inode = NULL);
