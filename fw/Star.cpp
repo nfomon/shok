@@ -3,8 +3,6 @@
 
 #include "Star.h"
 
-#include "Connector.h"
-
 #include <boost/lexical_cast.hpp>
 using boost::lexical_cast;
 
@@ -17,12 +15,7 @@ using std::vector;
 
 using namespace fw;
 
-void StarRule::Reposition(Connector& connector, FWTree& x, const IList& inode) const {
-  m_log.debug("Repositioning Star " + string(*this) + " at " + string(x) + " with " + string(inode));
-  RepositionFirstChildOfNode(connector, x, inode);
-}
-
-void StarRule::Update(Connector& connector, FWTree& x) const {
+void StarRule::Update(FWTree& x) const {
   m_log.debug("Updating Star " + string(*this) + " at " + string(x));
 
   // Initialize state flags
@@ -32,7 +25,7 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
   if (x.children.empty()) {
     throw FWError("StarRule::Update: Star node " + string(x) + " must have children");
   }
-  x.GetIConnection().SetStart(x.children.at(0).IStart());
+  x.GetIConnection().Restart(x.children.at(0).IStart());
 
   // Iterate over children, either existing or being created, so long as our
   // last child is complete.
@@ -49,7 +42,7 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
         }
         if (&prev_child->IEnd() != &child->IStart()) {
           m_log.info("Star " + string(*this) + " child " + string(*child) + " needs to be repositioned to the node after the prev child's end");
-          connector.RepositionNode(*child, prev_child->IEnd());
+          child->RestartNode(prev_child->IEnd());
         }
       }
     } else {
@@ -61,8 +54,7 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
       if (!newIStart) {
         throw FWError("Star " + string(*this) + (prev_child ? (" with prev child " + string(*prev_child)) : " with no prev child") + " failed to find new istart for new child");
       }
-      FWTree* newChild = AddChildToNode(x, m_children.at(0), *newIStart);
-      connector.RepositionNode(*newChild, *newIStart);
+      m_children.at(0).MakeNode(x, *newIStart);
       child = x.children.end() - 1;
     }
     x.GetIConnection().SetEnd(child->IEnd());
@@ -84,7 +76,7 @@ void StarRule::Update(Connector& connector, FWTree& x) const {
       }
       // Clear any subsequent children
       for (FWTree::child_mod_iter i = child+1; i != x.children.end(); ++i) {
-        connector.ClearNode(*i);
+        i->ClearNode();
       }
       x.children.erase(child+1, x.children.end());
       finished = true;

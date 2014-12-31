@@ -17,7 +17,7 @@ public:
   RegexpRule(Log& log, const std::string& name, const boost::regex& regex);
   virtual ~RegexpRule() {}
 
-  virtual void Update(Connector& connector, FWTree& x) const;
+  virtual void Update(FWTree& x) const;
 
 private:
   const boost::regex m_regex;

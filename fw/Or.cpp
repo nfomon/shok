@@ -3,7 +3,7 @@
 
 #include "Or.h"
 
-#include "Connector.h"
+#include "FWTree.h"
 
 #include <memory>
 #include <string>
@@ -14,12 +14,7 @@ using std::vector;
 
 using namespace fw;
 
-void OrRule::Reposition(Connector& connector, FWTree& x, const IList& inode) const {
-  m_log.debug("Repositioning OrRule " + string(*this) + " at " + string(x) + " with inode " + string(inode));
-  RepositionAllChildrenOfNode(connector, x, inode);
-}
-
-void OrRule::Update(Connector& connector, FWTree& x) const {
+void OrRule::Update(FWTree& x) const {
   m_log.debug("Updating OrRule " + string(*this) + " at " + string(x));
 
   // Compute new state flags
@@ -34,7 +29,7 @@ void OrRule::Update(Connector& connector, FWTree& x) const {
   if (x.children.empty()) {
     throw FWError("Cannot update OrRule " + string(*this) + " that has no children");
   }
-  x.GetIConnection().SetStart(x.children.at(0).IStart());
+  x.GetIConnection().Restart(x.children.at(0).IStart());
 
   FWTree::child_mod_iter i = x.children.begin();
   bool haveSetEnd = false;

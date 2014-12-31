@@ -4,9 +4,16 @@
 #ifndef _Rule_h_
 #define _Rule_h_
 
+/* Production rules
+ *
+ * A Rule represents a node of a parser-machine graph.  In essence it is a
+ * factory for FWTree nodes which represent the process of the parse attempt.
+ */
+
 #include "FWError.h"
 #include "IList.h"
 #include "OutputStrategy.h"
+#include "RestartFunc.h"
 #include "State.h"
 
 #include <boost/lexical_cast.hpp>
@@ -18,7 +25,6 @@
 namespace fw {
 
 class Connector;
-
 class FWTree;
 
 class Rule {
@@ -26,13 +32,20 @@ public:
   typedef boost::ptr_vector<Rule> child_vec;
   typedef child_vec::const_iterator child_iter;
 
-  Rule(Log& log, const std::string& debugName, OutputStrategyType ost)
+  Rule(Log& log, const std::string& debugName, RestartFuncType rft, OutputStrategyType ost)
     : m_log(log),
       m_name(debugName),
+      m_restartFuncType(rft),
       m_outputStrategyType(ost),
       m_parent(NULL) {}
   virtual ~Rule() {}
 
+  const child_vec& GetChildren() const { return m_children; }
+
+  std::auto_ptr<FWTree> MakeRootNode(Connector& connector) const;
+  FWTree* MakeNode(FWTree& parent, const IList& istart) const;
+
+  std::auto_ptr<RestartFunc> MakeRestartFunc(FWTree& x) const;
   std::auto_ptr<OutputStrategy> MakeOutputStrategy(const FWTree& x) const;
 
   // Reposition and Update have some responsibilities:
@@ -43,12 +56,12 @@ public:
   // Reposition should RepositionNode() its children as necessary to then
   // calculate its own state.  Connector::UpdateNode() will be automatically
   // called by Connector::RepositionNode().
-  virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const {}
+  //virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const {}
 
   // Calculate local state flags based on children's state, under the
   // assumption that the children are already up-to-date.
   // Returns true if the node was changed.
-  virtual void Update(Connector& connector, FWTree& x) const = 0;
+  virtual void Update(FWTree& x) const = 0;
 
   Rule* AddChild(std::auto_ptr<Rule> child) {
     child->setParent(this);
@@ -79,13 +92,9 @@ protected:
     m_parent = parent;
   }
 
-  // Convenience methods for some rules
-  FWTree* AddChildToNode(FWTree& x, const Rule& childRule, const IList& istart) const;
-  void RepositionFirstChildOfNode(Connector& connector, FWTree& x, const IList& istart) const;
-  void RepositionAllChildrenOfNode(Connector& connector, FWTree& x, const IList& istart) const;
-
   Log& m_log;
   std::string m_name;
+  RestartFuncType m_restartFuncType;
   OutputStrategyType m_outputStrategyType;
   Rule* m_parent;
   child_vec m_children;

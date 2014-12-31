@@ -84,42 +84,17 @@ OutputStrategySingle::OutputStrategySingle(Log& log, const FWTree& x)
 }
 
 void OutputStrategySingle::Update() {
-/*
-  const State& state = m_node.GetState();
-  if (!state.IsEmitting()) {
-    m_wasEmitting = false;
-    return;
-  }
-  if (!m_wasEmitting) {
-    m_hotlist.Insert(m_onode);
-  }
-  m_wasEmitting = true;
-*/
 }
 
 /* OutputStrategyValue */
 
 void OutputStrategyValue::Update() {
-/*
-  const State& state = m_node.GetState();
-  if (!state.IsEmitting()) {
-    m_wasEmitting = false;
-    return;
-  }
-*/
   string value;
   for (const IList* i = &m_node.IStart(); i != NULL; i = i->right) {
     value += i->value;
   }
-//  if (m_wasEmitting && m_onode.value != value) {
-    m_onode.value = value;
-    m_hotlist.Update(m_onode);
-/*
-  } else if (!m_wasEmitting) {
-    m_hotlist.Insert(m_onode);
-  }
-  m_wasEmitting = true;
-*/
+  m_onode.value = value;
+  m_hotlist.Update(m_onode);
 }
 
 /* OutputStrategyWinner */

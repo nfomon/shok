@@ -18,13 +18,13 @@ namespace fw {
 class MetaRule : public Rule {
 public:
   MetaRule(Log& log, const std::string& searchName, const std::string& name = "")
-    : Rule(log, (name.empty() ? searchName : name), OS_SINGLE),
+    : Rule(log, (name.empty() ? searchName : name), RF_None, OS_SINGLE),
       m_searchName(searchName) {}
   virtual ~MetaRule() {}
 
   const std::string& GetString() const { return m_searchName; }
 
-  virtual void Update(Connector& connector, FWTree& x) const;
+  virtual void Update(FWTree& x) const;
 
 private:
   std::string m_searchName;

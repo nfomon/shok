@@ -3,7 +3,6 @@
 
 #include "Meta.h"
 
-#include "Connector.h"
 #include "FWTree.h"
 
 #include <memory>
@@ -13,13 +12,13 @@ using std::string;
 
 using namespace fw;
 
-void MetaRule::Update(Connector& connector, FWTree& x) const {
+void MetaRule::Update(FWTree& x) const {
   m_log.info("Meta: updating " + string(*this) + " at " + string(x));
   State& state = x.GetState();
   state.GoBad();
   const IList& first = x.IStart();
   if (first.name == m_searchName) {
-    connector.Listen(x, first);
+    x.GetConnector().Listen(x, first);
     state.GoDone();
     const IList* second = first.right;
     if (second) {

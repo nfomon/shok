@@ -4,6 +4,7 @@
 #ifndef _FWTree_h_
 #define _FWTree_h_
 
+#include "Connector.h"
 #include "IConnection.h"
 #include "FWError.h"
 #include "Hotlist.h"
@@ -29,6 +30,8 @@ public:
   typedef child_vec::iterator child_mod_iter;
 
 private:
+  Log& m_log;
+  Connector& m_connector;
   const Rule& m_rule;
   State m_state;
   FWTree* m_parent;
@@ -37,17 +40,17 @@ public:
   child_vec children;
   depth_t depth;
 
-  FWTree(const Rule& rule, FWTree* parent, const IList& istart)
-    : m_rule(rule),
-      m_parent(parent),
-      depth(m_parent ? m_parent->depth + 1 : 0),
-      m_iconnection(istart),
-      m_outputStrategy(rule.MakeOutputStrategy(*this)) {
-  }
-  virtual ~FWTree() {}
+  FWTree(Log& log, Connector& connector, const Rule& rule, FWTree* parent);
+  void Init(std::auto_ptr<RestartFunc> restartFunc,
+            std::auto_ptr<OutputStrategy> outputStrategy);
+
+  void RestartNode(const IList& istart);
+  bool UpdateNode();
+  void ClearNode();
 
   const State& GetState() const { return m_state; }
   State& GetState() { return m_state; }
+  Connector& GetConnector() const { return m_connector; }
   const Rule& GetRule() const { return m_rule; }
   FWTree* GetParent() const { return m_parent; }
   const IList& IStart() const { return m_iconnection.Start(); }
@@ -59,13 +62,10 @@ public:
   operator std::string() const;
   std::string DrawNode(const std::string& context) const;
 
-  // Clear all state and connection information.  Maintains tree structure.
-  void Clear() {
-    m_state.Clear();
-    m_outputStrategy->Clear();
-  }
-
 private:
+  void Restart(const IList& istart);
+
+  std::auto_ptr<RestartFunc> m_restartFunc;
   IConnection m_iconnection;
   std::auto_ptr<OutputStrategy> m_outputStrategy;
 };

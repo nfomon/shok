@@ -10,10 +10,9 @@ namespace fw {
 
 struct OrRule : public Rule {
   OrRule(Log& log, const std::string& name = "")
-    : Rule(log, name, OS_WINNER) {}
+    : Rule(log, name, RF_AllChildrenOfNode, OS_WINNER) {}
   virtual ~OrRule() {}
-  virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const;
-  virtual void Update(Connector& connector, FWTree& x) const;
+  virtual void Update(FWTree& x) const;
 };
 
 }

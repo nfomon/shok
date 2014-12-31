@@ -12,15 +12,28 @@ namespace fw {
 
 class IConnection {
 public:
-  IConnection(const IList& istart) {
+  IConnection()
+    : m_istart(NULL),
+      m_iend(NULL) {}
+
+  const IList& Start() const {
+    if (!m_istart) {
+      throw FWError("Cannot get start of uninitialized IConnection");
+    }
+    return *m_istart;
+  }
+
+  const IList& End() const {
+    if (!m_iend) {
+      throw FWError("Cannot get end of uninitialized IConnection");
+    }
+    return *m_iend;
+  }
+
+  void Restart(const IList& istart) {
     m_istart = &istart;
     m_iend = &istart;
   }
-
-  const IList& Start() const { return *m_istart; }
-  const IList& End() const { return *m_iend; }
-
-  void SetStart(const IList& istart) { m_istart = &istart; }
   void SetEnd(const IList& iend) { m_iend = &iend; }
 
 private:

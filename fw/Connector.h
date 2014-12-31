@@ -4,7 +4,6 @@
 #ifndef _Connector_h_
 #define _Connector_h_
 
-#include "FWTree.h"
 #include "Hotlist.h"
 #include "IList.h"
 #include "ListenerTable.h"
@@ -17,6 +16,7 @@
 
 namespace fw {
 
+class FWTree;
 class Grapher;
 
 class Connector {
@@ -26,41 +26,35 @@ public:
 
   Connector(Log& log, const Rule& rule, const std::string& name = "", Grapher* grapher = NULL);
 
-  const Hotlist::hotlist_vec& GetHotlist() const { return GetRoot().GetOutputStrategy().GetHotlist(); }
-  std::string PrintHotlist() const { return GetRoot().GetOutputStrategy().PrintHotlist(); }
+  const Hotlist::hotlist_vec& GetHotlist() const;
+  std::string PrintHotlist() const;
   listener_set GetListeners(const IList& x) const {
     return m_listeners.GetListeners(&x);
   }
 
-  // These return the common ancestor of all nodes that were changed, if any.
-  // Insert() a new inode, AFTER attaching its connections in the input list.
+  // Insert() a new inode.  Call this AFTER attaching its connections in the
+  // input list.
   void Insert(const IList& inode);
   // Delete() an inode.  Call this AFTER updating its left and right to point
   // to each other, but leave this inode's left and right pointers intact.
   void Delete(const IList& inode);
 
+  // Apply a bunch of inode insertions/updates/deletions
   void UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist);
-
-  // Reposition or Update a single node.  Either called internally by the
-  // Connector or by a rule that wants to process a relative.
-
-  // Set the "starting" inode.  The rule's Reposition() may RepositionNode() on
-  // its children.
-  void RepositionNode(FWTree& x, const IList& inode);
-
-  // Recalculate state based on a change to its children
-  bool UpdateNode(FWTree& x);
-
-  void ClearNode(FWTree& x);
 
   // Called from a rule/state regarding its DS node.
   // Listens for updates to this inode.
   void Listen(FWTree& x, const IList& inode);
   void Unlisten(FWTree& x, const IList& inode);
 
+  // Remove any listening connections regarding a node
+  void ClearNode(FWTree& x);
+
   // Called from a rule to tell us that a node was updated and thus needs to
   // have its OutputStrategies reset once the whole Tree is done updating
   void AddNodeToReset(FWTree& x);
+
+  void DrawGraph(const FWTree& onode, const IList* inode = NULL);
 
 private:
   const FWTree& GetRoot() const {
@@ -74,7 +68,6 @@ private:
   // left (and if any and distinct, to the right) of the inode, about the
   // inode.  For FWTree, updates all listeners of the parent of the inode.
   void UpdateListeners(const IList& inode, bool updateNeighbourListeners);
-  void DrawGraph(const FWTree& onode, const IList* inode = NULL);
 
   void ResetNodes();    // Reset any nodes-to-reset once a Tree update is done
 

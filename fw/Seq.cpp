@@ -17,12 +17,7 @@ using std::vector;
 
 using namespace fw;
 
-void SeqRule::Reposition(Connector& connector, FWTree& x, const IList& inode) const {
-  m_log.debug("Repositioning Seq " + string(*this) + " at " + string(x) + " with " + string(inode));
-  RepositionFirstChildOfNode(connector, x, inode);
-}
-
-void SeqRule::Update(Connector& connector, FWTree& x) const {
+void SeqRule::Update(FWTree& x) const {
   m_log.debug("Updating Seq " + string(*this) + " at " + string(x));
 
   // Initialize state flags
@@ -34,7 +29,7 @@ void SeqRule::Update(Connector& connector, FWTree& x) const {
   } else if (x.children.size() > m_children.size()) {
     throw FWError("SeqRule::Update: Seq node " + string(x) + " has more children than the rule");
   }
-  x.GetIConnection().SetStart(x.children.at(0).IStart());
+  x.GetIConnection().Restart(x.children.at(0).IStart());
 
   // Iterate over node children, either existing or being created, so long as
   // our last child is complete.
@@ -54,7 +49,7 @@ void SeqRule::Update(Connector& connector, FWTree& x) const {
         }
         if (&prev_child->IEnd() != &child->IStart()) {
           m_log.info("Seq " + string(*this) + " child " + string(*child) + " needs to be repositioned to the node after the prev child's end");
-          connector.RepositionNode(*child, prev_child->IEnd());
+          child->RestartNode(prev_child->IEnd());
         }
       }
     } else if (x.children.size() > m_children.size()) {
@@ -70,8 +65,7 @@ void SeqRule::Update(Connector& connector, FWTree& x) const {
       if (!newIStart) {
         throw FWError("Seq " + string(*this) + (prev_child ? (" with prev child " + string(*prev_child)) : " with no prev child") + " failed to find new istart for new child");
       }
-      FWTree* newChild = AddChildToNode(x, m_children.at(child_index), *newIStart);
-      connector.RepositionNode(*newChild, *newIStart);
+      (void) m_children.at(child_index).MakeNode(x, *newIStart);
       child = x.children.end() - 1;
     }
     x.GetIConnection().SetEnd(child->IEnd());
@@ -88,7 +82,7 @@ void SeqRule::Update(Connector& connector, FWTree& x) const {
       state.GoBad();
       // Clear any subsequent children
       for (FWTree::child_mod_iter i = child+1; i != x.children.end(); ++i) {
-        connector.ClearNode(*i);
+        i->ClearNode();
       }
       x.children.erase(child+1, x.children.end());
       finished = true;

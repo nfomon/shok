@@ -6,10 +6,67 @@
 #include "util/Graphviz.h"
 using Util::dotVar;
 
+#include <memory>
 #include <string>
+using std::auto_ptr;
 using std::string;
 
 using namespace fw;
+
+/* public */
+
+FWTree::FWTree(Log& log, Connector& connector, const Rule& rule, FWTree* parent)
+  : m_log(log),
+    m_connector(connector),
+    m_rule(rule),
+    m_parent(parent),
+    depth(m_parent ? m_parent->depth + 1 : 0) {
+}
+
+void FWTree::Init(auto_ptr<RestartFunc> restartFunc,
+                  auto_ptr<OutputStrategy> outputStrategy) {
+  if (m_restartFunc.get() || m_outputStrategy.get()) {
+    throw FWError("Cannot re-initialize FWTree node " + string(*this));
+  }
+  m_restartFunc = restartFunc;
+  m_outputStrategy = outputStrategy;
+}
+
+void FWTree::RestartNode(const IList& istart) {
+  m_log.info("Restarting node " + std::string(*this) + " with inode " + std::string(istart));
+  m_iconnection.Restart(istart);
+  m_connector.DrawGraph(*this, &istart);
+  m_outputStrategy->Clear();
+  m_state.Unlock();
+  Restart(istart);
+  (void) UpdateNode();
+}
+
+bool FWTree::UpdateNode() {
+  m_log.info("Updating node " + std::string(*this));
+  const IList& old_iend = IEnd();
+  m_rule.Update(*this);
+  m_outputStrategy->Update();
+  m_connector.DrawGraph(*this);
+  bool hasChanged = &old_iend != &IEnd() || !m_outputStrategy->GetHotlist().empty();
+  if (hasChanged) {
+    m_log.debug(" - - - - " + string(*this) + " has changed");
+    m_connector.AddNodeToReset(*this);
+  } else {
+    m_log.debug(" - - - - " + string(*this) + " has NOT changed");
+  }
+  return hasChanged;
+}
+
+void FWTree::ClearNode() {
+  m_log.info("Clearing node " + std::string(*this));
+  for (child_mod_iter i = children.begin(); i != children.end(); ++i) {
+    i->ClearNode();
+  }
+  m_state.Clear();
+  m_outputStrategy->Clear();
+  m_connector.ClearNode(*this);
+}
 
 FWTree::operator std::string() const {
   return m_rule.Name() + ":" + string(GetState());
@@ -59,4 +116,10 @@ string FWTree::DrawNode(const string& context) const {
   }
   //s += m_outputStrategy->DrawEmitting(context, *this);
   return s;
+}
+
+/* private */
+
+void FWTree::Restart(const IList& istart) {
+  (*m_restartFunc.get())(istart);
 }

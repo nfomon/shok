@@ -26,6 +26,7 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     IConnection.h \
     IList.cpp \
     IList.h \
+    Keyword.cpp \
     Keyword.h \
     Lexer.cpp \
     Lexer.h \
@@ -41,6 +42,8 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     Parser.h \
     Regexp.cpp \
     Regexp.h \
+    RestartFunc.cpp \
+    RestartFunc.h \
     Rule.cpp \
     Rule.h \
     Seq.cpp \

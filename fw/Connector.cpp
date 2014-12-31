@@ -14,10 +14,6 @@ using boost::lexical_cast;
 
 #include <set>
 #include <string>
-#include <utility>
-using std::make_pair;
-using std::multiset;
-using std::pair;
 using std::set;
 using std::string;
 
@@ -32,28 +28,35 @@ Connector::Connector(Log& log, const Rule& rule, const std::string& name, Graphe
     m_grapher(grapher) {
 }
 
+const Hotlist::hotlist_vec& Connector::GetHotlist() const {
+  return GetRoot().GetOutputStrategy().GetHotlist();
+}
+string Connector::PrintHotlist() const {
+  return GetRoot().GetOutputStrategy().PrintHotlist();
+}
+
 void Connector::Insert(const IList& inode) {
   m_log.info("Connector " + m_name + ": Inserting IList: " + string(inode));
   ResetNodes();
 
   if (!m_root.get()) {
     m_log.debug(" - No root; initializing the tree root");
-    m_root.reset(new FWTree(m_rule, NULL, inode));
-  }
-
-  if (inode.left) {
-    m_log.debug(" - Found left inode: updating listeners of " + string(inode) + "'s left and (if present) right");
-    UpdateListeners(inode, true);
+    m_root = m_rule.MakeRootNode(*this);
+    m_root->RestartNode(inode);
   } else {
-    // Just reposition the root.
-    m_log.debug(" - No left inode: just repositioning the root");
-    RepositionNode(*m_root.get(), inode);
+    if (inode.left) {
+      m_log.debug(" - Found left inode: updating listeners of " + string(inode) + "'s left and (if present) right");
+      UpdateListeners(inode, true);
+    } else {
+      // Just reposition the root.
+      m_log.debug(" - No left inode: just repositioning the root");
+      m_root->RestartNode(inode);
+    }
   }
 
   // Assert that the inode has at least one listener in the updated set.
   if (!m_listeners.HasAnyListeners(&inode)) {
-    State& state = m_root->GetState();
-    state.GoBad();
+    m_root->GetState().GoBad();
   }
   // Stronger check: every inode has at least one listener :)
 
@@ -71,9 +74,9 @@ void Connector::Delete(const IList& inode) {
   m_listeners.RemoveAllListeners(&inode);
 
   if (!inode.left && !inode.right) {
-    ClearNode(*m_root.get());
+    m_root->ClearNode();
   } else if (!inode.left) {
-    RepositionNode(*m_root.get(), *inode.right);
+    m_root->RestartNode(*inode.right);
   } else {
     UpdateListeners(inode, true);
   }
@@ -99,44 +102,8 @@ void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
   }
 }
 
-void Connector::RepositionNode(FWTree& x, const IList& inode) {
-  m_log.info("Connector: Repositioning " + std::string(x) + " with inode " + std::string(inode));
-  DrawGraph(x, &inode);
-  x.GetIConnection().SetStart(inode);
-  x.GetOutputStrategy().Clear();
-  State& state = x.GetState();
-  state.Unlock();
-  x.GetRule().Reposition(*this, x, inode);
-  UpdateNode(x);
-}
-
-// Recalculate state based on a change to one or more children
-bool Connector::UpdateNode(FWTree& x) {
-  m_log.info("Connector: Updating " + std::string(x));
-  const IList& old_iend = x.IEnd();
-  x.GetRule().Update(*this, x);
-  m_log.debug(" - - - - Connector: " + string(x) + " updating output strategy");
-  x.GetOutputStrategy().Update();
-  DrawGraph(x);
-  bool hasChanged = &old_iend != &x.IEnd() || !x.GetOutputStrategy().GetHotlist().empty();
-  if (hasChanged) {
-    m_log.debug(" - - - - Connector: " + string(x) + " has changed");
-    AddNodeToReset(x);
-  } else {
-    m_log.debug(" - - - - Connector: " + string(x) + " has NOT changed");
-  }
-  return hasChanged;
-}
-
 void Connector::ClearNode(FWTree& x) {
-  m_log.info("Connector: Clearing " + std::string(x));
-  for (FWTree::child_mod_iter i = x.children.begin();
-       i != x.children.end(); ++i) {
-    ClearNode(*i);
-  }
-  x.GetOutputStrategy().Clear();
   m_listeners.RemoveAllListenings(&x);
-  x.Clear();
 }
 
 void Connector::Listen(FWTree& x, const IList& inode) {
@@ -201,7 +168,7 @@ void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListener
     change_set changes = changes_by_depth.rbegin()->second;
     m_log.debug("Connector: Updating changes at depth " + lexical_cast<string>(depth));
     for (change_iter i = changes.begin(); i != changes.end(); ++i) {
-      bool changed = UpdateNode(**i);
+      bool changed = (*i)->UpdateNode();
       if (changed) {
         FWTree* parent = (*i)->GetParent();
         if (parent) {

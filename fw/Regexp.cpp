@@ -3,7 +3,6 @@
 
 #include "Regexp.h"
 
-#include "Connector.h"
 #include "FWTree.h"
 
 #include <string>
@@ -12,14 +11,14 @@ using std::string;
 using namespace fw;
 
 RegexpRule::RegexpRule(Log& log, const std::string& name, const boost::regex& regex)
-  : Rule(log, name, OS_VALUE),
+  : Rule(log, name, RF_None, OS_VALUE),
     m_regex(regex) {
   if (m_regex.empty()) {
     throw FWError("Cannot create Regexp with empty regex");
   }
 }
 
-void RegexpRule::Update(Connector& connector, FWTree& x) const {
+void RegexpRule::Update(FWTree& x) const {
   m_log.info("Regexp: updating " + std::string(*this) + " at " + std::string(x));
   State& state = x.GetState();
   state.Clear();
@@ -38,7 +37,7 @@ void RegexpRule::Update(Connector& connector, FWTree& x) const {
       state.GoBad();
       break;
     }
-    connector.Listen(x, *i);
+    x.GetConnector().Listen(x, *i);
   }
   if (NULL == i) {
     boost::match_results<std::string::const_iterator> match_result;
