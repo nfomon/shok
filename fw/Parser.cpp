@@ -37,12 +37,12 @@ std::auto_ptr<Rule> fw::CreateParser_Moderate(Log& log) {
   Rule* newstmt_ = stmts_->AddChild(MakeRule_Seq(log, "new stmt"));
   newstmt_->AddChild(MakeRule_Meta(log, "new", "new"));
   newstmt_->AddChild(MakeRule_Meta(log, "WS", "WS"));
-  newstmt_->AddChild(MakeRule_Meta(log, "ID", "identifier"));
+  newstmt_->AddChild(MakeRule_Meta(log, "identifier", "ID"));
   newstmt_->AddChild(MakeRule_Meta(log, ";", ";"));
   Rule* delstmt_ = stmts_->AddChild(MakeRule_Seq(log, "del stmt"));
   delstmt_->AddChild(MakeRule_Meta(log, "del", "del"));
   delstmt_->AddChild(MakeRule_Meta(log, "WS", "WS"));
-  delstmt_->AddChild(MakeRule_Meta(log, "ID", "identifier"));
+  delstmt_->AddChild(MakeRule_Meta(log, "identifier", "ID"));
   delstmt_->AddChild(MakeRule_Meta(log, ";", ";"));
   return parser;
 }
@@ -73,12 +73,12 @@ std::auto_ptr<Rule> fw::CreateParser_Complex(Log& log) {
   Rule* newstmt = stmt->AddChild(MakeRule_Seq(log, "new stmt"));
   newstmt->AddChild(MakeRule_Meta(log, "new", "new"));
   newstmt->AddChild(MakeRule_Meta(log, "WS", "WS"));
-  newstmt->AddChild(MakeRule_Meta(log, "ID", "identifier"));
+  newstmt->AddChild(MakeRule_Meta(log, "identifier", "ID"));
   newstmt->AddChild(MakeRule_Meta(log, ";", ";"));
   Rule* delstmt = stmt->AddChild(MakeRule_Seq(log, "del stmt"));
   delstmt->AddChild(MakeRule_Meta(log, "del", "del"));
   delstmt->AddChild(MakeRule_Meta(log, "WS", "WS"));
-  delstmt->AddChild(MakeRule_Meta(log, "ID", "identifier"));
+  delstmt->AddChild(MakeRule_Meta(log, "identifier", "ID"));
   delstmt->AddChild(MakeRule_Meta(log, ";", ";"));
   return parser;
 }

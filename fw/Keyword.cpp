@@ -23,7 +23,7 @@ auto_ptr<Rule> fw::MakeRule_Keyword(Log& log, const string& name, const string& 
   return auto_ptr<Rule>(new Rule(log, name,
       auto_ptr<RestartFunc>(new RestartFunc_None(log)),
       auto_ptr<ComputeFunc>(new ComputeFunc_Keyword(log, str)),
-      auto_ptr<OutputFunc>(new OutputFunc_Value(log, name))));
+      auto_ptr<OutputFunc>(new OutputFunc_Single(log, name))));
 }
 
 ComputeFunc_Keyword::ComputeFunc_Keyword(Log& log, const string& str)

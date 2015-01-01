@@ -90,11 +90,17 @@ void OutputFunc_Single::Update() {
 
 void OutputFunc_Value::Update() {
   string value;
-  for (const IList* i = &m_node->IStart(); i != NULL; i = i->right) {
+  const IList* ilast = NULL;
+  if (m_node->GetState().IsComplete()) {
+    ilast = &m_node->IEnd();
+  }
+  for (const IList* i = &m_node->IStart(); i != ilast; i = i->right) {
     value += i->value;
   }
-  m_onode.value = value;
-  m_hotlist.Update(m_onode);
+  if (value != m_onode.value) {
+    m_onode.value = value;
+    m_hotlist.Update(m_onode);
+  }
 }
 
 /* OutputFunc_Winner */

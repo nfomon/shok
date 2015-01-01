@@ -31,7 +31,7 @@ auto_ptr<Rule> fw::CreateLexer_Moderate(Log& log) {
   or_->AddChild(MakeRule_Keyword(log, "new"));
   or_->AddChild(MakeRule_Keyword(log, "del"));
   or_->AddChild(MakeRule_Regexp(log, "ID", boost::regex("[A-Za-z_][0-9A-Za-z_]*")));
-  or_->AddChild(MakeRule_Regexp(log, "INT", boost::regex("[0-9]+")));
+  //or_->AddChild(MakeRule_Regexp(log, "INT", boost::regex("[0-9]+")));
   or_->AddChild(MakeRule_Regexp(log, "WS", boost::regex("[ \t\r]+")));
   or_->AddChild(MakeRule_Keyword(log, ";"));
   return lexer;

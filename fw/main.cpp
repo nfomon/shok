@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
     bool isGraphing = true;
 
     // Lexer
-    std::auto_ptr<Rule> lexer = CreateLexer_Simple(log);
+    std::auto_ptr<Rule> lexer = CreateLexer_Moderate(log);
     log.info("Lexer: " + lexer->Print());
     std::auto_ptr<Grapher> lexerGrapher;
     if (isGraphing) {
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
     log.info("Made a lexer connector");
 
     // Parser
-    std::auto_ptr<Rule> parser = CreateParser_Simple(log);
+    std::auto_ptr<Rule> parser = CreateParser_Moderate(log);
     log.info("Parser: " + parser->Print());
     std::auto_ptr<Grapher> parserGrapher;
     if (isGraphing) {
