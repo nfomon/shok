@@ -10,7 +10,7 @@
  * factory for FWTree nodes which represent the process of the parse attempt.
  */
 
-#include "FWError.h"
+#include "ComputeFunc.h"
 #include "IList.h"
 #include "OutputFunc.h"
 #include "RestartFunc.h"
@@ -32,60 +32,26 @@ public:
   typedef boost::ptr_vector<Rule> child_vec;
   typedef child_vec::const_iterator child_iter;
 
-  Rule(Log& log, const std::string& debugName, RestartFuncType rft, OutputFuncType ost)
-    : m_log(log),
-      m_name(debugName),
-      m_restartFuncType(rft),
-      m_outputFuncType(ost),
-      m_parent(NULL) {}
-  virtual ~Rule() {}
+  Rule(Log& log, const std::string& debugName,
+      std::auto_ptr<RestartFunc> = std::auto_ptr<RestartFunc>(),
+      std::auto_ptr<ComputeFunc> = std::auto_ptr<ComputeFunc>(),
+      std::auto_ptr<OutputFunc> = std::auto_ptr<OutputFunc>());
 
-  const child_vec& GetChildren() const { return m_children; }
+  Rule& SetRestartFunc(std::auto_ptr<RestartFunc> restartFunc);
+  Rule& SetComputeFunc(std::auto_ptr<ComputeFunc> computeFunc);
+  Rule& SetOutputFunc(std::auto_ptr<OutputFunc> outputFunc);
+
+  Rule* AddChild(std::auto_ptr<Rule> child);
 
   std::auto_ptr<FWTree> MakeRootNode(Connector& connector) const;
   FWTree* MakeNode(FWTree& parent, const IList& istart) const;
 
-  std::auto_ptr<RestartFunc> MakeRestartFunc(FWTree& x) const;
-  std::auto_ptr<OutputFunc> MakeOutputFunc(const FWTree& x) const;
-
-  // Reposition and Update have some responsibilities:
-  //  1. Clean up / clear out state as appropriate
-  //  2. Listen/Unlisten for Input updates as appropriate
-  //  3. Compute new state flags based on children
-  //  4. Update begin/end inodes
-  // Reposition should RepositionNode() its children as necessary to then
-  // calculate its own state.  Connector::UpdateNode() will be automatically
-  // called by Connector::RepositionNode().
-  //virtual void Reposition(Connector& connector, FWTree& x, const IList& inode) const {}
-
-  // Calculate local state flags based on children's state, under the
-  // assumption that the children are already up-to-date.
-  // Returns true if the node was changed.
-  virtual void Update(FWTree& x) const = 0;
-
-  Rule* AddChild(std::auto_ptr<Rule> child) {
-    child->setParent(this);
-    m_children.push_back(child);
-    return &m_children.back();
-  }
-  template <typename T>
-  Rule* CreateChild(const std::string& name) {
-    std::auto_ptr<Rule> child(new T(m_log, name));
-    return AddChild(child);
-  }
-  template <typename T, typename A1>
-  Rule* CreateChild(const std::string& name, const A1& a1) {
-    std::auto_ptr<Rule> child(new T(m_log, name, a1));
-    return AddChild(child);
-  }
-
   std::string Name() const { return m_name; }
+  const child_vec& GetChildren() const { return m_children; }
 
-  virtual operator std::string() const {
-    return m_name + ":" + boost::lexical_cast<std::string>(m_children.size());
-  }
+  operator std::string() const { return m_name; }
   std::string Print() const;
-  virtual std::string DrawNode(const std::string& context) const;
+  std::string DrawNode(const std::string& context) const;
 
 protected:
   void setParent(Rule* parent) {
@@ -94,8 +60,9 @@ protected:
 
   Log& m_log;
   std::string m_name;
-  RestartFuncType m_restartFuncType;
-  OutputFuncType m_outputFuncType;
+  std::auto_ptr<RestartFunc> m_restartFunc;
+  std::auto_ptr<ComputeFunc> m_computeFunc;
+  std::auto_ptr<OutputFunc> m_outputFunc;
   Rule* m_parent;
   child_vec m_children;
 };

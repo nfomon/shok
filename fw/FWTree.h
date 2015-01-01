@@ -4,11 +4,13 @@
 #ifndef _FWTree_h_
 #define _FWTree_h_
 
+#include "ComputeFunc.h"
 #include "Connector.h"
 #include "IConnection.h"
 #include "FWError.h"
 #include "Hotlist.h"
 #include "OutputFunc.h"
+#include "RestartFunc.h"
 #include "Rule.h"
 #include "State.h"
 
@@ -40,12 +42,15 @@ public:
   child_vec children;
   depth_t depth;
 
-  FWTree(Log& log, Connector& connector, const Rule& rule, FWTree* parent);
-  void Init(std::auto_ptr<RestartFunc> restartFunc,
-            std::auto_ptr<OutputFunc> outputFunc);
+  FWTree(Log& log,
+         Connector& connector,
+         const Rule& rule, FWTree* parent,
+         std::auto_ptr<RestartFunc> restartFunc,
+         std::auto_ptr<ComputeFunc> computeFunc,
+         std::auto_ptr<OutputFunc> outputFunc);
 
   void RestartNode(const IList& istart);
-  bool UpdateNode();
+  bool ComputeNode();
   void ClearNode();
 
   const State& GetState() const { return m_state; }
@@ -65,8 +70,9 @@ public:
 private:
   void Restart(const IList& istart);
 
-  std::auto_ptr<RestartFunc> m_restartFunc;
   IConnection m_iconnection;
+  std::auto_ptr<RestartFunc> m_restartFunc;
+  std::auto_ptr<ComputeFunc> m_computeFunc;
   std::auto_ptr<OutputFunc> m_outputFunc;
 };
 

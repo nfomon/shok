@@ -4,19 +4,26 @@
 #ifndef _Seq_h_
 #define _Seq_h_
 
-#include "FWTree.h"
-#include "IList.h"
+#include "ComputeFunc.h"
 #include "Rule.h"
 
+#include "util/Log.h"
+
 #include <memory>
+#include <string>
 
 namespace fw {
 
-struct SeqRule : public Rule {
-  SeqRule(Log& log, const std::string& name = "")
-    : Rule(log, name, RF_FirstChildOfNode, OS_SEQUENCE) {}
-  virtual ~SeqRule() {}
-  virtual void Update(FWTree& x) const;
+std::auto_ptr<Rule> MakeRule_Seq(Log& log, const std::string& name);
+
+struct ComputeFunc_Seq : public ComputeFunc {
+  ComputeFunc_Seq(Log& log)
+    : ComputeFunc(log) {}
+  virtual ~ComputeFunc_Seq() {}
+  virtual void operator() ();
+  virtual std::auto_ptr<ComputeFunc> Clone() {
+    return std::auto_ptr<ComputeFunc>(new ComputeFunc_Seq(m_log));
+  }
 };
 
 }

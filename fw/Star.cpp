@@ -3,6 +3,11 @@
 
 #include "Star.h"
 
+#include "Connector.h"
+#include "FWTree.h"
+#include "OutputFunc.h"
+#include "RestartFunc.h"
+
 #include <boost/lexical_cast.hpp>
 using boost::lexical_cast;
 
@@ -15,49 +20,56 @@ using std::vector;
 
 using namespace fw;
 
-void StarRule::Update(FWTree& x) const {
-  m_log.debug("Updating Star " + string(*this) + " at " + string(x));
+auto_ptr<Rule> fw::MakeRule_Star(Log& log, const string& name) {
+  return auto_ptr<Rule>(new Rule(log, name,
+      auto_ptr<RestartFunc>(new RestartFunc_FirstChildOfNode(log)),
+      auto_ptr<ComputeFunc>(new ComputeFunc_Star(log)),
+      auto_ptr<OutputFunc>(new OutputFunc_Sequence(log))));
+}
+
+void ComputeFunc_Star::operator() () {
+  m_log.debug("Computing Star at " + string(*m_node));
 
   // Initialize state flags
-  State& state = x.GetState();
+  State& state = m_node->GetState();
   state.Clear();
 
-  if (x.children.empty()) {
-    throw FWError("StarRule::Update: Star node " + string(x) + " must have children");
+  if (m_node->children.empty()) {
+    throw FWError("Computing Star at " + string(*m_node) + " must have children");
   }
-  x.GetIConnection().Restart(x.children.at(0).IStart());
+  m_node->GetIConnection().Restart(m_node->children.at(0).IStart());
 
   // Iterate over children, either existing or being created, so long as our
   // last child is complete.
   bool finished = false;
-  FWTree::child_mod_iter child = x.children.begin();
+  FWTree::child_mod_iter child = m_node->children.begin();
   const FWTree* prev_child = NULL;
   bool wasComplete = false;
   while (!finished) {
-    if (child != x.children.end()) {
+    if (child != m_node->children.end()) {
       // Existing child
       if (prev_child) {
         if (!child->IStart().left) {
-          throw FWError("Star " + string(*this) + " child " + string(*child) + " has istart at the start of input, but it is not our first child");
+          throw FWError("Computing Star at " + string(*m_node) + " child " + string(*child) + " has istart at the start of input, but it is not our first child");
         }
         if (&prev_child->IEnd() != &child->IStart()) {
-          m_log.info("Star " + string(*this) + " child " + string(*child) + " needs to be repositioned to the node after the prev child's end");
+          m_log.info("Computing Star at " + string(*m_node) + " child " + string(*child) + " needs to be repositioned to the node after the prev child's end");
           child->RestartNode(prev_child->IEnd());
         }
       }
     } else {
       // New child
-      const IList* newIStart = &x.IStart();
+      const IList* newIStart = &m_node->IStart();
       if (prev_child) {
         newIStart = &prev_child->IEnd();
       }
       if (!newIStart) {
-        throw FWError("Star " + string(*this) + (prev_child ? (" with prev child " + string(*prev_child)) : " with no prev child") + " failed to find new istart for new child");
+        throw FWError("Computing Star at " + string(*m_node) + (prev_child ? (" with prev child " + string(*prev_child)) : " with no prev child") + " failed to find new istart for new child");
       }
-      m_children.at(0).MakeNode(x, *newIStart);
-      child = x.children.end() - 1;
+      m_node->GetRule().GetChildren().at(0).MakeNode(*m_node, *newIStart);
+      child = m_node->children.end() - 1;
     }
-    x.GetIConnection().SetEnd(child->IEnd());
+    m_node->GetIConnection().SetEnd(child->IEnd());
 
     // Now check the child's state, and see if we can keep going.
     State& istate = child->GetState();
@@ -68,17 +80,17 @@ void StarRule::Update(FWTree& x) const {
 
     if (istate.IsBad()) {
       if (wasComplete) {
-        m_log.debug("Star " + string(*this) + " has gone bad but its last child was complete, so now it's complete");
+        m_log.debug("Computing Star at " + string(*m_node) + " has gone bad but its last child was complete, so now it's complete");
         state.GoComplete();
       } else {
-        m_log.debug("Star " + string(*this) + " has gone bad");
+        m_log.debug("Computing Star at " + string(*m_node) + " has gone bad");
         state.GoBad();
       }
       // Clear any subsequent children
-      for (FWTree::child_mod_iter i = child+1; i != x.children.end(); ++i) {
+      for (FWTree::child_mod_iter i = child+1; i != m_node->children.end(); ++i) {
         i->ClearNode();
       }
-      x.children.erase(child+1, x.children.end());
+      m_node->children.erase(child+1, m_node->children.end());
       finished = true;
     } else if (istate.IsComplete()) {
       wasComplete = true;
@@ -95,7 +107,7 @@ void StarRule::Update(FWTree& x) const {
       }
       finished = true;
     } else {
-      throw FWError("Star " + string(*this) + " child is in unexpected state");
+      throw FWError("Computing Star at " + string(*m_node) + " child is in unexpected state");
     }
 
     prev_child = &*child;
@@ -103,9 +115,9 @@ void StarRule::Update(FWTree& x) const {
   }
 
   if (!prev_child) {
-    throw FWError("Star " + string(*this) + " should have assigned a previous child at some point");
+    throw FWError("Computing Star at " + string(*m_node) + " should have assigned a previous child at some point");
   }
 
-  m_log.debug("Star " + string(*this) + " done update; now has state " + string(x));
-  m_log.debug(" - and it has istart " + string(x.IStart()) + " and iend " + string(x.IEnd()));
+  m_log.debug("Computing Star at " + string(*m_node) + " done update; now has state " + string(*m_node));
+  m_log.debug(" - and it has istart " + string(m_node->IStart()) + " and iend " + string(m_node->IEnd()));
 }

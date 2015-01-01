@@ -17,21 +17,15 @@ namespace fw {
 
 class FWTree;
 
-enum OutputFuncType {
-  OS_SILENT,
-  OS_SINGLE,
-  OS_VALUE,
-  OS_WINNER,
-  OS_SEQUENCE
-}; 
-
 class OutputFunc {
 public:
   typedef std::set<const IList*> emitting_set;
   typedef emitting_set::const_iterator emitting_iter;
 
-  OutputFunc(Log& log, const FWTree& x);
+  OutputFunc(Log& log);
   virtual ~OutputFunc() {}
+
+  void Init(const FWTree& x) { m_node = &x; }
 
   IList* OStart() { return m_ostart; }
   IList* OEnd() { return m_oend; }
@@ -50,6 +44,7 @@ public:
   }
 
   virtual void Update() = 0;
+  virtual std::auto_ptr<OutputFunc> Clone() = 0;
 
   //std::string DrawEmitting(const std::string& context) const;
   std::string PrintHotlist() const { return m_hotlist.Print(); }
@@ -62,7 +57,7 @@ protected:
   void DeleteChild(const FWTree& child);
 
   Log& m_log;
-  const FWTree& m_node;
+  const FWTree* m_node;
   IList* m_ostart;    // first emittable olist node that is spanned
   IList* m_oend;      // last emittable olist node that is spanned
   emitting_set m_emitting;    // ONodes that we are currently happy to emit
@@ -70,51 +65,63 @@ protected:
   Hotlist m_hotlist;  // active olist updates
 };
 
-class OutputFuncSingle : public OutputFunc {
+class OutputFunc_Single : public OutputFunc {
 public:
-  OutputFuncSingle(Log& log, const FWTree& x);
-  virtual ~OutputFuncSingle() {}
+  OutputFunc_Single(Log& log, const std::string& name);
+  virtual ~OutputFunc_Single() {}
 
   virtual void Clear() {}
   virtual void Update();
+  virtual std::auto_ptr<OutputFunc> Clone() {
+    return std::auto_ptr<OutputFunc>(new OutputFunc_Single(m_log, m_onode.name));
+  }
 
 protected:
   IList m_onode;   // Single output list node
 };
 
-class OutputFuncValue : public OutputFuncSingle {
+class OutputFunc_Value : public OutputFunc_Single {
 public:
-  OutputFuncValue(Log& log, const FWTree& x)
-    : OutputFuncSingle(log, x) {}
-  virtual ~OutputFuncValue() {}
+  OutputFunc_Value(Log& log, const std::string& name)
+    : OutputFunc_Single(log, name) {}
+  virtual ~OutputFunc_Value() {}
 
   virtual void Update();
+  virtual std::auto_ptr<OutputFunc> Clone() {
+    return std::auto_ptr<OutputFunc>(new OutputFunc_Value(m_log, m_onode.name));
+  }
 };
 
-class OutputFuncWinner : public OutputFunc {
+class OutputFunc_Winner : public OutputFunc {
 public:
-  OutputFuncWinner(Log& log, const FWTree& x)
-    : OutputFunc(log, x),
+  OutputFunc_Winner(Log& log)
+    : OutputFunc(log),
       m_winner(NULL) {}
-  virtual ~OutputFuncWinner() {}
+  virtual ~OutputFunc_Winner() {}
 
   virtual void Clear();
   virtual void Reset();
   virtual void Update();
+  virtual std::auto_ptr<OutputFunc> Clone() {
+    return std::auto_ptr<OutputFunc>(new OutputFunc_Winner(m_log));
+  }
 
 private:
   const FWTree* m_winner;
 };
 
-class OutputFuncSequence : public OutputFunc {
+class OutputFunc_Sequence : public OutputFunc {
 public:
-  OutputFuncSequence(Log& log, const FWTree& x)
-    : OutputFunc(log, x) {}
-  virtual ~OutputFuncSequence() {}
+  OutputFunc_Sequence(Log& log)
+    : OutputFunc(log) {}
+  virtual ~OutputFunc_Sequence() {}
 
   virtual void Clear();
   virtual void Reset();
   virtual void Update();
+  virtual std::auto_ptr<OutputFunc> Clone() {
+    return std::auto_ptr<OutputFunc>(new OutputFunc_Sequence(m_log));
+  }
 
 private:
   typedef std::set<const FWTree*> emitchildren_set;

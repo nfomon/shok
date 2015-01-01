@@ -17,68 +17,68 @@ using namespace fw;
 
 // parser = ((new ;)|(del ;))*
 std::auto_ptr<Rule> fw::CreateParser_Simple(Log& log) {
-  std::auto_ptr<Rule> parser(new StarRule(log, "* (parser)"));
-  Rule* stmts_ = parser->CreateChild<OrRule>("Or (stmts)");
-  Rule* newstmt_ = stmts_->CreateChild<SeqRule>("new stmt");
-  newstmt_->CreateChild<MetaRule>("new", "new");
-  //newstmt_->CreateChild<MetaRule>("x", "x");
-  newstmt_->CreateChild<MetaRule>(";", ";");
-  Rule* delstmt_ = stmts_->CreateChild<SeqRule>("del stmt");
-  delstmt_->CreateChild<MetaRule>("del", "del");
-  //delstmt_->CreateChild<MetaRule>("x", "x");
-  delstmt_->CreateChild<MetaRule>(";", ";");
+  std::auto_ptr<Rule> parser(MakeRule_Star(log, "* (parser)"));
+  Rule* stmts_ = parser->AddChild(MakeRule_Or(log, "Or (stmts)"));
+  Rule* newstmt_ = stmts_->AddChild(MakeRule_Seq(log, "new stmt"));
+  newstmt_->AddChild(MakeRule_Meta(log, "new"));
+  //newstmt_->AddChild(MakeRule_Meta(log, "x"));
+  newstmt_->AddChild(MakeRule_Meta(log, ";"));
+  Rule* delstmt_ = stmts_->AddChild(MakeRule_Seq(log, "del stmt"));
+  delstmt_->AddChild(MakeRule_Meta(log, "del"));
+  //delstmt_->AddChild(MakeRule_Meta(log, "x"));
+  delstmt_->AddChild(MakeRule_Meta(log, ";"));
   return parser;
 }
 
 // parser = ((new WS ID ;)|(del WS ID ;))*
 std::auto_ptr<Rule> fw::CreateParser_Moderate(Log& log) {
-  std::auto_ptr<Rule> parser(new StarRule(log, "* (parser)"));
-  Rule* stmts_ = parser->CreateChild<OrRule>("Or (stmts)");
-  Rule* newstmt_ = stmts_->CreateChild<SeqRule>("new stmt");
-  newstmt_->CreateChild<MetaRule>("new", "new");
-  newstmt_->CreateChild<MetaRule>("WS", "WS");
-  newstmt_->CreateChild<MetaRule>("ID", "identifier");
-  newstmt_->CreateChild<MetaRule>(";", ";");
-  Rule* delstmt_ = stmts_->CreateChild<SeqRule>("del stmt");
-  delstmt_->CreateChild<MetaRule>("del", "del");
-  delstmt_->CreateChild<MetaRule>("WS", "WS");
-  delstmt_->CreateChild<MetaRule>("ID", "identifier");
-  delstmt_->CreateChild<MetaRule>(";", ";");
+  std::auto_ptr<Rule> parser(MakeRule_Star(log, "* (parser)"));
+  Rule* stmts_ = parser->AddChild(MakeRule_Or(log, "Or (stmts)"));
+  Rule* newstmt_ = stmts_->AddChild(MakeRule_Seq(log, "new stmt"));
+  newstmt_->AddChild(MakeRule_Meta(log, "new", "new"));
+  newstmt_->AddChild(MakeRule_Meta(log, "WS", "WS"));
+  newstmt_->AddChild(MakeRule_Meta(log, "ID", "identifier"));
+  newstmt_->AddChild(MakeRule_Meta(log, ";", ";"));
+  Rule* delstmt_ = stmts_->AddChild(MakeRule_Seq(log, "del stmt"));
+  delstmt_->AddChild(MakeRule_Meta(log, "del", "del"));
+  delstmt_->AddChild(MakeRule_Meta(log, "WS", "WS"));
+  delstmt_->AddChild(MakeRule_Meta(log, "ID", "identifier"));
+  delstmt_->AddChild(MakeRule_Meta(log, ";", ";"));
   return parser;
 }
 
 // parser = ((cmd|codeblock)end)*
 std::auto_ptr<Rule> fw::CreateParser_Complex(Log& log) {
-  std::auto_ptr<Rule> parser(new StarRule(log, "* (parser)"));
-  Rule* line = parser->CreateChild<SeqRule>("line");
-  //line->CreateChild<MetaRule>("WS", "WS");
-  Rule* cmdorcode = line->CreateChild<OrRule>("Or (cmdorcode)");
-  Rule* end = line->CreateChild<OrRule>("end");
-  end->CreateChild<MetaRule>(";");
-  end->CreateChild<MetaRule>("\n");
+  std::auto_ptr<Rule> parser(MakeRule_Star(log, "* (parser)"));
+  Rule* line = parser->AddChild(MakeRule_Seq(log, "line"));
+  //line->AddChild(MakeRule_Meta(log, "WS", "WS"));
+  Rule* cmdorcode = line->AddChild(MakeRule_Or(log, "Or (cmdorcode)"));
+  Rule* end = line->AddChild(MakeRule_Or(log, "end"));
+  end->AddChild(MakeRule_Meta(log, ";"));
+  end->AddChild(MakeRule_Meta(log, "\n"));
 
-  Rule* cmdline = cmdorcode->CreateChild<SeqRule>("cmdline");
-  cmdline->CreateChild<MetaRule>("ID", "program");
-  Rule* cmdargs = cmdline->CreateChild<StarRule>("* (cmdargs)");
-  Rule* cmdarg = cmdargs->CreateChild<SeqRule>("cmdarg");
-  cmdarg->CreateChild<MetaRule>("WS", "WS");
-  cmdarg->CreateChild<MetaRule>("ID", "arg");
+  Rule* cmdline = cmdorcode->AddChild(MakeRule_Seq(log, "cmdline"));
+  cmdline->AddChild(MakeRule_Meta(log, "ID", "program"));
+  Rule* cmdargs = cmdline->AddChild(MakeRule_Star(log, "* (cmdargs)"));
+  Rule* cmdarg = cmdargs->AddChild(MakeRule_Seq(log, "cmdarg"));
+  cmdarg->AddChild(MakeRule_Meta(log, "WS", "WS"));
+  cmdarg->AddChild(MakeRule_Meta(log, "ID", "arg"));
 
-  Rule* codeblock = cmdorcode->CreateChild<SeqRule>("codeblock");
-  codeblock->CreateChild<MetaRule>("{");
-  Rule* stmts = codeblock->CreateChild<StarRule>("* (stmts)");
-  codeblock->CreateChild<MetaRule>("}");
+  Rule* codeblock = cmdorcode->AddChild(MakeRule_Seq(log, "codeblock"));
+  codeblock->AddChild(MakeRule_Meta(log, "{"));
+  Rule* stmts = codeblock->AddChild(MakeRule_Star(log, "* (stmts)"));
+  codeblock->AddChild(MakeRule_Meta(log, "}"));
 
-  Rule* stmt = stmts->CreateChild<OrRule>("Or (stmt)");
-  Rule* newstmt = stmt->CreateChild<SeqRule>("new stmt");
-  newstmt->CreateChild<MetaRule>("new", "new");
-  newstmt->CreateChild<MetaRule>("WS", "WS");
-  newstmt->CreateChild<MetaRule>("ID", "identifier");
-  newstmt->CreateChild<MetaRule>(";", ";");
-  Rule* delstmt = stmt->CreateChild<SeqRule>("del stmt");
-  delstmt->CreateChild<MetaRule>("del", "del");
-  delstmt->CreateChild<MetaRule>("WS", "WS");
-  delstmt->CreateChild<MetaRule>("ID", "identifier");
-  delstmt->CreateChild<MetaRule>(";", ";");
+  Rule* stmt = stmts->AddChild(MakeRule_Or(log, "Or (stmt)"));
+  Rule* newstmt = stmt->AddChild(MakeRule_Seq(log, "new stmt"));
+  newstmt->AddChild(MakeRule_Meta(log, "new", "new"));
+  newstmt->AddChild(MakeRule_Meta(log, "WS", "WS"));
+  newstmt->AddChild(MakeRule_Meta(log, "ID", "identifier"));
+  newstmt->AddChild(MakeRule_Meta(log, ";", ";"));
+  Rule* delstmt = stmt->AddChild(MakeRule_Seq(log, "del stmt"));
+  delstmt->AddChild(MakeRule_Meta(log, "del", "del"));
+  delstmt->AddChild(MakeRule_Meta(log, "WS", "WS"));
+  delstmt->AddChild(MakeRule_Meta(log, "ID", "identifier"));
+  delstmt->AddChild(MakeRule_Meta(log, ";", ";"));
   return parser;
 }

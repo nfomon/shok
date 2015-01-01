@@ -4,6 +4,9 @@
 #include "Seq.h"
 
 #include "Connector.h"
+#include "FWTree.h"
+#include "OutputFunc.h"
+#include "RestartFunc.h"
 
 #include <boost/lexical_cast.hpp>
 using boost::lexical_cast;
@@ -17,58 +20,65 @@ using std::vector;
 
 using namespace fw;
 
-void SeqRule::Update(FWTree& x) const {
-  m_log.debug("Updating Seq " + string(*this) + " at " + string(x));
+auto_ptr<Rule> fw::MakeRule_Seq(Log& log, const string& name) {
+  return auto_ptr<Rule>(new Rule(log, name,
+      auto_ptr<RestartFunc>(new RestartFunc_FirstChildOfNode(log)),
+      auto_ptr<ComputeFunc>(new ComputeFunc_Seq(log)),
+      auto_ptr<OutputFunc>(new OutputFunc_Sequence(log))));
+}
+
+void ComputeFunc_Seq::operator() () {
+  m_log.debug("Computing Seq at " + string(*m_node));
 
   // Initialize state flags
-  State& state = x.GetState();
+  State& state = m_node->GetState();
   state.Clear();
 
-  if (x.children.empty()) {
-    throw FWError("SeqRule::Update: Seq node " + string(x) + " must have children");
-  } else if (x.children.size() > m_children.size()) {
-    throw FWError("SeqRule::Update: Seq node " + string(x) + " has more children than the rule");
+  if (m_node->children.empty()) {
+    throw FWError("SeqRule::Update: Seq node " + string(*m_node) + " must have children");
+  } else if (m_node->children.size() > m_node->GetRule().GetChildren().size()) {
+    throw FWError("SeqRule::Update: Seq node " + string(*m_node) + " has more children than the rule");
   }
-  x.GetIConnection().Restart(x.children.at(0).IStart());
+  m_node->GetIConnection().Restart(m_node->children.at(0).IStart());
 
   // Iterate over node children, either existing or being created, so long as
   // our last child is complete.
   bool finished = false;
   unsigned int child_index = 0;
-  FWTree::child_mod_iter child = x.children.begin();
+  FWTree::child_mod_iter child = m_node->children.begin();
   FWTree* prev_child = NULL;
   while (!finished) {
-    if (child_index >= m_children.size()) {
-      throw FWError("Seq " + string(*this) + " evaluated too many children beyond the rule");
+    if (child_index >= m_node->GetRule().GetChildren().size()) {
+      throw FWError("Computing Seq at " + string(*m_node) + " evaluated too many children beyond the rule");
     }
-    if (child != x.children.end()) {
+    if (child != m_node->children.end()) {
       // Existing child
       if (prev_child) {
         if (!child->IStart().left) {
-          throw FWError("Seq " + string(*this) + " child " + string(*child) + " has istart at the start of input, but it's not our first child");
+          throw FWError("Computing Seq  at " + string(*m_node) + " child " + string(*child) + " has istart at the start of input, but it's not our first child");
         }
         if (&prev_child->IEnd() != &child->IStart()) {
-          m_log.info("Seq " + string(*this) + " child " + string(*child) + " needs to be repositioned to the node after the prev child's end");
+          m_log.info("Computing Seq at " + string(*m_node) + " child " + string(*child) + " needs to be repositioned to the node after the prev child's end");
           child->RestartNode(prev_child->IEnd());
         }
       }
-    } else if (x.children.size() > m_children.size()) {
-      throw FWError("SeqRule::Update: Seq node " + string(x) + " has more children than the rule");
-    } else if (child_index >= m_children.size()) {
-      throw FWError("SeqRule::Update: child index >= Rule size");
+    } else if (m_node->children.size() > m_node->GetRule().GetChildren().size()) {
+      throw FWError("Computing Seq node " + string(*m_node) + " has more children than the rule");
+    } else if (child_index >= m_node->GetRule().GetChildren().size()) {
+      throw FWError("Computing Seq node at " + string(*m_node) + ": child index >= Rule size");
     } else {
       // New child
-      const IList* newIStart = &x.IStart();
+      const IList* newIStart = &m_node->IStart();
       if (prev_child) {
         newIStart = &prev_child->IEnd();
       }
       if (!newIStart) {
-        throw FWError("Seq " + string(*this) + (prev_child ? (" with prev child " + string(*prev_child)) : " with no prev child") + " failed to find new istart for new child");
+        throw FWError("Computing Seq at " + string(*m_node) + (prev_child ? (" with prev child " + string(*prev_child)) : " with no prev child") + " failed to find new istart for new child");
       }
-      (void) m_children.at(child_index).MakeNode(x, *newIStart);
-      child = x.children.end() - 1;
+      (void) m_node->GetRule().GetChildren().at(child_index).MakeNode(*m_node, *newIStart);
+      child = m_node->children.end() - 1;
     }
-    x.GetIConnection().SetEnd(child->IEnd());
+    m_node->GetIConnection().SetEnd(child->IEnd());
 
     // Now check the child's state, and see if we can keep going.
     State& istate = child->GetState();
@@ -78,17 +88,17 @@ void SeqRule::Update(FWTree& x) const {
     }
 
     if (istate.IsBad()) {
-      m_log.debug("Seq " + string(*this) + " has gone bad");
+      m_log.debug("Computing Seq at " + string(*m_node) + " has gone bad");
       state.GoBad();
       // Clear any subsequent children
-      for (FWTree::child_mod_iter i = child+1; i != x.children.end(); ++i) {
+      for (FWTree::child_mod_iter i = child+1; i != m_node->children.end(); ++i) {
         i->ClearNode();
       }
-      x.children.erase(child+1, x.children.end());
+      m_node->children.erase(child+1, m_node->children.end());
       finished = true;
     } else if (istate.IsComplete()) {
       // Are we complete at the end of our sequence?
-      if (child_index == m_children.size() - 1) {
+      if (child_index == m_node->GetRule().GetChildren().size() - 1) {
         state.GoComplete();
         finished = true;
       } else {
@@ -96,16 +106,16 @@ void SeqRule::Update(FWTree& x) const {
       }
     } else if (istate.IsAccepting()) {
       if (child->IEnd().right) {
-        throw FWError("Seq found incomplete inode that is only ok; not allowed");
+        throw FWError("Computing Seq at " + string(*m_node) + " found incomplete inode that is only ok; not allowed");
       }
-      if (istate.IsDone() && child_index == m_children.size() - 1) {
+      if (istate.IsDone() && child_index == m_node->GetRule().GetChildren().size() - 1) {
         state.GoDone();
       } else {
         state.GoOK();
       }
       finished = true;
     } else {
-      throw FWError("Seq " + string(*this) + " child is in unexpected state");
+      throw FWError("Computing Seq at " + string(*m_node) + " child is in unexpected state");
     }
 
     prev_child = &*child;
@@ -114,9 +124,9 @@ void SeqRule::Update(FWTree& x) const {
   }
 
   if (!prev_child) {
-    throw FWError("Seq " + string(*this) + " should have assigned a previous child at some point");
+    throw FWError("Computing Seq at " + string(*m_node) + " should have assigned a previous child at some point");
   }
 
-  m_log.debug("Seq " + string(*this) + " done update; now has state " + string(x));
-  m_log.debug(" - and it has istart " + string(x.IStart()) + " and iend " + string(x.IEnd()));
+  m_log.debug("Computing Seq at " + string(*m_node) + " done update; now has state " + string(*m_node));
+  m_log.debug(" - and it has istart " + string(m_node->IStart()) + " and iend " + string(m_node->IEnd()));
 }

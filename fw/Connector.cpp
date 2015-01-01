@@ -168,7 +168,7 @@ void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListener
     change_set changes = changes_by_depth.rbegin()->second;
     m_log.debug("Connector: Updating changes at depth " + lexical_cast<string>(depth));
     for (change_iter i = changes.begin(); i != changes.end(); ++i) {
-      bool changed = (*i)->UpdateNode();
+      bool changed = (*i)->ComputeNode();
       if (changed) {
         FWTree* parent = (*i)->GetParent();
         if (parent) {

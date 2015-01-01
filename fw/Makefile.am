@@ -14,6 +14,7 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     Char.h \
     Compiler.cpp \
     Compiler.h \
+    ComputeFunc.h \
     Connector.cpp \
     Connector.h \
     FWError.h \

@@ -4,28 +4,39 @@
 #include "Regexp.h"
 
 #include "FWTree.h"
+#include "OutputFunc.h"
+#include "RestartFunc.h"
 
+#include <memory>
 #include <string>
+using std::auto_ptr;
 using std::string;
 
 using namespace fw;
 
-RegexpRule::RegexpRule(Log& log, const std::string& name, const boost::regex& regex)
-  : Rule(log, name, RF_None, OS_VALUE),
+auto_ptr<Rule> fw::MakeRule_Regexp(Log& log, const string& name, const boost::regex& regex) {
+  return auto_ptr<Rule>(new Rule(log, name,
+      auto_ptr<RestartFunc>(new RestartFunc_None(log)),
+      auto_ptr<ComputeFunc>(new ComputeFunc_Regexp(log, regex)),
+      auto_ptr<OutputFunc>(new OutputFunc_Value(log, name))));
+}
+
+ComputeFunc_Regexp::ComputeFunc_Regexp(Log& log, const boost::regex& regex)
+  : ComputeFunc(log),
     m_regex(regex) {
   if (m_regex.empty()) {
     throw FWError("Cannot create Regexp with empty regex");
   }
 }
 
-void RegexpRule::Update(FWTree& x) const {
-  m_log.info("Regexp: updating " + std::string(*this) + " at " + std::string(x));
-  State& state = x.GetState();
+void ComputeFunc_Regexp::operator() () {
+  m_log.info("Computing Regexp at " + string(*m_node));
+  State& state = m_node->GetState();
   state.Clear();
   std::string str;
-  const IList* i = &x.IStart();
+  const IList* i = &m_node->IStart();
   for (; i != NULL; i = i->right) {
-    x.GetIConnection().SetEnd(*i);
+    m_node->GetIConnection().SetEnd(*i);
     str += i->value;
     if (!boost::regex_match(str, m_regex)) {
       if (str.size() > 1) {
@@ -37,7 +48,7 @@ void RegexpRule::Update(FWTree& x) const {
       state.GoBad();
       break;
     }
-    x.GetConnector().Listen(x, *i);
+    m_node->GetConnector().Listen(*m_node, *i);
   }
   if (NULL == i) {
     boost::match_results<std::string::const_iterator> match_result;
@@ -46,5 +57,5 @@ void RegexpRule::Update(FWTree& x) const {
       state.GoDone();
     }
   }
-  m_log.debug("Regexp " + std::string(*this) + " now: " + std::string(x));
+  m_log.debug("Regexp now at " + string(*m_node));
 }

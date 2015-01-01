@@ -19,15 +19,15 @@ using std::vector;
 
 using namespace fw;
 
-OutputFunc::OutputFunc(Log& log, const FWTree& x)
+OutputFunc::OutputFunc(Log& log)
   : m_log(log),
-    m_node(x),
+    m_node(NULL),
     m_ostart(NULL),
     m_oend(NULL) {
 }
 
 void OutputFunc::ApproveChild(const FWTree& child) {
-  m_log.debug("**** OutputFunc: " + string(m_node) + " Approving child " + string(child));
+  m_log.debug("**** OutputFunc: " + string(*m_node) + " Approving child " + string(child));
   const Hotlist::hotlist_vec& h = child.GetOutputFunc().GetHotlist();
   m_hotlist.Accept(h);
   const emitting_set& e = child.GetOutputFunc().Emitting();
@@ -35,7 +35,7 @@ void OutputFunc::ApproveChild(const FWTree& child) {
 }
 
 void OutputFunc::InsertChild(const FWTree& child) {
-  m_log.debug("**** OutputFunc: " + string(m_node) + " Inserting child " + string(child));
+  m_log.debug("**** OutputFunc: " + string(*m_node) + " Inserting child " + string(child));
   const emitting_set& e = child.GetOutputFunc().Emitting();
   for (emitting_iter i = e.begin(); i != e.end(); ++i) {
     m_hotlist.Insert(**i);
@@ -44,7 +44,7 @@ void OutputFunc::InsertChild(const FWTree& child) {
 }
 
 void OutputFunc::DeleteChild(const FWTree& child) {
-  m_log.debug("**** OutputFunc: " + string(m_node) + " Deleting child " + string(child));
+  m_log.debug("**** OutputFunc: " + string(*m_node) + " Deleting child " + string(child));
   const emitting_set& we = child.GetOutputFunc().WasEmitting();
   for (emitting_iter i = we.begin(); i != we.end(); ++i) {
     m_hotlist.Delete(**i);
@@ -56,70 +56,70 @@ void OutputFunc::DeleteChild(const FWTree& child) {
 string OutputFunc::DrawEmitting(const string& context) const {
   string s;
   if (m_ostart) {
-    s += dotVar(m_ostart->owner, context) + " -> " + dotVar(&m_node, context) + " [constraint=false, weight=1, arrowsize=1.2, color=\"#22ee22\"];\n";
+    s += dotVar(m_ostart->owner, context) + " -> " + dotVar(m_node, context) + " [constraint=false, weight=1, arrowsize=1.2, color=\"#22ee22\"];\n";
   }
   for (emitting_iter i = m_emitting.begin(); i != m_emitting.end(); ++i) {
-    s += dotVar((*i)->owner, context) + " -> " + dotVar(&m_node, context) + " [constraint=false, weight=1, arrowsize=1.2, color=\"#cc0044\"];\n";
+    s += dotVar((*i)->owner, context) + " -> " + dotVar(m_node, context) + " [constraint=false, weight=1, arrowsize=1.2, color=\"#cc0044\"];\n";
   }
   if (m_oend) {
-    s += dotVar(m_ostart->owner, context) + " -> " + dotVar(&m_node, context) + " [constraint=false, weight=1, arrowsize=1.2, color=\"#ee2222\"];\n";
+    s += dotVar(m_ostart->owner, context) + " -> " + dotVar(m_node, context) + " [constraint=false, weight=1, arrowsize=1.2, color=\"#ee2222\"];\n";
   }
   // Also draw the previous connections!
   for (emitting_iter i = m_wasEmitting.begin(); i != m_wasEmitting.end(); ++i) {
-    s += dotVar((*i)->owner, context) + " -> " + dotVar(&m_node, context) + " [constraint=false, weight=1, arrowsize=1.2, color=\"#6600ee\"];\n";
+    s += dotVar((*i)->owner, context) + " -> " + dotVar(m_node, context) + " [constraint=false, weight=1, arrowsize=1.2, color=\"#6600ee\"];\n";
   }
   return s;
 }
 */
 
-/* OutputFuncSingle */
+/* OutputFunc_Single */
 
-OutputFuncSingle::OutputFuncSingle(Log& log, const FWTree& x)
-  : OutputFunc(log, x),
-    m_onode(x.GetRule().Name()) {
+OutputFunc_Single::OutputFunc_Single(Log& log, const std::string& name)
+  : OutputFunc(log),
+    m_onode(name) {
     m_ostart = &m_onode;
     m_oend = &m_onode;
     m_emitting.insert(&m_onode);
     m_hotlist.Insert(m_onode);
 }
 
-void OutputFuncSingle::Update() {
+void OutputFunc_Single::Update() {
 }
 
-/* OutputFuncValue */
+/* OutputFunc_Value */
 
-void OutputFuncValue::Update() {
+void OutputFunc_Value::Update() {
   string value;
-  for (const IList* i = &m_node.IStart(); i != NULL; i = i->right) {
+  for (const IList* i = &m_node->IStart(); i != NULL; i = i->right) {
     value += i->value;
   }
   m_onode.value = value;
   m_hotlist.Update(m_onode);
 }
 
-/* OutputFuncWinner */
+/* OutputFunc_Winner */
 
-void OutputFuncWinner::Clear() {
+void OutputFunc_Winner::Clear() {
   m_winner = NULL;
   m_ostart = NULL;
   m_oend = NULL;
 }
 
-void OutputFuncWinner::Reset() {
+void OutputFunc_Winner::Reset() {
   m_wasEmitting = m_emitting;
   m_emitting.clear();
   m_hotlist.Clear();
 }
 
-void OutputFuncWinner::Update() {
-  const State& state = m_node.GetState();
+void OutputFunc_Winner::Update() {
+  const State& state = m_node->GetState();
   if (!state.IsEmitting()) {
-    m_log.debug("OutputFuncWinner " + string(m_node) + " is not emitting; skipping update");
+    m_log.debug("OutputFunc_Winner " + string(*m_node) + " is not emitting; skipping update");
     return;
   }
   bool isComplete = state.IsComplete();
   const FWTree* winner = NULL;
-  for (FWTree::child_iter i = m_node.children.begin(); i != m_node.children.end(); ++i) {
+  for (FWTree::child_iter i = m_node->children.begin(); i != m_node->children.end(); ++i) {
     const State& istate = i->GetState();
     if (istate.IsBad() || istate.IsOK()) {
       continue;
@@ -132,35 +132,35 @@ void OutputFuncWinner::Update() {
     }
   }
   if (!winner) {
-    throw FWError("OutputFuncWinner for " + string(m_node) + " failed to find winner");
+    throw FWError("OutputFunc_Winner for " + string(*m_node) + " failed to find winner");
   }
-  m_log.debug("**** OutputFuncWinner: " + string(m_node) + " Declaring winner " + string(*winner));
+  m_log.debug("**** OutputFunc_Winner: " + string(*m_node) + " Declaring winner " + string(*winner));
   m_ostart = winner->GetOutputFunc().OStart();
   m_oend = winner->GetOutputFunc().OEnd();
   if (winner == m_winner) {
     ApproveChild(*winner);
   } else {
     if (m_winner) {
-      m_log.debug("OutputFuncWinner: un-winning (deleting) old winner " + string(*m_winner));
+      m_log.debug("OutputFunc_Winner: un-winning (deleting) old winner " + string(*m_winner));
       DeleteChild(*m_winner);
     }
     InsertChild(*winner);
     m_winner = winner;
   }
 
-  m_log.debug("OutputFuncWinner " + string(m_node) + " done update; hotlist has size " + boost::lexical_cast<string>(m_hotlist.GetHotlist().size()));
+  m_log.debug("OutputFunc_Winner " + string(*m_node) + " done update; hotlist has size " + boost::lexical_cast<string>(m_hotlist.GetHotlist().size()));
   m_log.debug(m_hotlist.Print());
 }
 
-/* OutputFuncSequence */
+/* OutputFunc_Sequence */
 
-void OutputFuncSequence::Clear() {
+void OutputFunc_Sequence::Clear() {
   m_emitting.clear();
   m_ostart = NULL;
   m_oend = NULL;
 }
 
-void OutputFuncSequence::Reset() {
+void OutputFunc_Sequence::Reset() {
   m_wasEmitting = m_emitting;
   m_emitting.clear();
   m_hotlist.Clear();
@@ -168,15 +168,15 @@ void OutputFuncSequence::Reset() {
   m_oend = NULL;
 }
 
-void OutputFuncSequence::Update() {
-  m_log.debug("OutputFuncSequence::Update " + string(m_node));
-  const State& state = m_node.GetState();
+void OutputFunc_Sequence::Update() {
+  m_log.debug("OutputFunc_Sequence::Update " + string(*m_node));
+  const State& state = m_node->GetState();
   if (!state.IsEmitting()) {
     return;
   }
   emitchildren_set wereEmit = m_emitChildren;
   emitchildren_set nowEmit;
-  for (FWTree::child_iter i = m_node.children.begin(); i != m_node.children.end(); ++i) {
+  for (FWTree::child_iter i = m_node->children.begin(); i != m_node->children.end(); ++i) {
     const State& istate = i->GetState();
     if (!istate.IsEmitting()) {
       // Delete children that are no longer being emit
@@ -187,7 +187,7 @@ void OutputFuncSequence::Update() {
     }
     OutputFunc& iostrat = i->GetOutputFunc();
     if ((iostrat.OStart() && !iostrat.OEnd()) || (!iostrat.OStart() && iostrat.OEnd())) {
-      throw FWError("OutputFuncSequence::Update found " + string(*i) + " with only an ostart or oend, but not both");
+      throw FWError("OutputFunc_Sequence::Update found " + string(*i) + " with only an ostart or oend, but not both");
     }
     nowEmit.insert(&*i);
     if (!iostrat.OStart()) {
@@ -209,6 +209,6 @@ void OutputFuncSequence::Update() {
   }
   m_emitChildren = nowEmit;
 
-  m_log.debug("OutputFuncSequence " + string(m_node) + " done update; hotlist has size " + boost::lexical_cast<string>(m_hotlist.GetHotlist().size()));
+  m_log.debug("OutputFunc_Sequence " + string(*m_node) + " done update; hotlist has size " + boost::lexical_cast<string>(m_hotlist.GetHotlist().size()));
   m_log.debug(m_hotlist.Print());
 }

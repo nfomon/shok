@@ -15,21 +15,23 @@ using namespace fw;
 
 /* public */
 
-FWTree::FWTree(Log& log, Connector& connector, const Rule& rule, FWTree* parent)
+FWTree::FWTree(Log& log,
+               Connector& connector,
+               const Rule& rule, FWTree* parent,
+               auto_ptr<RestartFunc> restartFunc,
+               auto_ptr<ComputeFunc> computeFunc,
+               auto_ptr<OutputFunc> outputFunc)
   : m_log(log),
     m_connector(connector),
     m_rule(rule),
     m_parent(parent),
-    depth(m_parent ? m_parent->depth + 1 : 0) {
-}
-
-void FWTree::Init(auto_ptr<RestartFunc> restartFunc,
-                  auto_ptr<OutputFunc> outputFunc) {
-  if (m_restartFunc.get() || m_outputFunc.get()) {
-    throw FWError("Cannot re-initialize FWTree node " + string(*this));
-  }
-  m_restartFunc = restartFunc;
-  m_outputFunc = outputFunc;
+    depth(m_parent ? m_parent->depth + 1 : 0),
+    m_restartFunc(restartFunc),
+    m_computeFunc(computeFunc),
+    m_outputFunc(outputFunc) {
+  m_restartFunc->Init(*this);
+  m_computeFunc->Init(*this);
+  m_outputFunc->Init(*this);
 }
 
 void FWTree::RestartNode(const IList& istart) {
@@ -39,13 +41,13 @@ void FWTree::RestartNode(const IList& istart) {
   m_outputFunc->Clear();
   m_state.Unlock();
   Restart(istart);
-  (void) UpdateNode();
+  (void) ComputeNode();
 }
 
-bool FWTree::UpdateNode() {
+bool FWTree::ComputeNode() {
   m_log.info("Updating node " + std::string(*this));
   const IList& old_iend = IEnd();
-  m_rule.Update(*this);
+  (*m_computeFunc)();
   m_outputFunc->Update();
   m_connector.DrawGraph(*this);
   bool hasChanged = &old_iend != &IEnd() || !m_outputFunc->GetHotlist().empty();

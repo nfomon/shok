@@ -6,18 +6,30 @@
 
 /* Regexp rule */
 
+#include "ComputeFunc.h"
 #include "Rule.h"
+
+#include "util/Log.h"
 
 #include <boost/regex.hpp>
 
+#include <memory>
+#include <string>
+
 namespace fw {
 
-class RegexpRule : public Rule {
-public:
-  RegexpRule(Log& log, const std::string& name, const boost::regex& regex);
-  virtual ~RegexpRule() {}
+std::auto_ptr<Rule> MakeRule_Regexp(Log& log,
+    const std::string& name,
+    const boost::regex& regex);
 
-  virtual void Update(FWTree& x) const;
+class ComputeFunc_Regexp : public ComputeFunc {
+public:
+  ComputeFunc_Regexp(Log& log, const boost::regex& regex);
+  virtual ~ComputeFunc_Regexp() {}
+  virtual void operator() ();
+  virtual std::auto_ptr<ComputeFunc> Clone() {
+    return std::auto_ptr<ComputeFunc>(new ComputeFunc_Regexp(m_log, m_regex));
+  }
 
 private:
   const boost::regex m_regex;

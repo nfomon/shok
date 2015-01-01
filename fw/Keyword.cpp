@@ -5,29 +5,44 @@
 
 #include "FWError.h"
 #include "FWTree.h"
+#include "OutputFunc.h"
+#include "RestartFunc.h"
 
+#include <memory>
 #include <string>
+using std::auto_ptr;
 using std::string;
 
 using namespace fw;
 
-KeywordRule::KeywordRule(Log& log, const string& str)
-  : Rule(log, str, RF_None, OS_SINGLE),
+auto_ptr<Rule> fw::MakeRule_Keyword(Log& log, const string& str) {
+  return fw::MakeRule_Keyword(log, str, str);
+}
+
+auto_ptr<Rule> fw::MakeRule_Keyword(Log& log, const string& name, const string& str) {
+  return auto_ptr<Rule>(new Rule(log, name,
+      auto_ptr<RestartFunc>(new RestartFunc_None(log)),
+      auto_ptr<ComputeFunc>(new ComputeFunc_Keyword(log, str)),
+      auto_ptr<OutputFunc>(new OutputFunc_Value(log, name))));
+}
+
+ComputeFunc_Keyword::ComputeFunc_Keyword(Log& log, const string& str)
+  : ComputeFunc(log),
     m_str(str) {
   if (m_str.empty()) {
     throw FWError("Cannot create empty Keyword");
   }
 }
 
-void KeywordRule::Update(FWTree& x) const {
-  m_log.info("Keyword: updating " + string(*this) + " at " + string(x));
-  State& state = x.GetState();
+void ComputeFunc_Keyword::operator() () {
+  m_log.info("Computing Keyword at " + string(*m_node));
+  State& state = m_node->GetState();
   state.Clear();
   string matched;
   bool done = false;
-  const IList* i = &x.IStart();
+  const IList* i = &m_node->IStart();
   for (; i != NULL; i = i->right) {
-    x.GetIConnection().SetEnd(*i);
+    m_node->GetIConnection().SetEnd(*i);
     if (done) {
       state.GoComplete();
       break;
@@ -42,12 +57,12 @@ void KeywordRule::Update(FWTree& x) const {
     } else {
       // Just ok; keep going (if possible)
     }
-    x.GetConnector().Listen(x, *i);
+    m_node->GetConnector().Listen(*m_node, *i);
   }
   if (state.IsEmitting()) {
     state.Lock();
   } else {
     state.Unlock();
   }
-  m_log.debug("Keyword " + string(*this) + " now: " + string(x));
+  m_log.debug("Keyword now at: " + string(*m_node));
 }

@@ -12,9 +12,13 @@
 
 namespace fw {
 
+//typedef Rule<RestartFunc_FirstChildOfNode, OutputFuncSequence> Compiler;
+
 std::auto_ptr<Rule> CreateCompiler_Simple(Log& log);
+/*
 std::auto_ptr<Rule> CreateCompiler_Moderate(Log& log);
 std::auto_ptr<Rule> CreateCompiler_Complex(Log& log);
+*/
 
 }
 

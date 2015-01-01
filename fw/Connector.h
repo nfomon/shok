@@ -7,7 +7,6 @@
 #include "Hotlist.h"
 #include "IList.h"
 #include "ListenerTable.h"
-#include "Rule.h"
 
 #include "util/Log.h"
 
@@ -18,6 +17,7 @@ namespace fw {
 
 class FWTree;
 class Grapher;
+class Rule;
 
 class Connector {
 public:

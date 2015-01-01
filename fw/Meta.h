@@ -9,22 +9,29 @@
  * Recognizes a node output by another rule, by its name.
  */
 
+#include "ComputeFunc.h"
 #include "Rule.h"
 
+#include <memory>
 #include <string>
 
 namespace fw {
 
-class MetaRule : public Rule {
+std::auto_ptr<Rule> MakeRule_Meta(Log& log, const std::string& searchName);
+std::auto_ptr<Rule> MakeRule_Meta(Log& log,
+    const std::string& name,
+    const std::string& searchName);
+
+class ComputeFunc_Meta : public ComputeFunc {
 public:
-  MetaRule(Log& log, const std::string& searchName, const std::string& name = "")
-    : Rule(log, (name.empty() ? searchName : name), RF_None, OS_SINGLE),
+  ComputeFunc_Meta(Log& log, const std::string& searchName)
+    : ComputeFunc(log),
       m_searchName(searchName) {}
-  virtual ~MetaRule() {}
-
-  const std::string& GetString() const { return m_searchName; }
-
-  virtual void Update(FWTree& x) const;
+  virtual ~ComputeFunc_Meta() {}
+  virtual void operator() ();
+  virtual std::auto_ptr<ComputeFunc> Clone() {
+    return std::auto_ptr<ComputeFunc>(new ComputeFunc_Meta(m_log, m_searchName));
+  }
 
 private:
   std::string m_searchName;

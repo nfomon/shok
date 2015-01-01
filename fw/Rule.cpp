@@ -4,8 +4,14 @@
 #include "Rule.h"
 
 #include "Connector.h"
+#include "FWError.h"
 #include "FWTree.h"
-#include "IList.h"
+#include "Keyword.h"
+#include "Meta.h"
+#include "Or.h"
+#include "Regexp.h"
+#include "Seq.h"
+#include "Star.h"
 
 #include "util/Graphviz.h"
 using Util::dotVar;
@@ -18,40 +24,47 @@ using std::string;
 
 using namespace fw;
 
+Rule::Rule(Log& log, const string& debugName, auto_ptr<RestartFunc> restartFunc, auto_ptr<ComputeFunc> computeFunc, auto_ptr<OutputFunc> outputFunc)
+  : m_log(log),
+    m_name(debugName),
+    m_restartFunc(restartFunc),
+    m_computeFunc(computeFunc),
+    m_outputFunc(outputFunc),
+    m_parent(NULL) {
+}
+
+Rule& Rule::SetRestartFunc(auto_ptr<RestartFunc> restartFunc) {
+  m_restartFunc = restartFunc;
+  return *this;
+}
+
+Rule& Rule::SetComputeFunc(auto_ptr<ComputeFunc> computeFunc) {
+  m_computeFunc = computeFunc;
+  return *this;
+}
+
+Rule& Rule::SetOutputFunc(auto_ptr<OutputFunc> outputFunc) {
+  m_outputFunc = outputFunc;
+  return *this;
+}
+
 auto_ptr<FWTree> Rule::MakeRootNode(Connector& connector) const {
-  auto_ptr<FWTree> node(new FWTree(m_log, connector, *this, NULL));
-  node->Init(MakeRestartFunc(*node.get()),
-             MakeOutputFunc(*node.get()));
+  auto_ptr<FWTree> node(new FWTree(m_log, connector, *this, NULL, m_restartFunc->Clone(), m_computeFunc->Clone(), m_outputFunc->Clone()));
   return node;
 }
 
 FWTree* Rule::MakeNode(FWTree& parent, const IList& istart) const {
-  auto_ptr<FWTree> node(new FWTree(m_log, parent.GetConnector(), *this, &parent));
-  node->Init(MakeRestartFunc(*node.get()),
-             MakeOutputFunc(*node.get()));
+  auto_ptr<FWTree> node(new FWTree(m_log, parent.GetConnector(), *this, &parent, m_restartFunc->Clone(), m_computeFunc->Clone(), m_outputFunc->Clone()));
   FWTree* r = node.get();
   parent.children.push_back(node);
   r->RestartNode(istart);
   return r;
 }
 
-auto_ptr<RestartFunc> Rule::MakeRestartFunc(FWTree& x) const {
-  switch (m_restartFuncType) {
-  case RF_None: return auto_ptr<RestartFunc>(new RestartFunc_None(m_log, x));
-  case RF_FirstChildOfNode: return auto_ptr<RestartFunc>(new RestartFunc_FirstChildOfNode(m_log, x));
-  case RF_AllChildrenOfNode: return auto_ptr<RestartFunc>(new RestartFunc_AllChildrenOfNode(m_log, x));
-  default: throw FWError("Cannot make RestartFunc; unknown restart func");
-  }
-}
-
-auto_ptr<OutputFunc> Rule::MakeOutputFunc(const FWTree& x) const {
-  switch (m_outputFuncType) {
-  case OS_SINGLE: return auto_ptr<OutputFunc>(new OutputFuncSingle(m_log, x));
-  case OS_VALUE: return auto_ptr<OutputFunc>(new OutputFuncValue(m_log, x));
-  case OS_WINNER: return auto_ptr<OutputFunc>(new OutputFuncWinner(m_log, x));
-  case OS_SEQUENCE: return auto_ptr<OutputFunc>(new OutputFuncSequence(m_log, x));
-  default: throw FWError("Cannot make OutputFunc for rule " + string(*this) + " node " + string(x) + "; unknown output strategy type");
-  }
+Rule* Rule::AddChild(auto_ptr<Rule> child) {
+  child->setParent(this);
+  m_children.push_back(child);
+  return &m_children.back();
 }
 
 string Rule::Print() const {
@@ -67,7 +80,7 @@ string Rule::Print() const {
   return s;
 }
 
-string Rule::DrawNode(const std::string& context) const {
+string Rule::DrawNode(const string& context) const {
   string s;
   s += dotVar(this, context) + " [label=\"" + safeLabelStr(m_name) + "\"];\n";
   for (child_iter i = m_children.begin(); i != m_children.end(); ++i) {

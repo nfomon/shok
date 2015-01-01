@@ -4,6 +4,8 @@
 #include "Meta.h"
 
 #include "FWTree.h"
+#include "OutputFunc.h"
+#include "RestartFunc.h"
 
 #include <memory>
 #include <string>
@@ -12,21 +14,32 @@ using std::string;
 
 using namespace fw;
 
-void MetaRule::Update(FWTree& x) const {
-  m_log.info("Meta: updating " + string(*this) + " at " + string(x));
-  State& state = x.GetState();
+auto_ptr<Rule> fw::MakeRule_Meta(Log& log, const string& searchName) {
+  return fw::MakeRule_Meta(log, searchName, searchName);
+}
+
+auto_ptr<Rule> fw::MakeRule_Meta(Log& log, const string& name, const string& searchName) {
+  return auto_ptr<Rule>(new Rule(log, name,
+      auto_ptr<RestartFunc>(new RestartFunc_None(log)),
+      auto_ptr<ComputeFunc>(new ComputeFunc_Meta(log, searchName)),
+      auto_ptr<OutputFunc>(new OutputFunc_Value(log, name))));
+}
+
+void ComputeFunc_Meta::operator() () {
+  m_log.info("Computing Meta at " + string(*m_node));
+  State& state = m_node->GetState();
   state.GoBad();
-  const IList& first = x.IStart();
+  const IList& first = m_node->IStart();
   if (first.name == m_searchName) {
-    x.GetConnector().Listen(x, first);
+    m_node->GetConnector().Listen(*m_node, first);
     state.GoDone();
     const IList* second = first.right;
     if (second) {
       state.GoComplete();
-      x.GetIConnection().SetEnd(*second);
+      m_node->GetIConnection().SetEnd(*second);
     } else {
-      x.GetIConnection().SetEnd(first);
+      m_node->GetIConnection().SetEnd(first);
     }
   }
-  m_log.debug("Meta" + string(*this) + " now: " + string(x));
+  m_log.debug("Meta now at: " + string(*m_node));
 }
