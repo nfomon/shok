@@ -37,6 +37,8 @@ private:
   std::string m_searchName;
 };
 
+std::auto_ptr<ComputeFunc> MakeComputeFunc_Meta(Log& log, const std::string& searchName);
+
 }
 
 #endif // _Meta_h_

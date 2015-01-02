@@ -15,6 +15,18 @@ using std::string;
 
 using namespace fw;
 
+auto_ptr<RestartFunc> fw::MakeRestartFunc_None(Log& log) {
+  return auto_ptr<RestartFunc>(new RestartFunc_None(log));
+}
+
+auto_ptr<RestartFunc> fw::MakeRestartFunc_FirstChildOfNode(Log& log) {
+  return auto_ptr<RestartFunc>(new RestartFunc_FirstChildOfNode(log));
+}
+
+auto_ptr<RestartFunc> fw::MakeRestartFunc_AllChildrenOfNode(Log& log) {
+  return auto_ptr<RestartFunc>(new RestartFunc_AllChildrenOfNode(log));
+}
+
 void RestartFunc_FirstChildOfNode::operator() (const IList& istart) {
   if (!m_node) {
     throw FWError("Cannot compute uninitialized RestartFunc_FirstChildOfNode");

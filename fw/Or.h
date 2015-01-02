@@ -26,6 +26,8 @@ struct ComputeFunc_Or : public ComputeFunc {
   }
 };
 
+std::auto_ptr<ComputeFunc> MakeComputeFunc_Or(Log& log);
+
 }
 
 #endif // _Or_h_

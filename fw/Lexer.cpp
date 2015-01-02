@@ -18,7 +18,7 @@ using namespace fw;
 auto_ptr<Rule> fw::CreateLexer_Simple(Log& log) {
   auto_ptr<Rule> lexer(MakeRule_Star(log, "* (lexer)"));
   Rule* or_ = lexer->AddChild(MakeRule_Or(log, "Or"));
-  //or_->SetOutputFunc(auto_ptr<OutputFunc>(new OutputFunc_Cap<OutputFunc_Winner>(log, "orly")));
+  //or_->SetOutputFunc(MakeOutputFunc_Winner_Cap(log, "orly"));
   or_->AddChild(MakeRule_Keyword(log, "new"));
   or_->AddChild(MakeRule_Keyword(log, "del"));
   //or_->AddChild(MakeRule_Keyword(log, "x"));

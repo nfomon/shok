@@ -26,6 +26,8 @@ struct ComputeFunc_Seq : public ComputeFunc {
   }
 };
 
+std::auto_ptr<ComputeFunc> MakeComputeFunc_Seq(Log& log);
+
 }
 
 #endif // _Seq_h_

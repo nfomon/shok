@@ -26,6 +26,8 @@ struct ComputeFunc_Star : public ComputeFunc {
   }
 };
 
+std::auto_ptr<ComputeFunc> MakeComputeFunc_Star(Log& log);
+
 }
 
 #endif // _Star_h_

@@ -21,9 +21,13 @@ auto_ptr<Rule> fw::MakeRule_Keyword(Log& log, const string& str) {
 
 auto_ptr<Rule> fw::MakeRule_Keyword(Log& log, const string& name, const string& str) {
   return auto_ptr<Rule>(new Rule(log, name,
-      auto_ptr<RestartFunc>(new RestartFunc_None(log)),
-      auto_ptr<ComputeFunc>(new ComputeFunc_Keyword(log, str)),
-      auto_ptr<OutputFunc>(new OutputFunc_Single(log, name))));
+      MakeRestartFunc_None(log),
+      MakeComputeFunc_Keyword(log, str),
+      MakeOutputFunc_Single(log, name)));
+}
+
+auto_ptr<ComputeFunc> fw::MakeComputeFunc_Keyword(Log& log, const string& str) {
+  return auto_ptr<ComputeFunc>(new ComputeFunc_Keyword(log, str));
 }
 
 ComputeFunc_Keyword::ComputeFunc_Keyword(Log& log, const string& str)

@@ -18,9 +18,13 @@ using namespace fw;
 
 auto_ptr<Rule> fw::MakeRule_Or(Log& log, const string& name) {
   return auto_ptr<Rule>(new Rule(log, name,
-      auto_ptr<RestartFunc>(new RestartFunc_AllChildrenOfNode(log)),
-      auto_ptr<ComputeFunc>(new ComputeFunc_Or(log)),
-      auto_ptr<OutputFunc>(new OutputFunc_Winner(log))));
+      MakeRestartFunc_AllChildrenOfNode(log),
+      MakeComputeFunc_Or(log),
+      MakeOutputFunc_Winner(log)));
+}
+
+auto_ptr<ComputeFunc> fw::MakeComputeFunc_Or(Log& log) {
+  return auto_ptr<ComputeFunc>(new ComputeFunc_Or(log));
 }
 
 void ComputeFunc_Or::operator() () {

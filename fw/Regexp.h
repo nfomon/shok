@@ -35,6 +35,8 @@ private:
   const boost::regex m_regex;
 };
 
+std::auto_ptr<ComputeFunc> MakeComputeFunc_Regexp(Log& log, const boost::regex& regex);
+
 }
 
 #endif // _Regexp_h_

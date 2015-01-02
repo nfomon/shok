@@ -37,6 +37,8 @@ private:
   const std::string m_str;
 };
 
+std::auto_ptr<ComputeFunc> MakeComputeFunc_Keyword(Log& log, const std::string& str);
+
 }
 
 #endif // _Keyword_h_

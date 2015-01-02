@@ -11,6 +11,11 @@
 namespace fw {
 
 class FWTree;
+class RestartFunc;
+
+std::auto_ptr<RestartFunc> MakeRestartFunc_None(Log& log);
+std::auto_ptr<RestartFunc> MakeRestartFunc_FirstChildOfNode(Log& log);
+std::auto_ptr<RestartFunc> MakeRestartFunc_AllChildrenOfNode(Log& log);
 
 struct RestartFunc {
 public:

@@ -17,10 +17,7 @@ using namespace fw;
 
 // compiler =
 std::auto_ptr<Rule> fw::CreateCompiler_Simple(Log& log) {
-  std::auto_ptr<Rule> compiler(new Rule(log, "compiler",
-      auto_ptr<RestartFunc>(new RestartFunc_FirstChildOfNode(log)),
-      auto_ptr<ComputeFunc>(new ComputeFunc_Star(log)),
-      auto_ptr<OutputFunc>(new OutputFunc_Sequence(log))));
+  std::auto_ptr<Rule> compiler(MakeRule_Star(log, "compiler"));
   return compiler;
 }
 

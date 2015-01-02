@@ -16,6 +16,14 @@
 namespace fw {
 
 class FWTree;
+class OutputFunc;
+
+std::auto_ptr<OutputFunc> MakeOutputFunc_Single(Log& log, const std::string& name);
+std::auto_ptr<OutputFunc> MakeOutputFunc_Value(Log& log, const std::string& name);
+std::auto_ptr<OutputFunc> MakeOutputFunc_Winner(Log& log);
+std::auto_ptr<OutputFunc> MakeOutputFunc_Sequence(Log& log);
+std::auto_ptr<OutputFunc> MakeOutputFunc_Winner_Cap(Log& log, const std::string& cap);
+std::auto_ptr<OutputFunc> MakeOutputFunc_Sequence_Cap(Log& log, const std::string& cap);
 
 class OutputFunc {
 public:
@@ -195,9 +203,6 @@ protected:
   IList m_capEnd;
   OFT m_of;
 };
-
-//class OutputFunc_Cap<OutputFunc_Winner>;
-//class OutputFunc_Cap<OutputFunc_Sequence>;
 
 }
 

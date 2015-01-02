@@ -19,6 +19,30 @@ using std::vector;
 
 using namespace fw;
 
+auto_ptr<OutputFunc> fw::MakeOutputFunc_Single(Log& log, const string& name) {
+  return auto_ptr<OutputFunc>(new OutputFunc_Single(log, name));
+}
+
+auto_ptr<OutputFunc> fw::MakeOutputFunc_Value(Log& log, const string& name) {
+  return auto_ptr<OutputFunc>(new OutputFunc_Value(log, name));
+}
+
+auto_ptr<OutputFunc> fw::MakeOutputFunc_Winner(Log& log) {
+  return auto_ptr<OutputFunc>(new OutputFunc_Winner(log));
+}
+
+auto_ptr<OutputFunc> fw::MakeOutputFunc_Sequence(Log& log) {
+  return auto_ptr<OutputFunc>(new OutputFunc_Sequence(log));
+}
+
+auto_ptr<OutputFunc> fw::MakeOutputFunc_Winner_Cap(Log& log, const string& cap) {
+  return auto_ptr<OutputFunc>(new OutputFunc_Cap<OutputFunc_Winner>(log, cap));
+}
+
+auto_ptr<OutputFunc> fw::MakeOutputFunc_Sequence_Cap(Log& log, const string& cap) {
+  return auto_ptr<OutputFunc>(new OutputFunc_Cap<OutputFunc_Sequence>(log, cap));
+}
+
 OutputFunc::OutputFunc(Log& log)
   : m_log(log),
     m_node(NULL),

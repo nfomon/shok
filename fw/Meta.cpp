@@ -20,9 +20,13 @@ auto_ptr<Rule> fw::MakeRule_Meta(Log& log, const string& searchName) {
 
 auto_ptr<Rule> fw::MakeRule_Meta(Log& log, const string& name, const string& searchName) {
   return auto_ptr<Rule>(new Rule(log, name,
-      auto_ptr<RestartFunc>(new RestartFunc_None(log)),
-      auto_ptr<ComputeFunc>(new ComputeFunc_Meta(log, searchName)),
-      auto_ptr<OutputFunc>(new OutputFunc_Value(log, name))));
+      MakeRestartFunc_None(log),
+      MakeComputeFunc_Meta(log, searchName),
+      MakeOutputFunc_Value(log, name)));
+}
+
+auto_ptr<ComputeFunc> fw::MakeComputeFunc_Meta(Log& log, const string& searchName) {
+  return auto_ptr<ComputeFunc>(new ComputeFunc_Meta(log, searchName));
 }
 
 void ComputeFunc_Meta::operator() () {

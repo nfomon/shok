@@ -22,9 +22,13 @@ using namespace fw;
 
 auto_ptr<Rule> fw::MakeRule_Seq(Log& log, const string& name) {
   return auto_ptr<Rule>(new Rule(log, name,
-      auto_ptr<RestartFunc>(new RestartFunc_FirstChildOfNode(log)),
-      auto_ptr<ComputeFunc>(new ComputeFunc_Seq(log)),
-      auto_ptr<OutputFunc>(new OutputFunc_Sequence(log))));
+      MakeRestartFunc_FirstChildOfNode(log),
+      MakeComputeFunc_Seq(log),
+      MakeOutputFunc_Sequence(log)));
+}
+
+auto_ptr<ComputeFunc> fw::MakeComputeFunc_Seq(Log& log) {
+  return auto_ptr<ComputeFunc>(new ComputeFunc_Seq(log));
 }
 
 void ComputeFunc_Seq::operator() () {

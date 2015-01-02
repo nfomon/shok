@@ -16,9 +16,9 @@ using namespace fw;
 
 auto_ptr<Rule> fw::MakeRule_Regexp(Log& log, const string& name, const boost::regex& regex) {
   return auto_ptr<Rule>(new Rule(log, name,
-      auto_ptr<RestartFunc>(new RestartFunc_None(log)),
-      auto_ptr<ComputeFunc>(new ComputeFunc_Regexp(log, regex)),
-      auto_ptr<OutputFunc>(new OutputFunc_Value(log, name))));
+      MakeRestartFunc_None(log),
+      MakeComputeFunc_Regexp(log, regex),
+      MakeOutputFunc_Value(log, name)));
 }
 
 ComputeFunc_Regexp::ComputeFunc_Regexp(Log& log, const boost::regex& regex)
@@ -27,6 +27,10 @@ ComputeFunc_Regexp::ComputeFunc_Regexp(Log& log, const boost::regex& regex)
   if (m_regex.empty()) {
     throw FWError("Cannot create Regexp with empty regex");
   }
+}
+
+auto_ptr<ComputeFunc> fw::MakeComputeFunc_Regexp(Log& log, const boost::regex& regex) {
+  return auto_ptr<ComputeFunc>(new ComputeFunc_Regexp(log, regex));
 }
 
 void ComputeFunc_Regexp::operator() () {
