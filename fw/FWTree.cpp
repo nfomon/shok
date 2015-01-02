@@ -48,7 +48,7 @@ bool FWTree::ComputeNode() {
   m_log.info("Updating node " + std::string(*this));
   const IList& old_iend = IEnd();
   (*m_computeFunc)();
-  m_outputFunc->Update();
+  (*m_outputFunc)();
   m_connector.DrawGraph(*this);
   bool hasChanged = &old_iend != &IEnd() || !m_outputFunc->GetHotlist().empty();
   if (hasChanged) {

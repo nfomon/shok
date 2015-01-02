@@ -74,7 +74,7 @@ string OutputFunc::DrawEmitting(const string& context) const {
 
 /* OutputFunc_Single */
 
-OutputFunc_Single::OutputFunc_Single(Log& log, const std::string& name)
+OutputFunc_Single::OutputFunc_Single(Log& log, const string& name)
   : OutputFunc(log),
     m_onode(name) {
     m_ostart = &m_onode;
@@ -83,12 +83,12 @@ OutputFunc_Single::OutputFunc_Single(Log& log, const std::string& name)
     m_hotlist.Insert(m_onode);
 }
 
-void OutputFunc_Single::Update() {
+void OutputFunc_Single::operator() () {
 }
 
 /* OutputFunc_Value */
 
-void OutputFunc_Value::Update() {
+void OutputFunc_Value::operator() () {
   string value;
   const IList* ilast = NULL;
   if (m_node->GetState().IsComplete()) {
@@ -117,7 +117,7 @@ void OutputFunc_Winner::Reset() {
   m_hotlist.Clear();
 }
 
-void OutputFunc_Winner::Update() {
+void OutputFunc_Winner::operator() () {
   const State& state = m_node->GetState();
   if (!state.IsEmitting()) {
     m_log.debug("OutputFunc_Winner " + string(*m_node) + " is not emitting; skipping update");
@@ -174,8 +174,8 @@ void OutputFunc_Sequence::Reset() {
   m_oend = NULL;
 }
 
-void OutputFunc_Sequence::Update() {
-  m_log.debug("OutputFunc_Sequence::Update " + string(*m_node));
+void OutputFunc_Sequence::operator() () {
+  m_log.debug("OutputFunc_Sequence() " + string(*m_node));
   const State& state = m_node->GetState();
   if (!state.IsEmitting()) {
     return;
@@ -193,7 +193,7 @@ void OutputFunc_Sequence::Update() {
     }
     OutputFunc& iostrat = i->GetOutputFunc();
     if ((iostrat.OStart() && !iostrat.OEnd()) || (!iostrat.OStart() && iostrat.OEnd())) {
-      throw FWError("OutputFunc_Sequence::Update found " + string(*i) + " with only an ostart or oend, but not both");
+      throw FWError("OutputFunc_Sequence() found " + string(*i) + " with only an ostart or oend, but not both");
     }
     nowEmit.insert(&*i);
     if (!iostrat.OStart()) {

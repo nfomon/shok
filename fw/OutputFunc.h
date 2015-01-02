@@ -25,7 +25,7 @@ public:
   OutputFunc(Log& log);
   virtual ~OutputFunc() {}
 
-  void Init(const FWTree& x) { m_node = &x; }
+  virtual void Init(const FWTree& x) { m_node = &x; }
 
   IList* OStart() { return m_ostart; }
   IList* OEnd() { return m_oend; }
@@ -43,15 +43,15 @@ public:
     m_hotlist.Clear();
   }
 
-  virtual void Update() = 0;
+  virtual void operator() () = 0;
   virtual std::auto_ptr<OutputFunc> Clone() = 0;
 
   //std::string DrawEmitting(const std::string& context) const;
   std::string PrintHotlist() const { return m_hotlist.Print(); }
 
 protected:
-  // Convenience methods that can be called by Update() to use child OLists to
-  // produce this node's OList.
+  // Convenience methods that can be called by operator() to use child OLists
+  // to produce this node's OList.
   void ApproveChild(const FWTree& child);
   void InsertChild(const FWTree& child);
   void DeleteChild(const FWTree& child);
@@ -71,7 +71,7 @@ public:
   virtual ~OutputFunc_Single() {}
 
   virtual void Clear() {}
-  virtual void Update();
+  virtual void operator() ();
   virtual std::auto_ptr<OutputFunc> Clone() {
     return std::auto_ptr<OutputFunc>(new OutputFunc_Single(m_log, m_onode.name));
   }
@@ -86,7 +86,7 @@ public:
     : OutputFunc_Single(log, name) {}
   virtual ~OutputFunc_Value() {}
 
-  virtual void Update();
+  virtual void operator() ();
   virtual std::auto_ptr<OutputFunc> Clone() {
     return std::auto_ptr<OutputFunc>(new OutputFunc_Value(m_log, m_onode.name));
   }
@@ -101,7 +101,7 @@ public:
 
   virtual void Clear();
   virtual void Reset();
-  virtual void Update();
+  virtual void operator() ();
   virtual std::auto_ptr<OutputFunc> Clone() {
     return std::auto_ptr<OutputFunc>(new OutputFunc_Winner(m_log));
   }
@@ -118,7 +118,7 @@ public:
 
   virtual void Clear();
   virtual void Reset();
-  virtual void Update();
+  virtual void operator() ();
   virtual std::auto_ptr<OutputFunc> Clone() {
     return std::auto_ptr<OutputFunc>(new OutputFunc_Sequence(m_log));
   }
@@ -129,6 +129,75 @@ private:
   typedef emitchildren_set::iterator emitchildren_mod_iter;
   emitchildren_set m_emitChildren;
 };
+
+template <typename OFT>
+class OutputFunc_Cap : public OutputFunc {
+public:
+  OutputFunc_Cap(Log& log, const std::string& cap)
+    : OutputFunc(log),
+      m_cap(cap),
+      m_capStart(cap),
+      m_capEnd("/" + cap),
+      m_of(log) {
+    m_ostart = &m_capStart;
+    m_capStart.right = &m_capEnd;
+    m_capEnd.left = &m_capStart;
+    m_oend = &m_capEnd;
+    m_emitting.insert(&m_capStart);
+    m_emitting.insert(&m_capEnd);
+    m_hotlist.Insert(m_capStart);
+    m_hotlist.Insert(m_capEnd);
+  }
+
+  virtual ~OutputFunc_Cap() {}
+
+  virtual void Init(const FWTree& x) {
+    m_node = &x;
+    m_of.Init(x);
+  }
+
+  virtual void Clear() {
+    m_of.Clear();
+  }
+
+  virtual void Reset() {
+    m_of.Reset();
+    m_wasEmitting = m_emitting;
+    m_emitting.clear();
+    m_hotlist.Clear();
+    m_emitting.insert(&m_capStart);
+    m_emitting.insert(&m_capEnd);
+  }
+
+  virtual void operator() () {
+    m_of();
+    if (m_of.OStart()) {
+      m_capStart.right = m_of.OStart();
+      m_of.OStart()->left = &m_capStart;
+    }
+    if (m_of.OEnd()) {
+      m_of.OEnd()->right = &m_capEnd;
+      m_capEnd.left = m_of.OEnd();
+    }
+    m_emitting = m_of.Emitting();
+    m_emitting.insert(&m_capStart);
+    m_emitting.insert(&m_capEnd);
+    m_hotlist.Accept(m_of.GetHotlist());
+  }
+
+  virtual std::auto_ptr<OutputFunc> Clone() {
+    return std::auto_ptr<OutputFunc>(new OutputFunc_Cap<OFT>(m_log, m_cap));
+  }
+
+protected:
+  std::string m_cap;
+  IList m_capStart;
+  IList m_capEnd;
+  OFT m_of;
+};
+
+//class OutputFunc_Cap<OutputFunc_Winner>;
+//class OutputFunc_Cap<OutputFunc_Sequence>;
 
 }
 
