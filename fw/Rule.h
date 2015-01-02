@@ -40,6 +40,7 @@ public:
   Rule& SetRestartFunc(std::auto_ptr<RestartFunc> restartFunc);
   Rule& SetComputeFunc(std::auto_ptr<ComputeFunc> computeFunc);
   Rule& SetOutputFunc(std::auto_ptr<OutputFunc> outputFunc);
+  void CapOutput(const std::string& cap);
 
   Rule* AddChild(std::auto_ptr<Rule> child);
 

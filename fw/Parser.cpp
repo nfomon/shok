@@ -19,6 +19,7 @@ using namespace fw;
 std::auto_ptr<Rule> fw::CreateParser_Simple(Log& log) {
   std::auto_ptr<Rule> parser(MakeRule_Star(log, "* (parser)"));
   Rule* stmts_ = parser->AddChild(MakeRule_Or(log, "Or (stmts)"));
+  stmts_->CapOutput("cmd");
   Rule* newstmt_ = stmts_->AddChild(MakeRule_Seq(log, "new stmt"));
   newstmt_->AddChild(MakeRule_Meta(log, "new"));
   //newstmt_->AddChild(MakeRule_Meta(log, "x"));

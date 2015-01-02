@@ -18,12 +18,12 @@ namespace fw {
 class FWTree;
 class OutputFunc;
 
+std::auto_ptr<OutputFunc> MakeOutputFunc_Silent(Log& log);
 std::auto_ptr<OutputFunc> MakeOutputFunc_Single(Log& log, const std::string& name);
 std::auto_ptr<OutputFunc> MakeOutputFunc_Value(Log& log, const std::string& name);
 std::auto_ptr<OutputFunc> MakeOutputFunc_Winner(Log& log);
 std::auto_ptr<OutputFunc> MakeOutputFunc_Sequence(Log& log);
-std::auto_ptr<OutputFunc> MakeOutputFunc_Winner_Cap(Log& log, const std::string& cap);
-std::auto_ptr<OutputFunc> MakeOutputFunc_Sequence_Cap(Log& log, const std::string& cap);
+std::auto_ptr<OutputFunc> MakeOutputFunc_Cap(Log& log, std::auto_ptr<OutputFunc> outputFunc, const std::string& cap);
 
 class OutputFunc {
 public:
@@ -71,6 +71,17 @@ protected:
   emitting_set m_emitting;    // ONodes that we are currently happy to emit
   emitting_set m_wasEmitting; // ONodes that we emit last tree-cycle
   Hotlist m_hotlist;  // active olist updates
+};
+
+class OutputFunc_Silent : public OutputFunc {
+public:
+  OutputFunc_Silent(Log& log);
+  virtual ~OutputFunc_Silent() {}
+  virtual void Clear() {}
+  virtual void operator() () {}
+  virtual std::auto_ptr<OutputFunc> Clone() {
+    return std::auto_ptr<OutputFunc>(new OutputFunc_Silent(m_log));
+  }
 };
 
 class OutputFunc_Single : public OutputFunc {
@@ -138,70 +149,25 @@ private:
   emitchildren_set m_emitChildren;
 };
 
-template <typename OFT>
 class OutputFunc_Cap : public OutputFunc {
 public:
-  OutputFunc_Cap(Log& log, const std::string& cap)
-    : OutputFunc(log),
-      m_cap(cap),
-      m_capStart(cap),
-      m_capEnd("/" + cap),
-      m_of(log) {
-    m_ostart = &m_capStart;
-    m_capStart.right = &m_capEnd;
-    m_capEnd.left = &m_capStart;
-    m_oend = &m_capEnd;
-    m_emitting.insert(&m_capStart);
-    m_emitting.insert(&m_capEnd);
-    m_hotlist.Insert(m_capStart);
-    m_hotlist.Insert(m_capEnd);
-  }
-
+  OutputFunc_Cap(Log& log, std::auto_ptr<OutputFunc> outputFunc, const std::string& cap);
   virtual ~OutputFunc_Cap() {}
 
-  virtual void Init(const FWTree& x) {
-    m_node = &x;
-    m_of.Init(x);
-  }
-
-  virtual void Clear() {
-    m_of.Clear();
-  }
-
-  virtual void Reset() {
-    m_of.Reset();
-    m_wasEmitting = m_emitting;
-    m_emitting.clear();
-    m_hotlist.Clear();
-    m_emitting.insert(&m_capStart);
-    m_emitting.insert(&m_capEnd);
-  }
-
-  virtual void operator() () {
-    m_of();
-    if (m_of.OStart()) {
-      m_capStart.right = m_of.OStart();
-      m_of.OStart()->left = &m_capStart;
-    }
-    if (m_of.OEnd()) {
-      m_of.OEnd()->right = &m_capEnd;
-      m_capEnd.left = m_of.OEnd();
-    }
-    m_emitting = m_of.Emitting();
-    m_emitting.insert(&m_capStart);
-    m_emitting.insert(&m_capEnd);
-    m_hotlist.Accept(m_of.GetHotlist());
-  }
+  virtual void Init(const FWTree& x);
+  virtual void Clear();
+  virtual void Reset();
+  virtual void operator() ();
 
   virtual std::auto_ptr<OutputFunc> Clone() {
-    return std::auto_ptr<OutputFunc>(new OutputFunc_Cap<OFT>(m_log, m_cap));
+    return std::auto_ptr<OutputFunc>(new OutputFunc_Cap(m_log, m_outputFunc->Clone(), m_cap));
   }
 
 protected:
+  std::auto_ptr<OutputFunc> m_outputFunc;
   std::string m_cap;
   IList m_capStart;
   IList m_capEnd;
-  OFT m_of;
 };
 
 }

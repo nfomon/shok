@@ -48,6 +48,10 @@ Rule& Rule::SetOutputFunc(auto_ptr<OutputFunc> outputFunc) {
   return *this;
 }
 
+void Rule::CapOutput(const string& cap) {
+  m_outputFunc = MakeOutputFunc_Cap(m_log, m_outputFunc, cap);
+}
+
 auto_ptr<FWTree> Rule::MakeRootNode(Connector& connector) const {
   auto_ptr<FWTree> node(new FWTree(m_log, connector, *this, NULL, m_restartFunc->Clone(), m_computeFunc->Clone(), m_outputFunc->Clone()));
   return node;

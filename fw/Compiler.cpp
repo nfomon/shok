@@ -18,6 +18,19 @@ using namespace fw;
 // compiler =
 std::auto_ptr<Rule> fw::CreateCompiler_Simple(Log& log) {
   std::auto_ptr<Rule> compiler(MakeRule_Star(log, "compiler"));
+  Rule* cmd_ = compiler->AddChild(MakeRule_Seq(log, "cmd"));
+  cmd_->AddChild(MakeRule_Meta(log, "cmd"));
+  Rule* stmts_ = cmd_->AddChild(MakeRule_Or(log, "stmts"));
+  cmd_->AddChild(MakeRule_Meta(log, "/cmd"));
+
+  Rule* newstmt_ = stmts_->AddChild(MakeRule_Seq(log, "new stmt"));
+  Rule* delstmt_ = stmts_->AddChild(MakeRule_Seq(log, "del stmt"));
+
+  newstmt_->AddChild(MakeRule_Meta(log, "new"));
+  newstmt_->AddChild(MakeRule_Meta(log, ";"));
+
+  delstmt_->AddChild(MakeRule_Meta(log, "del"));
+  delstmt_->AddChild(MakeRule_Meta(log, ";"));
   return compiler;
 }
 

@@ -35,12 +35,8 @@ auto_ptr<OutputFunc> fw::MakeOutputFunc_Sequence(Log& log) {
   return auto_ptr<OutputFunc>(new OutputFunc_Sequence(log));
 }
 
-auto_ptr<OutputFunc> fw::MakeOutputFunc_Winner_Cap(Log& log, const string& cap) {
-  return auto_ptr<OutputFunc>(new OutputFunc_Cap<OutputFunc_Winner>(log, cap));
-}
-
-auto_ptr<OutputFunc> fw::MakeOutputFunc_Sequence_Cap(Log& log, const string& cap) {
-  return auto_ptr<OutputFunc>(new OutputFunc_Cap<OutputFunc_Sequence>(log, cap));
+auto_ptr<OutputFunc> fw::MakeOutputFunc_Cap(Log& log, auto_ptr<OutputFunc> outputFunc, const string& cap) {
+  return auto_ptr<OutputFunc>(new OutputFunc_Cap(log, outputFunc, cap));
 }
 
 OutputFunc::OutputFunc(Log& log)
@@ -215,21 +211,21 @@ void OutputFunc_Sequence::operator() () {
       }
       break;
     }
-    OutputFunc& iostrat = i->GetOutputFunc();
-    if ((iostrat.OStart() && !iostrat.OEnd()) || (!iostrat.OStart() && iostrat.OEnd())) {
+    OutputFunc& iof = i->GetOutputFunc();
+    if ((iof.OStart() && !iof.OEnd()) || (!iof.OStart() && iof.OEnd())) {
       throw FWError("OutputFunc_Sequence() found " + string(*i) + " with only an ostart or oend, but not both");
     }
     nowEmit.insert(&*i);
-    if (!iostrat.OStart()) {
+    if (!iof.OStart()) {
       continue;
     }
     if (!m_ostart) {
-      m_ostart = iostrat.OStart();
+      m_ostart = iof.OStart();
     } else {
-      iostrat.OStart()->left = m_oend;
-      m_oend->right = iostrat.OStart();
+      iof.OStart()->left = m_oend;
+      m_oend->right = iof.OStart();
     }
-    m_oend = iostrat.OEnd();
+    m_oend = iof.OEnd();
     if (wereEmit.end() == wereEmit.find(&*i)) {
       InsertChild(*i);
     } else {
@@ -241,4 +237,56 @@ void OutputFunc_Sequence::operator() () {
 
   m_log.debug("OutputFunc_Sequence " + string(*m_node) + " done update; hotlist has size " + boost::lexical_cast<string>(m_hotlist.GetHotlist().size()));
   m_log.debug(m_hotlist.Print());
+}
+
+/* OutputFunc_Cap */
+
+OutputFunc_Cap::OutputFunc_Cap(Log& log, auto_ptr<OutputFunc> outputFunc, const string& cap)
+  : OutputFunc(log),
+    m_outputFunc(outputFunc),
+    m_cap(cap),
+    m_capStart(cap),
+    m_capEnd("/" + cap) {
+  m_ostart = &m_capStart;
+  m_capStart.right = &m_capEnd;
+  m_capEnd.left = &m_capStart;
+  m_oend = &m_capEnd;
+  m_emitting.insert(&m_capStart);
+  m_emitting.insert(&m_capEnd);
+  m_hotlist.Insert(m_capStart);
+  m_hotlist.Insert(m_capEnd);
+}
+
+void OutputFunc_Cap::Init(const FWTree& x) {
+  m_node = &x;
+  m_outputFunc->Init(x);
+}
+
+void OutputFunc_Cap::Clear() {
+  m_outputFunc->Clear();
+}
+
+void OutputFunc_Cap::Reset() {
+  m_outputFunc->Reset();
+  m_wasEmitting = m_emitting;
+  m_emitting.clear();
+  m_hotlist.Clear();
+  m_emitting.insert(&m_capStart);
+  m_emitting.insert(&m_capEnd);
+}
+
+void OutputFunc_Cap::operator() () {
+  (*m_outputFunc)();
+  if (m_outputFunc->OStart()) {
+    m_capStart.right = m_outputFunc->OStart();
+    m_outputFunc->OStart()->left = &m_capStart;
+  }
+  if (m_outputFunc->OEnd()) {
+    m_outputFunc->OEnd()->right = &m_capEnd;
+    m_capEnd.left = m_outputFunc->OEnd();
+  }
+  m_emitting = m_outputFunc->Emitting();
+  m_emitting.insert(&m_capStart);
+  m_emitting.insert(&m_capEnd);
+  m_hotlist.Accept(m_outputFunc->GetHotlist());
 }

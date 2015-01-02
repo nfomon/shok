@@ -479,3 +479,8 @@ Then caps for Sequence/Winner strategies (better: for strategies in general?).
 
 Then we can implement our Compiler :)
 
+=====
+2015-01-01
+
+Between parser_35 and parser_36, why doesn't the "del stmt" get a hotlist from the del and ;?  If it does, why does the Or above it (or the * above that?) not get a hotlist?
+

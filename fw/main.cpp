@@ -67,7 +67,6 @@ int main(int argc, char *argv[]) {
     Connector parserConnector(log, *parser.get(), "Parser", parserGrapher.get());
 
     // Compiler
-/*
     std::auto_ptr<Rule> compiler = CreateCompiler_Simple(log);
     log.info("Compiler: " + compiler->Print());
     std::auto_ptr<Grapher> compilerGrapher;
@@ -77,7 +76,6 @@ int main(int argc, char *argv[]) {
       compilerGrapher->SaveAndClear();
     }
     Connector compilerConnector(log, *compiler.get(), "Compiler", compilerGrapher.get());
-*/
 
     IList* start = NULL;
     IList* prev = NULL;
@@ -120,7 +118,6 @@ int main(int argc, char *argv[]) {
         if (!tokenHotlist.empty()) {
           log.info("* main: Lexer returned hotlist; sending to parser.  Hotlist:" + lexerConnector.PrintHotlist());
           parserConnector.UpdateWithHotlist(tokenHotlist);
-/*
           const Hotlist::hotlist_vec& astHotlist = parserConnector.GetHotlist();
           if (!astHotlist.empty()) {
             log.info("* main: Parser returned hotlist; sending to compiler.  Hotlist:" + parserConnector.PrintHotlist());
@@ -129,7 +126,6 @@ int main(int argc, char *argv[]) {
           } else {
             log.info("* main: Parser returned no hotlist items.");
           }
-*/
         } else {
           log.info("* main: Lexer returned no hotlist items.");
         }
@@ -149,7 +145,6 @@ int main(int argc, char *argv[]) {
         if (!tokenHotlist.empty()) {
           log.info("* main: Lexer returned hotlist; sending to parser.  Hotlist:" + lexerConnector.PrintHotlist());
           parserConnector.UpdateWithHotlist(tokenHotlist);
-/*
           const Hotlist::hotlist_vec& astHotlist = parserConnector.GetHotlist();
           if (!astHotlist.empty()) {
             log.info("* main: Parser returned hotlist; sending to compiler.  Hotlist:" + parserConnector.PrintHotlist());
@@ -158,7 +153,6 @@ int main(int argc, char *argv[]) {
           } else {
             log.info("* main: Parser returned no hotlist items.");
           }
-*/
         } else {
           log.info("* main: Lexer returned no hotlist items.");
         }
