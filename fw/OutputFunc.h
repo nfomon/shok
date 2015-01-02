@@ -75,7 +75,8 @@ protected:
 
 class OutputFunc_Silent : public OutputFunc {
 public:
-  OutputFunc_Silent(Log& log);
+  OutputFunc_Silent(Log& log)
+    : OutputFunc(log) {}
   virtual ~OutputFunc_Silent() {}
   virtual void Clear() {}
   virtual void operator() () {}

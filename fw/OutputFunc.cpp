@@ -19,6 +19,10 @@ using std::vector;
 
 using namespace fw;
 
+auto_ptr<OutputFunc> fw::MakeOutputFunc_Silent(Log& log) {
+  return auto_ptr<OutputFunc>(new OutputFunc_Silent(log));
+}
+
 auto_ptr<OutputFunc> fw::MakeOutputFunc_Single(Log& log, const string& name) {
   return auto_ptr<OutputFunc>(new OutputFunc_Single(log, name));
 }

@@ -23,11 +23,13 @@ std::auto_ptr<Rule> fw::CreateParser_Simple(Log& log) {
   Rule* newstmt_ = stmts_->AddChild(MakeRule_Seq(log, "new stmt"));
   newstmt_->AddChild(MakeRule_Meta(log, "new"));
   //newstmt_->AddChild(MakeRule_Meta(log, "x"));
-  newstmt_->AddChild(MakeRule_Meta(log, ";"));
+  Rule* semi_1 = newstmt_->AddChild(MakeRule_Meta(log, ";"));
+  semi_1->SilenceOutput();
   Rule* delstmt_ = stmts_->AddChild(MakeRule_Seq(log, "del stmt"));
   delstmt_->AddChild(MakeRule_Meta(log, "del"));
   //delstmt_->AddChild(MakeRule_Meta(log, "x"));
-  delstmt_->AddChild(MakeRule_Meta(log, ";"));
+  Rule* semi_2 = delstmt_->AddChild(MakeRule_Meta(log, ";"));
+  semi_2->SilenceOutput();
   return parser;
 }
 
@@ -35,16 +37,21 @@ std::auto_ptr<Rule> fw::CreateParser_Simple(Log& log) {
 std::auto_ptr<Rule> fw::CreateParser_Moderate(Log& log) {
   std::auto_ptr<Rule> parser(MakeRule_Star(log, "* (parser)"));
   Rule* stmts_ = parser->AddChild(MakeRule_Or(log, "Or (stmts)"));
+  stmts_->CapOutput("cmd");
   Rule* newstmt_ = stmts_->AddChild(MakeRule_Seq(log, "new stmt"));
   newstmt_->AddChild(MakeRule_Meta(log, "new", "new"));
-  newstmt_->AddChild(MakeRule_Meta(log, "WS", "WS"));
+  Rule* ws_1 = newstmt_->AddChild(MakeRule_Meta(log, "WS", "WS"));
+  ws_1->SilenceOutput();
   newstmt_->AddChild(MakeRule_Meta(log, "identifier", "ID"));
-  newstmt_->AddChild(MakeRule_Meta(log, ";", ";"));
+  Rule* semi_1 = newstmt_->AddChild(MakeRule_Meta(log, ";", ";"));
+  semi_1->SilenceOutput();
   Rule* delstmt_ = stmts_->AddChild(MakeRule_Seq(log, "del stmt"));
   delstmt_->AddChild(MakeRule_Meta(log, "del", "del"));
-  delstmt_->AddChild(MakeRule_Meta(log, "WS", "WS"));
+  Rule* ws_2 = delstmt_->AddChild(MakeRule_Meta(log, "WS", "WS"));
+  ws_2->SilenceOutput();
   delstmt_->AddChild(MakeRule_Meta(log, "identifier", "ID"));
-  delstmt_->AddChild(MakeRule_Meta(log, ";", ";"));
+  Rule* semi_2 = delstmt_->AddChild(MakeRule_Meta(log, ";", ";"));
+  semi_2->SilenceOutput();
   return parser;
 }
 

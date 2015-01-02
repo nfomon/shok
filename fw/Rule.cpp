@@ -48,6 +48,10 @@ Rule& Rule::SetOutputFunc(auto_ptr<OutputFunc> outputFunc) {
   return *this;
 }
 
+void Rule::SilenceOutput() {
+  m_outputFunc = MakeOutputFunc_Silent(m_log);
+}
+
 void Rule::CapOutput(const string& cap) {
   m_outputFunc = MakeOutputFunc_Cap(m_log, m_outputFunc, cap);
 }

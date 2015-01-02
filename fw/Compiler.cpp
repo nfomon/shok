@@ -27,10 +27,8 @@ std::auto_ptr<Rule> fw::CreateCompiler_Simple(Log& log) {
   Rule* delstmt_ = stmts_->AddChild(MakeRule_Seq(log, "del stmt"));
 
   newstmt_->AddChild(MakeRule_Meta(log, "new"));
-  newstmt_->AddChild(MakeRule_Meta(log, ";"));
 
   delstmt_->AddChild(MakeRule_Meta(log, "del"));
-  delstmt_->AddChild(MakeRule_Meta(log, ";"));
   return compiler;
 }
 
