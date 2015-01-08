@@ -17,10 +17,11 @@
 #include "State.h"
 
 #include <boost/lexical_cast.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
 
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace fw {
 
@@ -29,13 +30,16 @@ class FWTree;
 
 class Rule {
 public:
-  typedef boost::ptr_vector<Rule> child_vec;
+  typedef std::vector<Rule*> child_vec;
   typedef child_vec::const_iterator child_iter;
+  typedef std::vector<bool> childOwnership_vec;
+  typedef childOwnership_vec::const_iterator childOwnership_iter;
 
   Rule(Log& log, const std::string& debugName,
       std::auto_ptr<RestartFunc> = std::auto_ptr<RestartFunc>(),
       std::auto_ptr<ComputeFunc> = std::auto_ptr<ComputeFunc>(),
       std::auto_ptr<OutputFunc> = std::auto_ptr<OutputFunc>());
+  ~Rule();
 
   Rule& SetRestartFunc(std::auto_ptr<RestartFunc> restartFunc);
   Rule& SetComputeFunc(std::auto_ptr<ComputeFunc> computeFunc);
@@ -44,6 +48,7 @@ public:
   void CapOutput(const std::string& cap);
 
   Rule* AddChild(std::auto_ptr<Rule> child);
+  Rule* AddChildRecursive(Rule* child);
 
   std::auto_ptr<FWTree> MakeRootNode(Connector& connector) const;
   FWTree* MakeNode(FWTree& parent, const IList& istart) const;
@@ -67,6 +72,9 @@ protected:
   std::auto_ptr<OutputFunc> m_outputFunc;
   Rule* m_parent;
   child_vec m_children;
+  // Same length as m_children.  True where a child is owned (should be deleted
+  // at destruction time), false otherwise.
+  childOwnership_vec m_childOwnership;
 };
 
 }

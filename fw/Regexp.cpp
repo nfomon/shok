@@ -18,7 +18,7 @@ auto_ptr<Rule> fw::MakeRule_Regexp(Log& log, const string& name, const boost::re
   return auto_ptr<Rule>(new Rule(log, name,
       MakeRestartFunc_None(log),
       MakeComputeFunc_Regexp(log, regex),
-      MakeOutputFunc_Value(log, name)));
+      MakeOutputFunc_IValues(log, name)));
 }
 
 ComputeFunc_Regexp::ComputeFunc_Regexp(Log& log, const boost::regex& regex)

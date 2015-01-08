@@ -26,8 +26,8 @@ public:
 
   Connector(Log& log, const Rule& rule, const std::string& name = "", Grapher* grapher = NULL);
 
-  const Hotlist::hotlist_vec& GetHotlist() const;
-  std::string PrintHotlist() const;
+  const Hotlist& GetHotlist() const;
+  void ClearHotlist();
   listener_set GetListeners(const IList& x) const {
     return m_listeners.GetListeners(&x);
   }
@@ -50,10 +50,6 @@ public:
   // Remove any listening connections regarding a node
   void ClearNode(FWTree& x);
 
-  // Called from a rule to tell us that a node was updated and thus needs to
-  // have its OutputFuncs reset once the whole Tree is done updating
-  void AddNodeToReset(FWTree& x);
-
   void DrawGraph(const FWTree& onode, const IList* inode = NULL);
 
 private:
@@ -69,8 +65,6 @@ private:
   // inode.  For FWTree, updates all listeners of the parent of the inode.
   void UpdateListeners(const IList& inode, bool updateNeighbourListeners);
 
-  void ResetNodes();    // Reset any nodes-to-reset once a Tree update is done
-
   Log& m_log;
   // Root of the Rule tree
   const Rule& m_rule;
@@ -79,7 +73,7 @@ private:
   std::string m_name;
   Grapher* m_grapher;
   ListenerTable<const IList*, FWTree*> m_listeners;
-  std::set<FWTree*> m_nodesToReset;
+  Hotlist m_hotlist;
 };
 
 }

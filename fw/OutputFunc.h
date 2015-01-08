@@ -19,8 +19,8 @@ class FWTree;
 class OutputFunc;
 
 std::auto_ptr<OutputFunc> MakeOutputFunc_Silent(Log& log);
-std::auto_ptr<OutputFunc> MakeOutputFunc_Single(Log& log, const std::string& name);
-std::auto_ptr<OutputFunc> MakeOutputFunc_Value(Log& log, const std::string& name);
+std::auto_ptr<OutputFunc> MakeOutputFunc_Basic(Log& log, const std::string& name, const std::string& value = "");
+std::auto_ptr<OutputFunc> MakeOutputFunc_IValues(Log& log, const std::string& name);
 std::auto_ptr<OutputFunc> MakeOutputFunc_Winner(Log& log);
 std::auto_ptr<OutputFunc> MakeOutputFunc_Sequence(Log& log);
 std::auto_ptr<OutputFunc> MakeOutputFunc_Cap(Log& log, std::auto_ptr<OutputFunc> outputFunc, const std::string& cap);
@@ -40,16 +40,6 @@ public:
   const emitting_set& Emitting() const { return m_emitting; }
   const emitting_set& WasEmitting() const { return m_wasEmitting; }
   const Hotlist::hotlist_vec& GetHotlist() const { return m_hotlist.GetHotlist(); }
-
-  // Wipe out state
-  virtual void Clear() = 0;
-
-  // Clears the hotlist and flips the Emitting set as appropriate.
-  // Called by the Connector between full-tree updates.
-  virtual void Reset() {
-    m_wasEmitting = m_emitting;
-    m_hotlist.Clear();
-  }
 
   virtual void operator() () = 0;
   virtual std::auto_ptr<OutputFunc> Clone() = 0;
@@ -78,49 +68,52 @@ public:
   OutputFunc_Silent(Log& log)
     : OutputFunc(log) {}
   virtual ~OutputFunc_Silent() {}
-  virtual void Clear() {}
   virtual void operator() () {}
   virtual std::auto_ptr<OutputFunc> Clone() {
     return std::auto_ptr<OutputFunc>(new OutputFunc_Silent(m_log));
   }
 };
 
-class OutputFunc_Single : public OutputFunc {
+// Emits a single output list node, that contains the provided name and value.
+class OutputFunc_Basic : public OutputFunc {
 public:
-  OutputFunc_Single(Log& log, const std::string& name);
-  virtual ~OutputFunc_Single() {}
+  OutputFunc_Basic(Log& log, const std::string& name, const std::string& value = "");
+  virtual ~OutputFunc_Basic() {}
 
-  virtual void Clear() {}
   virtual void operator() ();
   virtual std::auto_ptr<OutputFunc> Clone() {
-    return std::auto_ptr<OutputFunc>(new OutputFunc_Single(m_log, m_onode.name));
+    return std::auto_ptr<OutputFunc>(new OutputFunc_Basic(m_log, m_onode.name, m_onode.value));
   }
 
 protected:
   IList m_onode;   // Single output list node
+  bool m_isFirstTime;
 };
 
-class OutputFunc_Value : public OutputFunc_Single {
+// Single output node with the provided name.  The value is the concatenation
+// of all of the input node values.
+class OutputFunc_IValues : public OutputFunc {
 public:
-  OutputFunc_Value(Log& log, const std::string& name)
-    : OutputFunc_Single(log, name) {}
-  virtual ~OutputFunc_Value() {}
+  OutputFunc_IValues(Log& log, const std::string& name);
+  virtual ~OutputFunc_IValues() {}
 
   virtual void operator() ();
   virtual std::auto_ptr<OutputFunc> Clone() {
-    return std::auto_ptr<OutputFunc>(new OutputFunc_Value(m_log, m_onode.name));
+    return std::auto_ptr<OutputFunc>(new OutputFunc_IValues(m_log, m_onode.name));
   }
+
+protected:
+  IList m_onode;    // Single output list node
+  bool m_isFirstTime;
 };
 
+// Outputs all the nodes from the single child that is a "winner".  Corresponds
+// with the Or rule.
 class OutputFunc_Winner : public OutputFunc {
 public:
-  OutputFunc_Winner(Log& log)
-    : OutputFunc(log),
-      m_winner(NULL) {}
+  OutputFunc_Winner(Log& log);
   virtual ~OutputFunc_Winner() {}
 
-  virtual void Clear();
-  virtual void Reset();
   virtual void operator() ();
   virtual std::auto_ptr<OutputFunc> Clone() {
     return std::auto_ptr<OutputFunc>(new OutputFunc_Winner(m_log));
@@ -130,14 +123,13 @@ private:
   const FWTree* m_winner;
 };
 
+// Outputs all the nodes from the children that are emitting, in child order.
 class OutputFunc_Sequence : public OutputFunc {
 public:
   OutputFunc_Sequence(Log& log)
     : OutputFunc(log) {}
   virtual ~OutputFunc_Sequence() {}
 
-  virtual void Clear();
-  virtual void Reset();
   virtual void operator() ();
   virtual std::auto_ptr<OutputFunc> Clone() {
     return std::auto_ptr<OutputFunc>(new OutputFunc_Sequence(m_log));
@@ -150,14 +142,13 @@ private:
   emitchildren_set m_emitChildren;
 };
 
+// Wraps an OutputFunc with an extra output node at the start and end.
 class OutputFunc_Cap : public OutputFunc {
 public:
   OutputFunc_Cap(Log& log, std::auto_ptr<OutputFunc> outputFunc, const std::string& cap);
   virtual ~OutputFunc_Cap() {}
 
   virtual void Init(const FWTree& x);
-  virtual void Clear();
-  virtual void Reset();
   virtual void operator() ();
 
   virtual std::auto_ptr<OutputFunc> Clone() {
@@ -169,6 +160,7 @@ protected:
   std::string m_cap;
   IList m_capStart;
   IList m_capEnd;
+  bool m_isFirstTime;
 };
 
 }

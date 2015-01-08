@@ -48,7 +48,7 @@ void ComputeFunc_Star::operator() () {
   bool finished = false;
   FWTree::child_mod_iter child = m_node->children.begin();
   const FWTree* prev_child = NULL;
-  bool wasComplete = false;
+  bool wasComplete = true;    // Star is "complete" matching absolutely nothing
   while (!finished) {
     if (child != m_node->children.end()) {
       // Existing child
@@ -70,7 +70,7 @@ void ComputeFunc_Star::operator() () {
       if (!newIStart) {
         throw FWError("Computing Star at " + string(*m_node) + (prev_child ? (" with prev child " + string(*prev_child)) : " with no prev child") + " failed to find new istart for new child");
       }
-      m_node->GetRule().GetChildren().at(0).MakeNode(*m_node, *newIStart);
+      m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, *newIStart);
       child = m_node->children.end() - 1;
     }
     m_node->GetIConnection().SetEnd(child->IEnd());
@@ -109,6 +109,11 @@ void ComputeFunc_Star::operator() () {
       } else {
         state.GoOK();
       }
+      // Clear any subsequent children
+      for (FWTree::child_mod_iter i = child+1; i != m_node->children.end(); ++i) {
+        i->ClearNode();
+      }
+      m_node->children.erase(child+1, m_node->children.end());
       finished = true;
     } else {
       throw FWError("Computing Star at " + string(*m_node) + " child is in unexpected state");

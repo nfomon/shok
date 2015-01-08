@@ -79,7 +79,7 @@ void ComputeFunc_Seq::operator() () {
       if (!newIStart) {
         throw FWError("Computing Seq at " + string(*m_node) + (prev_child ? (" with prev child " + string(*prev_child)) : " with no prev child") + " failed to find new istart for new child");
       }
-      (void) m_node->GetRule().GetChildren().at(child_index).MakeNode(*m_node, *newIStart);
+      (void) m_node->GetRule().GetChildren().at(child_index)->MakeNode(*m_node, *newIStart);
       child = m_node->children.end() - 1;
     }
     m_node->GetIConnection().SetEnd(child->IEnd());
@@ -117,6 +117,11 @@ void ComputeFunc_Seq::operator() () {
       } else {
         state.GoOK();
       }
+      // Clear any subsequent children
+      for (FWTree::child_mod_iter i = child+1; i != m_node->children.end(); ++i) {
+        i->ClearNode();
+      }
+      m_node->children.erase(child+1, m_node->children.end());
       finished = true;
     } else {
       throw FWError("Computing Seq at " + string(*m_node) + " child is in unexpected state");

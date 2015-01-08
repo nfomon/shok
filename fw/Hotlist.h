@@ -38,6 +38,8 @@ public:
   const hotlist_vec& GetHotlist() const { return m_hotlist; }
   const hot_set& GetInserted() const { return m_inserted; }
   const hot_set& GetDeleted() const { return m_deleted; }
+  size_t Size() const { return m_hotlist.size(); }
+  bool IsEmpty() const { return m_hotlist.empty(); }
 
   void Insert(const IList& inode);
   void Update(const IList& inode);

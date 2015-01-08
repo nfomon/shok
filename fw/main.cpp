@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
     bool isGraphing = true;
 
     // Lexer
-    std::auto_ptr<Rule> lexer = CreateLexer_Simple(log);
+    std::auto_ptr<Rule> lexer = CreateLexer_Nifty(log);
     log.info("Lexer: " + lexer->Print());
     std::auto_ptr<Grapher> lexerGrapher;
     if (isGraphing) {
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
     log.info("Made a lexer connector");
 
     // Parser
-    std::auto_ptr<Rule> parser = CreateParser_Simple(log);
+    std::auto_ptr<Rule> parser = CreateParser_Nifty(log);
     log.info("Parser: " + parser->Print());
     std::auto_ptr<Grapher> parserGrapher;
     if (isGraphing) {
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
     Connector parserConnector(log, *parser.get(), "Parser", parserGrapher.get());
 
     // Compiler
-    std::auto_ptr<Rule> compiler = CreateCompiler_Simple(log);
+    std::auto_ptr<Rule> compiler = CreateCompiler_Nifty(log);
     log.info("Compiler: " + compiler->Print());
     std::auto_ptr<Grapher> compilerGrapher;
     if (isGraphing) {
@@ -114,14 +114,16 @@ int main(int argc, char *argv[]) {
           s->right->left = s->left;
         }
         lexerConnector.Delete(*s);
-        const Hotlist::hotlist_vec& tokenHotlist = lexerConnector.GetHotlist();
-        if (!tokenHotlist.empty()) {
-          log.info("* main: Lexer returned hotlist; sending to parser.  Hotlist:" + lexerConnector.PrintHotlist());
-          parserConnector.UpdateWithHotlist(tokenHotlist);
-          const Hotlist::hotlist_vec& astHotlist = parserConnector.GetHotlist();
-          if (!astHotlist.empty()) {
-            log.info("* main: Parser returned hotlist; sending to compiler.  Hotlist:" + parserConnector.PrintHotlist());
-            compilerConnector.UpdateWithHotlist(astHotlist);
+        const Hotlist& tokenHotlist = lexerConnector.GetHotlist();
+        if (!tokenHotlist.IsEmpty()) {
+          log.info("* main: Lexer returned hotlist; sending to parser.  Hotlist:" + tokenHotlist.Print());
+          parserConnector.UpdateWithHotlist(tokenHotlist.GetHotlist());
+          lexerConnector.ClearHotlist();
+          const Hotlist& astHotlist = parserConnector.GetHotlist();
+          if (!astHotlist.IsEmpty()) {
+            log.info("* main: Parser returned hotlist; sending to compiler.  Hotlist:" + astHotlist.Print());
+            compilerConnector.UpdateWithHotlist(astHotlist.GetHotlist());
+            parserConnector.ClearHotlist();
             log.info("* main: No compiler consumer; done with input character.");
           } else {
             log.info("* main: Parser returned no hotlist items.");
@@ -141,14 +143,16 @@ int main(int argc, char *argv[]) {
         log.info("");
         log.info("* main: Inserting character '" + c->Print() + "' into lexer");
         lexerConnector.Insert(*c);
-        const Hotlist::hotlist_vec& tokenHotlist = lexerConnector.GetHotlist();
-        if (!tokenHotlist.empty()) {
-          log.info("* main: Lexer returned hotlist; sending to parser.  Hotlist:" + lexerConnector.PrintHotlist());
-          parserConnector.UpdateWithHotlist(tokenHotlist);
-          const Hotlist::hotlist_vec& astHotlist = parserConnector.GetHotlist();
-          if (!astHotlist.empty()) {
-            log.info("* main: Parser returned hotlist; sending to compiler.  Hotlist:" + parserConnector.PrintHotlist());
-            compilerConnector.UpdateWithHotlist(astHotlist);
+        const Hotlist& tokenHotlist = lexerConnector.GetHotlist();
+        if (!tokenHotlist.IsEmpty()) {
+          log.info("* main: Lexer returned hotlist; sending to parser.  Hotlist:" + tokenHotlist.Print());
+          parserConnector.UpdateWithHotlist(tokenHotlist.GetHotlist());
+          lexerConnector.ClearHotlist();
+          const Hotlist& astHotlist = parserConnector.GetHotlist();
+          if (!astHotlist.IsEmpty()) {
+            log.info("* main: Parser returned hotlist; sending to compiler.  Hotlist:" + astHotlist.Print());
+            compilerConnector.UpdateWithHotlist(astHotlist.GetHotlist());
+            parserConnector.ClearHotlist();
             log.info("* main: No compiler consumer; done with input character.");
           } else {
             log.info("* main: Parser returned no hotlist items.");

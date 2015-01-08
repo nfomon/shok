@@ -36,7 +36,7 @@ void RestartFunc_FirstChildOfNode::operator() (const IList& istart) {
   }
 
   if (m_node->children.empty()) {
-    m_node->GetRule().GetChildren().at(0).MakeNode(*m_node, istart);
+    m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, istart);
     return;
   }
   if (m_node->children.size() > 1) {
@@ -57,7 +57,7 @@ void RestartFunc_AllChildrenOfNode::operator() (const IList& istart) {
   if (m_node->children.empty()) {
     for (Rule::child_iter i = m_node->GetRule().GetChildren().begin();
         i != m_node->GetRule().GetChildren().end(); ++i) {
-      i->MakeNode(*m_node, istart);
+      (*i)->MakeNode(*m_node, istart);
     }
   } else if (m_node->children.size() == m_node->GetRule().GetChildren().size()) {
     for (FWTree::child_mod_iter i = m_node->children.begin();

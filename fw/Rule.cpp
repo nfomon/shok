@@ -33,6 +33,18 @@ Rule::Rule(Log& log, const string& debugName, auto_ptr<RestartFunc> restartFunc,
     m_parent(NULL) {
 }
 
+Rule::~Rule() {
+  childOwnership_iter own_i = m_childOwnership.begin();
+  for (child_iter child_i = m_children.begin(); child_i != m_children.end(); ++child_i, ++own_i) {
+    if (m_childOwnership.end() == own_i) {
+      throw FWError("Rule " + string(*this) + " internal error at destruction: childOwnership not aligned with children");
+    }
+    if (*own_i) {
+      delete *child_i;
+    }
+  }
+}
+
 Rule& Rule::SetRestartFunc(auto_ptr<RestartFunc> restartFunc) {
   m_restartFunc = restartFunc;
   return *this;
@@ -71,17 +83,33 @@ FWTree* Rule::MakeNode(FWTree& parent, const IList& istart) const {
 
 Rule* Rule::AddChild(auto_ptr<Rule> child) {
   child->setParent(this);
+  m_children.push_back(child.release());
+  m_childOwnership.push_back(true);
+  return m_children.back();
+}
+
+Rule* Rule::AddChildRecursive(Rule* child) {
+  child->setParent(this);
   m_children.push_back(child);
-  return &m_children.back();
+  m_childOwnership.push_back(false);
+  return m_children.back();
 }
 
 string Rule::Print() const {
   string s(m_name);
   if (!m_children.empty()) {
     s += " (";
-    for (child_iter i = m_children.begin(); i != m_children.end(); ++i) {
+    childOwnership_iter own_i = m_childOwnership.begin();
+    for (child_iter i = m_children.begin(); i != m_children.end(); ++i, ++own_i) {
+      if (m_childOwnership.end() == own_i) {
+        throw FWError("Rule " + string(*this) + " internal error in Rule::Print(): childOwnership not aligned with children");
+      }
       if (i != m_children.begin()) { s += ", "; }
-      s += i->Print();
+      if (*own_i) {
+        s += (*i)->Print();
+      } else {
+        s += (*i)->Name();
+      }
     }
     s += ")";
   }
@@ -91,9 +119,18 @@ string Rule::Print() const {
 string Rule::DrawNode(const string& context) const {
   string s;
   s += dotVar(this, context) + " [label=\"" + safeLabelStr(m_name) + "\"];\n";
-  for (child_iter i = m_children.begin(); i != m_children.end(); ++i) {
-    s += dotVar(this, context) + " -> " + dotVar(&*i, context) + ";\n";
-    s += i->DrawNode(context);
+  childOwnership_iter own_i = m_childOwnership.begin();
+  for (child_iter i = m_children.begin(); i != m_children.end(); ++i, ++own_i) {
+    if (m_childOwnership.end() == own_i) {
+      throw FWError("Rule " + string(*this) + " internal error in Rule::DrawNode(): childOwnership not aligned with children");
+    }
+    if (*own_i) {
+      s += dotVar(this, context) + " -> " + dotVar(*i, context) + ";\n";
+      s += (*i)->DrawNode(context);
+    } else {
+      s += dotVar(this, context) + " -> " + dotVar(*i, context) + "_rec;\n";
+      s += dotVar(*i, context) + "_rec [label=\"\\[ " + safeLabelStr((*i)->Name()) + " \\]\"];\n";
+    }
   }
   return s;
 }

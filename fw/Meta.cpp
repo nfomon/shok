@@ -22,7 +22,7 @@ auto_ptr<Rule> fw::MakeRule_Meta(Log& log, const string& name, const string& sea
   return auto_ptr<Rule>(new Rule(log, name,
       MakeRestartFunc_None(log),
       MakeComputeFunc_Meta(log, searchName),
-      MakeOutputFunc_Value(log, name)));
+      MakeOutputFunc_IValues(log, name)));
 }
 
 auto_ptr<ComputeFunc> fw::MakeComputeFunc_Meta(Log& log, const string& searchName) {

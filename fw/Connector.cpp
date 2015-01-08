@@ -28,16 +28,16 @@ Connector::Connector(Log& log, const Rule& rule, const std::string& name, Graphe
     m_grapher(grapher) {
 }
 
-const Hotlist::hotlist_vec& Connector::GetHotlist() const {
-  return GetRoot().GetOutputFunc().GetHotlist();
+const Hotlist& Connector::GetHotlist() const {
+  return m_hotlist;
 }
-string Connector::PrintHotlist() const {
-  return GetRoot().GetOutputFunc().PrintHotlist();
+
+void Connector::ClearHotlist() {
+  m_hotlist.Clear();
 }
 
 void Connector::Insert(const IList& inode) {
   m_log.info("Connector " + m_name + ": Inserting IList: " + string(inode));
-  ResetNodes();
 
   if (!m_root.get()) {
     m_log.debug(" - No root; initializing the tree root");
@@ -60,12 +60,12 @@ void Connector::Insert(const IList& inode) {
   }
   // Stronger check: every inode has at least one listener :)
 
-  m_log.debug("Connector: Insert done, hotlist now has size " + boost::lexical_cast<string>(GetHotlist().size()));
+  m_hotlist.Accept(m_root->GetOutputFunc().GetHotlist());
+  m_log.debug("Connector: Insert done, hotlist now has size " + boost::lexical_cast<string>(m_hotlist.Size()));
 }
 
 void Connector::Delete(const IList& inode) {
   m_log.info("Deleting list inode " + string(inode));
-  ResetNodes();
 
   if (!m_root.get()) {
     throw FWError("Connector " + m_name + ": cannot delete " + string(inode) + " when the root has not been initialized");
@@ -81,7 +81,8 @@ void Connector::Delete(const IList& inode) {
     UpdateListeners(inode, true);
   }
 
-  m_log.debug("Connector: Delete done, hotlist now has size " + boost::lexical_cast<string>(GetHotlist().size()));
+  m_hotlist.Accept(m_root->GetOutputFunc().GetHotlist());
+  m_log.debug("Connector: Delete done, hotlist now has size " + boost::lexical_cast<string>(m_hotlist.Size()));
 }
 
 void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
@@ -197,16 +198,4 @@ void Connector::DrawGraph(const FWTree& onode, const IList* inode) {
     m_grapher->Signal(m_name, &onode, true);
   }
   m_grapher->SaveAndClear();
-}
-
-void Connector::AddNodeToReset(FWTree& x) {
-  m_nodesToReset.insert(&x);
-}
-
-void Connector::ResetNodes() {
-  for (set<FWTree*>::const_iterator i = m_nodesToReset.begin();
-       i != m_nodesToReset.end(); ++i) {
-    (*i)->GetOutputFunc().Reset();
-  }
-  m_nodesToReset.clear();
 }

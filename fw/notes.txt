@@ -480,7 +480,40 @@ Then caps for Sequence/Winner strategies (better: for strategies in general?).
 Then we can implement our Compiler :)
 
 =====
-2015-01-01
+2k15-01-01
 
 Between parser_35 and parser_36, why doesn't the "del stmt" get a hotlist from the del and ;?  If it does, why does the Or above it (or the * above that?) not get a hotlist?
 
+-----
+2k15-01-02
+
+Something isn't right... what?
+
+Ah.  Need to Meta on either the name, or value, or both, of a node.
+
+Also want an easy way to say: output this string (value) from this node.
+Regardless of what type of node it is.
+ - done: OutputFunc_Single.
+
+-----
+2k15-01-03
+
+Rules need to be recursive...... doh!
+ - Our cute l'il rule trees are not trees; they have cycles.
+ - That should be easy to fix; just let Rule hold its children by * instead of pointer_vec, and give them all bools: own or no?  if owned, delete that child on destructor.
+ - When we make rules, we'll provide optional bool: recursive.  which sets 'owned'.
+
+-----
+
+ditch hotlist resets, just give Connector a hotlist.  Insert, Delete, and UpdateListeners too should probably return a hotlist.  Insert and Delete need to be wrappers, because UpdateHotlist() needs to insert/delete without clearing the hotlist, so we can accumulate all the updates to give back to main.cpp.
+
+-----
+
+Finally we have a good example of this premonition:
+
+    One problem: Nodes below an Or can over-run.  e.g. keyword OR regexp, allow the regexp to win for many characters, then cause the keyword to win instead.  The regex will still be listening to all those future characters!  should probably clear it out.
+    More serious problem perhaps:  Let's make sure that when a node goes bad, we don't clear out the state of future nodes (e.g. in a Seq).  We want to keep those with their IConnection intact.  If the bad node goes good again, we might not have to re-update many of those later nodes.
+
+We can see this happening now.  A Seq updates, and one of its middle nodes in fact is only OK.
+ - Fixed!
+ - We still have the Regexp-Overrun problem of course.

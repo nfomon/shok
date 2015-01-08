@@ -17,9 +17,7 @@ public:
   ComputeFunc(Log& log)
     : m_log(log) {}
   virtual ~ComputeFunc() {}
-  void Init(FWTree& x) {
-    m_node = &x;
-  }
+  void Init(FWTree& x) { m_node = &x; }
   virtual void operator() () = 0;
   virtual std::auto_ptr<ComputeFunc> Clone() = 0;
 protected:

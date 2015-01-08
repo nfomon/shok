@@ -15,6 +15,7 @@ namespace fw {
 std::auto_ptr<Rule> CreateParser_Simple(Log& log);
 std::auto_ptr<Rule> CreateParser_Moderate(Log& log);
 std::auto_ptr<Rule> CreateParser_Complex(Log& log);
+std::auto_ptr<Rule> CreateParser_Nifty(Log& log);
 
 }
 

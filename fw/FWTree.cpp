@@ -38,7 +38,6 @@ void FWTree::RestartNode(const IList& istart) {
   m_log.info("Restarting node " + std::string(*this) + " with inode " + std::string(istart));
   m_iconnection.Restart(istart);
   m_connector.DrawGraph(*this, &istart);
-  m_outputFunc->Clear();
   m_state.Unlock();
   Restart(istart);
   (void) ComputeNode();
@@ -51,12 +50,7 @@ bool FWTree::ComputeNode() {
   (*m_outputFunc)();
   m_connector.DrawGraph(*this);
   bool hasChanged = &old_iend != &IEnd() || !m_outputFunc->GetHotlist().empty();
-  if (hasChanged) {
-    m_log.debug(" - - - - " + string(*this) + " has changed");
-    m_connector.AddNodeToReset(*this);
-  } else {
-    m_log.debug(" - - - - " + string(*this) + " has NOT changed");
-  }
+  m_log.debug(" - - - - " + string(*this) + " has " + (hasChanged ? "" : "NOT ") + "changed");
   return hasChanged;
 }
 
@@ -66,7 +60,6 @@ void FWTree::ClearNode() {
     i->ClearNode();
   }
   m_state.Clear();
-  m_outputFunc->Clear();
   m_connector.ClearNode(*this);
 }
 
