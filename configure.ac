@@ -1,7 +1,7 @@
 AC_INIT([shok], [0.01], [http://shok.io])
 AC_CONFIG_AUX_DIR([build-aux])
 
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 
 AC_PROG_CXX
 AC_PROG_LIBTOOL
