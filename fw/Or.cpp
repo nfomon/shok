@@ -7,6 +7,8 @@
 #include "OutputFunc.h"
 #include "RestartFunc.h"
 
+#include "util/Log.h"
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -16,19 +18,19 @@ using std::vector;
 
 using namespace fw;
 
-auto_ptr<Rule> fw::MakeRule_Or(Log& log, const string& name) {
-  return auto_ptr<Rule>(new Rule(log, name,
-      MakeRestartFunc_AllChildrenOfNode(log),
-      MakeComputeFunc_Or(log),
-      MakeOutputFunc_Winner(log)));
+auto_ptr<Rule> fw::MakeRule_Or(const string& name) {
+  return auto_ptr<Rule>(new Rule(name,
+      MakeRestartFunc_AllChildrenOfNode(),
+      MakeComputeFunc_Or(),
+      MakeOutputFunc_Winner()));
 }
 
-auto_ptr<ComputeFunc> fw::MakeComputeFunc_Or(Log& log) {
-  return auto_ptr<ComputeFunc>(new ComputeFunc_Or(log));
+auto_ptr<ComputeFunc> fw::MakeComputeFunc_Or() {
+  return auto_ptr<ComputeFunc>(new ComputeFunc_Or());
 }
 
 void ComputeFunc_Or::operator() () {
-  m_log.debug("Computing Or at " + string(*m_node));
+  g_log.debug() << "Computing Or at " << *m_node;
 
   // Compute new state flags
   State& state = m_node->GetState();
@@ -53,9 +55,9 @@ void ComputeFunc_Or::operator() () {
       if (lockedChild) {
         throw FWError("Computing Or at " + string(*m_node) + " found more than one locked children");
       }
-      m_log.info("Computing Or at " + string(*m_node) + " found locked child");
-      m_log.info("Locked child state is " + string(istate));
-      m_log.info("Locked child is " + string(*i));
+      g_log.info() << "Computing Or at " << *m_node << " found locked child";
+      g_log.info() << "Locked child state is " << istate;
+      g_log.info() << "Locked child is " << *i;
       lockedChild = &*i;
       thisChildLocked = true;
       state.Lock();
@@ -65,7 +67,7 @@ void ComputeFunc_Or::operator() () {
         throw FWError("Computing Or at " + string(*m_node) + " and a child disagree about istart");
       }
       m_node->GetIConnection().SetEnd(i->IEnd());
-      m_log.debug("Computing Or at " + string(*m_node) + " assigning iend " + string(m_node->IEnd()) + " from istate " + string(istate));
+      g_log.debug() << "Computing Or at " << *m_node << " assigning iend " << m_node->IEnd() << " from istate " << istate;
       haveSetEnd = true;
     }
     if (istate.IsOK()) {
@@ -114,10 +116,10 @@ void ComputeFunc_Or::operator() () {
   }
   if (1 == completes.size()) {
     m_node->GetIConnection().SetEnd(completes.at(0)->IEnd());
-    m_log.debug("Computing Or at " + string(*m_node) + " declares complete winner " + string(*completes.at(0)));
+    g_log.debug() << "Computing Or at " << *m_node << " declares complete winner " << *completes.at(0);
   } else if (1 == dones.size()) {
     m_node->GetIConnection().SetEnd(dones.at(0)->IEnd());
-    m_log.debug("Computing Or at " + string(*m_node) + " declares done winner " + string(*dones.at(0)));
+    g_log.debug() << "Computing Or at " << *m_node << " declares done winner " << *dones.at(0);
   }
   if (1 == completes.size()) {
     state.GoComplete();
@@ -129,5 +131,5 @@ void ComputeFunc_Or::operator() () {
     state.GoBad();
   }
 
-  m_log.debug("Or now at: " + string(*m_node));
+  g_log.debug() << "Or now at: " << *m_node;
 }

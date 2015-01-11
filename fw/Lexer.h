@@ -6,16 +6,14 @@
 
 #include "Rule.h"
 
-#include "util/Log.h"
-
 #include <memory>
 
 namespace fw {
 
-std::auto_ptr<Rule> CreateLexer_Simple(Log& log);
-std::auto_ptr<Rule> CreateLexer_Moderate(Log& log);
-std::auto_ptr<Rule> CreateLexer_Complex(Log& log);
-std::auto_ptr<Rule> CreateLexer_Nifty(Log& log);
+std::auto_ptr<Rule> CreateLexer_Simple();
+std::auto_ptr<Rule> CreateLexer_Moderate();
+std::auto_ptr<Rule> CreateLexer_Complex();
+std::auto_ptr<Rule> CreateLexer_Nifty();
 
 }
 

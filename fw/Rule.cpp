@@ -18,15 +18,18 @@ using Util::dotVar;
 using Util::safeLabelStr;
 
 #include <memory>
+#include <ostream>
 #include <string>
 using std::auto_ptr;
+using std::ostream;
 using std::string;
 
 using namespace fw;
 
-Rule::Rule(Log& log, const string& debugName, auto_ptr<RestartFunc> restartFunc, auto_ptr<ComputeFunc> computeFunc, auto_ptr<OutputFunc> outputFunc)
-  : m_log(log),
-    m_name(debugName),
+/* public */
+
+Rule::Rule(const string& debugName, auto_ptr<RestartFunc> restartFunc, auto_ptr<ComputeFunc> computeFunc, auto_ptr<OutputFunc> outputFunc)
+  : m_name(debugName),
     m_restartFunc(restartFunc),
     m_computeFunc(computeFunc),
     m_outputFunc(outputFunc),
@@ -61,20 +64,20 @@ Rule& Rule::SetOutputFunc(auto_ptr<OutputFunc> outputFunc) {
 }
 
 void Rule::SilenceOutput() {
-  m_outputFunc = MakeOutputFunc_Silent(m_log);
+  m_outputFunc = MakeOutputFunc_Silent();
 }
 
 void Rule::CapOutput(const string& cap) {
-  m_outputFunc = MakeOutputFunc_Cap(m_log, m_outputFunc, cap);
+  m_outputFunc = MakeOutputFunc_Cap(m_outputFunc, cap);
 }
 
 auto_ptr<FWTree> Rule::MakeRootNode(Connector& connector) const {
-  auto_ptr<FWTree> node(new FWTree(m_log, connector, *this, NULL, m_restartFunc->Clone(), m_computeFunc->Clone(), m_outputFunc->Clone()));
+  auto_ptr<FWTree> node(new FWTree(connector, *this, NULL, m_restartFunc->Clone(), m_computeFunc->Clone(), m_outputFunc->Clone()));
   return node;
 }
 
 FWTree* Rule::MakeNode(FWTree& parent, const IList& istart) const {
-  auto_ptr<FWTree> node(new FWTree(m_log, parent.GetConnector(), *this, &parent, m_restartFunc->Clone(), m_computeFunc->Clone(), m_outputFunc->Clone()));
+  auto_ptr<FWTree> node(new FWTree(parent.GetConnector(), *this, &parent, m_restartFunc->Clone(), m_computeFunc->Clone(), m_outputFunc->Clone()));
   FWTree* r = node.get();
   parent.children.push_back(node);
   r->RestartNode(istart);
@@ -133,4 +136,11 @@ string Rule::DrawNode(const string& context) const {
     }
   }
   return s;
+}
+
+/* non-member */
+
+ostream& fw::operator<< (ostream& out, const Rule& rule) {
+  out << string(rule);
+  return out;
 }

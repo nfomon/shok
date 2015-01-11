@@ -4,25 +4,26 @@
 #include "FWTree.h"
 
 #include "util/Graphviz.h"
+#include "util/Log.h"
 using Util::dotVar;
 
 #include <memory>
+#include <ostream>
 #include <string>
 using std::auto_ptr;
+using std::ostream;
 using std::string;
 
 using namespace fw;
 
 /* public */
 
-FWTree::FWTree(Log& log,
-               Connector& connector,
+FWTree::FWTree(Connector& connector,
                const Rule& rule, FWTree* parent,
                auto_ptr<RestartFunc> restartFunc,
                auto_ptr<ComputeFunc> computeFunc,
                auto_ptr<OutputFunc> outputFunc)
-  : m_log(log),
-    m_connector(connector),
+  : m_connector(connector),
     m_rule(rule),
     m_parent(parent),
     depth(m_parent ? m_parent->depth + 1 : 0),
@@ -35,7 +36,7 @@ FWTree::FWTree(Log& log,
 }
 
 void FWTree::RestartNode(const IList& istart) {
-  m_log.info("Restarting node " + std::string(*this) + " with inode " + std::string(istart));
+  g_log.info() << "Restarting node " << *this << " with inode " << istart;
   m_iconnection.Restart(istart);
   m_connector.DrawGraph(*this, &istart);
   m_state.Unlock();
@@ -44,18 +45,18 @@ void FWTree::RestartNode(const IList& istart) {
 }
 
 bool FWTree::ComputeNode() {
-  m_log.info("Updating node " + std::string(*this));
+  g_log.info() << "Updating node " << *this;
   const IList& old_iend = IEnd();
   (*m_computeFunc)();
   (*m_outputFunc)();
   m_connector.DrawGraph(*this);
   bool hasChanged = &old_iend != &IEnd() || !m_outputFunc->GetHotlist().empty();
-  m_log.debug(" - - - - " + string(*this) + " has " + (hasChanged ? "" : "NOT ") + "changed");
+  g_log.debug() << " - - - - " << *this << " has " << (hasChanged ? "" : "NOT ") << "changed";
   return hasChanged;
 }
 
 void FWTree::ClearNode() {
-  m_log.info("Clearing node " + std::string(*this));
+  g_log.info() << "Clearing node " << *this;
   for (child_mod_iter i = children.begin(); i != children.end(); ++i) {
     i->ClearNode();
   }
@@ -117,4 +118,11 @@ string FWTree::DrawNode(const string& context) const {
 
 void FWTree::Restart(const IList& istart) {
   (*m_restartFunc.get())(istart);
+}
+
+/* non-member */
+
+ostream& fw::operator<< (ostream& out, const FWTree& node) {
+  out << string(node);
+  return out;
 }

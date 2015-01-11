@@ -17,27 +17,25 @@
 
 namespace fw {
 
-std::auto_ptr<Rule> MakeRule_Meta(Log& log, const std::string& searchName);
-std::auto_ptr<Rule> MakeRule_Meta(Log& log,
-    const std::string& name,
-    const std::string& searchName);
+std::auto_ptr<Rule> MakeRule_Meta(const std::string& searchName);
+std::auto_ptr<Rule> MakeRule_Meta(const std::string& name,
+                                  const std::string& searchName);
 
 class ComputeFunc_Meta : public ComputeFunc {
 public:
-  ComputeFunc_Meta(Log& log, const std::string& searchName)
-    : ComputeFunc(log),
-      m_searchName(searchName) {}
+  ComputeFunc_Meta(const std::string& searchName)
+    : m_searchName(searchName) {}
   virtual ~ComputeFunc_Meta() {}
   virtual void operator() ();
   virtual std::auto_ptr<ComputeFunc> Clone() {
-    return std::auto_ptr<ComputeFunc>(new ComputeFunc_Meta(m_log, m_searchName));
+    return std::auto_ptr<ComputeFunc>(new ComputeFunc_Meta(m_searchName));
   }
 
 private:
   std::string m_searchName;
 };
 
-std::auto_ptr<ComputeFunc> MakeComputeFunc_Meta(Log& log, const std::string& searchName);
+std::auto_ptr<ComputeFunc> MakeComputeFunc_Meta(const std::string& searchName);
 
 }
 

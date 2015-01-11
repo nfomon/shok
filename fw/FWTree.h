@@ -20,6 +20,7 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 
 #include <memory>
+#include <ostream>
 #include <vector>
 
 namespace fw {
@@ -32,7 +33,6 @@ public:
   typedef child_vec::iterator child_mod_iter;
 
 private:
-  Log& m_log;
   Connector& m_connector;
   const Rule& m_rule;
   State m_state;
@@ -42,8 +42,7 @@ public:
   child_vec children;
   depth_t depth;
 
-  FWTree(Log& log,
-         Connector& connector,
+  FWTree(Connector& connector,
          const Rule& rule, FWTree* parent,
          std::auto_ptr<RestartFunc> restartFunc,
          std::auto_ptr<ComputeFunc> computeFunc,
@@ -75,6 +74,8 @@ private:
   std::auto_ptr<ComputeFunc> m_computeFunc;
   std::auto_ptr<OutputFunc> m_outputFunc;
 };
+
+std::ostream& operator<< (std::ostream& out, const FWTree& node);
 
 }
 

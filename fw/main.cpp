@@ -14,8 +14,13 @@
 
 #include "util/Log.h"
 
+#include <boost/program_options.hpp>
+namespace po = boost::program_options;
+
 #include <iostream>
+#include <memory>
 #include <string>
+using std::auto_ptr;
 using std::cin;
 using std::cout;
 using std::endl;
@@ -25,57 +30,89 @@ using namespace fw;
 
 namespace {
   const string PROGRAM_NAME = "shok_fw";
-  const string LOGFILE = "fw.log";
-  const string GRAPHDIR = "graphs";
 }
 
 int main(int argc, char *argv[]) {
-  if (argc < 1 || argc > 2) {
-    cout << "usage: " << PROGRAM_NAME << " [log level]" << endl;
-    return 1;
-  }
-
-  Log log(LOGFILE);
   try {
-    if (2 == argc) {
-      log.setLevel(argv[1]);
+    // Retrieve program options
+    po::options_description desc(PROGRAM_NAME + " usage");
+    desc.add_options()
+      ("help,h", "show help message")
+      ("logfile,f", po::value<string>(), "output log file")
+      ("loglevel,L", po::value<string>(), "log level: debug, info, warning, error")
+      ("graphdir,g", po::value<string>(), "output graph directory")
+    ;
+    po::positional_options_description p;
+    po::variables_map vm;
+    string logfile;
+    string loglevel;
+    string graphdir;
+
+    try {
+      po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
+      po::notify(vm);
+
+      if (vm.count("help")) {
+        cout << desc;
+        return 0;
+      }
+      if (vm.count("logfile")) {
+        logfile = vm["logfile"].as<string>();
+      }
+      if (vm.count("loglevel")) {
+        loglevel = vm["loglevel"].as<string>();
+      }
+      if (vm.count("graphdir")) {
+        graphdir = vm["graphdir"].as<string>();
+      }
+    } catch (po::error& e) {
+      cout << desc;
+      return 1;
     }
 
-    bool isGraphing = true;
+    // Initialize logging
+    if (!logfile.empty()) {
+      if (!loglevel.empty()) {
+        g_log.setLevel(loglevel);
+      }
+      g_log.Init(logfile);
+    }
+
+    bool isGraphing = !graphdir.empty();
 
     // Lexer
-    std::auto_ptr<Rule> lexer = CreateLexer_Nifty(log);
-    log.info("Lexer: " + lexer->Print());
-    std::auto_ptr<Grapher> lexerGrapher;
+    auto_ptr<Rule> lexer = CreateLexer_Nifty();
+    g_log.info() << "Lexer: " << lexer->Print();
+    auto_ptr<Grapher> lexerGrapher;
     if (isGraphing) {
-      lexerGrapher.reset(new Grapher(log, GRAPHDIR, "lexer_"));
+      lexerGrapher.reset(new Grapher(graphdir, "lexer_"));
       lexerGrapher->AddMachine("Lexer", *lexer.get());
       lexerGrapher->SaveAndClear();
     }
-    Connector lexerConnector(log, *lexer.get(), "Lexer", lexerGrapher.get());
-    log.info("Made a lexer connector");
+    Connector lexerConnector(*lexer.get(), "Lexer", lexerGrapher.get());
+    g_log.info() << "Made a lexer connector";
 
     // Parser
-    std::auto_ptr<Rule> parser = CreateParser_Nifty(log);
-    log.info("Parser: " + parser->Print());
-    std::auto_ptr<Grapher> parserGrapher;
+    auto_ptr<Rule> parser = CreateParser_Nifty();
+    g_log.info() << "Parser: " + parser->Print();
+    auto_ptr<Grapher> parserGrapher;
     if (isGraphing) {
-      parserGrapher.reset(new Grapher(log, GRAPHDIR, "parser_"));
+      parserGrapher.reset(new Grapher(graphdir, "parser_"));
       parserGrapher->AddMachine("Parser", *parser.get());
       parserGrapher->SaveAndClear();
     }
-    Connector parserConnector(log, *parser.get(), "Parser", parserGrapher.get());
+    Connector parserConnector(*parser.get(), "Parser", parserGrapher.get());
 
     // Compiler
-    std::auto_ptr<Rule> compiler = CreateCompiler_Nifty(log);
-    log.info("Compiler: " + compiler->Print());
-    std::auto_ptr<Grapher> compilerGrapher;
+    auto_ptr<Rule> compiler = CreateCompiler_Nifty();
+    g_log.info() << "Compiler: " + compiler->Print();
+    auto_ptr<Grapher> compilerGrapher;
     if (isGraphing) {
-      compilerGrapher.reset(new Grapher(log, GRAPHDIR, "compiler_"));
+      compilerGrapher.reset(new Grapher(graphdir, "compiler_"));
       compilerGrapher->AddMachine("Compiler", *compiler.get());
       compilerGrapher->SaveAndClear();
     }
-    Connector compilerConnector(log, *compiler.get(), "Compiler", compilerGrapher.get());
+    Connector compilerConnector(*compiler.get(), "Compiler", compilerGrapher.get());
 
     IList* start = NULL;
     IList* prev = NULL;
@@ -105,8 +142,8 @@ int main(int argc, char *argv[]) {
             throw FWError("Reached end of input before reaching deletion index");
           }
         }
-        log.info("");
-        log.info("* main: Deleting character '" + string(*s) + "' from lexer");
+        g_log.info();
+        g_log.info() << "* main: Deleting character '" << *s << "' from lexer";
         if (s->left) {
           s->left->right = s->right;
         }
@@ -116,20 +153,20 @@ int main(int argc, char *argv[]) {
         lexerConnector.Delete(*s);
         const Hotlist& tokenHotlist = lexerConnector.GetHotlist();
         if (!tokenHotlist.IsEmpty()) {
-          log.info("* main: Lexer returned hotlist; sending to parser.  Hotlist:" + tokenHotlist.Print());
+          g_log.info() << "* main: Lexer returned hotlist; sending to parser.  Hotlist:" << tokenHotlist.Print();
           parserConnector.UpdateWithHotlist(tokenHotlist.GetHotlist());
           lexerConnector.ClearHotlist();
           const Hotlist& astHotlist = parserConnector.GetHotlist();
           if (!astHotlist.IsEmpty()) {
-            log.info("* main: Parser returned hotlist; sending to compiler.  Hotlist:" + astHotlist.Print());
+            g_log.info() << "* main: Parser returned hotlist; sending to compiler.  Hotlist:" << astHotlist.Print();
             compilerConnector.UpdateWithHotlist(astHotlist.GetHotlist());
             parserConnector.ClearHotlist();
-            log.info("* main: No compiler consumer; done with input character.");
+            g_log.info() << "* main: No compiler consumer; done with input character.";
           } else {
-            log.info("* main: Parser returned no hotlist items.");
+            g_log.info() << "* main: Parser returned no hotlist items.";
           }
         } else {
-          log.info("* main: Lexer returned no hotlist items.");
+          g_log.info() << "* main: Lexer returned no hotlist items.";
         }
         continue;
       }
@@ -140,31 +177,31 @@ int main(int argc, char *argv[]) {
           prev->right = c;
           c->left = prev;
         }
-        log.info("");
-        log.info("* main: Inserting character '" + c->Print() + "' into lexer");
+        g_log.info();
+        g_log.info() << "* main: Inserting character '" << c->Print() << "' into lexer";
         lexerConnector.Insert(*c);
         const Hotlist& tokenHotlist = lexerConnector.GetHotlist();
         if (!tokenHotlist.IsEmpty()) {
-          log.info("* main: Lexer returned hotlist; sending to parser.  Hotlist:" + tokenHotlist.Print());
+          g_log.info() << "* main: Lexer returned hotlist; sending to parser.  Hotlist:" << tokenHotlist.Print();
           parserConnector.UpdateWithHotlist(tokenHotlist.GetHotlist());
           lexerConnector.ClearHotlist();
           const Hotlist& astHotlist = parserConnector.GetHotlist();
           if (!astHotlist.IsEmpty()) {
-            log.info("* main: Parser returned hotlist; sending to compiler.  Hotlist:" + astHotlist.Print());
+            g_log.info() << "* main: Parser returned hotlist; sending to compiler.  Hotlist:" << astHotlist.Print();
             compilerConnector.UpdateWithHotlist(astHotlist.GetHotlist());
             parserConnector.ClearHotlist();
-            log.info("* main: No compiler consumer; done with input character.");
+            g_log.info() << "* main: No compiler consumer; done with input character.";
           } else {
-            log.info("* main: Parser returned no hotlist items.");
+            g_log.info() << "* main: Parser returned no hotlist items.";
           }
         } else {
-          log.info("* main: Lexer returned no hotlist items.");
+          g_log.info() << "* main: Lexer returned no hotlist items.";
         }
 
         prev = c;
       }
     }
-    log.info("Clearing input");
+    g_log.info() << "Clearing input";
     IList* i = start;
     while (i) {
       IList* j = i->right;
@@ -173,13 +210,13 @@ int main(int argc, char *argv[]) {
     }
 
   } catch (const FWError& e) {
-    log.error(string("Compilation framework error: ") + e.what());
+    g_log.error() << "Compilation framework error: " << e.what();
     return 1;
   } catch (const std::exception& e) {
-    log.error(string("Unknown error: ") + e.what());
+    g_log.error() << "Unknown error: " << e.what();
     return 1;
   } catch (...) {
-    log.error("Unknown error");
+    g_log.error() << "Unknown error";
     return 1;
   }
 

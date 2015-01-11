@@ -9,8 +9,6 @@
 #include "ComputeFunc.h"
 #include "Rule.h"
 
-#include "util/Log.h"
-
 #include <boost/regex.hpp>
 
 #include <memory>
@@ -18,24 +16,23 @@
 
 namespace fw {
 
-std::auto_ptr<Rule> MakeRule_Regexp(Log& log,
-    const std::string& name,
-    const boost::regex& regex);
+std::auto_ptr<Rule> MakeRule_Regexp(const std::string& name,
+                                    const boost::regex& regex);
 
 class ComputeFunc_Regexp : public ComputeFunc {
 public:
-  ComputeFunc_Regexp(Log& log, const boost::regex& regex);
+  ComputeFunc_Regexp(const boost::regex& regex);
   virtual ~ComputeFunc_Regexp() {}
   virtual void operator() ();
   virtual std::auto_ptr<ComputeFunc> Clone() {
-    return std::auto_ptr<ComputeFunc>(new ComputeFunc_Regexp(m_log, m_regex));
+    return std::auto_ptr<ComputeFunc>(new ComputeFunc_Regexp(m_regex));
   }
 
 private:
   const boost::regex m_regex;
 };
 
-std::auto_ptr<ComputeFunc> MakeComputeFunc_Regexp(Log& log, const boost::regex& regex);
+std::auto_ptr<ComputeFunc> MakeComputeFunc_Regexp(const boost::regex& regex);
 
 }
 

@@ -6,6 +6,7 @@
 
 #include "FWError.h"
 
+#include <ostream>
 #include <string>
 
 namespace fw {
@@ -23,6 +24,8 @@ struct IList {
   IList* left;
   IList* right;
 };
+
+std::ostream& operator<< (std::ostream& out, const IList& node);
 
 }
 

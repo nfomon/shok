@@ -8,6 +8,7 @@
 #include "State.h"
 
 #include "util/Graphviz.h"
+#include "util/Log.h"
 using Util::dotVar;
 
 #include <memory>
@@ -19,48 +20,47 @@ using std::vector;
 
 using namespace fw;
 
-auto_ptr<OutputFunc> fw::MakeOutputFunc_Silent(Log& log) {
-  return auto_ptr<OutputFunc>(new OutputFunc_Silent(log));
+auto_ptr<OutputFunc> fw::MakeOutputFunc_Silent() {
+  return auto_ptr<OutputFunc>(new OutputFunc_Silent());
 }
 
-auto_ptr<OutputFunc> fw::MakeOutputFunc_Basic(Log& log, const string& name, const string& value) {
-  return auto_ptr<OutputFunc>(new OutputFunc_Basic(log, name, value));
+auto_ptr<OutputFunc> fw::MakeOutputFunc_Basic(const string& name, const string& value) {
+  return auto_ptr<OutputFunc>(new OutputFunc_Basic(name, value));
 }
 
-auto_ptr<OutputFunc> fw::MakeOutputFunc_IValues(Log& log, const string& name) {
-  return auto_ptr<OutputFunc>(new OutputFunc_IValues(log, name));
+auto_ptr<OutputFunc> fw::MakeOutputFunc_IValues(const string& name) {
+  return auto_ptr<OutputFunc>(new OutputFunc_IValues(name));
 }
 
-auto_ptr<OutputFunc> fw::MakeOutputFunc_Winner(Log& log) {
-  return auto_ptr<OutputFunc>(new OutputFunc_Winner(log));
+auto_ptr<OutputFunc> fw::MakeOutputFunc_Winner() {
+  return auto_ptr<OutputFunc>(new OutputFunc_Winner());
 }
 
-auto_ptr<OutputFunc> fw::MakeOutputFunc_Sequence(Log& log) {
-  return auto_ptr<OutputFunc>(new OutputFunc_Sequence(log));
+auto_ptr<OutputFunc> fw::MakeOutputFunc_Sequence() {
+  return auto_ptr<OutputFunc>(new OutputFunc_Sequence());
 }
 
-auto_ptr<OutputFunc> fw::MakeOutputFunc_Cap(Log& log, auto_ptr<OutputFunc> outputFunc, const string& cap) {
-  return auto_ptr<OutputFunc>(new OutputFunc_Cap(log, outputFunc, cap));
+auto_ptr<OutputFunc> fw::MakeOutputFunc_Cap(auto_ptr<OutputFunc> outputFunc, const string& cap) {
+  return auto_ptr<OutputFunc>(new OutputFunc_Cap(outputFunc, cap));
 }
 
-OutputFunc::OutputFunc(Log& log)
-  : m_log(log),
-    m_node(NULL),
+OutputFunc::OutputFunc()
+  : m_node(NULL),
     m_ostart(NULL),
     m_oend(NULL) {
 }
 
 void OutputFunc::ApproveChild(const FWTree& child) {
   const Hotlist::hotlist_vec& h = child.GetOutputFunc().GetHotlist();
-  m_log.debug("**** OutputFunc: " + string(*m_node) + " Approving child " + string(child) + " with hotlist size " + boost::lexical_cast<string>(h.size()));
+  g_log.debug() << "**** OutputFunc: " << *m_node << " Approving child " << child << " with hotlist size " << boost::lexical_cast<string>(h.size());
   m_hotlist.Accept(h);
   const emitting_set& e = child.GetOutputFunc().Emitting();
-  m_log.debug("child emitting " + boost::lexical_cast<string>(e.size()) + ", now we emit " + boost::lexical_cast<string>(m_emitting.size()));
+  g_log.debug() << "child emitting " << boost::lexical_cast<string>(e.size()) << ", now we emit " << boost::lexical_cast<string>(m_emitting.size());
   m_emitting.insert(e.begin(), e.end());
 }
 
 void OutputFunc::InsertChild(const FWTree& child) {
-  m_log.debug("**** OutputFunc: " + string(*m_node) + " Inserting child " + string(child));
+  g_log.debug() << "**** OutputFunc: " << *m_node << " Inserting child " << child;
   const emitting_set& e = child.GetOutputFunc().Emitting();
   for (emitting_iter i = e.begin(); i != e.end(); ++i) {
     m_hotlist.Insert(**i);
@@ -69,7 +69,7 @@ void OutputFunc::InsertChild(const FWTree& child) {
 }
 
 void OutputFunc::DeleteChild(const FWTree& child) {
-  m_log.debug("**** OutputFunc: " + string(*m_node) + " Deleting child " + string(child));
+  g_log.debug() << "**** OutputFunc: " << *m_node << " Deleting child " << child;
   const emitting_set& we = child.GetOutputFunc().WasEmitting();
   for (emitting_iter i = we.begin(); i != we.end(); ++i) {
     m_hotlist.Delete(**i);
@@ -99,8 +99,8 @@ string OutputFunc::DrawEmitting(const string& context) const {
 
 /* OutputFunc_Basic */
 
-OutputFunc_Basic::OutputFunc_Basic(Log& log, const string& name, const string& value)
-  : OutputFunc(log),
+OutputFunc_Basic::OutputFunc_Basic(const string& name, const string& value)
+  : OutputFunc(),
     m_onode(name, value),
     m_isFirstTime(true) {
 }
@@ -115,14 +115,14 @@ void OutputFunc_Basic::operator() () {
     m_hotlist.Insert(m_onode);
     m_isFirstTime = false;
   }
-  m_log.debug("Basic output func now has hotlist size " + boost::lexical_cast<string>(m_hotlist.Size()));
-  m_log.debug(m_hotlist.Print());
+  g_log.debug() << "Basic output func now has hotlist size " << boost::lexical_cast<string>(m_hotlist.Size());
+  g_log.debug() << m_hotlist.Print();
 }
 
 /* OutputFunc_IValues */
 
-OutputFunc_IValues::OutputFunc_IValues(Log& log, const string& name)
-  : OutputFunc(log),
+OutputFunc_IValues::OutputFunc_IValues(const string& name)
+  : OutputFunc(),
     m_onode(name),
     m_isFirstTime(true) {
 }
@@ -152,14 +152,14 @@ void OutputFunc_IValues::operator() () {
     }
   }
   m_isFirstTime = false;
-  m_log.debug("IValues output func now has hotlist size " + boost::lexical_cast<string>(m_hotlist.Size()));
-  m_log.debug(m_hotlist.Print());
+  g_log.debug() << "IValues output func now has hotlist size " << boost::lexical_cast<string>(m_hotlist.Size());
+  g_log.debug() << m_hotlist.Print();
 }
 
 /* OutputFunc_Winner */
 
-OutputFunc_Winner::OutputFunc_Winner(Log& log)
-  : OutputFunc(log),
+OutputFunc_Winner::OutputFunc_Winner()
+  : OutputFunc(),
     m_winner(NULL) {
 }
 
@@ -172,7 +172,7 @@ void OutputFunc_Winner::operator() () {
 
   const State& state = m_node->GetState();
   if (!state.IsEmitting()) {
-    m_log.debug("OutputFunc_Winner " + string(*m_node) + " is not emitting; skipping update");
+    g_log.debug() << "OutputFunc_Winner " << *m_node << " is not emitting; skipping update";
     return;
   }
   bool isComplete = state.IsComplete();
@@ -192,22 +192,22 @@ void OutputFunc_Winner::operator() () {
   if (!winner) {
     throw FWError("OutputFunc_Winner for " + string(*m_node) + " failed to find winner");
   }
-  m_log.debug("**** OutputFunc_Winner: " + string(*m_node) + " Declaring winner " + string(*winner));
+  g_log.debug() << "**** OutputFunc_Winner: " << *m_node << " Declaring winner " << *winner;
   m_ostart = winner->GetOutputFunc().OStart();
   m_oend = winner->GetOutputFunc().OEnd();
   if (winner == m_winner) {
     ApproveChild(*winner);
   } else {
     if (m_winner) {
-      m_log.debug("OutputFunc_Winner: un-winning (deleting) old winner " + string(*m_winner));
+      g_log.debug() << "OutputFunc_Winner: un-winning (deleting) old winner " << *m_winner;
       DeleteChild(*m_winner);
     }
     InsertChild(*winner);
     m_winner = winner;
   }
 
-  m_log.debug("OutputFunc_Winner " + string(*m_node) + " done update; hotlist has size " + boost::lexical_cast<string>(m_hotlist.Size()));
-  m_log.debug(m_hotlist.Print());
+  g_log.debug() << "OutputFunc_Winner " << *m_node << " done update; hotlist has size " << boost::lexical_cast<string>(m_hotlist.Size());
+  g_log.debug() << m_hotlist.Print();
 }
 
 /* OutputFunc_Sequence */
@@ -219,7 +219,7 @@ void OutputFunc_Sequence::operator() () {
   m_ostart = NULL;
   m_oend = NULL;
 
-  m_log.debug("OutputFunc_Sequence() " + string(*m_node) + ".   Has hotlist size: " + boost::lexical_cast<string>(m_hotlist.Size()));
+  g_log.debug() << "OutputFunc_Sequence() " << *m_node << ".   Has hotlist size: " << boost::lexical_cast<string>(m_hotlist.Size());
   const State& state = m_node->GetState();
   if (!state.IsEmitting()) {
     return;
@@ -227,12 +227,12 @@ void OutputFunc_Sequence::operator() () {
   emitchildren_set wereEmit = m_emitChildren;
   emitchildren_set nowEmit;
   for (FWTree::child_iter i = m_node->children.begin(); i != m_node->children.end(); ++i) {
-    m_log.debug("Considering child " + string(*i));
+    g_log.debug() << "Considering child " << *i;
     const State& istate = i->GetState();
     if (!istate.IsEmitting()) {
       // Delete children that are no longer being emit
       for (emitchildren_iter we = wereEmit.begin(); we != wereEmit.end(); ++i) {
-        m_log.debug("Deleting previously-emit child " + string(**we) + " from " + string(*i));
+        g_log.debug() << "Deleting previously-emit child " << **we << " from " << *i;
         DeleteChild(**we);
       }
       break;
@@ -261,14 +261,14 @@ void OutputFunc_Sequence::operator() () {
   }
   m_emitChildren = nowEmit;
 
-  m_log.debug("OutputFunc_Sequence " + string(*m_node) + " done update; hotlist has size " + boost::lexical_cast<string>(m_hotlist.Size()));
-  m_log.debug(m_hotlist.Print());
+  g_log.debug() << "OutputFunc_Sequence " << *m_node << " done update; hotlist has size " << boost::lexical_cast<string>(m_hotlist.Size());
+  g_log.debug() << m_hotlist.Print();
 }
 
 /* OutputFunc_Cap */
 
-OutputFunc_Cap::OutputFunc_Cap(Log& log, auto_ptr<OutputFunc> outputFunc, const string& cap)
-  : OutputFunc(log),
+OutputFunc_Cap::OutputFunc_Cap(auto_ptr<OutputFunc> outputFunc, const string& cap)
+  : OutputFunc(),
     m_outputFunc(outputFunc),
     m_cap(cap),
     m_capStart(cap),
@@ -309,6 +309,6 @@ void OutputFunc_Cap::operator() () {
   m_emitting.insert(m_outputFunc->Emitting().begin(), m_outputFunc->Emitting().end());
   m_hotlist.Accept(m_outputFunc->GetHotlist());
 
-  m_log.debug("OutputFunc_Cap " + string(*m_node) + " done update; hotlist has size " + boost::lexical_cast<string>(m_hotlist.Size()));
-  m_log.debug(m_hotlist.Print());
+  g_log.debug() << "OutputFunc_Cap " << *m_node << " done update; hotlist has size " << boost::lexical_cast<string>(m_hotlist.Size());
+  g_log.debug() << m_hotlist.Print();
 }

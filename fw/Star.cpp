@@ -8,6 +8,8 @@
 #include "OutputFunc.h"
 #include "RestartFunc.h"
 
+#include "util/Log.h"
+
 #include <boost/lexical_cast.hpp>
 using boost::lexical_cast;
 
@@ -20,19 +22,19 @@ using std::vector;
 
 using namespace fw;
 
-auto_ptr<Rule> fw::MakeRule_Star(Log& log, const string& name) {
-  return auto_ptr<Rule>(new Rule(log, name,
-      MakeRestartFunc_FirstChildOfNode(log),
-      MakeComputeFunc_Star(log),
-      MakeOutputFunc_Sequence(log)));
+auto_ptr<Rule> fw::MakeRule_Star(const string& name) {
+  return auto_ptr<Rule>(new Rule(name,
+      MakeRestartFunc_FirstChildOfNode(),
+      MakeComputeFunc_Star(),
+      MakeOutputFunc_Sequence()));
 }
 
-auto_ptr<ComputeFunc> fw::MakeComputeFunc_Star(Log& log) {
-  return auto_ptr<ComputeFunc>(new ComputeFunc_Star(log));
+auto_ptr<ComputeFunc> fw::MakeComputeFunc_Star() {
+  return auto_ptr<ComputeFunc>(new ComputeFunc_Star());
 }
 
 void ComputeFunc_Star::operator() () {
-  m_log.debug("Computing Star at " + string(*m_node));
+  g_log.debug() << "Computing Star at " << *m_node;
 
   // Initialize state flags
   State& state = m_node->GetState();
@@ -57,7 +59,7 @@ void ComputeFunc_Star::operator() () {
           throw FWError("Computing Star at " + string(*m_node) + " child " + string(*child) + " has istart at the start of input, but it is not our first child");
         }
         if (&prev_child->IEnd() != &child->IStart()) {
-          m_log.info("Computing Star at " + string(*m_node) + " child " + string(*child) + " needs to be repositioned to the node after the prev child's end");
+          g_log.info() << "Computing Star at " << *m_node << " child " << *child << " needs to be repositioned to the node after the prev child's end";
           child->RestartNode(prev_child->IEnd());
         }
       }
@@ -84,10 +86,10 @@ void ComputeFunc_Star::operator() () {
 
     if (istate.IsBad()) {
       if (wasComplete) {
-        m_log.debug("Computing Star at " + string(*m_node) + " has gone bad but its last child was complete, so now it's complete");
+        g_log.debug() << "Computing Star at " << *m_node << " has gone bad but its last child was complete, so now it's complete";
         state.GoComplete();
       } else {
-        m_log.debug("Computing Star at " + string(*m_node) + " has gone bad");
+        g_log.debug() << "Computing Star at " << *m_node << " has gone bad";
         state.GoBad();
       }
       // Clear any subsequent children
@@ -127,6 +129,6 @@ void ComputeFunc_Star::operator() () {
     throw FWError("Computing Star at " + string(*m_node) + " should have assigned a previous child at some point");
   }
 
-  m_log.debug("Computing Star at " + string(*m_node) + " done update; now has state " + string(*m_node));
-  m_log.debug(" - and it has istart " + string(m_node->IStart()) + " and iend " + string(m_node->IEnd()));
+  g_log.debug() << "Computing Star at " << *m_node << " done update; now has state " << *m_node;
+  g_log.debug() << " - and it has istart " << m_node->IStart() << " and iend " << m_node->IEnd();
 }

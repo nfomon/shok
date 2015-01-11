@@ -9,11 +9,15 @@
 #include "IList.h"
 #include "Rule.h"
 
+#include "util/Log.h"
+
 #include <boost/lexical_cast.hpp>
 using boost::lexical_cast;
 
+#include <map>
 #include <set>
 #include <string>
+using std::map;
 using std::set;
 using std::string;
 
@@ -21,9 +25,8 @@ using namespace fw;
 
 /* public */
 
-Connector::Connector(Log& log, const Rule& rule, const std::string& name, Grapher* grapher)
-  : m_log(log),
-    m_rule(rule),
+Connector::Connector(const Rule& rule, const string& name, Grapher* grapher)
+  : m_rule(rule),
     m_name(name),
     m_grapher(grapher) {
 }
@@ -37,19 +40,19 @@ void Connector::ClearHotlist() {
 }
 
 void Connector::Insert(const IList& inode) {
-  m_log.info("Connector " + m_name + ": Inserting IList: " + string(inode));
+  g_log.info() << "Connector " << m_name << ": Inserting IList: " << inode;
 
   if (!m_root.get()) {
-    m_log.debug(" - No root; initializing the tree root");
+    g_log.debug() << " - No root; initializing the tree root";
     m_root = m_rule.MakeRootNode(*this);
     m_root->RestartNode(inode);
   } else {
     if (inode.left) {
-      m_log.debug(" - Found left inode: updating listeners of " + string(inode) + "'s left and (if present) right");
+      g_log.debug() << " - Found left inode: updating listeners of " << inode << "'s left and (if present) right";
       UpdateListeners(inode, true);
     } else {
       // Just reposition the root.
-      m_log.debug(" - No left inode: just repositioning the root");
+      g_log.debug() << " - No left inode: just repositioning the root";
       m_root->RestartNode(inode);
     }
   }
@@ -61,11 +64,11 @@ void Connector::Insert(const IList& inode) {
   // Stronger check: every inode has at least one listener :)
 
   m_hotlist.Accept(m_root->GetOutputFunc().GetHotlist());
-  m_log.debug("Connector: Insert done, hotlist now has size " + boost::lexical_cast<string>(m_hotlist.Size()));
+  g_log.debug() << "Connector: Insert done, hotlist now has size " << boost::lexical_cast<string>(m_hotlist.Size());
 }
 
 void Connector::Delete(const IList& inode) {
-  m_log.info("Deleting list inode " + string(inode));
+  g_log.info() << "Deleting list inode " << inode;
 
   if (!m_root.get()) {
     throw FWError("Connector " + m_name + ": cannot delete " + string(inode) + " when the root has not been initialized");
@@ -82,7 +85,7 @@ void Connector::Delete(const IList& inode) {
   }
 
   m_hotlist.Accept(m_root->GetOutputFunc().GetHotlist());
-  m_log.debug("Connector: Delete done, hotlist now has size " + boost::lexical_cast<string>(m_hotlist.Size()));
+  g_log.debug() << "Connector: Delete done, hotlist now has size " << boost::lexical_cast<string>(m_hotlist.Size());
 }
 
 void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
@@ -109,24 +112,24 @@ void Connector::ClearNode(FWTree& x) {
 
 void Connector::Listen(FWTree& x, const IList& inode) {
   if (m_listeners.IsListening(&inode, &x)) {
-    m_log.info("Connector: " + std::string(x) + " is already listening to " + std::string(inode));
+    g_log.info() << "Connector: " << x << " is already listening to " << inode;
   } else {
-    m_log.info("Connector: " + std::string(x) + " will listen to " + std::string(inode));
+    g_log.info() << "Connector: " << x << " will listen to " << inode;
     m_listeners.AddListener(&inode, &x);
   }
 }
 
 void Connector::Unlisten(FWTree& x, const IList& inode) {
-  m_log.info("Connector: " + std::string(x) + " will NOT listen to " + std::string(inode));
+  g_log.info() << "Connector: " << x << " will NOT listen to " << inode;
   m_listeners.RemoveListener(&inode, &x);
 }
 
 /* private */
 
 void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListeners) {
-  typedef std::set<FWTree*> change_set;
+  typedef set<FWTree*> change_set;
   typedef change_set::const_iterator change_iter;
-  typedef std::map<FWTree::depth_t, change_set> change_map;
+  typedef map<FWTree::depth_t, change_set> change_map;
   change_map changes_by_depth;
 
   if (updateNeighbourListeners) {
@@ -160,14 +163,14 @@ void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListener
   }
 
   if (changes_by_depth.empty()) {
-    m_log.info("Connector: No " + string(updateNeighbourListeners ? "neighbouring" : "direct") + " listeners of " + string(inode) + " (left: " + (inode.left ? string(*inode.left) : "<null>") + "; right: " + (inode.right ? string(*inode.right) : "<null>") + ") to update.");
+    g_log.info() << "Connector: No " << (updateNeighbourListeners ? "neighbouring" : "direct") << " listeners of " << inode << " (left: " + (inode.left ? string(*inode.left) : "<null>") << "; right: " << (inode.right ? string(*inode.right) : "<null>") << ") to update.";
   }
 
   while (!changes_by_depth.empty()) {
     // Update the deepest depth of our changeset
     int depth = changes_by_depth.rbegin()->first;
     change_set changes = changes_by_depth.rbegin()->second;
-    m_log.debug("Connector: Updating changes at depth " + lexical_cast<string>(depth));
+    g_log.debug() << "Connector: Updating changes at depth " << lexical_cast<string>(depth);
     for (change_iter i = changes.begin(); i != changes.end(); ++i) {
       bool changed = (*i)->ComputeNode();
       if (changed) {

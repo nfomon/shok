@@ -6,16 +6,14 @@
 
 #include "Rule.h"
 
-#include "util/Log.h"
-
 #include <memory>
 
 namespace fw {
 
-std::auto_ptr<Rule> CreateParser_Simple(Log& log);
-std::auto_ptr<Rule> CreateParser_Moderate(Log& log);
-std::auto_ptr<Rule> CreateParser_Complex(Log& log);
-std::auto_ptr<Rule> CreateParser_Nifty(Log& log);
+std::auto_ptr<Rule> CreateParser_Simple();
+std::auto_ptr<Rule> CreateParser_Moderate();
+std::auto_ptr<Rule> CreateParser_Complex();
+std::auto_ptr<Rule> CreateParser_Nifty();
 
 }
 

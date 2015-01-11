@@ -8,8 +8,6 @@
 #include "IList.h"
 #include "ListenerTable.h"
 
-#include "util/Log.h"
-
 #include <map>
 #include <set>
 
@@ -24,7 +22,7 @@ public:
   typedef typename ListenerTable<const IList*, FWTree*>::listener_set listener_set;
   typedef typename ListenerTable<const IList*, FWTree*>::listener_iter listener_iter;
 
-  Connector(Log& log, const Rule& rule, const std::string& name = "", Grapher* grapher = NULL);
+  Connector(const Rule& rule, const std::string& name = "", Grapher* grapher = NULL);
 
   const Hotlist& GetHotlist() const;
   void ClearHotlist();
@@ -65,7 +63,6 @@ private:
   // inode.  For FWTree, updates all listeners of the parent of the inode.
   void UpdateListeners(const IList& inode, bool updateNeighbourListeners);
 
-  Log& m_log;
   // Root of the Rule tree
   const Rule& m_rule;
   // Root of the output tree

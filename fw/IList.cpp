@@ -10,13 +10,17 @@ using Util::dotVar;
 using Util::safeLabelStr;
 
 #include <memory>
+#include <ostream>
 #include <string>
 using std::auto_ptr;
+using std::ostream;
 using std::string;
 
 using namespace fw;
 
-IList::IList(const std::string& name, const std::string& value, IList* left, IList* right)
+/* public */
+
+IList::IList(const string& name, const string& value, IList* left, IList* right)
   : name(name),
     value(value),
     left(left),
@@ -39,4 +43,11 @@ string IList::DrawNode(const string& context) const {
     s += right->DrawNode(context);
   }
   return s;
+}
+
+/* non-member */
+
+ostream& fw::operator<< (ostream& out, const IList& node) {
+  out << string(node);
+  return out;
 }

@@ -4,29 +4,20 @@
 #ifndef _State_h_
 #define _State_h_
 
+#include "FWError.h"
+
 #include <boost/lexical_cast.hpp>
 
+#include <ostream>
 #include <string>
 
 namespace fw {
 
 class State {
 public:
-  State(bool startDone = false)
-    : m_startDone(startDone),
-      m_isLocked(false),
-      m_station(ST_BAD) {
-    Clear();
-  }
+  State(bool startDone = false);
 
-  void Clear() {
-    if (m_startDone) {
-      m_station = ST_DONE;
-    } else {
-      m_station = ST_OK;
-    }
-    Unlock();
-  }
+  void Clear();
 
   bool IsOK() const { return ST_OK == m_station; }
   bool IsBad() const { return ST_BAD == m_station; }
@@ -53,20 +44,14 @@ private:
     ST_COMPLETE
   };
 
-  static std::string UnMapStation(Station st) {
-    switch (st) {
-    case ST_OK:       return "ok";
-    case ST_BAD:      return "bad";
-    case ST_DONE:     return "done";
-    case ST_COMPLETE: return "complete";
-    default: throw FWError("Failed to unmap Station " + boost::lexical_cast<std::string>(st));
-    }
-  }
+  static std::string UnMapStation(Station st);
 
   bool m_startDone;
   bool m_isLocked;
   Station m_station;
 };
+
+std::ostream& operator<< (std::ostream& out, const State& state);
 
 }
 

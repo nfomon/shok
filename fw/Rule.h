@@ -19,6 +19,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include <memory>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -35,7 +36,7 @@ public:
   typedef std::vector<bool> childOwnership_vec;
   typedef childOwnership_vec::const_iterator childOwnership_iter;
 
-  Rule(Log& log, const std::string& debugName,
+  Rule(const std::string& debugName,
       std::auto_ptr<RestartFunc> = std::auto_ptr<RestartFunc>(),
       std::auto_ptr<ComputeFunc> = std::auto_ptr<ComputeFunc>(),
       std::auto_ptr<OutputFunc> = std::auto_ptr<OutputFunc>());
@@ -65,7 +66,6 @@ protected:
     m_parent = parent;
   }
 
-  Log& m_log;
   std::string m_name;
   std::auto_ptr<RestartFunc> m_restartFunc;
   std::auto_ptr<ComputeFunc> m_computeFunc;
@@ -76,6 +76,8 @@ protected:
   // at destruction time), false otherwise.
   childOwnership_vec m_childOwnership;
 };
+
+std::ostream& operator<< (std::ostream& out, const Rule& rule);
 
 }
 

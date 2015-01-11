@@ -14,9 +14,8 @@ namespace fw {
 
 class FWError : public std::runtime_error {
 public:
-  FWError(const std::string& what) : std::runtime_error(what) {}
-  FWError(Log& log, const std::string& what) : std::runtime_error(what) {
-    log.error(what);
+  FWError(const std::string& what) : std::runtime_error(what) {
+    g_log.error() << what;
   }
 };
 

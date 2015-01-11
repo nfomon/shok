@@ -15,16 +15,16 @@ using std::string;
 
 using namespace fw;
 
-auto_ptr<RestartFunc> fw::MakeRestartFunc_None(Log& log) {
-  return auto_ptr<RestartFunc>(new RestartFunc_None(log));
+auto_ptr<RestartFunc> fw::MakeRestartFunc_None() {
+  return auto_ptr<RestartFunc>(new RestartFunc_None());
 }
 
-auto_ptr<RestartFunc> fw::MakeRestartFunc_FirstChildOfNode(Log& log) {
-  return auto_ptr<RestartFunc>(new RestartFunc_FirstChildOfNode(log));
+auto_ptr<RestartFunc> fw::MakeRestartFunc_FirstChildOfNode() {
+  return auto_ptr<RestartFunc>(new RestartFunc_FirstChildOfNode());
 }
 
-auto_ptr<RestartFunc> fw::MakeRestartFunc_AllChildrenOfNode(Log& log) {
-  return auto_ptr<RestartFunc>(new RestartFunc_AllChildrenOfNode(log));
+auto_ptr<RestartFunc> fw::MakeRestartFunc_AllChildrenOfNode() {
+  return auto_ptr<RestartFunc>(new RestartFunc_AllChildrenOfNode());
 }
 
 void RestartFunc_FirstChildOfNode::operator() (const IList& istart) {

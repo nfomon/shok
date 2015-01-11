@@ -7,26 +7,22 @@
 #include "ComputeFunc.h"
 #include "Rule.h"
 
-#include "util/Log.h"
-
 #include <memory>
 #include <string>
 
 namespace fw {
 
-std::auto_ptr<Rule> MakeRule_Star(Log& log, const std::string& name);
+std::auto_ptr<Rule> MakeRule_Star(const std::string& name);
 
 struct ComputeFunc_Star : public ComputeFunc {
-  ComputeFunc_Star(Log& log)
-    : ComputeFunc(log) {}
   virtual ~ComputeFunc_Star() {}
   virtual void operator() ();
   virtual std::auto_ptr<ComputeFunc> Clone() {
-    return std::auto_ptr<ComputeFunc>(new ComputeFunc_Star(m_log));
+    return std::auto_ptr<ComputeFunc>(new ComputeFunc_Star());
   }
 };
 
-std::auto_ptr<ComputeFunc> MakeComputeFunc_Star(Log& log);
+std::auto_ptr<ComputeFunc> MakeComputeFunc_Star();
 
 }
 

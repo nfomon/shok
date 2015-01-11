@@ -11,7 +11,6 @@ COMMON_SRCS = $(UTIL_SRCS)
 
 bin_PROGRAMS = shok_fw
 shok_fw_SOURCES = $(COMMON_SRCS) \
-    Char.h \
     Compiler.cpp \
     Compiler.h \
     ComputeFunc.h \
@@ -51,9 +50,10 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     Seq.h \
     Star.cpp \
     Star.h \
+    State.cpp \
     State.h \
     main.cpp
 
 shok_fw_CXXFLAGS = -ggdb -Wall -pedantic $(BOOST_CXXFLAGS)
-shok_fw_LDFLAGS = $(BOOST_REGEX_LDFLAGS)
-LIBS = $(BOOST_REGEX_LIBS)
+shok_fw_LDFLAGS = $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_REGEX_LDFLAGS)
+LIBS = $(BOOST_PROGRAM_OPTIONS_LIBS) $(BOOST_REGEX_LIBS)

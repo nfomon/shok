@@ -6,7 +6,7 @@
 
 #include "IList.h"
 
-#include "util/Log.h"
+#include <memory>
 
 namespace fw {
 
@@ -14,14 +14,11 @@ class FWTree;
 
 struct ComputeFunc {
 public:
-  ComputeFunc(Log& log)
-    : m_log(log) {}
   virtual ~ComputeFunc() {}
   void Init(FWTree& x) { m_node = &x; }
   virtual void operator() () = 0;
   virtual std::auto_ptr<ComputeFunc> Clone() = 0;
 protected:
-  Log& m_log;
   FWTree* m_node;
 };
 
