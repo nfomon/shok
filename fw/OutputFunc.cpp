@@ -3,12 +3,12 @@
 
 #include "OutputFunc.h"
 
+#include "FWLog.h"
 #include "FWTree.h"
 #include "IList.h"
 #include "State.h"
 
 #include "util/Graphviz.h"
-#include "util/Log.h"
 using Util::dotVar;
 
 #include <memory>

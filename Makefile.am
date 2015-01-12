@@ -1,3 +1,4 @@
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = lexer parser c2 vm shell
+# SUBDIRS = lexer p2 c2 vm shell
+SUBDIRS = fw
 dist_doc_DATA = README.md

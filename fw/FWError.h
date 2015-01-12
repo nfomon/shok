@@ -6,7 +6,7 @@
 
 /* Compiler framework errors */
 
-#include "util/Log.h"
+#include "FWLog.h"
 
 #include <stdexcept>
 

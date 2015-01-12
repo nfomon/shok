@@ -22,7 +22,7 @@ public:
   typedef typename ListenerTable<const IList*, FWTree*>::listener_set listener_set;
   typedef typename ListenerTable<const IList*, FWTree*>::listener_iter listener_iter;
 
-  Connector(const Rule& rule, const std::string& name = "", Grapher* grapher = NULL);
+  Connector(const Rule& rule, const std::string& name = "", const std::string& graphdir = "");
 
   const Hotlist& GetHotlist() const;
   void ClearHotlist();
@@ -68,7 +68,7 @@ private:
   // Root of the output tree
   std::auto_ptr<FWTree> m_root;
   std::string m_name;
-  Grapher* m_grapher;
+  std::auto_ptr<Grapher> m_grapher;
   ListenerTable<const IList*, FWTree*> m_listeners;
   Hotlist m_hotlist;
 };

@@ -4,11 +4,10 @@
 #include "Seq.h"
 
 #include "Connector.h"
+#include "FWLog.h"
 #include "FWTree.h"
 #include "OutputFunc.h"
 #include "RestartFunc.h"
-
-#include "util/Log.h"
 
 #include <boost/lexical_cast.hpp>
 using boost::lexical_cast;

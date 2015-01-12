@@ -5,12 +5,12 @@
 
 #include "Connector.h"
 #include "FWError.h"
+#include "FWLog.h"
 #include "FWTree.h"
 #include "IList.h"
 #include "Rule.h"
 
 #include "util/Graphviz.h"
-#include "util/Log.h"
 #include "util/Util.h"
 using Util::dotVar;
 
@@ -26,6 +26,14 @@ using std::string;
 using namespace fw;
 
 /* public */
+
+Grapher::Grapher(const string& out_dir, const string& base_filename)
+  : m_out_dir(out_dir),
+    m_base_filename(base_filename),
+    m_img_count(0),
+    m_isDirty(false) {
+  Clear();
+}
 
 void Grapher::AddMachine(const string& context, const Rule& machineRoot) {
   m_graph += "subgraph cluster_" + dotVar(&machineRoot, context) + " {\n";

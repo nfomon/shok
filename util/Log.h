@@ -30,20 +30,24 @@ public:
     }
   }
 
-  Log(const std::string& logfile, const LEVEL level = DEBUG);
+  Log(LEVEL level = INFO);
+  Log(const std::string& logfile, LEVEL level = INFO);
   ~Log();
+
+  void Init(const std::string& logfile);
 
   void setLevel(LEVEL level);
   void setLevel(const std::string& level);
 
-  void error(const std::string& msg);
-  void warning(const std::string& msg);
-  void info(const std::string& msg);
-  void debug(const std::string& msg);
+  std::ofstream& error();
+  std::ofstream& warning();
+  std::ofstream& info();
+  std::ofstream& debug();
 
 private:
-  std::ofstream m_log;
   LEVEL m_level;
+  std::ofstream m_log;
+  std::ofstream m_null;
 };
 
 #endif // _Log_h_

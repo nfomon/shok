@@ -17,6 +17,8 @@ shok_fw_SOURCES = $(COMMON_SRCS) \
     Connector.cpp \
     Connector.h \
     FWError.h \
+    FWLog.cpp \
+    FWLog.h \
     FWTree.cpp \
     FWTree.h \
     Grapher.cpp \

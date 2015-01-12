@@ -9,7 +9,7 @@
 #include "IList.h"
 #include "Rule.h"
 
-#include "util/Log.h"
+#include "FWLog.h"
 
 #include <boost/lexical_cast.hpp>
 using boost::lexical_cast;
@@ -25,10 +25,14 @@ using namespace fw;
 
 /* public */
 
-Connector::Connector(const Rule& rule, const string& name, Grapher* grapher)
+Connector::Connector(const Rule& rule, const string& name, const string& graphdir)
   : m_rule(rule),
-    m_name(name),
-    m_grapher(grapher) {
+    m_name(name) {
+  if (!graphdir.empty()) {
+    m_grapher.reset(new Grapher(graphdir, string(name + "_")));
+    m_grapher->AddMachine(name, m_rule);
+    m_grapher->SaveAndClear();
+  }
 }
 
 const Hotlist& Connector::GetHotlist() const {
@@ -185,7 +189,7 @@ void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListener
 }
 
 void Connector::DrawGraph(const FWTree& onode, const IList* inode) {
-  if (!m_grapher) {
+  if (!m_grapher.get()) {
     return;
   }
   if (!m_root.get()) {

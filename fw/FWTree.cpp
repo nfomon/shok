@@ -3,8 +3,9 @@
 
 #include "FWTree.h"
 
+#include "FWLog.h"
+
 #include "util/Graphviz.h"
-#include "util/Log.h"
 using Util::dotVar;
 
 #include <memory>

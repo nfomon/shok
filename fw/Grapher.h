@@ -15,13 +15,7 @@ namespace fw {
 
 class Grapher {
 public:
-  Grapher(const std::string& out_dir, const std::string& base_filename)
-    : m_out_dir(out_dir),
-      m_base_filename(base_filename),
-      m_img_count(0),
-      m_isDirty(false) {
-    Clear();
-  }
+  Grapher(const std::string& out_dir, const std::string& base_filename);
 
   void AddMachine(const std::string& context, const Rule& machineRoot);
   void AddIList(const std::string& context, const IList& start, const std::string& label = "");

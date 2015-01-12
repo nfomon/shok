@@ -5,14 +5,13 @@
 
 #include "Compiler.h"
 #include "Connector.h"
+#include "FWLog.h"
 #include "Grapher.h"
 #include "Hotlist.h"
 #include "IList.h"
 #include "Lexer.h"
 #include "Parser.h"
 #include "Rule.h"
-
-#include "util/Log.h"
 
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
@@ -78,41 +77,23 @@ int main(int argc, char *argv[]) {
       g_log.Init(logfile);
     }
 
-    bool isGraphing = !graphdir.empty();
-
     // Lexer
     auto_ptr<Rule> lexer = CreateLexer_Nifty();
     g_log.info() << "Lexer: " << lexer->Print();
-    auto_ptr<Grapher> lexerGrapher;
-    if (isGraphing) {
-      lexerGrapher.reset(new Grapher(graphdir, "lexer_"));
-      lexerGrapher->AddMachine("Lexer", *lexer.get());
-      lexerGrapher->SaveAndClear();
-    }
-    Connector lexerConnector(*lexer.get(), "Lexer", lexerGrapher.get());
+    Connector lexerConnector(*lexer.get(), "Lexer", graphdir);
     g_log.info() << "Made a lexer connector";
 
     // Parser
     auto_ptr<Rule> parser = CreateParser_Nifty();
     g_log.info() << "Parser: " + parser->Print();
     auto_ptr<Grapher> parserGrapher;
-    if (isGraphing) {
-      parserGrapher.reset(new Grapher(graphdir, "parser_"));
-      parserGrapher->AddMachine("Parser", *parser.get());
-      parserGrapher->SaveAndClear();
-    }
-    Connector parserConnector(*parser.get(), "Parser", parserGrapher.get());
+    Connector parserConnector(*parser.get(), "Parser", graphdir);
 
     // Compiler
     auto_ptr<Rule> compiler = CreateCompiler_Nifty();
     g_log.info() << "Compiler: " + compiler->Print();
     auto_ptr<Grapher> compilerGrapher;
-    if (isGraphing) {
-      compilerGrapher.reset(new Grapher(graphdir, "compiler_"));
-      compilerGrapher->AddMachine("Compiler", *compiler.get());
-      compilerGrapher->SaveAndClear();
-    }
-    Connector compilerConnector(*compiler.get(), "Compiler", compilerGrapher.get());
+    Connector compilerConnector(*compiler.get(), "Compiler", graphdir);
 
     IList* start = NULL;
     IList* prev = NULL;

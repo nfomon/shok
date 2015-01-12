@@ -6,20 +6,36 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+using std::cerr;
+using std::endl;
+using std::ofstream;
 using std::string;
+
+Log::Log(const LEVEL level)
+  : m_level(level) {
+}
 
 Log::Log(const string& logfile, const LEVEL level)
   : m_level(level) {
+  Init(logfile);
+}
+
+Log::~Log() {
+  debug() << "Destroying log";
+  m_log << endl;
+  m_log.close();
+}
+
+void Log::Init(const string& logfile) {
+  if (m_log) {
+    debug() << "Closing former log";
+    m_log.close();
+  }
   m_log.open(logfile.c_str());
   if (!m_log) {
     throw std::runtime_error("Failed to open logfile " + logfile);
   }
-  info("Initialized log at level " + UnmapLevel(level));
-}
-
-Log::~Log() {
-  debug("Destroying log");
-  m_log.close();
+  m_log << "Initialized log with output file " << logfile;
 }
 
 void Log::setLevel(LEVEL level) {
@@ -27,37 +43,39 @@ void Log::setLevel(LEVEL level) {
 }
 
 void Log::setLevel(const string& level) {
-  if ("ERROR" == level) {
+  if ("ERROR" == level || "error" == level) {
     setLevel(ERROR);
-  } else if ("WARNING" == level) {
+  } else if ("WARNING" == level || "warning" == level) {
     setLevel(WARNING);
-  } else if ("INFO" == level) {
+  } else if ("INFO" == level || "info" == level) {
     setLevel(INFO);
-  } else if ("DEBUG" == level) {
+  } else if ("DEBUG" == level || "debug" == level) {
     setLevel(DEBUG);
   } else {
     throw std::runtime_error("Cannot set log to unknown level '" + level + "'");
   }
 }
 
-void Log::error(const string& msg) {
-  if (m_level > ERROR) return;
-  m_log << "ERROR:   " << msg << std::endl;
-  std::cerr << "ERROR:   " << msg << std::endl;
+ofstream& Log::error() {
+  if (!m_log || m_level > ERROR) return m_null;
+  m_log << endl << "ERROR:   ";
+  return m_log;
 }
 
-void Log::warning(const string& msg) {
-  if (m_level > WARNING) return;
-  m_log << "WARNING: " << msg << std::endl;
-  std::cerr << "WARNING: " << msg << std::endl;
+ofstream& Log::warning() {
+  if (!m_log || m_level > WARNING) return m_null;
+  m_log << endl << "WARNING: ";
+  return m_log;
 }
 
-void Log::info(const string& msg) {
-  if (m_level > INFO) return;
-  m_log << "INFO:    " << msg << std::endl;
+ofstream& Log::info() {
+  if (!m_log || m_level > INFO) return m_null;
+  m_log << endl << "INFO:    ";
+  return m_log;
 }
 
-void Log::debug(const string& msg) {
-  if (m_level > DEBUG) return;
-  m_log << "DEBUG:   " << msg << std::endl;
+ofstream& Log::debug() {
+  if (!m_log || m_level > DEBUG) return m_null;
+  m_log << endl << "DEBUG:   ";
+  return m_log;
 }

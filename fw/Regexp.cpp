@@ -3,11 +3,10 @@
 
 #include "Regexp.h"
 
+#include "FWLog.h"
 #include "FWTree.h"
 #include "OutputFunc.h"
 #include "RestartFunc.h"
-
-#include "util/Log.h"
 
 #include <memory>
 #include <string>
