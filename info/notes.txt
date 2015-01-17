@@ -1,0 +1,258 @@
+Implementing functions
+======================
+
+We don't need Object::newSignature().
+Where do functions come from?
+  new f = @(a,b)->c {...}
+  new o = {
+    m1
+    m2 = @(a,b)->c {...}
+    m3 = f
+  }
+
+A function is a Node, a single-signature island, until it is &-merged into
+something else.
+
+It's always up to a NewInit to make a newObject in the local scope, assigning
+it the type and value from the rhs.
+
+All Function needs to do is have its args, returns, and block.
+
+The & operator is the only thing that combines Functions with Vars and
+ObjectLiterals and anything else.
+
+Since Function is just a temporary container, it doesn't even need to create
+itself an Object.  It can just give the stuff it has up to the & operator,
+and/or the NewInit via Expression.
+
+-----
+
+TODO:
+ - give function args names
+ - add function members to function's block scope
+
+ - call function
+  -- without args
+  -- with args (need to name them properly + expose names to caller)
+
+ - ObjectLiteral
+
+ - & for combining objects
+ - & for combining functions via Function::makeObject()
+
+ - be aware of abstracts! I'm allowed to set them as objects, currently...
+
+ - const
+
+ - Returns could have a name too.  Need to use a Return object instead of just
+   auto_ptr<Type> everywhere.
+
+ - match up constructors/destructors
+ -- Variable needs to getObject() at setup()-time, before initObject() has been
+    called.  Now it gets a NULL.  Maybe it should just call a hasObject(), but
+    that is insufficient -- at setup()-time it wants to create a new
+    BasicType(m_log, *object).  But it can't have that Object until
+    initObject() is called on its scope, which must happen at evaluate()-time.
+ -- we added getSymbol, and used it a bunch.. then realized that types do need
+    to contain the set of member types.  Created TypeTable.  Now not sure how
+    any of this makes sense / works with ObjectLiterals.
+
+The types regarding an object:
+object's type: its parents
+symbol's type: describes the set of objects that a variable (symbol) is allowed
+  to take on
+using a variable as a type: need to know the member names, and their types, of
+  all members of the variable, without an underlying object.  Is this the same
+as the symbol's type?  I think so; that is, the symbol's type should also be
+able to tell you this.  Let's run through some examples to clarify.
+
+ -- A BasicType is a type that wraps another type (it's a tree up to NullType),
+and also has a list of the members it contributes.  For example:
+  new animal : object & { name:str } = object & { name='hello' }
+  new animal = { name='hello' }                                     # shorthand
+
+here:
+  animal :: BasicType(Symbol(object), { name:str })
+  object :: NullType( {...object stuff...} )
+
+Maybe NullType is only the object's parent type, meanwhile the Object symbol's
+type is a BasicType wrapping no symbol and has object's members.
+That's annoying because then BasicType's symbol could be null.
+
+Meh, let's just do that, yeah.
+
+Types are used to look up types, not to get members.  Why do I want to get
+member from types again?  That's for when an Object is asked for a Member, and
+it doesn't have it, it can look it up in its parents!!
+
+Hmmm.  There's definitely something different between compile-time types vs.
+runtime object-parents.  It's a type tree but with objects filled out amongst &
+and | relationships.
+
+An object doesn't need a type.  It needs parents.  Parents can have an &-tree
+but no |'s.  They are objects, or at least Symbols with object-shells that will
+be objects by the time we need them to be...
+
+Parent has getMember, Type does not.
+rename scope.newObject to scope.newSymbol (Scope, ObjectStore)
+
+-----
+
+Define a Spec: It's like an Object but with NO values.  A skeleton of members
+and their types.  An Object is a Spec and possibly values.  It's abstract if it
+does not have values for all the members.
+
+well, we're ok doing everything in Type, and just duplicating some stuff in
+Object as well.  it gets messy though.  From a Type we need to say: "Does it
+take these arguments as a function call?"
+ -- fine, it's not clear to me we need to answer it exactly like that to call
+the function anyway.
+
+new object : { foo : int } = { foo = 123 }
+
+-----
+
+Parent has to keep a Symbol, so that we can ask: is object x of type T?  Walk
+up its Parent Symbols and find one that matches T by Symbol*-equality.
+ -- eliminated Parents
+
+-----
+2k14-01-23
+
+- implement Object::call()
+  -- at function-call time, clone the entire block into an instance that we can
+     run (transforms all the nodes), while preserving the function spec block
+     (which we could re-run many times).
+  -- fix awfulness in this implementation; need MethodScores etc.
+  -- potential terror: duplicating a Node, possible parentScope history is
+     shared between the two.  Memory management issues?
+- assignment statements
+- typeof builtin-noeval-statement
+- str
+- print
+- IsVar / Variable select lookup (a.b = c.d.e etc.)
+- fix Operators again
+
+-----
+2k14-02-11
+
+Decide how the llvm integration works, before we do it.
+ - keep Nodes with poorly-named evaluate()
+ - setup() is me, in memory, doing whatever I want
+ - Object is a thin wrapper for an LLVM Value*
+ - evaluate() is really code-generation
+ - most things do not implement evaluate(), really
+
+eval:
+ - creates the base Module that is passed through evaluation?
+
+AST/Node
+ - MakeNode, InsertNode
+ - RecoverFromError: finds enclosing block, deletes problematic children
+ - initScopeNode(Node* scopeParent): set parentScope, call Block.initScope()
+    -- non-recursive
+ - cancelParentScopeNode(): parent-first null-out parentScope*
+ - setupAsParent(): runs child-first setupNode()
+ - setupNode(): setup(), analyzeNode()
+ - analyzeNode(): Statement->analyze() if Statement
+    -- only used by New, which calls NewInit->prepare() for all children
+ - evaluateNode(): child-first evaluate(), skip if deferred Block
+
+RootNode:
+ - does nothing
+ - owns the global Scope
+ - evaluate() just clears out its evaluated children
+
+Command:
+ - wrap a code block: do nothing
+ - otherwise children are Frags and Exps: print out RUN CMD with their cmdText()
+
+Block:
+ - owns a Scope
+ - initScope'd as a regular, Function, or ObjectLiteral block
+  -- this just wraps m_scope.init()
+ - setup() happens after setup() of ALL children; this is quite late!
+ - setup() does nothing for Expression blocks
+ - setup() for code blocks: deletes "Instant"-Statement children
+ - not all children are Statements.  Tracks m_statements for no reason.
+ - evaluate(): if it's not an ObjectLiteral block, it resets its scope.
+
+Scope:
+ - simple
+ - backed by a SymbolTable
+ - knows if it's a Function, ObjectLiteral, or vanilla scope
+ - implements the "it's not found here, look up to parent scopes" logic
+
+Identifier vs. Variable
+ - Variable does actual lookup at setup() (requires object/member existence)
+
+NewInit
+ - setup(): determines its Type and/or value-Expression
+ - prepare(): parentScope->newSymbol(varname, type)
+ - evaluate(): parentScope->initSymbol(varname, this->getObject()); parentScope->commitFirst();
+ - also provides getName(), getType(), getObject(), apparently called by ObjectLiteral
+
+Need:
+ - spec out how to encode Objects as LLVM values
+ - re-think symbol table datastructures, where those exist and how they map to
+   objects / LLVM values
+
+
+=====
+2k14-04-16
+
+eval: I don't need to commit.  I don't need Objects!
+It's not eval anymore.  It's typechecking+static analysis then codegen.  I'll
+just call it codegen.
+
+Does every Node have a codegen()?  hm, no.  Just statements :)
+
+=====
+2k14-05-10
+
+c2: We need to define the concept of variable name / type identity.  Some
+scheme like [varname:scope_id] where scope_id is either a depth, or a
+depth:function:depth[:function:depth...].  Does that work?
+ - think
+
+We'll also have to update the API of Type to support OrUnion.  Make it more
+like compiler.v1: auto_ptr findMember() and bool hasMember().  We can't be
+returning bare const Type* from findMember() anymore.
+ - mechanical
+
+Need to replace symbol_map usage everywhere with SymbolTable, which must track
+both a symbol_map that owns the <name,Type> symbols, but also tracks their
+timelines, so that they can be deleted in the correct order by
+Scope::bytecode().
+ - mechanical
+
+Expand Arg to have a name and a typespec (Expression).  Implement
+Function::attach_arg and Function::attach_returns.  They will have to
+creatively construct the Function's type.
+ - mostly mechanical
+
+CRAZY TIMES: y'know, we COULD make the *names* of arguments a part of the type.
+So that @(cool:bool) is NOT compatible with @(uncool:bool).  Sure you can pass
+any dynamic value to a function -- but the **function signatures** are not
+compatible if their stated argument names are not aligned.  What does
+function-compatibility mean?  Something to do with function-signature-types and
+dynamic-dispatch :D
+
+Implement Type::takesArgs().  Need an "arg list" soon, although we can continue
+to get by with just ptr_vector<Type> for now.
+ - fairly mechanical
+
+Setup boost::spirit debugging!
+ - nurr
+
+Function-calls can take place in two places:
+ 1. base-level ProcCall statement (i.e. returns is ignored)
+ 2. In an Expression, where op() is a postfix operator that could be attach to,
+essentially, any atom (not sure I *want* to allow such general use of it; e.g.
+42()  lol).
+
+Let's just do 1. for now so that we can make calls work.  Later we can
+complicate the Expression TDOP-parsing with postfix-().
+
+Need Var to do member-lookups
+Need Type to expose "isFunction" and "takesArgs".  Then Call can do validation!

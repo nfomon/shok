@@ -1,0 +1,81 @@
+Leave the JIT strategy entirely up to the RootNode and/or AST.
+
+Receive Tokens, construct a Tree.  The way we're doing it is dumb but OK.
+setup() does analysis, entirely from *our* perspective, no code-gen.  codegen
+is a thing that doesn't necessarily need to happen.  For now, write codegen and
+then evaluate will call codegen and then run the code.  The RootNode will
+decide whether to codegen explicitly or whether to just evaluate something
+in-place as an interpreter.  For now it can just evaluate(), since that will
+codegen the important things anyway. :)  It will NOT codegen Commands (hence
+the duality (um, lol)), but that's what we want now -- an interpreter that uses
+LLVM for some JITting, but not a full-out exe-producing compiler.
+
+Node::evaluateNode() wraps evaluate() but does NOT auto-evaluate child-first.
+Parents decide if they will even evaluate their children, or how.
+
+The flow is:
+ - AST calls RootNode::evaluateNode()
+ - Node::evaluateNode() just calls evaluate(), does NOT descend the tree
+ - Node::evaluate() is thus a parent-directed tree traversal
+ - RootNode::evaluate() calls evaluate() (not codegen) on its complete children
+ - Its children are all Commands
+ - Command just calls evaluateNode() on children, and if it isn't just a code
+   block, writes out a RUN CMD for the shell
+ - The Blocks themselves will decide to codegen() themselves, and if it's a
+   "plain" block at depth 0, then it also runs that code.
+ - later, codegen() can be made public so that the Command can decide (...?)
+
+I kind of want a codegen visitor nao.... o_O
+
+Blocks at depth 0 know what to do:
+ - an ExpBlock? must be depth 0. codegen a new main() that computes our
+   expression including the final ->str call, then run that.
+ - an ObjectLiteral block? Putting together a structure...
+ - A Function block?  Make a new llvm function, codegen our children into it
+ - neither?  depth 0 = root = make a new main() function that returns void.
+
+later:
+ - A Command implements the evaluation strategy, which might JIT or might not
+ - For now it will JIT *all* its child Blocks (exp or code)
+ - Eventually it might choose to just evaluate the Expression blocks
+ - If it's actually building a command, it will still print out RUN CMD etc.
+ - But if it's a code block, it will call evaluate() on it after the codegen().
+
+Eventually we'll do this instead:
+ - implement Command::codegen()
+ - RootNode will codegen() all its children, and write them out to an exe
+ - Command::codegen() will write out a system() call etc. to actually run
+   things, and include shell-builtin logic like "cd" etc.
+
+Module already exists
+It has the Globals
+
+1. echo {x}       [echo {(exp (var ID:'x'))}]
+
+insertNodes down; an initScope happens on the block
+setupNodes up; the way we're doing it is OK
+evaluate: Block knows it's at depth 0, so codegen's itself, then evaluates the
+gen'd code
+
+
+
+setup Command
+ - might not be anything to JIT here
+ - rrrrrrrk we need to write out the "derp run this command" into the final
+   executable.  What!?
+ - yes, when we want to compile programs we will want to put "RUN CMD" in as
+   system() calls etc., encode logic that otherwise the shell is doing.
+ - for now, we don't compile to exe's, but we DO llvm-jit as an interpreter.
+ - so eventually we will implement Command.codegen().  But not now!
+
+Command.CommandFragment
+ - gives us CmdText...
+Command.Block
+ - make a function like a main() for this invocation, put it in the module
+ - but we want these only for exps or for the top-level code block
+
+
+2. {new x}
+
+
+

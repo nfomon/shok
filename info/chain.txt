@@ -1,0 +1,45 @@
+code
+
+statements (newinit, ...)
+
+statements: exp (probably not object or function)
+
+exp: object, function
+
+object: newinit
+
+function: code
+
+-----
+
+cmd
+
+exp: object, function
+
+
+
+=====
+
+object(function)
+function(object)      waaaah!
+
+code(object,function)
+cmd(object,function)
+
+eeeeveryone forward-declares object and function
+eeeeveryone receives object and function, down to exps.
+
+problem? nope!
+ - Atom is <Object, Function>
+ - Expression uses Atoms everywhere
+ - don't want to forward-declare these there, do I?
+ - Perfectly fine because that's in *Atom*!!
+
+-----
+
+exp, typespec
+ - object(exp)
+ - function(exp)
+
+code(exp)
+cmd(exp)
