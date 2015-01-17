@@ -17,9 +17,9 @@
 
 namespace fw {
 
-std::auto_ptr<Rule> MakeRule_Keyword(const std::string& str);
-std::auto_ptr<Rule> MakeRule_Keyword(const std::string& name,
-                                     const std::string& str);
+std::auto_ptr<Rule> KEYWORD(const std::string& str);
+std::auto_ptr<Rule> KEYWORD(const std::string& name,
+                            const std::string& str);
 
 class ComputeFunc_Keyword : public ComputeFunc {
 public:

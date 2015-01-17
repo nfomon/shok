@@ -15,7 +15,7 @@ using std::string;
 
 using namespace fw;
 
-auto_ptr<Rule> fw::MakeRule_Regexp(const string& name, const boost::regex& regex) {
+auto_ptr<Rule> fw::REGEXP(const string& name, const boost::regex& regex) {
   return auto_ptr<Rule>(new Rule(name,
       MakeRestartFunc_None(),
       MakeComputeFunc_Regexp(regex),

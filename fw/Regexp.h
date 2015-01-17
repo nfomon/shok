@@ -16,8 +16,8 @@
 
 namespace fw {
 
-std::auto_ptr<Rule> MakeRule_Regexp(const std::string& name,
-                                    const boost::regex& regex);
+std::auto_ptr<Rule> REGEXP(const std::string& name,
+                           const boost::regex& regex);
 
 class ComputeFunc_Regexp : public ComputeFunc {
 public:

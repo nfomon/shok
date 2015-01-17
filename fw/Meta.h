@@ -17,9 +17,9 @@
 
 namespace fw {
 
-std::auto_ptr<Rule> MakeRule_Meta(const std::string& searchName);
-std::auto_ptr<Rule> MakeRule_Meta(const std::string& name,
-                                  const std::string& searchName);
+std::auto_ptr<Rule> META(const std::string& searchName);
+std::auto_ptr<Rule> META(const std::string& name,
+                         const std::string& searchName);
 
 class ComputeFunc_Meta : public ComputeFunc {
 public:

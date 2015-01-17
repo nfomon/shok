@@ -63,12 +63,14 @@ Rule& Rule::SetOutputFunc(auto_ptr<OutputFunc> outputFunc) {
   return *this;
 }
 
-void Rule::SilenceOutput() {
+Rule* Rule::SilenceOutput() {
   m_outputFunc = MakeOutputFunc_Silent();
+  return this;
 }
 
-void Rule::CapOutput(const string& cap) {
+Rule* Rule::CapOutput(const string& cap) {
   m_outputFunc = MakeOutputFunc_Cap(m_outputFunc, cap);
+  return this;
 }
 
 auto_ptr<FWTree> Rule::MakeRootNode(Connector& connector) const {

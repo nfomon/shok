@@ -16,11 +16,11 @@ using std::string;
 
 using namespace fw;
 
-auto_ptr<Rule> fw::MakeRule_Keyword(const string& str) {
-  return fw::MakeRule_Keyword(str, str);
+auto_ptr<Rule> fw::KEYWORD(const string& str) {
+  return fw::KEYWORD(str, str);
 }
 
-auto_ptr<Rule> fw::MakeRule_Keyword(const string& name, const string& str) {
+auto_ptr<Rule> fw::KEYWORD(const string& name, const string& str) {
   return auto_ptr<Rule>(new Rule(name,
       MakeRestartFunc_None(),
       MakeComputeFunc_Keyword(str),

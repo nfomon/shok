@@ -15,11 +15,11 @@ using std::string;
 
 using namespace fw;
 
-auto_ptr<Rule> fw::MakeRule_Meta(const string& searchName) {
-  return fw::MakeRule_Meta(searchName, searchName);
+auto_ptr<Rule> fw::META(const string& searchName) {
+  return fw::META(searchName, searchName);
 }
 
-auto_ptr<Rule> fw::MakeRule_Meta(const string& name, const string& searchName) {
+auto_ptr<Rule> fw::META(const string& name, const string& searchName) {
   return auto_ptr<Rule>(new Rule(name,
       MakeRestartFunc_None(),
       MakeComputeFunc_Meta(searchName),

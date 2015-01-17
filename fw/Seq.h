@@ -12,7 +12,7 @@
 
 namespace fw {
 
-std::auto_ptr<Rule> MakeRule_Seq(const std::string& name);
+std::auto_ptr<Rule> SEQ(const std::string& name);
 
 struct ComputeFunc_Seq : public ComputeFunc {
   virtual ~ComputeFunc_Seq() {}

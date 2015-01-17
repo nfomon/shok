@@ -21,7 +21,7 @@ using std::vector;
 
 using namespace fw;
 
-auto_ptr<Rule> fw::MakeRule_Seq(const string& name) {
+auto_ptr<Rule> fw::SEQ(const string& name) {
   return auto_ptr<Rule>(new Rule(name,
       MakeRestartFunc_FirstChildOfNode(),
       MakeComputeFunc_Seq(),

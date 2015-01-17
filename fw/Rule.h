@@ -44,8 +44,8 @@ public:
   Rule& SetRestartFunc(std::auto_ptr<RestartFunc> restartFunc);
   Rule& SetComputeFunc(std::auto_ptr<ComputeFunc> computeFunc);
   Rule& SetOutputFunc(std::auto_ptr<OutputFunc> outputFunc);
-  void SilenceOutput();
-  void CapOutput(const std::string& cap);
+  Rule* SilenceOutput();
+  Rule* CapOutput(const std::string& cap);
 
   Rule* AddChild(std::auto_ptr<Rule> child);
   Rule* AddChildRecursive(Rule* child);
@@ -53,6 +53,7 @@ public:
   std::auto_ptr<FWTree> MakeRootNode(Connector& connector) const;
   FWTree* MakeNode(FWTree& parent, const IList& istart) const;
 
+  std::string Type() const { return m_type; }
   std::string Name() const { return m_name; }
   const child_vec& GetChildren() const { return m_children; }
 
@@ -65,6 +66,7 @@ protected:
     m_parent = parent;
   }
 
+  std::string m_type;
   std::string m_name;
   std::auto_ptr<RestartFunc> m_restartFunc;
   std::auto_ptr<ComputeFunc> m_computeFunc;

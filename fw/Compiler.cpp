@@ -42,23 +42,23 @@ std::auto_ptr<Rule> fw::CreateCompiler_Complex() {
 */
 
 std::auto_ptr<Rule> fw::CreateCompiler_Nifty() {
-  std::auto_ptr<Rule> compiler(MakeRule_Star("compiler"));
-  Rule* stmt_ = compiler->AddChild(MakeRule_Seq("stmt"));
-  stmt_->AddChild(MakeRule_Meta("stmt"));
-  Rule* stmts_ = stmt_->AddChild(MakeRule_Or("stmts"));
-  stmt_->AddChild(MakeRule_Meta("/stmt"));
+  std::auto_ptr<Rule> compiler(STAR("compiler"));
+  Rule* stmt_ = compiler->AddChild(SEQ("stmt"));
+  stmt_->AddChild(META("stmt"));
+  Rule* stmts_ = stmt_->AddChild(OR("stmts"));
+  stmt_->AddChild(META("/stmt"));
 
-  Rule* cmdstmt_ = stmts_->AddChild(MakeRule_Seq("cmd stmt"));
-  Rule* newstmt_ = stmts_->AddChild(MakeRule_Seq("new stmt"));
-  Rule* delstmt_ = stmts_->AddChild(MakeRule_Seq("del stmt"));
+  Rule* cmdstmt_ = stmts_->AddChild(SEQ("cmd stmt"));
+  Rule* newstmt_ = stmts_->AddChild(SEQ("new stmt"));
+  Rule* delstmt_ = stmts_->AddChild(SEQ("del stmt"));
 
-  Rule* cmd_ = cmdstmt_->AddChild(MakeRule_Star("cmd"));
-  cmd_->AddChild(MakeRule_Meta("cmdtext", "cmd"));
+  Rule* cmd_ = cmdstmt_->AddChild(STAR("cmd"));
+  cmd_->AddChild(META("cmdtext", "cmd"));
 
-  newstmt_->AddChild(MakeRule_Meta("new"));
-  newstmt_->AddChild(MakeRule_Meta("identifier"));
+  newstmt_->AddChild(META("new"));
+  newstmt_->AddChild(META("identifier"));
 
-  delstmt_->AddChild(MakeRule_Meta("del"));
-  delstmt_->AddChild(MakeRule_Meta("identifier"));
+  delstmt_->AddChild(META("del"));
+  delstmt_->AddChild(META("identifier"));
   return compiler;
 }

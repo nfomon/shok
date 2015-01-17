@@ -17,7 +17,7 @@ using std::vector;
 
 using namespace fw;
 
-auto_ptr<Rule> fw::MakeRule_Or(const string& name) {
+auto_ptr<Rule> fw::OR(const string& name) {
   return auto_ptr<Rule>(new Rule(name,
       MakeRestartFunc_AllChildrenOfNode(),
       MakeComputeFunc_Or(),

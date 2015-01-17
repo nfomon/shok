@@ -12,7 +12,7 @@
 
 namespace fw {
 
-std::auto_ptr<Rule> MakeRule_Or(const std::string& name);
+std::auto_ptr<Rule> OR(const std::string& name);
 
 struct ComputeFunc_Or : public ComputeFunc {
   virtual ~ComputeFunc_Or() {}

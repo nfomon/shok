@@ -12,7 +12,7 @@
 
 namespace fw {
 
-std::auto_ptr<Rule> MakeRule_Star(const std::string& name);
+std::auto_ptr<Rule> STAR(const std::string& name);
 
 struct ComputeFunc_Star : public ComputeFunc {
   virtual ~ComputeFunc_Star() {}

@@ -17,111 +17,111 @@ using namespace fw;
 
 // parser = ((new ;)|(del ;))*
 auto_ptr<Rule> fw::CreateParser_Simple() {
-  auto_ptr<Rule> parser(MakeRule_Star("* (parser)"));
-  Rule* stmts_ = parser->AddChild(MakeRule_Or("Or (stmts)"));
-  stmts_->CapOutput("cmd");
-  Rule* newstmt_ = stmts_->AddChild(MakeRule_Seq("new stmt"));
-  newstmt_->AddChild(MakeRule_Meta("new"));
-  //newstmt_->AddChild(MakeRule_Meta("x"));
-  Rule* semi_1 = newstmt_->AddChild(MakeRule_Meta(";"));
-  semi_1->SilenceOutput();
-  Rule* delstmt_ = stmts_->AddChild(MakeRule_Seq("del stmt"));
-  delstmt_->AddChild(MakeRule_Meta("del"));
-  //delstmt_->AddChild(MakeRule_Meta("x"));
-  Rule* semi_2 = delstmt_->AddChild(MakeRule_Meta(";"));
-  semi_2->SilenceOutput();
+  auto_ptr<Rule> parser(STAR("* (parser)"));
+  Rule* stmts_ = parser->AddChild(OR("Or (stmts)"))
+    ->CapOutput("cmd");
+  Rule* newstmt_ = stmts_->AddChild(SEQ("new stmt"));
+  newstmt_->AddChild(META("new"));
+  //newstmt_->AddChild(META("x"));
+  newstmt_->AddChild(META(";"))
+    ->SilenceOutput();
+  Rule* delstmt_ = stmts_->AddChild(SEQ("del stmt"));
+  delstmt_->AddChild(META("del"));
+  //delstmt_->AddChild(META("x"));
+  delstmt_->AddChild(META(";"))
+    ->SilenceOutput();
   return parser;
 }
 
 // parser = ((new WS ID ;)|(del WS ID ;))*
 auto_ptr<Rule> fw::CreateParser_Moderate() {
-  auto_ptr<Rule> parser(MakeRule_Star("* (parser)"));
-  Rule* stmts_ = parser->AddChild(MakeRule_Or("Or (stmts)"));
-  stmts_->CapOutput("cmd");
-  Rule* newstmt_ = stmts_->AddChild(MakeRule_Seq("new stmt"));
-  newstmt_->AddChild(MakeRule_Meta("new"));
-  Rule* ws_1 = newstmt_->AddChild(MakeRule_Meta("WS"));
-  ws_1->SilenceOutput();
-  newstmt_->AddChild(MakeRule_Meta("identifier", "ID"));
-  Rule* semi_1 = newstmt_->AddChild(MakeRule_Meta(";"));
-  semi_1->SilenceOutput();
-  Rule* delstmt_ = stmts_->AddChild(MakeRule_Seq("del stmt"));
-  delstmt_->AddChild(MakeRule_Meta("del"));
-  Rule* ws_2 = delstmt_->AddChild(MakeRule_Meta("WS"));
-  ws_2->SilenceOutput();
-  delstmt_->AddChild(MakeRule_Meta("identifier", "ID"));
-  Rule* semi_2 = delstmt_->AddChild(MakeRule_Meta(";"));
-  semi_2->SilenceOutput();
+  auto_ptr<Rule> parser(STAR("* (parser)"));
+  Rule* stmts_ = parser->AddChild(OR("Or (stmts)"))
+    ->CapOutput("cmd");
+  Rule* newstmt_ = stmts_->AddChild(SEQ("new stmt"));
+  newstmt_->AddChild(META("new"));
+  newstmt_->AddChild(META("WS"))
+    ->SilenceOutput();
+  newstmt_->AddChild(META("identifier", "ID"));
+  newstmt_->AddChild(META(";"))
+    ->SilenceOutput();
+  Rule* delstmt_ = stmts_->AddChild(SEQ("del stmt"));
+  delstmt_->AddChild(META("del"));
+  delstmt_->AddChild(META("WS"))
+    ->SilenceOutput();
+  delstmt_->AddChild(META("identifier", "ID"));
+  delstmt_->AddChild(META(";"))
+    ->SilenceOutput();
   return parser;
 }
 
 // parser = ((cmd|codeblock)end)*
 auto_ptr<Rule> fw::CreateParser_Complex() {
-  auto_ptr<Rule> parser(MakeRule_Star("* (parser)"));
-  Rule* line = parser->AddChild(MakeRule_Seq("line"));
-  //line->AddChild(MakeRule_Meta("WS"));
-  Rule* cmdorcode = line->AddChild(MakeRule_Or("Or (cmdorcode)"));
-  Rule* end = line->AddChild(MakeRule_Or("end"));
-  end->AddChild(MakeRule_Meta(";"));
-  end->AddChild(MakeRule_Meta("\n"));
+  auto_ptr<Rule> parser(STAR("* (parser)"));
+  Rule* line = parser->AddChild(SEQ("line"));
+  //line->AddChild(META("WS"));
+  Rule* cmdorcode = line->AddChild(OR("Or (cmdorcode)"));
+  Rule* end = line->AddChild(OR("end"));
+  end->AddChild(META(";"));
+  end->AddChild(META("\n"));
 
-  Rule* cmdline = cmdorcode->AddChild(MakeRule_Seq("cmdline"));
-  cmdline->AddChild(MakeRule_Meta("ID", "program"));
-  Rule* cmdargs = cmdline->AddChild(MakeRule_Star("* (cmdargs)"));
-  Rule* cmdarg = cmdargs->AddChild(MakeRule_Seq("cmdarg"));
-  cmdarg->AddChild(MakeRule_Meta("WS"));
-  cmdarg->AddChild(MakeRule_Meta("arg"));
+  Rule* cmdline = cmdorcode->AddChild(SEQ("cmdline"));
+  cmdline->AddChild(META("ID", "program"));
+  Rule* cmdargs = cmdline->AddChild(STAR("* (cmdargs)"));
+  Rule* cmdarg = cmdargs->AddChild(SEQ("cmdarg"));
+  cmdarg->AddChild(META("WS"));
+  cmdarg->AddChild(META("arg"));
 
-  Rule* codeblock = cmdorcode->AddChild(MakeRule_Seq("codeblock"));
-  codeblock->AddChild(MakeRule_Meta("{"));
-  Rule* stmts = codeblock->AddChild(MakeRule_Star("* (stmts)"));
-  codeblock->AddChild(MakeRule_Meta("}"));
+  Rule* codeblock = cmdorcode->AddChild(SEQ("codeblock"));
+  codeblock->AddChild(META("{"));
+  Rule* stmts = codeblock->AddChild(STAR("* (stmts)"));
+  codeblock->AddChild(META("}"));
 
-  Rule* stmt = stmts->AddChild(MakeRule_Or("Or (stmt)"));
-  Rule* newstmt = stmt->AddChild(MakeRule_Seq("new stmt"));
-  newstmt->AddChild(MakeRule_Meta("new"));
-  newstmt->AddChild(MakeRule_Meta("WS"));
-  newstmt->AddChild(MakeRule_Meta("identifier", "ID"));
-  newstmt->AddChild(MakeRule_Meta(";"));
-  Rule* delstmt = stmt->AddChild(MakeRule_Seq("del stmt"));
-  delstmt->AddChild(MakeRule_Meta("del"));
-  delstmt->AddChild(MakeRule_Meta("WS"));
-  delstmt->AddChild(MakeRule_Meta("identifier", "ID"));
-  delstmt->AddChild(MakeRule_Meta(";"));
+  Rule* stmt = stmts->AddChild(OR("Or (stmt)"));
+  Rule* newstmt = stmt->AddChild(SEQ("new stmt"));
+  newstmt->AddChild(META("new"));
+  newstmt->AddChild(META("WS"));
+  newstmt->AddChild(META("identifier", "ID"));
+  newstmt->AddChild(META(";"));
+  Rule* delstmt = stmt->AddChild(SEQ("del stmt"));
+  delstmt->AddChild(META("del"));
+  delstmt->AddChild(META("WS"));
+  delstmt->AddChild(META("identifier", "ID"));
+  delstmt->AddChild(META(";"));
   return parser;
 }
 
 // Nifty parser
 auto_ptr<Rule> fw::CreateParser_Nifty() {
-  auto_ptr<Rule> parser(MakeRule_Star("* (parser)"));
-  Rule* stmts_ = parser->AddChild(MakeRule_Or("Or (stmts)"));
-  stmts_->CapOutput("stmt");
+  auto_ptr<Rule> parser(STAR("* (parser)"));
+  Rule* stmts_ = parser->AddChild(OR("Or (stmts)"))
+    ->CapOutput("stmt");
 
-  Rule* cmd_ = stmts_->AddChild(MakeRule_Seq("cmd stmt"));
-  cmd_->AddChild(MakeRule_Meta("cmd", "ID"));
+  Rule* cmd_ = stmts_->AddChild(SEQ("cmd stmt"));
+  cmd_->AddChild(META("cmd", "ID"));
 
-  Rule* cmdexts_ = cmd_->AddChild(MakeRule_Star("cmdexts"));
-  Rule* cmdext_ = cmdexts_->AddChild(MakeRule_Seq("cmdext"));
-  cmdext_->AddChild(MakeRule_Meta("cmd", "WS"));
-  cmdext_->AddChild(MakeRule_Meta("cmd", "ID"));
+  Rule* cmdexts_ = cmd_->AddChild(STAR("cmdexts"));
+  Rule* cmdext_ = cmdexts_->AddChild(SEQ("cmdext"));
+  cmdext_->AddChild(META("cmd", "WS"));
+  cmdext_->AddChild(META("cmd", "ID"));
 
-  Rule* newstmt_ = stmts_->AddChild(MakeRule_Seq("new stmt"));
-  newstmt_->AddChild(MakeRule_Meta("new"));
-  Rule* ws_1 = newstmt_->AddChild(MakeRule_Meta("WS"));
-  ws_1->SilenceOutput();
-  Rule* newor_ = newstmt_->AddChild(MakeRule_Star("new*"));
+  Rule* newstmt_ = stmts_->AddChild(SEQ("new stmt"));
+  newstmt_->AddChild(META("new"));
+  newstmt_->AddChild(META("WS"))
+    ->SilenceOutput();
+  Rule* newor_ = newstmt_->AddChild(STAR("new*"));
   newor_->AddChildRecursive(newstmt_);
-  newstmt_->AddChild(MakeRule_Meta("identifier", "ID"));
-  Rule* semi_1 = newstmt_->AddChild(MakeRule_Meta(";"));
-  semi_1->SilenceOutput();
+  newstmt_->AddChild(META("identifier", "ID"));
+  newstmt_->AddChild(META(";"))
+    ->SilenceOutput();
 
-  Rule* delstmt_ = stmts_->AddChild(MakeRule_Seq("del stmt"));
-  delstmt_->AddChild(MakeRule_Meta("del"));
-  Rule* ws_2 = delstmt_->AddChild(MakeRule_Meta("WS"));
-  ws_2->SilenceOutput();
-  delstmt_->AddChild(MakeRule_Meta("identifier", "ID"));
-  Rule* semi_2 = delstmt_->AddChild(MakeRule_Meta(";"));
-  semi_2->SilenceOutput();
+  Rule* delstmt_ = stmts_->AddChild(SEQ("del stmt"));
+  delstmt_->AddChild(META("del"));
+  delstmt_->AddChild(META("WS"))
+    ->SilenceOutput();
+  delstmt_->AddChild(META("identifier", "ID"));
+  delstmt_->AddChild(META(";"))
+    ->SilenceOutput();
 
   return parser;
 }
