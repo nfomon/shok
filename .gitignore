@@ -10,10 +10,12 @@ lexer.log
 parser.log
 compiler.log
 vm.log
+graphs
 
 # C extensions
 *.so
 *.o
+*.a
 
 # Packages
 *.egg
