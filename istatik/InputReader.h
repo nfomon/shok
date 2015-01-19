@@ -4,9 +4,9 @@
 #ifndef _InputReader_h_
 #define _InputReader_h_
 
-#include "StatikError.h"
+#include "ISError.h"
 
-namespace statik {
+namespace istatik {
 
 class InputReader {
   InputReader() {}

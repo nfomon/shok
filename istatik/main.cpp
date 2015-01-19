@@ -1,10 +1,10 @@
 // Copyright (C) 2015 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-/* statik runner */
+/* Interactive client for statik compilers */
 
-#include "StatikError.h"
-#include "StatikLog.h"
+#include "ISError.h"
+#include "ISLog.h"
 
 #include "InputReader.h"
 //#include "OutputAction.h"
@@ -27,10 +27,10 @@ using std::endl;
 using std::string;
 using std::vector;
 
-using namespace statik;
+using namespace istatik;
 
 namespace {
-  const string PROGRAM_NAME = "statik";
+  const string PROGRAM_NAME = "istatik";
 }
 
 static void finish(int sig);
@@ -86,7 +86,7 @@ void run() {
         wdelch(in);
         --lenx[y];
         if (lenx[y] < 0) {
-          throw StatikError("X underflow");
+          throw ISError("X underflow");
         }
       }
       break;
@@ -200,9 +200,9 @@ int main(int argc, char *argv[]) {
     }
 
     run();
-  } catch (const StatikError& e) {
+  } catch (const ISError& e) {
     endwin();
-    g_log.error() << "Statik error: " << e.what();
+    g_log.error() << "IStatik error: " << e.what();
     return 1;
   } catch (const std::exception& e) {
     g_log.error() << "Unknown error: " << e.what();
