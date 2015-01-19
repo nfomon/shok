@@ -13,9 +13,12 @@ AM_PATH_PYTHON([2])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 
+AX_WITH_CURSES
+
 AC_CONFIG_FILES([
   Makefile
   fw/Makefile
+  statik/Makefile
 ])
 #  lexer/Makefile
 #  p2/Makefile
