@@ -17,7 +17,8 @@ AX_WITH_CURSES
 
 AC_CONFIG_FILES([
   Makefile
-  fw/Makefile
+  statik/Makefile
+  exstatik/Makefile
   istatik/Makefile
 ])
 #  lexer/Makefile
