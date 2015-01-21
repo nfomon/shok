@@ -5,13 +5,17 @@ UTIL_SRCS = \
 
 COMMON_SRCS = $(UTIL_SRCS)
 
-bin_PROGRAMS = istatik
-istatik_SOURCES = $(COMMON_SRCS) \
+ISTATIK_SRCS = $(COMMON_SRCS) \
     ISError.h \
     ISLog.cpp \
     ISLog.h \
     main.cpp
 
-istatik_CXXFLAGS = -ggdb -Wall -pedantic $(BOOST_CXXFLAGS)
+STATIK_CXXFLAGS = -I../
+
+bin_PROGRAMS = istatik
+istatik_SOURCES = $(ISTATIK_SRCS)
+istatik_LDADD = ../exstatik/libexstatik.a ../statik/libstatik.a
+istatik_CXXFLAGS = -ggdb -Wall -pedantic $(BOOST_CXXFLAGS) $(STATIK_CXXFLAGS)
 istatik_LDFLAGS = $(BOOST_PROGRAM_OPTIONS_LDFLAGS)
 LIBS = $(BOOST_PROGRAM_OPTIONS_LIBS) $(CURSES_LIB)
