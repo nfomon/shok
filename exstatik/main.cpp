@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     po::positional_options_description p;
     po::variables_map vm;
     string logfile;
-    string loglevel;
+    string loglevel = Log::UnMapLevel(Log::INFO);
     string graphdir;
 
     try {
@@ -193,13 +193,13 @@ int main(int argc, char *argv[]) {
     }
 
   } catch (const SError& e) {
-    g_log.error() << "Compilation framework error: " << e.what();
+    g_log.error() << "Compilation framework error: " << e.what() << endl;
     return 1;
   } catch (const std::exception& e) {
-    g_log.error() << "Unknown error: " << e.what();
+    g_log.error() << "Unknown error: " << e.what() << endl;
     return 1;
   } catch (...) {
-    g_log.error() << "Unknown error";
+    g_log.error() << "Unknown error" << endl;
     return 1;
   }
 

@@ -5,9 +5,7 @@
 
 #include "ISError.h"
 #include "ISLog.h"
-
-#include "InputReader.h"
-//#include "OutputAction.h"
+#include "IStatik.h"
 
 #include <curses.h>
 #include <panel.h>
@@ -35,6 +33,7 @@ namespace {
 
 static void finish(int sig);
 
+/*
 void run() {
   (void) signal(SIGINT, finish);
   (void) initscr();
@@ -48,11 +47,11 @@ void run() {
   vector<int> lenx;
   lenx.push_back(0);
 
-/*
+// *
   ptr_vector<Connector> connectors;
   int numWindows = connectors.size() + 1;
   int h1 = nrows/numWindows;
-*/
+// * //
   int h1 = nrows/2;
 
   mvwhline(stdscr, h1, 0, '-', ncols);
@@ -62,15 +61,29 @@ void run() {
   (void) keypad(in, true);
   wmove(in, 0, 0);
 
-  //int h2 = nrows-h1;
-  //WINDOW* out = newwin(h2, ncols, h2+1, 0);
+  int h2 = nrows-h1;
+  WINDOW* out = newwin(h2, ncols, h2+1, 0);
 
-  //InputReader reader;
+  Actuator actuator;
 
   while (true) {
     int ch = wgetch(in);
     int x, y;
     getyx(in, y, x);
+
+    Action action = actuator.Insert(y, x, ch);
+
+    for (Action::iaction_iter i = action.iactions.begin();
+         i != action.iactions.end(); ++i) {
+      switch (i->op) {
+      case IAction::INSERT:
+        break;
+      case IAction::DELETE:
+        break;
+      default:
+        throw ISError("Unknown IAction");
+      }
+    }
 
     switch (ch) {
     case KEY_DC:
@@ -139,38 +152,42 @@ void run() {
       }
       break;
     }
-    wrefresh(in);
 
-    // Feed to InputReader
-    //reader.Insert(y, x, ch);
+    // Feed to Actuator
+    //actuator.Insert(y, x, ch);
 
     // Get back list<OutputActions>
     // Execute the OutputActions
     // Get back list<Display
-
+    wrefresh(out);
+    wrefresh(in);
   }
 
   // But what of the next?  We have list of "in" tokens...
   // But that's not really the same.  That's just another "out" window!! :D
 
+  delwin(out);
   delwin(in);
-  //delwin(out);
   finish(0);
 }
+*/
 
 int main(int argc, char *argv[]) {
   try {
     // Retrieve program options
-    po::options_description desc(PROGRAM_NAME + " usage");
-    desc.add_options()
-      ("help,h", "show help message")
-      ("logfile,f", po::value<string>(), "output log file")
-      ("loglevel,L", po::value<string>(), "log level: debug, info, warning, error")
-    ;
-    po::positional_options_description p;
-    po::variables_map vm;
+    string compiler_name;
     string logfile;
     string loglevel;
+    po::options_description desc(PROGRAM_NAME + " usage");
+    desc.add_options()
+      ("compiler,c", po::value<string>(), "compiler name")
+      ("help,h", "show help message")
+      ("logfile,f", po::value<string>(&logfile), "output log file")
+      ("loglevel,L", po::value<string>(&loglevel), "log level: debug, info, warning, error")
+    ;
+    po::positional_options_description p;
+    p.add("compiler", 1);
+    po::variables_map vm;
 
     try {
       po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
@@ -179,12 +196,6 @@ int main(int argc, char *argv[]) {
       if (vm.count("help")) {
         cout << desc;
         return 0;
-      }
-      if (vm.count("logfile")) {
-        logfile = vm["logfile"].as<string>();
-      }
-      if (vm.count("loglevel")) {
-        loglevel = vm["loglevel"].as<string>();
       }
     } catch (po::error& e) {
       cout << desc;
@@ -199,17 +210,16 @@ int main(int argc, char *argv[]) {
       g_log.Init(logfile);
     }
 
-    run();
+    IStatik istatik(compiler_name);
+    istatik.run();
   } catch (const ISError& e) {
-    endwin();
-    g_log.error() << "IStatik error: " << e.what();
+    g_log.error() << "IStatik error: " << e.what() << endl;
     return 1;
   } catch (const std::exception& e) {
-    g_log.error() << "Unknown error: " << e.what();
-    endwin();
+    g_log.error() << "Unknown error: " << e.what() << endl;
     return 1;
   } catch (...) {
-    g_log.error() << "Unknown error";
+    g_log.error() << "Unknown error" << endl;
     return 1;
   }
 

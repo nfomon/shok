@@ -6,9 +6,13 @@ UTIL_SRCS = \
 COMMON_SRCS = $(UTIL_SRCS)
 
 ISTATIK_SRCS = $(COMMON_SRCS) \
+    Actuator.cpp \
+    Actuator.h \
     ISError.h \
     ISLog.cpp \
     ISLog.h \
+    IStatik.cpp \
+    IStatik.h \
     main.cpp
 
 STATIK_CXXFLAGS = -I../

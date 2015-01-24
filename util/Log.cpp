@@ -8,15 +8,18 @@
 #include <string>
 using std::cerr;
 using std::endl;
+using std::ostream;
 using std::ofstream;
 using std::string;
 
-Log::Log(const LEVEL level)
-  : m_level(level) {
+Log::Log(const LEVEL level, ostream& err)
+  : m_level(level),
+    m_err(err) {
 }
 
-Log::Log(const string& logfile, const LEVEL level)
-  : m_level(level) {
+Log::Log(const string& logfile, const LEVEL level, ostream& err)
+  : m_level(level),
+    m_err(err) {
   Init(logfile);
 }
 
@@ -43,39 +46,48 @@ void Log::setLevel(LEVEL level) {
 }
 
 void Log::setLevel(const string& level) {
-  if ("ERROR" == level || "error" == level) {
+  if ("error" == level || "ERROR" == level) {
     setLevel(ERROR);
-  } else if ("WARNING" == level || "warning" == level) {
+  } else if ("warning" == level || "WARNING" == level) {
     setLevel(WARNING);
-  } else if ("INFO" == level || "info" == level) {
+  } else if ("info" == level || "INFO" == level) {
     setLevel(INFO);
-  } else if ("DEBUG" == level || "debug" == level) {
+  } else if ("debug" == level || "DEBUG" == level) {
     setLevel(DEBUG);
   } else {
     throw std::runtime_error("Cannot set log to unknown level '" + level + "'");
   }
 }
 
-ofstream& Log::error() {
-  if (!m_log || m_level > ERROR) return m_null;
-  m_log << endl << "ERROR:   ";
-  return m_log;
+ostream& Log::error() {
+  if (m_level > ERROR) return m_null;
+  ostream& log = stream();
+  log << endl << "ERROR:   ";
+  return log;
 }
 
-ofstream& Log::warning() {
-  if (!m_log || m_level > WARNING) return m_null;
-  m_log << endl << "WARNING: ";
-  return m_log;
+ostream& Log::warning() {
+  if (m_level > WARNING) return m_null;
+  ostream& log = stream();
+  log << endl << "WARNING: ";
+  return log;
 }
 
-ofstream& Log::info() {
+ostream& Log::info() {
   if (!m_log || m_level > INFO) return m_null;
   m_log << endl << "INFO:    ";
   return m_log;
 }
 
-ofstream& Log::debug() {
+ostream& Log::debug() {
   if (!m_log || m_level > DEBUG) return m_null;
   m_log << endl << "DEBUG:   ";
   return m_log;
+}
+
+ostream& Log::stream() {
+  if (m_log) {
+    return m_log;
+  }
+  return m_err;
 }
