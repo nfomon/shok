@@ -7,11 +7,6 @@
 #include "ISLog.h"
 #include "IStatik.h"
 
-#include <curses.h>
-#include <panel.h>
-#include <signal.h>
-#include <stdlib.h>
-
 #include <boost/program_options.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 using boost::ptr_vector;
@@ -30,8 +25,6 @@ using namespace istatik;
 namespace {
   const string PROGRAM_NAME = "istatik";
 }
-
-static void finish(int sig);
 
 /*
 void run() {
@@ -222,9 +215,4 @@ int main(int argc, char *argv[]) {
   }
 
   return 0;
-}
-
-static void finish(int sig) {
-  endwin();
-  exit(0);
 }

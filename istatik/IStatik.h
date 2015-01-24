@@ -17,7 +17,10 @@ public:
   void run();
 
 private:
+  static void clear_screen(int sig);
+
   std::string m_compiler_name;
+  // Compiler m_compiler;   // TODO
 };
 
 }
