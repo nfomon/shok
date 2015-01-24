@@ -177,11 +177,11 @@ int main(int argc, char *argv[]) {
     // Retrieve program options
     string compiler_name;
     string logfile;
-    string loglevel;
+    string loglevel = Log::UnMapLevel(Log::INFO);
     po::options_description desc(PROGRAM_NAME + " usage");
     desc.add_options()
-      ("compiler,c", po::value<string>(), "compiler name")
       ("help,h", "show help message")
+      ("compiler,c", po::value<string>(&compiler_name), "compiler name")
       ("logfile,f", po::value<string>(&logfile), "output log file")
       ("loglevel,L", po::value<string>(&loglevel), "log level: debug, info, warning, error")
     ;
@@ -204,9 +204,7 @@ int main(int argc, char *argv[]) {
 
     // Initialize logging
     if (!logfile.empty()) {
-      if (!loglevel.empty()) {
-        g_log.setLevel(loglevel);
-      }
+      g_log.setLevel(loglevel);
       g_log.Init(logfile);
     }
 

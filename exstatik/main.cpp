@@ -36,18 +36,18 @@ namespace {
 int main(int argc, char *argv[]) {
   try {
     // Retrieve program options
-    po::options_description desc(PROGRAM_NAME + " usage");
-    desc.add_options()
-      ("help,h", "show help message")
-      ("logfile,f", po::value<string>(), "output log file")
-      ("loglevel,L", po::value<string>(), "log level: debug, info, warning, error")
-      ("graphdir,g", po::value<string>(), "output graph directory")
-    ;
-    po::positional_options_description p;
-    po::variables_map vm;
     string logfile;
     string loglevel = Log::UnMapLevel(Log::INFO);
     string graphdir;
+    po::options_description desc(PROGRAM_NAME + " usage");
+    desc.add_options()
+      ("help,h", "show help message")
+      ("logfile,f", po::value<string>(&logfile), "output log file")
+      ("loglevel,L", po::value<string>(&loglevel), "log level: debug, info, warning, error")
+      ("graphdir,g", po::value<string>(&graphdir), "output graph directory")
+    ;
+    po::positional_options_description p;
+    po::variables_map vm;
 
     try {
       po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
@@ -57,15 +57,6 @@ int main(int argc, char *argv[]) {
         cout << desc;
         return 0;
       }
-      if (vm.count("logfile")) {
-        logfile = vm["logfile"].as<string>();
-      }
-      if (vm.count("loglevel")) {
-        loglevel = vm["loglevel"].as<string>();
-      }
-      if (vm.count("graphdir")) {
-        graphdir = vm["graphdir"].as<string>();
-      }
     } catch (po::error& e) {
       cout << desc;
       return 1;
@@ -73,9 +64,7 @@ int main(int argc, char *argv[]) {
 
     // Initialize logging
     if (!logfile.empty()) {
-      if (!loglevel.empty()) {
-        g_log.setLevel(loglevel);
-      }
+      g_log.setLevel(loglevel);
       g_log.Init(logfile);
     }
 
