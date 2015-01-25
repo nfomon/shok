@@ -3,6 +3,7 @@
 
 /* statik compiler framework runner */
 
+#include "Codegen.h"
 #include "Compiler.h"
 #include "Lexer.h"
 #include "Parser.h"
@@ -12,6 +13,7 @@
 #include "statik/Hotlist.h"
 #include "statik/IList.h"
 #include "statik/Rule.h"
+#include "statik/SError.h"
 #include "statik/SLog.h"
 
 #include <boost/program_options.hpp>
@@ -80,11 +82,11 @@ int main(int argc, char *argv[]) {
     auto_ptr<Grapher> parserGrapher;
     Connector parserConnector(*parser.get(), "Parser", graphdir);
 
-    // Compiler
-    auto_ptr<Rule> compiler = CreateCompiler_Nifty();
-    g_log.info() << "Compiler: " + compiler->Print();
-    auto_ptr<Grapher> compilerGrapher;
-    Connector compilerConnector(*compiler.get(), "Compiler", graphdir);
+    // Codegen
+    auto_ptr<Rule> codegen = CreateCodegen_Nifty();
+    g_log.info() << "Codegen: " + codegen->Print();
+    auto_ptr<Grapher> codegenGrapher;
+    Connector codegenConnector(*codegen.get(), "Codegen", graphdir);
 
     IList* start = NULL;
     IList* prev = NULL;
@@ -130,10 +132,10 @@ int main(int argc, char *argv[]) {
           lexerConnector.ClearHotlist();
           const Hotlist& astHotlist = parserConnector.GetHotlist();
           if (!astHotlist.IsEmpty()) {
-            g_log.info() << "* main: Parser returned hotlist; sending to compiler.  Hotlist:" << astHotlist.Print();
-            compilerConnector.UpdateWithHotlist(astHotlist.GetHotlist());
+            g_log.info() << "* main: Parser returned hotlist; sending to codegen.  Hotlist:" << astHotlist.Print();
+            codegenConnector.UpdateWithHotlist(astHotlist.GetHotlist());
             parserConnector.ClearHotlist();
-            g_log.info() << "* main: No compiler consumer; done with input character.";
+            g_log.info() << "* main: No codegen consumer; done with input character.";
           } else {
             g_log.info() << "* main: Parser returned no hotlist items.";
           }
@@ -159,10 +161,10 @@ int main(int argc, char *argv[]) {
           lexerConnector.ClearHotlist();
           const Hotlist& astHotlist = parserConnector.GetHotlist();
           if (!astHotlist.IsEmpty()) {
-            g_log.info() << "* main: Parser returned hotlist; sending to compiler.  Hotlist:" << astHotlist.Print();
-            compilerConnector.UpdateWithHotlist(astHotlist.GetHotlist());
+            g_log.info() << "* main: Parser returned hotlist; sending to codegen.  Hotlist:" << astHotlist.Print();
+            codegenConnector.UpdateWithHotlist(astHotlist.GetHotlist());
             parserConnector.ClearHotlist();
-            g_log.info() << "* main: No compiler consumer; done with input character.";
+            g_log.info() << "* main: No codegen consumer; done with input character.";
           } else {
             g_log.info() << "* main: Parser returned no hotlist items.";
           }

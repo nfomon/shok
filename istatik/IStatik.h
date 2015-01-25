@@ -6,6 +6,8 @@
 
 #include "ISError.h"
 
+#include "exstatik/Compiler.h"
+
 #include <string>
 
 namespace istatik {
@@ -17,10 +19,10 @@ public:
   void run();
 
 private:
-  static void clear_screen(int sig);
+  static void finish(int sig);
 
   std::string m_compiler_name;
-  // Compiler m_compiler;   // TODO
+  exstatik::Compiler m_compiler;
 };
 
 }

@@ -1,4 +1,6 @@
-EXSTATIK_SRCS = Compiler.cpp \
+EXSTATIK_SRCS = Codegen.cpp \
+    Codegen.h \
+    Compiler.cpp \
     Compiler.h \
     Lexer.cpp \
     Lexer.h \

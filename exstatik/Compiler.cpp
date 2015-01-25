@@ -3,65 +3,39 @@
 
 #include "Compiler.h"
 
-#include "statik/Meta.h"
-#include "statik/Or.h"
-#include "statik/Seq.h"
-#include "statik/Star.h"
-using statik::META;
-using statik::OR;
-using statik::Rule;
-using statik::SEQ;
-using statik::STAR;
+#include "Codegen.h"
+#include "Lexer.h"
+#include "Parser.h"
 
-#include <memory>
-using std::auto_ptr;
+#include "statik/SError.h"
+
+#include <string>
+using std::string;
 
 using namespace exstatik;
 
-/*
-// compiler =
-auto_ptr<Rule> exstatik::CreateCompiler_Simple() {
-  auto_ptr<Rule> compiler(MakeRule_Star("compiler"));
-  Rule* newstmt_ = compiler_->AddChild(MakeRule_Seq("new stmt"));
-  Rule* delstmt_ = compiler_->AddChild(MakeRule_Seq("del stmt"));
-  newstmt_->AddChild(MakeRule_Meta("new"));
-  delstmt_->AddChild(MakeRule_Meta("del"));
-  return compiler;
-}
-
-// compiler =
-auto_ptr<Rule> exstatik::CreateCompiler_Moderate() {
-  auto_ptr<Rule> compiler(new Rule("compiler"));
-  return compiler;
-}
-*/
-
-// compiler =
-/*
-auto_ptr<Rule> exstatik::CreateCompiler_Complex() {
-  auto_ptr<Rule> compiler(new StarRule("compiler"));
-  return compiler;
-}
-*/
-
-auto_ptr<Rule> exstatik::CreateCompiler_Nifty() {
-  auto_ptr<Rule> compiler(STAR("compiler"));
-  Rule* stmt_ = compiler->AddChild(SEQ("stmt"));
-  stmt_->AddChild(META("stmt"));
-  Rule* stmts_ = stmt_->AddChild(OR("stmts"));
-  stmt_->AddChild(META("/stmt"));
-
-  Rule* cmdstmt_ = stmts_->AddChild(SEQ("cmd stmt"));
-  Rule* newstmt_ = stmts_->AddChild(SEQ("new stmt"));
-  Rule* delstmt_ = stmts_->AddChild(SEQ("del stmt"));
-
-  Rule* cmd_ = cmdstmt_->AddChild(STAR("cmd"));
-  cmd_->AddChild(META("cmdtext", "cmd"));
-
-  newstmt_->AddChild(META("new"));
-  newstmt_->AddChild(META("identifier"));
-
-  delstmt_->AddChild(META("del"));
-  delstmt_->AddChild(META("identifier"));
-  return compiler;
+Compiler exstatik::MakeCompiler(const string& name) {
+  if ("Simple" == name) {
+    Compiler c;
+    c.push_back(CreateLexer_Simple());
+    c.push_back(CreateParser_Simple());
+    return c;
+  } else if ("Moderate" == name) {
+    Compiler c;
+    c.push_back(CreateLexer_Moderate());
+    c.push_back(CreateParser_Moderate());
+    return c;
+  } else if ("Complex" == name) {
+    Compiler c;
+    c.push_back(CreateLexer_Complex());
+    c.push_back(CreateParser_Complex());
+    return c;
+  } else if ("Nifty" == name) {
+    Compiler c;
+    c.push_back(CreateLexer_Nifty());
+    c.push_back(CreateParser_Nifty());
+    c.push_back(CreateCodegen_Nifty());
+    return c;
+  }
+  throw statik::SError("Unknown compiler " + name);
 }

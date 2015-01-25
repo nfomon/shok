@@ -3,6 +3,8 @@
 
 #include "IStatik.h"
 
+#include "ISDone.h"
+
 #include <curses.h>
 #include <panel.h>
 #include <signal.h>
@@ -17,15 +19,15 @@ using namespace istatik;
 
 IStatik::IStatik(const string& compiler_name)
   : m_compiler_name(compiler_name) {
-  //m_compiler = Compiler::MakeCompiler(m_compiler_name);   // TODO
+  m_compiler = exstatik::MakeCompiler(m_compiler_name);
 }
 
 IStatik::~IStatik() {
-  clear_screen(0);
+  finish(0);
 }
 
 void IStatik::run() {
-  (void) signal(SIGINT, clear_screen);
+  (void) signal(SIGINT, finish);
   (void) initscr();
   (void) cbreak();
   (void) noecho();
@@ -54,7 +56,8 @@ void IStatik::run() {
   int h2 = nrows-h1;
   WINDOW* out = newwin(h2, ncols, h2+1, 0);
 
-  while (true) {
+  bool done = false;
+  while (!done) {
     int ch = wgetch(in);
     int x, y;
     getyx(in, y, x);
@@ -161,6 +164,7 @@ void IStatik::run() {
   endwin();
 }
 
-void IStatik::clear_screen(int sig) {
+void IStatik::finish(int sig) {
   endwin();
+  exit(0);
 }

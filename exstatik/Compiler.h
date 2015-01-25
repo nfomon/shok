@@ -6,16 +6,15 @@
 
 #include "statik/Rule.h"
 
+#include <boost/ptr_container/ptr_vector.hpp>
+
 #include <memory>
+#include <string>
 
 namespace exstatik {
 
-/*
-std::auto_ptr<statik::Rule> CreateCompiler_Simple();
-std::auto_ptr<statik::Rule> CreateCompiler_Moderate();
-std::auto_ptr<statik::Rule> CreateCompiler_Complex();
-*/
-std::auto_ptr<statik::Rule> CreateCompiler_Nifty();
+typedef boost::ptr_vector<statik::Rule> Compiler;
+Compiler MakeCompiler(const std::string& name);
 
 }
 
