@@ -11,6 +11,10 @@ ISTATIK_SRCS = $(COMMON_SRCS) \
     ISLog.h \
     IStatik.cpp \
     IStatik.h \
+    InputWindow.cpp \
+    InputWindow.h \
+    WindowAction.h \
+    WindowResponse.h \
     main.cpp
 
 STATIK_CXXFLAGS = -I../
