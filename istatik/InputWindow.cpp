@@ -6,6 +6,10 @@
 using namespace istatik;
 
 WindowResponse InputWindow::Input(int y, int x, int ch) {
+  //int leny = 1;
+  //vector<int> lenx;
+  //lenx.push_back(0);
+
   WindowResponse response;
   return response;
 }

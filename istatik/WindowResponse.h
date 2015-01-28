@@ -13,8 +13,10 @@
 namespace istatik {
 
 struct WindowResponse {
-  std::vector<WindowAction> actions;
-  statik::Hotlist hotlist;
+  typedef std::vector<WindowAction> action_vec;
+  typedef action_vec::const_iterator action_iter;
+  action_vec actions;
+  const statik::Hotlist* hotlist;
 };
 
 }

@@ -5,6 +5,7 @@
 #define _IStatik_h_
 
 #include "ISError.h"
+#include "WindowResponse.h"
 
 #include "exstatik/Compiler.h"
 
@@ -24,7 +25,9 @@ public:
 private:
   static void finish(int sig);
 
-  void init_screen();
+  void InitScreen();
+  void UpdateWindow(int window_index,
+                    const WindowResponse::action_vec& actions);
 
   std::string m_compiler_name;
   exstatik::Compiler m_compiler;

@@ -40,9 +40,9 @@ IStatik::~IStatik() {
 void IStatik::run() {
   (void) signal(SIGINT, finish);
 
-  int leny = 1;
-  vector<int> lenx;
-  lenx.push_back(0);
+  //int leny = 1;
+  //vector<int> lenx;
+  //lenx.push_back(0);
 
   InputWindow inputWindow;
 
@@ -59,7 +59,7 @@ void IStatik::run() {
   }
 */
 
-  init_screen();
+  InitScreen();
   bool done = false;
   while (!done) {
     // Read input char at screen coords <y,x>
@@ -67,39 +67,96 @@ void IStatik::run() {
     int x, y;
     getyx(m_windows.at(0), y, x);
 
-    WindowResponse response = inputWindow.Input(y, x, ch);
+    WindowResponse response0 = inputWindow.Input(y, x, ch);
+    int window = 0;
+    UpdateWindow(window, response0.actions);
 
 /*
-    for (connectorWindow_iter i = connectorWindows.begin(); i != connectorWindows.end(); ++i) {
+    const statik::Hotlist* prevHotlist = response0.hotlist;
+    for (connectorWindow_iter i = connectorWindows.begin();
+         i != connectorWindows.end(); ++i) {
+      WindowResponse response = i->Input(prevHotlist);
+      ++window;
+      UpdateWindow(window, response.actions);
+      prevHotlist = response.hotlist;
     }
 */
 
-/*
-    for (Action::iaction_iter i = action.iactions.begin();
-         i != action.iactions.end(); ++i) {
-      switch (i->op) {
-      case IAction::INSERT:
-        break;
-      case IAction::DELETE:
-        break;
-      default:
-        throw ISError("Unknown IAction");
-      }
+    for (size_t i = 0; i < m_windows.size(); ++i) {
     }
+  }
+
+  for (size_t i = 0; i < m_windows.size(); ++i) {
+    delwin(m_windows.at(i));
+  }
+  endwin();
+}
+
+/* private static */
+
+void IStatik::finish(int sig) {
+  endwin();
+  exit(0);
+}
+
+/* private */
+
+void IStatik::InitScreen() {
+  (void) initscr();
+  (void) cbreak();
+  (void) noecho();
+
+  int nrows, ncols;
+  (void) getmaxyx(stdscr, nrows, ncols);
+
+  int numWindows = m_compiler.size() + 1;
+  int h = nrows/numWindows - 1;
+
+  // Draw hlines
+  for (int i = 0; i < numWindows; ++i) {
+    mvwhline(stdscr, h*(i+1), 0, '-', ncols);
+  }
+  refresh();
+
+  for (int i = 0; i < numWindows; ++i) {
+    WINDOW* win = newwin(h, ncols, h*(i+1)+1, 0);
+    m_windows.push_back(win);
+    m_windowSizes.push_back(h);
+    (void) keypad(win, true);
+  }
+  wmove(m_windows.at(0), 0, 0);
+}
+
+void IStatik::UpdateWindow(int window_index,
+                           const WindowResponse::action_vec& actions) {
+  WINDOW* window = m_windows.at(window_index);
+/*
+  for (WindowResponse::action_iter i = actions.begin();
+       i != actions.end(); ++i) {
+    switch (i->op) {
+    case INSERT:
+      break;
+    case DELETE:
+      break;
+    default:
+      throw ISError("Unknown Action");
+    }
+  }
 */
 
+/*
     switch (ch) {
     case KEY_DC:
       if (x < lenx[y]) {
-        wdelch(m_windows.at(0));
+        wdelch(window);
         --lenx[y];
       }
       break;
     case KEY_BACKSPACE:
       if (x > 0) {
         --x;
-        wmove(m_windows.at(0), y, x);
-        wdelch(m_windows.at(0));
+        wmove(window, y, x);
+        wdelch(window);
         --lenx[y];
         if (lenx[y] < 0) {
           throw ISError("X underflow");
@@ -109,7 +166,7 @@ void IStatik::run() {
     case KEY_LEFT:
       if (x > 0) {
         --x;
-        wmove(m_windows.at(0), y, x);
+        wmove(window, y, x);
       }
       break;
     case KEY_RIGHT:
@@ -155,59 +212,7 @@ void IStatik::run() {
       }
       break;
     }
+*/
 
-    // Feed to Actuator
-    //actuator.Insert(y, x, ch);
-
-    // Get back list<OutputActions>
-    // Execute the OutputActions
-    // Get back list<Display
-
-    for (size_t i = 0; i < m_windows.size(); ++i) {
-      wrefresh(m_windows.at(i));
-    }
-  }
-
-  // But what of the next?  We have list of "in" tokens...
-  // But that's not really the same.  That's just another "out" window!! :D
-
-  for (size_t i = 0; i < m_windows.size(); ++i) {
-    delwin(m_windows.at(i));
-  }
-  endwin();
-}
-
-/* private static */
-
-void IStatik::finish(int sig) {
-  endwin();
-  exit(0);
-}
-
-/* private */
-
-void IStatik::init_screen() {
-  (void) initscr();
-  (void) cbreak();
-  (void) noecho();
-
-  int nrows, ncols;
-  (void) getmaxyx(stdscr, nrows, ncols);
-
-  int numWindows = m_compiler.size() + 1;
-  int h = nrows/numWindows - 1;
-
-  // Draw hlines
-  for (int i = 0; i < numWindows; ++i) {
-    mvwhline(stdscr, h*(i+1), 0, '-', ncols);
-  }
-  refresh();
-
-  for (int i = 0; i < numWindows; ++i) {
-    WINDOW* win = newwin(h, ncols, h*(i+1)+1, 0);
-    m_windows.push_back(win);
-    m_windowSizes.push_back(h);
-    (void) keypad(win, true);
-  }
-  wmove(m_windows.at(0), 0, 0);
+  wrefresh(window);
 }
