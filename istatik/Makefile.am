@@ -6,6 +6,8 @@ UTIL_SRCS = \
 COMMON_SRCS = $(UTIL_SRCS)
 
 ISTATIK_SRCS = $(COMMON_SRCS) \
+    ConnectorWindow.cpp \
+    ConnectorWindow.h \
     ISError.h \
     ISLog.cpp \
     ISLog.h \

@@ -3,7 +3,7 @@
 
 #include "IStatik.h"
 
-//#include "ConnectorWindow.h"
+#include "ConnectorWindow.h"
 #include "InputWindow.h"
 
 #include "statik/Connector.h"
@@ -16,8 +16,10 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 using boost::ptr_vector;
 
+#include <iostream>
 #include <string>
 #include <vector>
+using std::endl;
 using std::string;
 using std::vector;
 
@@ -40,26 +42,21 @@ IStatik::~IStatik() {
 void IStatik::run() {
   (void) signal(SIGINT, finish);
 
-  //int leny = 1;
-  //vector<int> lenx;
-  //lenx.push_back(0);
+  InitScreen();
 
-  InputWindow inputWindow;
+  int inrows, incols;
+  (void) getmaxyx(m_windows.at(0), inrows, incols);
+  InputWindow inputWindow(inrows, incols);
 
-/*
   typedef ptr_vector<ConnectorWindow> connectorWindow_vec;
-  typedef connectorWindow_vec::const_iterator connectorWindow_iter;
+  typedef connectorWindow_vec::iterator connectorWindow_mod_iter;
   ptr_vector<ConnectorWindow> connectorWindows;
-  // First "Connector" simply represents the input window
-  // Actually, we need Connector-adapters here
-  // No, the first thing is different!!
   for (exstatik::Compiler::const_iterator i = m_compiler.begin();
        i != m_compiler.end(); ++i) {
+    g_log.info() << "Adding connector window";
     connectorWindows.push_back(new ConnectorWindow(*i));
   }
-*/
 
-  InitScreen();
   bool done = false;
   while (!done) {
     // Read input char at screen coords <y,x>
@@ -67,22 +64,21 @@ void IStatik::run() {
     int x, y;
     getyx(m_windows.at(0), y, x);
 
+    g_log.info() << "(" << y << "," << x << "):" << (char)ch;
+
     WindowResponse response0 = inputWindow.Input(y, x, ch);
-    int window = 0;
-    UpdateWindow(window, response0.actions);
+    int window_index = 0;
+    UpdateWindow(window_index, response0.actions);
 
-/*
     const statik::Hotlist* prevHotlist = response0.hotlist;
-    for (connectorWindow_iter i = connectorWindows.begin();
+    for (connectorWindow_mod_iter i = connectorWindows.begin();
          i != connectorWindows.end(); ++i) {
-      WindowResponse response = i->Input(prevHotlist);
-      ++window;
-      UpdateWindow(window, response.actions);
+      if (!prevHotlist) { break; }
+      g_log.info() << " - updating connector" << endl;
+      WindowResponse response = i->Input(*prevHotlist);
+      ++window_index;
+      UpdateWindow(window_index, response.actions);
       prevHotlist = response.hotlist;
-    }
-*/
-
-    for (size_t i = 0; i < m_windows.size(); ++i) {
     }
   }
 
@@ -130,89 +126,21 @@ void IStatik::InitScreen() {
 void IStatik::UpdateWindow(int window_index,
                            const WindowResponse::action_vec& actions) {
   WINDOW* window = m_windows.at(window_index);
-/*
   for (WindowResponse::action_iter i = actions.begin();
        i != actions.end(); ++i) {
-    switch (i->op) {
-    case INSERT:
-      break;
-    case DELETE:
-      break;
-    default:
-      throw ISError("Unknown Action");
+    const MoveAction* move = dynamic_cast<const MoveAction*>(&*i);
+    const DeleteAction* del = dynamic_cast<const DeleteAction*>(&*i);
+    const InsertAction* ins = dynamic_cast<const InsertAction*>(&*i);
+    if (move) {
+      wmove(window, move->y, move->x);
+    } else if (del) {
+      wdelch(window);
+    } else if (ins) {
+      waddch(window, ins->ch);
+    } else {
+      throw ISError("Unknown Action type");
     }
   }
-*/
-
-/*
-    switch (ch) {
-    case KEY_DC:
-      if (x < lenx[y]) {
-        wdelch(window);
-        --lenx[y];
-      }
-      break;
-    case KEY_BACKSPACE:
-      if (x > 0) {
-        --x;
-        wmove(window, y, x);
-        wdelch(window);
-        --lenx[y];
-        if (lenx[y] < 0) {
-          throw ISError("X underflow");
-        }
-      }
-      break;
-    case KEY_LEFT:
-      if (x > 0) {
-        --x;
-        wmove(window, y, x);
-      }
-      break;
-    case KEY_RIGHT:
-      if (x < lenx[y]) {
-        ++x;
-        wmove(m_windows.at(0), y, x);
-      }
-      break;
-    case KEY_UP:
-      if (y > 0) {
-        --y;
-        if (x > lenx[y]) {
-          x = lenx[y];
-        }
-        wmove(m_windows.at(0), y, x);
-      }
-      break;
-    case KEY_DOWN:
-      if (y < leny-1) {
-        ++y;
-        if (x > lenx[y]) {
-          x = lenx[y];
-        }
-        wmove(m_windows.at(0), y, x);
-      }
-      break;
-    case KEY_ENTER:
-    case '\n':
-      if (y < m_windowSizes.at(0)-1) {
-        ++y;
-        if (y == leny) {
-          ++leny;
-          lenx.push_back(0);
-        }
-        x = 0;
-        wmove(m_windows.at(0), y, x);
-      }
-      break;
-    default:
-      waddch(m_windows.at(0), ch);
-      if (x == lenx[y]) {
-        ++lenx[y];
-      }
-      break;
-    }
-*/
 
   wrefresh(window);
 }

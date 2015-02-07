@@ -6,18 +6,25 @@
 
 namespace istatik {
 
-enum ACTION {
-  GOTO,
-  INSERT,
-  DELETE
+struct WindowAction {
+  virtual ~WindowAction() {}
+  int q;
 };
 
-struct WindowAction {
-  WindowAction(int y, int x, ACTION action)
-    : y(y), x(x), action(action) {}
+struct MoveAction : public WindowAction {
+  MoveAction(int y, int x)
+    : y(y), x(x) {}
   int y;
   int x;
-  ACTION action;
+};
+
+struct DeleteAction : public WindowAction {
+};
+
+struct InsertAction : public WindowAction {
+  InsertAction(int ch)
+    : ch(ch) {}
+  int ch;
 };
 
 }
