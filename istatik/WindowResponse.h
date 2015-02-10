@@ -8,17 +8,15 @@
 
 #include "statik/Hotlist.h"
 
-#include <boost/ptr_container/ptr_vector.hpp>
+#include <vector>
 
 namespace istatik {
 
 struct WindowResponse {
-  WindowResponse()
-    : hotlist(NULL) {}
-  typedef boost::ptr_vector<WindowAction> action_vec;
+  typedef std::vector<WindowAction> action_vec;
   typedef action_vec::const_iterator action_iter;
   action_vec actions;
-  const statik::Hotlist* hotlist;
+  statik::Hotlist hotlist;
 };
 
 }

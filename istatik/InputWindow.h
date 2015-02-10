@@ -9,42 +9,63 @@
 
 #include "statik/IList.h"
 
-#include <boost/lexical_cast.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
 
-#include <vector>
+#include <ostream>
 
 namespace istatik {
 
-struct CharList {
-  CharList(int y, int x, int ch)
-    : y(y),
-      x(x),
-      ch(ch),
-      inode(boost::lexical_cast<std::string>((char)ch)),
-      prev(NULL),
-      next(NULL) {}
-  int y;
+struct Char {
+  Char(int x, int ch);
+  void SetNext(Char* next);
+  void SetPrevious(Char* prev);
+
   int x;
   int ch;
   statik::IList inode;
-  CharList* prev;
-  CharList* next;
+};
+std::ostream& operator<< (std::ostream& out, const Char& node);
+
+class Line {
+public:
+  Line(int y);
+  bool HasChar(int x) const;
+  int LastIndex() const;
+  Char* GetFirst();
+  Char* GetLast();
+  Char* GetBefore(int x);
+  Char* GetAtOrAfter(int x);
+  Char* Insert(int x, int ch);
+private:
+  typedef boost::ptr_vector<Char> char_vec;
+  int y;
+  char_vec m_chars;
 };
 
-std::ostream& operator<< (std::ostream& out, const CharList& node);
+class LineBuf {
+public:
+  bool HasChar(int y, int x) const;
+  bool HasLine(int y) const;
+  int LastIndexOfLine(int y) const;
+  WindowResponse Insert(int y, int x, int ch);
+  WindowResponse Enter(int y, int x, int ch);
+  WindowResponse Delete(int y, int x);
+  WindowResponse Backspace(int y, int x);
+private:
+  typedef boost::ptr_vector<Line> line_vec;
+  line_vec m_lines;
+  Char* FindBefore(int y, int x);
+  Char* FindAtOrAfter(int y, int x);
+};
 
 class InputWindow {
 public:
   InputWindow(int maxrows, int maxcols);
-  ~InputWindow();
   WindowResponse Input(int y, int x, int ch);
 private:
-  CharList* FindNode(int y, int x);
-
   int m_maxrows;
   int m_maxcols;
-
-  CharList* m_start;
+  LineBuf m_linebuf;
 };
 
 }

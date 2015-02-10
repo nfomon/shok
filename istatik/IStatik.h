@@ -18,7 +18,7 @@ namespace istatik {
 
 class IStatik {
 public:
-  IStatik(const std::string& compiler_name);
+  IStatik(const std::string& compiler_name, const std::string& graphdir);
   ~IStatik();
   void run();
 
@@ -30,7 +30,8 @@ private:
                     const WindowResponse::action_vec& actions);
 
   std::string m_compiler_name;
-  exstatik::Compiler m_compiler;
+  std::string m_graphdir;
+  std::auto_ptr<exstatik::Compiler> m_compiler;
   std::vector<WINDOW*> m_windows;
   std::vector<int> m_windowSizes;
 };

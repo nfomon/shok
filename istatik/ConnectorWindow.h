@@ -11,11 +11,13 @@
 #include "statik/Hotlist.h"
 #include "statik/Rule.h"
 
+#include <boost/noncopyable.hpp>
+
 namespace istatik {
 
-class ConnectorWindow {
+class ConnectorWindow : private boost::noncopyable {
 public:
-  ConnectorWindow(const statik::Rule& rule);
+  ConnectorWindow(const statik::Rule& rule, const std::string& graphdir);
   WindowResponse Input(const statik::Hotlist& hotlist);
 private:
   statik::Connector m_connector;

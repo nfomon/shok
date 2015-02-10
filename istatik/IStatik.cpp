@@ -27,10 +27,11 @@ using namespace istatik;
 
 /* public */
 
-IStatik::IStatik(const string& compiler_name)
-  : m_compiler_name(compiler_name) {
-  m_compiler = exstatik::MakeCompiler(m_compiler_name);
-  if (m_compiler.size() < 1) {
+IStatik::IStatik(const string& compiler_name, const string& graphdir)
+  : m_compiler_name(compiler_name),
+    m_graphdir(graphdir),
+    m_compiler(exstatik::MakeCompiler(m_compiler_name)) {
+  if (m_compiler->size() < 1) {
     throw ISError("Cannot use empty Compiler " + m_compiler_name);
   }
 }
@@ -51,10 +52,10 @@ void IStatik::run() {
   typedef ptr_vector<ConnectorWindow> connectorWindow_vec;
   typedef connectorWindow_vec::iterator connectorWindow_mod_iter;
   ptr_vector<ConnectorWindow> connectorWindows;
-  for (exstatik::Compiler::const_iterator i = m_compiler.begin();
-       i != m_compiler.end(); ++i) {
-    g_log.info() << "Adding connector window";
-    connectorWindows.push_back(new ConnectorWindow(*i));
+  for (exstatik::Compiler::const_iterator i = m_compiler->begin();
+       i != m_compiler->end(); ++i) {
+    g_log.info() << "Adding connector window for " << i->Name();
+    connectorWindows.push_back(new ConnectorWindow(*i, m_graphdir));
   }
 
   bool done = false;
@@ -64,22 +65,23 @@ void IStatik::run() {
     int x, y;
     getyx(m_windows.at(0), y, x);
 
-    g_log.info() << "(" << y << "," << x << "):" << (char)ch;
+    g_log.info() << "IStatik: Received (" << y << "," << x << "):" << (char)ch;
 
-    WindowResponse response0 = inputWindow.Input(y, x, ch);
+    WindowResponse response = inputWindow.Input(y, x, ch);
     int window_index = 0;
-    UpdateWindow(window_index, response0.actions);
+    UpdateWindow(window_index, response.actions);
+    int y0, x0;
+    getyx(m_windows.at(0), y0, x0);
 
-    const statik::Hotlist* prevHotlist = response0.hotlist;
     for (connectorWindow_mod_iter i = connectorWindows.begin();
          i != connectorWindows.end(); ++i) {
-      if (!prevHotlist) { break; }
-      g_log.info() << " - updating connector" << endl;
-      WindowResponse response = i->Input(*prevHotlist);
+      g_log.info() << " - update connector?";
+      if (response.hotlist.IsEmpty()) { break; }
+      response = i->Input(response.hotlist);
       ++window_index;
       UpdateWindow(window_index, response.actions);
-      prevHotlist = response.hotlist;
     }
+    wmove(m_windows.at(0), y0, x0);
   }
 
   for (size_t i = 0; i < m_windows.size(); ++i) {
@@ -105,17 +107,20 @@ void IStatik::InitScreen() {
   int nrows, ncols;
   (void) getmaxyx(stdscr, nrows, ncols);
 
-  int numWindows = m_compiler.size() + 1;
-  int h = nrows/numWindows - 1;
+  int numWindows = m_compiler->size() + 1;
+  int h = (nrows - numWindows) / numWindows;
+  g_log.debug() << numWindows << " windows with h=" << h;
 
   // Draw hlines
-  for (int i = 0; i < numWindows; ++i) {
-    mvwhline(stdscr, h*(i+1), 0, '-', ncols);
+  for (int i = 1; i < numWindows; ++i) {
+    g_log.debug() << "Drawing hline at " << (h+1)*i-1;
+    mvwhline(stdscr, (h+1)*i-1, 0, '-', ncols);
   }
   refresh();
 
   for (int i = 0; i < numWindows; ++i) {
-    WINDOW* win = newwin(h, ncols, h*(i+1)+1, 0);
+    g_log.debug() << "Window of height h=" << h << " starts at " << (h+1)*i;
+    WINDOW* win = newwin(h, ncols, (h+1)*i, 0);
     m_windows.push_back(win);
     m_windowSizes.push_back(h);
     (void) keypad(win, true);
@@ -128,16 +133,17 @@ void IStatik::UpdateWindow(int window_index,
   WINDOW* window = m_windows.at(window_index);
   for (WindowResponse::action_iter i = actions.begin();
        i != actions.end(); ++i) {
-    const MoveAction* move = dynamic_cast<const MoveAction*>(&*i);
-    const DeleteAction* del = dynamic_cast<const DeleteAction*>(&*i);
-    const InsertAction* ins = dynamic_cast<const InsertAction*>(&*i);
-    if (move) {
-      wmove(window, move->y, move->x);
-    } else if (del) {
+    switch (i->action) {
+    case WindowAction::MOVE:
+      wmove(window, i->y, i->x);
+      break;
+    case WindowAction::INSERT:
+      waddch(window, i->ch);
+      break;
+    case WindowAction::DELETE:
       wdelch(window);
-    } else if (ins) {
-      waddch(window, ins->ch);
-    } else {
+      break;
+    default:
       throw ISError("Unknown Action type");
     }
   }

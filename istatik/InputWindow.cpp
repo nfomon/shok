@@ -8,195 +8,262 @@
 #include <curses.h>
 
 #include <algorithm>
-#include <iostream>
+#include <memory>
+#include <ostream>
+#include <string>
+using std::auto_ptr;
 using std::endl;
 using std::ostream;
+using std::string;
 
 using namespace istatik;
 
-ostream& istatik::operator<< (ostream& out, const CharList& node) {
-  out << "(" << node.y << "," << node.x << "):" << (char)node.ch;
+/* Char */
+
+Char::Char(int x, int ch)
+  : x(x),
+    ch(ch),
+    inode("", string(1, (char)ch)) {
+}
+
+void Char::SetNext(Char* next) {
+  if (next) {
+    inode.right = &next->inode;
+    next->inode.left = &inode;
+  }
+}
+
+void Char::SetPrevious(Char* prev) {
+  if (prev) {
+    inode.left = &prev->inode;
+    prev->inode.right = &inode;
+  }
+}
+
+ostream& istatik::operator<< (ostream& out, const Char& node) {
+  out << "(" << node.x << "):" << (char)node.ch;
   return out;
 }
 
+/* Line */
+
+Line::Line(int y)
+  : y(y) {
+}
+
+bool Line::HasChar(int x) const {
+  return (size_t)x < m_chars.size();
+}
+
+int Line::LastIndex() const {
+  return m_chars.size()-1;
+}
+
+Char* Line::GetFirst() {
+  if (m_chars.empty()) {
+    return NULL;
+  }
+  return &m_chars.at(0);
+}
+
+Char* Line::GetLast() {
+  if (m_chars.empty()) {
+    return NULL;
+  }
+  return &m_chars.back();
+}
+
+Char* Line::GetBefore(int x) {
+  if (m_chars.empty() || 0 == x) {
+    return NULL;
+  } else if ((size_t)x >= m_chars.size()) {   // TODO is this right? lol
+    return &m_chars.back();
+  }
+  return &m_chars.at(x-1);
+}
+
+Char* Line::GetAtOrAfter(int x) {
+  if (m_chars.empty()) {
+    return NULL;
+  } else if ((size_t)x >= m_chars.size()) {
+    return NULL;
+  }
+  return &m_chars.at(x);
+}
+
+Char* Line::Insert(int x, int ch) {
+  auto_ptr<Char> c(new Char(x, ch));
+  Char* cp = c.get();
+  g_log.info() << "Line " << y << " inserting " << *c;
+  if ((size_t)x > m_chars.size()) {
+    throw ISError(string("Cannot insert ") + (char)ch + "; x out of bounds");
+  } else if (m_chars.size() == (size_t)x) {
+    m_chars.push_back(c);
+  } else {
+    m_chars.insert(m_chars.begin() + x, c);
+  }
+  return cp;
+}
+
+/* LineBuf public */
+
+bool LineBuf::HasChar(int y, int x) const {
+  if ((size_t)y >= m_lines.size()) {
+    return false;
+  }
+  return m_lines.at(y).HasChar(x);
+}
+
+bool LineBuf::HasLine(int y) const {
+  return (size_t)y < m_lines.size();
+}
+
+int LineBuf::LastIndexOfLine(int y) const {
+  if (!HasLine(y)) {
+    throw ISError("Cannot get last index of line; line out of bounds");
+  }
+  return m_lines.at(y).LastIndex();
+}
+
+WindowResponse LineBuf::Insert(int y, int x, int ch) {
+  WindowResponse response;
+  if ((size_t)y > m_lines.size()) {
+    throw ISError(string("Cannot insert ") + (char)ch + "; y out of bounds");
+  } else if (m_lines.size() == (size_t)y) {
+    g_log.info() << "LineBuf creating line for y=" << y;
+    m_lines.push_back(new Line(y));
+  }
+  g_log.info() << "LineBuf inserting (" << y << "," << x << "):" << (char)ch;
+  Char* prev = FindBefore(y, x);
+  Char* next = FindAtOrAfter(y, x+1);
+  Char* c = m_lines.at(y).Insert(x, ch);
+  response.hotlist.Insert(c->inode);
+  if (prev) {
+    g_log.info() << " found before: " << *prev;
+    prev->SetNext(c);
+    c->SetPrevious(prev);
+  }
+  if (next) {
+    g_log.info() << " found next: " << *next;
+    next->SetPrevious(c);
+    c->SetNext(next);
+  }
+  statik::IList* istart = &c->inode;
+  while (istart->left) {
+    istart = istart->left;
+  }
+  g_log.info() << "window0 olist: " << istart->Print();
+  g_log.info() << "window0 hotlist: " << response.hotlist.Print();
+
+  response.actions.push_back(WindowAction(WindowAction::INSERT, y, x, ch));
+  // TODO uhoh, we need to know ALL the nodes that changed (for display), which
+  // might be many, across lines.
+  return response;
+}
+
+WindowResponse LineBuf::Enter(int y, int x, int ch) {
+  WindowResponse response;
+  return response;
+}
+
+WindowResponse LineBuf::Delete(int y, int x) {
+  WindowResponse response;
+  return response;
+}
+
+WindowResponse LineBuf::Backspace(int y, int x) {
+  WindowResponse response;
+  return response;
+}
+
+/* LineBuf private */
+
+Char* LineBuf::FindBefore(int y, int x) {
+  g_log.info() << "LineBuf: FindBefore (" << y << "," << x << ")";
+  if ((size_t)y >= m_lines.size()) {
+    throw ISError("Cannot find char before (y,x); y out of bounds");
+  }
+  Char* c = m_lines.at(y).GetBefore(x);
+  if (c) {
+    return c;
+  }
+  for (int yi = y-1; yi >= 0; --yi) {
+    Char* c = m_lines.at(yi).GetLast();
+    if (c) {
+      return c;
+    }
+  }
+  return NULL;
+}
+
+Char* LineBuf::FindAtOrAfter(int y, int x) {
+  g_log.info() << "LineBuf: FindAtOrAfter (" << y << "," << x << ")";
+  if ((size_t)y >= m_lines.size()) {
+    throw ISError("Cannot find char at or after (y,x); y out of bounds");
+  }
+  Char* c = m_lines.at(y).GetAtOrAfter(x);
+  if (c) {
+    return c;
+  }
+  for (size_t yi = y+1; yi < m_lines.size(); ++yi) {
+    Char* c = m_lines.at(yi).GetFirst();
+    if (c) {
+      return c;
+    }
+  }
+  return NULL;
+}
+
+/* InputWindow */
+
 InputWindow::InputWindow(int maxrows, int maxcols)
   : m_maxrows(maxrows),
-    m_maxcols(maxcols),
-    m_start(NULL) {
+    m_maxcols(maxcols) {
   if (maxrows <= 0 || maxcols <= 0) {
     throw ISError("Cannot create InputWindow with invalid dimensions");
   }
 }
 
-InputWindow::~InputWindow() {
-  CharList* node = m_start;
-  while (node) {
-    CharList* tmp = node;
-    node = node->next;
-    delete tmp;
-  }
-}
-
-#define MOVE(y,x) response.actions.push_back(new MoveAction(y, x))
-#define DELETE() response.actions.push_back(new DeleteAction())
-#define INSERT(ch) response.actions.push_back(new InsertAction(ch))
-
 WindowResponse InputWindow::Input(int y, int x, int ch) {
-  WindowResponse response;
-
   // The input char might be a special character like movement or delete.
-  if (KEY_DC == ch) {
-    CharList* node = FindNode(y, x);
-    if (node) {
-      if (x != node->x && y != node->y) {
-        throw ISError("Del mismatch");
-      }
-      if (node->prev) {
-        node->prev->next = node->next;
-      }
-      if (node->next) {
-        node->next->prev = node->prev;
-      }
-      // ADD DEL TO response HOTLIST
-      node = node->next;
+  if (KEY_LEFT == ch) {
+    WindowResponse response;
+    if (m_linebuf.HasChar(y, x-1)) {
+      response.actions.push_back(WindowAction(WindowAction::MOVE, y, x-1, ch));
     }
-    while (node) {
-      if (node->y != node->prev->y) {
-        // TODO clear to end of line
-        break;
-      }
-      --node->x;
-      MOVE(node->y, node->x);
-      INSERT(node->ch);
-      node = node->next;
-    }
-/*
-  } else if (KEY_BACKSPACE == ch) {
-    if (x > 0) {
-      MOVE(y,x-1);
-      DELETE();
-      m_rows.at(y).erase(m_rows.at(y).begin() + x-1);
-    }
-*/
-  } else if (KEY_LEFT == ch) {
-    g_log.info() << " - LEFT";
-    if (x > 0) {
-      g_log.info() << " - MOVE to (" << y << "," << x-1 << ")";
-      MOVE(y, x-1);
-    }
+    return response;
   } else if (KEY_RIGHT == ch) {
-    g_log.info() << " - RIGHT";
-    CharList* node = FindNode(y, x+1);
-    if (!node) {
-      g_log.info() << "No node!";
+    WindowResponse response;
+    if (m_linebuf.HasChar(y, x+1)) {
+      response.actions.push_back(WindowAction(WindowAction::MOVE, y, x+1, ch));
     }
-    if (node && (node->y < y || (node->y == y && node->x <= x)) && x < m_maxcols - 1) {
-      g_log.info() << " - MOVE to (" << y << "," << x+1 << ")";
-      MOVE(y, x+1);
-    } else if (node) {
-      g_log.info() << " - MOVE to (" << node->y << "," << node->x << ")";
-      MOVE(node->y, node->x);
-    }
-  } else if(KEY_UP == ch) {
-    g_log.info() << " - UP";
-    if (y > 0) {
-      CharList* node = FindNode(y-1, x);
-      if (node && (y-1 == node->y)) {
-        g_log.info() << " - MOVE to (" << node->y << "," << node->x << ")";
-        MOVE(node->y, node->x);
+    return response;
+  } else if (KEY_UP == ch) {
+    WindowResponse response;
+    if (m_linebuf.HasLine(y-1)) {
+      if (!m_linebuf.HasChar(y-1, x)) {
+        x = m_linebuf.LastIndexOfLine(y-1);
       }
+      response.actions.push_back(WindowAction(WindowAction::MOVE, y-1, x, ch));
     }
-/*
+    return response;
   } else if (KEY_DOWN == ch) {
-    if (y < m_rows.size() - 1) {
-      if (x > m_rows.at(y+1).size()) {
-        x = std::max(m_rows.at(y+1).size(), (size_t)0);
+    WindowResponse response;
+    if (m_linebuf.HasLine(y+1)) {
+      if (!m_linebuf.HasChar(y+1, x)) {
+        x = m_linebuf.LastIndexOfLine(y+1);
       }
-      MOVE(y+1, x);
+      response.actions.push_back(WindowAction(WindowAction::MOVE, y+1, x, ch));
     }
-*/
-/*
+    return response;
+  } else if (KEY_DC == ch) {
+    return m_linebuf.Delete(y, x);
+  } else if (KEY_BACKSPACE == ch) {
+    return m_linebuf.Backspace(y, x);
   } else if (KEY_ENTER == ch || '\n' == ch) {
-    // TODO
-    CharList* cl = new CharList(y, x, ch);
-    g_log.info() << "Got enter: " << cl;
-    CharList* node = FindNode(y, x-1);
-    if (y < m_rows.size() - 1) {
-      MOVE(y+1, 0);
-    } else if (y == m_rows.size() - 1 && y < m_maxrows) {
-      m_rows.push_back(col_vec());
-      MOVE(y+1, 0);
-    }
-*/
+    //return m_linebuf.Enter(y, x, ch);
   } else {
-    CharList* cl = new CharList(y, x, ch);
-    CharList* node = FindNode(y, x-1);
-    if (node) {
-      cl->prev = node;
-      if (node->next) {
-        cl->next = node->next;
-        cl->next->prev = cl;
-      }
-      node->next = cl;
-    } else if (m_start) {
-      m_start->prev = cl;
-      cl->next = m_start;
-      m_start = cl;
-    } else {
-      m_start = cl;
-    }
-    MOVE(cl->y, cl->x);
-    INSERT(cl->ch);
-    if (KEY_ENTER == cl->ch || '\n' == cl->ch || cl->x == m_maxcols - 1) {
-      ++y;
-      x = 0;
-    }
-    int endy = y;
-    int endx = cl->x+1;
-    if (endx == m_maxcols - 1) {
-      ++endy;
-      endx = 0;
-    }
-    node = cl->next;
-    while (node) {
-      g_log.info() << " at " << *node;
-      if (KEY_ENTER == node->prev->ch || '\n' == node->prev->ch || node->prev->x == m_maxcols - 1) {
-        for (int i = node->prev->x+1; i < m_maxcols; ++i) {
-          MOVE(y, i);
-          INSERT(' ');    // clear rest of line
-        }
-        ++y;
-        x = 0;
-      } else {
-        ++x;
-      }
-      node->y = y;
-      node->x = x;
-      MOVE(node->y, node->x);
-      INSERT(node->ch);
-      node = node->next;
-    }
-    MOVE(endy, endx);
+    return m_linebuf.Insert(y, x, ch);
   }
-
-  return response;
-}
-
-CharList* InputWindow::FindNode(int y, int x) {
-  CharList* prev = NULL;
-  CharList* node = m_start;
-  while (node) {
-    if (node->y > y || (node->y == y && node->x > x)) {
-      break;
-    }
-    g_log.info() << "  ... skipping " << *node;
-    prev = node;
-    node = node->next;
-  }
-  if (prev) {
-    g_log.info() << "  found " << *prev;
-  } else {
-    g_log.info() << "  found <null>";
-  }
-  return prev;
+  throw ISError(string("Failed to accept input char ") + (char)ch);
 }
