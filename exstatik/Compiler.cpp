@@ -9,33 +9,30 @@
 
 #include "statik/SError.h"
 
+#include <memory>
 #include <string>
+using std::auto_ptr;
 using std::string;
 
 using namespace exstatik;
 
-Compiler exstatik::MakeCompiler(const string& name) {
+auto_ptr<Compiler> exstatik::MakeCompiler(const string& name) {
+  auto_ptr<Compiler> c(new Compiler());
   if ("Simple" == name) {
-    Compiler c;
-    c.push_back(CreateLexer_Simple());
-    c.push_back(CreateParser_Simple());
-    return c;
+    c->push_back(CreateLexer_Simple());
+    c->push_back(CreateParser_Simple());
   } else if ("Moderate" == name) {
-    Compiler c;
-    c.push_back(CreateLexer_Moderate());
-    c.push_back(CreateParser_Moderate());
-    return c;
+    c->push_back(CreateLexer_Moderate());
+    c->push_back(CreateParser_Moderate());
   } else if ("Complex" == name) {
-    Compiler c;
-    c.push_back(CreateLexer_Complex());
-    c.push_back(CreateParser_Complex());
-    return c;
+    c->push_back(CreateLexer_Complex());
+    c->push_back(CreateParser_Complex());
   } else if ("Nifty" == name) {
-    Compiler c;
-    c.push_back(CreateLexer_Nifty());
-    c.push_back(CreateParser_Nifty());
-    c.push_back(CreateCodegen_Nifty());
-    return c;
+    c->push_back(CreateLexer_Nifty());
+    c->push_back(CreateParser_Nifty());
+    c->push_back(CreateCodegen_Nifty());
+  } else {
+    throw statik::SError("Unknown compiler " + name);
   }
-  throw statik::SError("Unknown compiler " + name);
+  return c;
 }

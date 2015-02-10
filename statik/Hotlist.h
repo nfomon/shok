@@ -33,8 +33,6 @@ public:
   typedef std::set<const IList*> hot_set;
   typedef hot_set::const_iterator hotset_iter;
 
-  Hotlist() {}
-
   const hotlist_vec& GetHotlist() const { return m_hotlist; }
   const hot_set& GetInserted() const { return m_inserted; }
   const hot_set& GetDeleted() const { return m_deleted; }

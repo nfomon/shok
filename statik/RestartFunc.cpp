@@ -32,7 +32,7 @@ void RestartFunc_FirstChildOfNode::operator() (const IList& istart) {
     throw SError("Cannot compute uninitialized RestartFunc_FirstChildOfNode");
   }
   if (m_node->GetRule().GetChildren().size() < 1) {
-    throw SError("Rule " + string(m_node->GetRule()) + " of node " + string(*m_node) + " must have at least one child for RestartFunc_FirstChildOfNode");
+    throw SError("Rule " + m_node->GetRule().Name() + " of node " + string(*m_node) + " must have at least one child for RestartFunc_FirstChildOfNode");
   }
 
   if (m_node->children.empty()) {
@@ -65,6 +65,6 @@ void RestartFunc_AllChildrenOfNode::operator() (const IList& istart) {
       i->RestartNode(istart);
     }
   } else {
-    throw SError("Rule " + string(m_node->GetRule()) + " of node " + string(*m_node) + " has inappropriate # of children for RepositionAllChildren");
+    throw SError("Rule " + m_node->GetRule().Name() + " of node " + string(*m_node) + " has inappropriate # of children for RepositionAllChildren");
   }
 }

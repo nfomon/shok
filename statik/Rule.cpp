@@ -40,7 +40,7 @@ Rule::~Rule() {
   childOwnership_iter own_i = m_childOwnership.begin();
   for (child_iter child_i = m_children.begin(); child_i != m_children.end(); ++child_i, ++own_i) {
     if (m_childOwnership.end() == own_i) {
-      throw SError("Rule " + string(*this) + " internal error at destruction: childOwnership not aligned with children");
+      throw SError("Rule " + m_name + " internal error at destruction: childOwnership not aligned with children");
     }
     if (*own_i) {
       delete *child_i;
@@ -107,7 +107,7 @@ string Rule::Print() const {
     childOwnership_iter own_i = m_childOwnership.begin();
     for (child_iter i = m_children.begin(); i != m_children.end(); ++i, ++own_i) {
       if (m_childOwnership.end() == own_i) {
-        throw SError("Rule " + string(*this) + " internal error in Rule::Print(): childOwnership not aligned with children");
+        throw SError("Rule " + m_name + " internal error in Rule::Print(): childOwnership not aligned with children");
       }
       if (i != m_children.begin()) { s += ", "; }
       if (*own_i) {
@@ -127,7 +127,7 @@ string Rule::DrawNode(const string& context) const {
   childOwnership_iter own_i = m_childOwnership.begin();
   for (child_iter i = m_children.begin(); i != m_children.end(); ++i, ++own_i) {
     if (m_childOwnership.end() == own_i) {
-      throw SError("Rule " + string(*this) + " internal error in Rule::DrawNode(): childOwnership not aligned with children");
+      throw SError("Rule " + m_name + " internal error in Rule::DrawNode(): childOwnership not aligned with children");
     }
     if (*own_i) {
       s += dotVar(this, context) + " -> " + dotVar(*i, context) + ";\n";
@@ -143,6 +143,6 @@ string Rule::DrawNode(const string& context) const {
 /* non-member */
 
 ostream& statik::operator<< (ostream& out, const Rule& rule) {
-  out << string(rule);
+  out << rule.Name();
   return out;
 }

@@ -16,8 +16,6 @@
 #include "RestartFunc.h"
 #include "State.h"
 
-#include <boost/lexical_cast.hpp>
-
 #include <memory>
 #include <ostream>
 #include <string>
@@ -36,9 +34,9 @@ public:
   typedef childOwnership_vec::const_iterator childOwnership_iter;
 
   Rule(const std::string& debugName,
-      std::auto_ptr<RestartFunc> = std::auto_ptr<RestartFunc>(),
-      std::auto_ptr<ComputeFunc> = std::auto_ptr<ComputeFunc>(),
-      std::auto_ptr<OutputFunc> = std::auto_ptr<OutputFunc>());
+      std::auto_ptr<RestartFunc>,
+      std::auto_ptr<ComputeFunc>,
+      std::auto_ptr<OutputFunc>);
   ~Rule();
 
   Rule& SetRestartFunc(std::auto_ptr<RestartFunc> restartFunc);
@@ -53,11 +51,9 @@ public:
   std::auto_ptr<STree> MakeRootNode(Connector& connector) const;
   STree* MakeNode(STree& parent, const IList& istart) const;
 
-  std::string Type() const { return m_type; }
   std::string Name() const { return m_name; }
   const child_vec& GetChildren() const { return m_children; }
 
-  operator std::string() const { return m_name; }
   std::string Print() const;
   std::string DrawNode(const std::string& context) const;
 
@@ -66,7 +62,6 @@ protected:
     m_parent = parent;
   }
 
-  std::string m_type;
   std::string m_name;
   std::auto_ptr<RestartFunc> m_restartFunc;
   std::auto_ptr<ComputeFunc> m_computeFunc;

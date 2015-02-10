@@ -8,7 +8,6 @@
 #include "IList.h"
 #include "ListenerTable.h"
 
-#include <map>
 #include <set>
 
 namespace statik {

@@ -38,17 +38,20 @@ namespace {
 int main(int argc, char *argv[]) {
   try {
     // Retrieve program options
+    string compilerName;
     string logfile;
     string loglevel = Log::UnMapLevel(Log::INFO);
     string graphdir;
     po::options_description desc(PROGRAM_NAME + " usage");
     desc.add_options()
       ("help,h", "show help message")
+      ("compiler,c", po::value<string>(&compilerName), "compiler name")
       ("logfile,f", po::value<string>(&logfile), "output log file")
       ("loglevel,L", po::value<string>(&loglevel), "log level: debug, info, warning, error")
       ("graphdir,g", po::value<string>(&graphdir), "output graph directory")
     ;
     po::positional_options_description p;
+    p.add("compiler", 1);
     po::variables_map vm;
 
     try {
@@ -70,23 +73,17 @@ int main(int argc, char *argv[]) {
       g_log.Init(logfile);
     }
 
-    // Lexer
-    auto_ptr<Rule> lexer = CreateLexer_Nifty();
-    g_log.info() << "Lexer: " << lexer->Print();
-    Connector lexerConnector(*lexer.get(), "Lexer", graphdir);
-    g_log.info() << "Made a lexer connector";
-
-    // Parser
-    auto_ptr<Rule> parser = CreateParser_Nifty();
-    g_log.info() << "Parser: " + parser->Print();
-    auto_ptr<Grapher> parserGrapher;
-    Connector parserConnector(*parser.get(), "Parser", graphdir);
-
-    // Codegen
-    auto_ptr<Rule> codegen = CreateCodegen_Nifty();
-    g_log.info() << "Codegen: " + codegen->Print();
-    auto_ptr<Grapher> codegenGrapher;
-    Connector codegenConnector(*codegen.get(), "Codegen", graphdir);
+    auto_ptr<Compiler> compiler = MakeCompiler(compilerName);
+    if (compiler->empty()) {
+      throw statik::SError("Empty compiler; nothing to do");
+    }
+    typedef boost::ptr_vector<Connector> connector_vec;
+    typedef connector_vec::iterator connector_mod_iter;
+    connector_vec connectors;
+    for (Compiler_iter i = compiler->begin(); i != compiler->end(); ++i) {
+      g_log.info() << "Compiler item: " << i->Print();
+      connectors.push_back(new Connector(*i, i->Name(), graphdir));
+    }
 
     IList* start = NULL;
     IList* prev = NULL;
@@ -117,30 +114,26 @@ int main(int argc, char *argv[]) {
           }
         }
         g_log.info();
-        g_log.info() << "* main: Deleting character '" << *s << "' from lexer";
+        g_log.info() << "* main: Deleting character '" << *s;
         if (s->left) {
           s->left->right = s->right;
         }
         if (s->right) {
           s->right->left = s->left;
         }
-        lexerConnector.Delete(*s);
-        const Hotlist& tokenHotlist = lexerConnector.GetHotlist();
-        if (!tokenHotlist.IsEmpty()) {
-          g_log.info() << "* main: Lexer returned hotlist; sending to parser.  Hotlist:" << tokenHotlist.Print();
-          parserConnector.UpdateWithHotlist(tokenHotlist.GetHotlist());
-          lexerConnector.ClearHotlist();
-          const Hotlist& astHotlist = parserConnector.GetHotlist();
-          if (!astHotlist.IsEmpty()) {
-            g_log.info() << "* main: Parser returned hotlist; sending to codegen.  Hotlist:" << astHotlist.Print();
-            codegenConnector.UpdateWithHotlist(astHotlist.GetHotlist());
-            parserConnector.ClearHotlist();
-            g_log.info() << "* main: No codegen consumer; done with input character.";
+        connectors.at(0).Delete(*s);
+        const Hotlist* hotlist = &connectors.at(0).GetHotlist();
+        connector_mod_iter prevConnector = connectors.begin();
+        for (connector_mod_iter i = connectors.begin()+1; i != connectors.end(); ++i) {
+          if (hotlist->IsEmpty()) {
+            g_log.info() << "* main: Connector returned no hotlist items.";
+            break;
           } else {
-            g_log.info() << "* main: Parser returned no hotlist items.";
+            g_log.info() << "* main: Connector returned hotlist; sending to parser.  Hotlist:" << hotlist->Print();
+            i->UpdateWithHotlist(hotlist->GetHotlist());
+            prevConnector->ClearHotlist();
+            hotlist = &i->GetHotlist();
           }
-        } else {
-          g_log.info() << "* main: Lexer returned no hotlist items.";
         }
         continue;
       }
@@ -152,26 +145,21 @@ int main(int argc, char *argv[]) {
           c->left = prev;
         }
         g_log.info();
-        g_log.info() << "* main: Inserting character '" << c->Print() << "' into lexer";
-        lexerConnector.Insert(*c);
-        const Hotlist& tokenHotlist = lexerConnector.GetHotlist();
-        if (!tokenHotlist.IsEmpty()) {
-          g_log.info() << "* main: Lexer returned hotlist; sending to parser.  Hotlist:" << tokenHotlist.Print();
-          parserConnector.UpdateWithHotlist(tokenHotlist.GetHotlist());
-          lexerConnector.ClearHotlist();
-          const Hotlist& astHotlist = parserConnector.GetHotlist();
-          if (!astHotlist.IsEmpty()) {
-            g_log.info() << "* main: Parser returned hotlist; sending to codegen.  Hotlist:" << astHotlist.Print();
-            codegenConnector.UpdateWithHotlist(astHotlist.GetHotlist());
-            parserConnector.ClearHotlist();
-            g_log.info() << "* main: No codegen consumer; done with input character.";
+        g_log.info() << "* main: Inserting character '" << c->Print();
+        connectors.at(0).Insert(*c);
+        const Hotlist* hotlist = &connectors.at(0).GetHotlist();
+        connector_mod_iter prevConnector = connectors.begin();
+        for (connector_mod_iter i = connectors.begin()+1; i != connectors.end(); ++i) {
+          if (hotlist->IsEmpty()) {
+            g_log.info() << "* main: Connector returned no hotlist items.";
+            break;
           } else {
-            g_log.info() << "* main: Parser returned no hotlist items.";
+            g_log.info() << "* main: Connector returned hotlist; sending to parser.  Hotlist:" << hotlist->Print();
+            i->UpdateWithHotlist(hotlist->GetHotlist());
+            prevConnector->ClearHotlist();
+            hotlist = &i->GetHotlist();
           }
-        } else {
-          g_log.info() << "* main: Lexer returned no hotlist items.";
         }
-
         prev = c;
       }
     }
