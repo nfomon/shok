@@ -29,15 +29,21 @@ namespace {
 int main(int argc, char *argv[]) {
   try {
     // Retrieve program options
-    string compiler_name;
+    string compilerName;
     string logfile;
     string loglevel = Log::UnMapLevel(Log::INFO);
+    string slogfile;
+    string sloglevel = Log::UnMapLevel(Log::INFO);
+    string graphdir;
     po::options_description desc(PROGRAM_NAME + " usage");
     desc.add_options()
       ("help,h", "show help message")
-      ("compiler,c", po::value<string>(&compiler_name), "compiler name")
+      ("compiler,c", po::value<string>(&compilerName), "compiler name")
       ("logfile,f", po::value<string>(&logfile), "output log file")
       ("loglevel,L", po::value<string>(&loglevel), "log level: debug, info, warning, error")
+      ("slogfile", po::value<string>(&slogfile), "statik log file")
+      ("sloglevel", po::value<string>(&sloglevel), "statik log level: debug, info, warning, error")
+      ("graphdir,g", po::value<string>(&graphdir), "output graph directory")
     ;
     po::positional_options_description p;
     p.add("compiler", 1);
@@ -61,8 +67,12 @@ int main(int argc, char *argv[]) {
       g_log.setLevel(loglevel);
       g_log.Init(logfile);
     }
+    if (!slogfile.empty()) {
+      statik::g_log.setLevel(sloglevel);
+      statik::g_log.Init(slogfile);
+    }
 
-    IStatik istatik(compiler_name);
+    IStatik istatik(compilerName, graphdir);
     istatik.run();
   } catch (const ISError& e) {
     g_log.error() << "IStatik error: " << e.what() << endl;
