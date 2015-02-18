@@ -43,7 +43,7 @@ auto_ptr<Rule> exstatik::CreateLexer_Moderate() {
 }
 
 auto_ptr<Rule> exstatik::CreateLexer_Complex() {
-  auto_ptr<Rule> lexer(STAR("* (lexer)"));
+  auto_ptr<Rule> lexer(STAR("lexer"));
   Rule* or_ = lexer->AddChild(OR("Or"));
   or_->AddChild(KEYWORD("exit"));
   or_->AddChild(KEYWORD("new"));

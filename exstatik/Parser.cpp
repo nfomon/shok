@@ -20,7 +20,7 @@ using namespace exstatik;
 
 // parser = ((new ;)|(del ;))*
 auto_ptr<Rule> exstatik::CreateParser_Simple() {
-  auto_ptr<Rule> parser(STAR("* (parser)"));
+  auto_ptr<Rule> parser(STAR("parser"));
   Rule* stmts_ = parser->AddChild(OR("Or (stmts)"))
     ->CapOutput("cmd");
   Rule* newstmt_ = stmts_->AddChild(SEQ("new stmt"));
@@ -38,7 +38,7 @@ auto_ptr<Rule> exstatik::CreateParser_Simple() {
 
 // parser = ((new WS ID ;)|(del WS ID ;))*
 auto_ptr<Rule> exstatik::CreateParser_Moderate() {
-  auto_ptr<Rule> parser(STAR("* (parser)"));
+  auto_ptr<Rule> parser(STAR("parser"));
   Rule* stmts_ = parser->AddChild(OR("Or (stmts)"))
     ->CapOutput("cmd");
   Rule* newstmt_ = stmts_->AddChild(SEQ("new stmt"));
@@ -60,7 +60,7 @@ auto_ptr<Rule> exstatik::CreateParser_Moderate() {
 
 // parser = ((cmd|codeblock)end)*
 auto_ptr<Rule> exstatik::CreateParser_Complex() {
-  auto_ptr<Rule> parser(STAR("* (parser)"));
+  auto_ptr<Rule> parser(STAR("parser"));
   Rule* line = parser->AddChild(SEQ("line"));
   //line->AddChild(META("WS"));
   Rule* cmdorcode = line->AddChild(OR("Or (cmdorcode)"));
@@ -96,7 +96,7 @@ auto_ptr<Rule> exstatik::CreateParser_Complex() {
 
 // Nifty parser
 auto_ptr<Rule> exstatik::CreateParser_Nifty() {
-  auto_ptr<Rule> parser(STAR("* (parser)"));
+  auto_ptr<Rule> parser(STAR("parser"));
   Rule* stmts_ = parser->AddChild(OR("Or (stmts)"))
     ->CapOutput("stmt");
 

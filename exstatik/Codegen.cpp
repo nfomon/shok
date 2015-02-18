@@ -21,7 +21,7 @@ using namespace exstatik;
 /*
 // compiler =
 auto_ptr<Rule> exstatik::CreateCodegen_Simple() {
-  auto_ptr<Rule> compiler(MakeRule_Star("compiler"));
+  auto_ptr<Rule> compiler(MakeRule_Star("codegen"));
   Rule* newstmt_ = compiler_->AddChild(MakeRule_Seq("new stmt"));
   Rule* delstmt_ = compiler_->AddChild(MakeRule_Seq("del stmt"));
   newstmt_->AddChild(MakeRule_Meta("new"));
@@ -31,7 +31,7 @@ auto_ptr<Rule> exstatik::CreateCodegen_Simple() {
 
 // compiler =
 auto_ptr<Rule> exstatik::CreateCodegen_Moderate() {
-  auto_ptr<Rule> compiler(new Rule("compiler"));
+  auto_ptr<Rule> compiler(new Rule("codegen"));
   return compiler;
 }
 */
@@ -39,13 +39,13 @@ auto_ptr<Rule> exstatik::CreateCodegen_Moderate() {
 // compiler =
 /*
 auto_ptr<Rule> exstatik::CreateCodegen_Complex() {
-  auto_ptr<Rule> compiler(new StarRule("compiler"));
+  auto_ptr<Rule> compiler(new StarRule("codegen"));
   return compiler;
 }
 */
 
 auto_ptr<Rule> exstatik::CreateCodegen_Nifty() {
-  auto_ptr<Rule> compiler(STAR("compiler"));
+  auto_ptr<Rule> compiler(STAR("codegen"));
   Rule* stmt_ = compiler->AddChild(SEQ("stmt"));
   stmt_->AddChild(META("stmt"));
   Rule* stmts_ = stmt_->AddChild(OR("stmts"));
