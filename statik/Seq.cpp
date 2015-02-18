@@ -60,7 +60,7 @@ void ComputeFunc_Seq::operator() () {
       // Existing child
       if (prev_child) {
         if (!child->IStart().left) {
-          throw SError("Computing Seq  at " + string(*m_node) + " child " + string(*child) + " has istart at the start of input, but it's not our first child");
+          throw SError("Computing Seq at " + string(*m_node) + " child " + string(*child) + " has istart at the start of input, but it's not our first child");
         }
         if (&prev_child->IEnd() != &child->IStart()) {
           g_log.info() << "Computing Seq at " << *m_node << " child " << *child << " needs to be repositioned to the node after the prev child's end";

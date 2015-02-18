@@ -517,3 +517,22 @@ Finally we have a good example of this premonition:
 We can see this happening now.  A Seq updates, and one of its middle nodes in fact is only OK.
  - Fixed!
  - We still have the Regexp-Overrun problem of course.
+
+-----
+2k15-02-15
+
+Connector will have an OListPool.  OutputFunc_Basic and OutputFunc_IValues will insert to the pool.  Maybe the pool provides convenience methods to link up list nodes.  It has a ptr_set<IList> active, and ptr_set<IList> unlinked.  When Cleanup() is called, the unlinked nodes are deleted.  Whoever's using the Connector should call Cleanup() after it's done with any hotlist it gets returned from Insert()/Delete()/UpdateWithHotlist() calls.
+
+CHANGESET:  Once we have ListPool, we do NOT need OutputFunc::ClearChild().  Get rid of that.  But keep the cute l'il change where we re-ordered some stuff in OutputFunc_Sequence().
+
+-----
+2k15-02-16
+
+What is linked to their own last, vs. the "complete" thing that makes them bad?  Need to clear out state properly when things go bad and/or when they're actually cleared/deleted.
+
+-----
+2k15-02-18
+
+We absolutely need to pool the STree nodes, not just the OList nodes.  The reason to pool the STrees:  Say I'm a Seq/Star and I'm clearing out all the nodes past my last-bad-node.  I do want to remove them.  Removing them means removing all their children as well.  Now my OutputFunc needs to know abotu them.  Either I can tell it right now during the Compute() (ugh) which children are going away, and let it update some internal state about "oh look here's everything I need to know about them, let's record it somehow before they disappear for reals by the time we actually call our outputFunc()", OR I need the outputFunc() to be able to refer to these cleared nodes (figure out for itself which children are gone and so we need to Delete from the Hotlist), which means the STree lifetimes need to last long enough.
+
+Now that we Pool'd the ONodes, we have every ability to do it with the STrees as well.  In fact, we might not even need to pool ONodes if we're pooling STrees.  LOL.  We can go back to OutputFuncs owning their output IList nodes... but the whole STree will stick around long enough for us to use them for any purposes we could have wanted!  STree node is Cleared, it unlinks itself from the Connector's pool.  b00m.

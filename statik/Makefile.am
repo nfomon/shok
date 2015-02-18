@@ -22,6 +22,8 @@ STATIK_SRCS = $(COMMON_SRCS) \
     IList.h \
     Keyword.cpp \
     Keyword.h \
+    ListPool.cpp \
+    ListPool.h \
     ListenerTable.h \
     Meta.cpp \
     Meta.h \

@@ -6,6 +6,7 @@
 
 #include "Hotlist.h"
 #include "IList.h"
+#include "ListPool.h"
 #include "ListenerTable.h"
 
 #include <set>
@@ -47,6 +48,12 @@ public:
   // Remove any listening connections regarding a node
   void ClearNode(STree& x);
 
+  // Connector owns the list of output nodes.  These allow the OutputFuncs to
+  // manage the Connector's ownership.
+  IList* InsertONode(std::auto_ptr<IList> onode);
+  void UnlinkONode(IList& onode);
+  const IList* GetFirstONode() const;
+
   void DrawGraph(const STree& onode, const IList* inode = NULL);
 
 private:
@@ -63,6 +70,7 @@ private:
   std::auto_ptr<STree> m_root;
   std::string m_name;
   std::auto_ptr<Grapher> m_grapher;
+  ListPool m_outputListPool;
   ListenerTable<const IList*, STree*> m_listeners;
   Hotlist m_hotlist;
 };

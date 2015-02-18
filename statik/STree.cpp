@@ -62,6 +62,7 @@ void STree::ClearNode() {
     i->ClearNode();
   }
   m_state.Clear();
+  m_outputFunc->Cleanup();
   m_connector.ClearNode(*this);
 }
 

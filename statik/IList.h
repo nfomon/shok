@@ -12,11 +12,10 @@
 namespace statik {
 
 struct IList {
-  IList(const std::string& name, const std::string& value = "", IList* left = NULL, IList* right = NULL);
+  IList(const std::string& name, const std::string& value = "");
 
   operator std::string() const { return "(IList " + name + ":" + value + ")"; }
   std::string Print() const;
-
   std::string DrawNode(const std::string& context) const;
 
   const std::string name;

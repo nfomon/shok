@@ -20,11 +20,11 @@ using namespace statik;
 
 /* public */
 
-IList::IList(const string& name, const string& value, IList* left, IList* right)
+IList::IList(const string& name, const string& value)
   : name(name),
     value(value),
-    left(left),
-    right(right) {
+    left(NULL),
+    right(NULL) {
 }
 
 string IList::Print() const {
@@ -36,8 +36,7 @@ string IList::Print() const {
 }
 
 string IList::DrawNode(const string& context) const {
-  string s;
-  s = dotVar(this, context) + " [label=\"" + safeLabelStr(name + (value.empty() ? "" : (name.empty() ? "" : ":") + value)) + "\", style=\"filled\", fillcolor=\"#dddddd\", fontsize=12.0];\n";
+  string s = dotVar(this, context) + " [label=\"" + safeLabelStr(name + (value.empty() ? "" : (name.empty() ? "" : ":") + value)) + "\", style=\"filled\", fillcolor=\"#dddddd\", fontsize=12.0];\n";
   if (right) {
     s += dotVar(this, context) + " -> " + dotVar(right, context) + ";\n";
     s += right->DrawNode(context);

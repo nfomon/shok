@@ -101,40 +101,62 @@ string OutputFunc::DrawEmitting(const string& context) const {
 
 OutputFunc_Basic::OutputFunc_Basic(const string& name, const string& value)
   : OutputFunc(),
-    m_onode(name, value),
-    m_isFirstTime(true) {
+    m_onode(NULL),
+    m_name(name),
+    m_value(value) {
+}
+
+void OutputFunc_Basic::Cleanup() {
+  this->OutputFunc::Cleanup();
+  if (m_onode) {
+    m_node->GetConnector().UnlinkONode(*m_onode);
+  }
 }
 
 void OutputFunc_Basic::operator() () {
   m_wasEmitting = m_emitting;
   m_hotlist.Clear();
-  if (m_isFirstTime) {
-    m_ostart = &m_onode;
-    m_oend = &m_onode;
-    m_emitting.insert(&m_onode);
-    m_hotlist.Insert(m_onode);
-    m_isFirstTime = false;
+  if (!m_onode) {
+    m_onode = m_node->GetConnector().InsertONode(auto_ptr<IList>(new IList(m_name, m_value)));
+    m_ostart = m_onode;
+    m_oend = m_onode;
+    m_emitting.insert(m_onode);
+    m_hotlist.Insert(*m_onode);
   }
   g_log.debug() << "Basic output func now has hotlist size " << boost::lexical_cast<string>(m_hotlist.Size());
   g_log.debug() << m_hotlist.Print();
+}
+
+auto_ptr<OutputFunc> OutputFunc_Basic::Clone() {
+  return auto_ptr<OutputFunc>(new OutputFunc_Basic(m_name, m_value));
 }
 
 /* OutputFunc_IValues */
 
 OutputFunc_IValues::OutputFunc_IValues(const string& name)
   : OutputFunc(),
-    m_onode(name),
-    m_isFirstTime(true) {
+    m_onode(NULL),
+    m_name(name) {
+}
+
+void OutputFunc_IValues::Cleanup() {
+  this->OutputFunc::Cleanup();
+  if (m_onode) {
+    m_node->GetConnector().UnlinkONode(*m_onode);
+  }
 }
 
 void OutputFunc_IValues::operator() () {
   m_wasEmitting = m_emitting;
   m_hotlist.Clear();
-  if (m_isFirstTime) {
-    m_ostart = &m_onode;
-    m_oend = &m_onode;
-    m_emitting.insert(&m_onode);
-    m_hotlist.Insert(m_onode);
+  bool isFirstTime = false;
+  if (!m_onode) {
+    isFirstTime = true;
+    m_onode = m_node->GetConnector().InsertONode(auto_ptr<IList>(new IList(m_name)));
+    m_ostart = m_onode;
+    m_oend = m_onode;
+    m_emitting.insert(m_onode);
+    m_hotlist.Insert(*m_onode);
   }
 
   string value;
@@ -145,15 +167,18 @@ void OutputFunc_IValues::operator() () {
   for (const IList* i = &m_node->IStart(); i != ilast; i = i->right) {
     value += i->value;
   }
-  if (value != m_onode.value) {
-    m_onode.value = value;
-    if (!m_isFirstTime) {
-      m_hotlist.Update(m_onode);
+  if (value != m_onode->value) {
+    m_onode->value = value;
+    if (!isFirstTime) {
+      m_hotlist.Update(*m_onode);
     }
   }
-  m_isFirstTime = false;
   g_log.debug() << "IValues output func now has hotlist size " << boost::lexical_cast<string>(m_hotlist.Size());
   g_log.debug() << m_hotlist.Print();
+}
+
+auto_ptr<OutputFunc> OutputFunc_IValues::Clone() {
+  return auto_ptr<OutputFunc>(new OutputFunc_IValues(m_name));
 }
 
 /* OutputFunc_Winner */
@@ -210,6 +235,10 @@ void OutputFunc_Winner::operator() () {
   g_log.debug() << m_hotlist.Print();
 }
 
+auto_ptr<OutputFunc> OutputFunc_Winner::Clone() {
+  return auto_ptr<OutputFunc>(new OutputFunc_Winner());
+}
+
 /* OutputFunc_Sequence */
 
 void OutputFunc_Sequence::operator() () {
@@ -219,29 +248,37 @@ void OutputFunc_Sequence::operator() () {
   m_ostart = NULL;
   m_oend = NULL;
 
-  g_log.debug() << "OutputFunc_Sequence() " << *m_node << ".   Has hotlist size: " << boost::lexical_cast<string>(m_hotlist.Size());
+  g_log.debug() << "OutputFunc_Sequence() " << *m_node << "; previously emit children size=" << m_emitChildren.size();
   const State& state = m_node->GetState();
   if (!state.IsEmitting()) {
     return;
   }
   emitchildren_set wereEmit = m_emitChildren;
-  emitchildren_set nowEmit;
+  m_emitChildren.clear();
   for (STree::child_iter i = m_node->children.begin(); i != m_node->children.end(); ++i) {
     g_log.debug() << "Considering child " << *i;
     const State& istate = i->GetState();
     if (!istate.IsEmitting()) {
       // Delete children that are no longer being emit
-      for (emitchildren_iter we = wereEmit.begin(); we != wereEmit.end(); ++i) {
+      g_log.debug() << "- it's not emitting; time to delete";
+      for (emitchildren_iter we = wereEmit.begin(); we != wereEmit.end(); ++we) {
         g_log.debug() << "Deleting previously-emit child " << **we << " from " << *i;
         DeleteChild(**we);
       }
+      // End the sequence at the first non-emit child
       break;
+    }
+    if (wereEmit.end() == wereEmit.find(&*i)) {
+      InsertChild(*i);
+    } else {
+      ApproveChild(*i);
+      wereEmit.erase(&*i);
     }
     OutputFunc& iof = i->GetOutputFunc();
     if ((iof.OStart() && !iof.OEnd()) || (!iof.OStart() && iof.OEnd())) {
       throw SError("OutputFunc_Sequence() found " + string(*i) + " with only an ostart or oend, but not both");
     }
-    nowEmit.insert(&*i);
+    m_emitChildren.insert(&*i);
     if (!iof.OStart()) {
       continue;
     }
@@ -252,17 +289,14 @@ void OutputFunc_Sequence::operator() () {
       m_oend->right = iof.OStart();
     }
     m_oend = iof.OEnd();
-    if (wereEmit.end() == wereEmit.find(&*i)) {
-      InsertChild(*i);
-    } else {
-      ApproveChild(*i);
-      wereEmit.erase(&*i);
-    }
   }
-  m_emitChildren = nowEmit;
 
   g_log.debug() << "OutputFunc_Sequence " << *m_node << " done update; hotlist has size " << boost::lexical_cast<string>(m_hotlist.Size());
   g_log.debug() << m_hotlist.Print();
+}
+
+auto_ptr<OutputFunc> OutputFunc_Sequence::Clone() {
+  return auto_ptr<OutputFunc>(new OutputFunc_Sequence());
 }
 
 /* OutputFunc_Cap */
@@ -271,9 +305,8 @@ OutputFunc_Cap::OutputFunc_Cap(auto_ptr<OutputFunc> outputFunc, const string& ca
   : OutputFunc(),
     m_outputFunc(outputFunc),
     m_cap(cap),
-    m_capStart(cap),
-    m_capEnd("/" + cap),
-    m_isFirstTime(true) {
+    m_capStart(NULL),
+    m_capEnd(NULL) {
 }
 
 void OutputFunc_Cap::Init(const STree& x) {
@@ -281,34 +314,49 @@ void OutputFunc_Cap::Init(const STree& x) {
   m_outputFunc->Init(x);
 }
 
+void OutputFunc_Cap::Cleanup() {
+  this->OutputFunc::Cleanup();
+  if (m_capStart) {
+    m_node->GetConnector().UnlinkONode(*m_capStart);
+  }
+  if (m_capEnd) {
+    m_node->GetConnector().UnlinkONode(*m_capEnd);
+  }
+}
+
 void OutputFunc_Cap::operator() () {
   m_wasEmitting = m_emitting;
   m_emitting.clear();
-  m_emitting.insert(&m_capStart);
-  m_emitting.insert(&m_capEnd);
   m_hotlist.Clear();
-  if (m_isFirstTime) {
-    m_ostart = &m_capStart;
-    m_oend = &m_capEnd;
-    m_capStart.right = &m_capEnd;
-    m_capEnd.left = &m_capStart;
-    m_hotlist.Insert(m_capStart);
-    m_hotlist.Insert(m_capEnd);
-    m_isFirstTime = false;
+  if (!m_capStart) {
+    m_capStart = m_node->GetConnector().InsertONode(auto_ptr<IList>(new IList(m_cap)));
+    m_capEnd = m_node->GetConnector().InsertONode(auto_ptr<IList>(new IList("/" + m_cap)));
+    m_ostart = m_capStart;
+    m_oend = m_capEnd;
+    m_capStart->right = m_capEnd;
+    m_capEnd->left = m_capStart;
+    m_hotlist.Insert(*m_capStart);
+    m_hotlist.Insert(*m_capEnd);
   }
+  m_emitting.insert(m_capStart);
+  m_emitting.insert(m_capEnd);
 
   (*m_outputFunc)();
   if (m_outputFunc->OStart()) {
-    m_capStart.right = m_outputFunc->OStart();
-    m_outputFunc->OStart()->left = &m_capStart;
+    m_capStart->right = m_outputFunc->OStart();
+    m_outputFunc->OStart()->left = m_capStart;
   }
   if (m_outputFunc->OEnd()) {
-    m_outputFunc->OEnd()->right = &m_capEnd;
-    m_capEnd.left = m_outputFunc->OEnd();
+    m_outputFunc->OEnd()->right = m_capEnd;
+    m_capEnd->left = m_outputFunc->OEnd();
   }
   m_emitting.insert(m_outputFunc->Emitting().begin(), m_outputFunc->Emitting().end());
   m_hotlist.Accept(m_outputFunc->GetHotlist());
 
   g_log.debug() << "OutputFunc_Cap " << *m_node << " done update; hotlist has size " << boost::lexical_cast<string>(m_hotlist.Size());
   g_log.debug() << m_hotlist.Print();
+}
+
+auto_ptr<OutputFunc> OutputFunc_Cap::Clone() {
+  return auto_ptr<OutputFunc>(new OutputFunc_Cap(m_outputFunc->Clone(), m_cap));
 }

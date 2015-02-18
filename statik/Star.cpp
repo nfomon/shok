@@ -85,7 +85,7 @@ void ComputeFunc_Star::operator() () {
 
     if (istate.IsBad()) {
       if (wasComplete) {
-        g_log.debug() << "Computing Star at " << *m_node << " has gone bad but its last child was complete, so now it's complete";
+        g_log.debug() << "Computing Star at " << *m_node << " has gone bad but its previous child was complete, so now it's complete";
         state.GoComplete();
       } else {
         g_log.debug() << "Computing Star at " << *m_node << " has gone bad";

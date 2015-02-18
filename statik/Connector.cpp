@@ -14,8 +14,10 @@
 using boost::lexical_cast;
 
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
+using std::auto_ptr;
 using std::map;
 using std::set;
 using std::string;
@@ -40,6 +42,7 @@ const Hotlist& Connector::GetHotlist() const {
 
 void Connector::ClearHotlist() {
   m_hotlist.Clear();
+  m_outputListPool.Cleanup();
 }
 
 void Connector::Insert(const IList& inode) {
@@ -125,6 +128,19 @@ void Connector::Listen(STree& x, const IList& inode) {
 void Connector::Unlisten(STree& x, const IList& inode) {
   g_log.info() << "Connector: " << x << " will NOT listen to " << inode;
   m_listeners.RemoveListener(&inode, &x);
+}
+
+IList* Connector::InsertONode(auto_ptr<IList> onode) {
+  g_log.info() << "Connector " << std::string(*m_root.get()) << ": Inserting ONode " << string(*onode);
+  return m_outputListPool.Insert(onode);
+}
+
+void Connector::UnlinkONode(IList& onode) {
+  m_outputListPool.Unlink(onode);
+}
+
+const IList* Connector::GetFirstONode() const {
+  return m_root->GetOutputFunc().OStart();
 }
 
 /* private */

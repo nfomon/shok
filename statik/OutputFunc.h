@@ -32,6 +32,14 @@ public:
   virtual ~OutputFunc() {}
 
   virtual void Init(const STree& x) { m_node = &x; }
+  virtual void Cleanup() {
+    if (m_ostart && m_ostart->left) {
+      m_ostart->left->right = NULL;
+    }
+    if (m_oend && m_oend->right) {
+      m_oend->right->left = NULL;
+    }
+  }
 
   IList* OStart() { return m_ostart; }
   IList* OEnd() { return m_oend; }
@@ -76,15 +84,15 @@ class OutputFunc_Basic : public OutputFunc {
 public:
   OutputFunc_Basic(const std::string& name, const std::string& value = "");
   virtual ~OutputFunc_Basic() {}
+  virtual void Cleanup();
 
   virtual void operator() ();
-  virtual std::auto_ptr<OutputFunc> Clone() {
-    return std::auto_ptr<OutputFunc>(new OutputFunc_Basic(m_onode.name, m_onode.value));
-  }
+  virtual std::auto_ptr<OutputFunc> Clone();
 
 protected:
-  IList m_onode;   // Single output list node
-  bool m_isFirstTime;
+  IList* m_onode;   // Single output list node
+  std::string m_name;
+  std::string m_value;
 };
 
 // Single output node with the provided name.  The value is the concatenation
@@ -93,15 +101,14 @@ class OutputFunc_IValues : public OutputFunc {
 public:
   OutputFunc_IValues(const std::string& name);
   virtual ~OutputFunc_IValues() {}
+  virtual void Cleanup();
 
   virtual void operator() ();
-  virtual std::auto_ptr<OutputFunc> Clone() {
-    return std::auto_ptr<OutputFunc>(new OutputFunc_IValues(m_onode.name));
-  }
+  virtual std::auto_ptr<OutputFunc> Clone();
 
 protected:
-  IList m_onode;    // Single output list node
-  bool m_isFirstTime;
+  IList* m_onode;   // Single output list node
+  std::string m_name;
 };
 
 // Outputs all the nodes from the single child that is a "winner".  Corresponds
@@ -112,9 +119,7 @@ public:
   virtual ~OutputFunc_Winner() {}
 
   virtual void operator() ();
-  virtual std::auto_ptr<OutputFunc> Clone() {
-    return std::auto_ptr<OutputFunc>(new OutputFunc_Winner());
-  }
+  virtual std::auto_ptr<OutputFunc> Clone();
 
 private:
   const STree* m_winner;
@@ -128,9 +133,7 @@ public:
   virtual ~OutputFunc_Sequence() {}
 
   virtual void operator() ();
-  virtual std::auto_ptr<OutputFunc> Clone() {
-    return std::auto_ptr<OutputFunc>(new OutputFunc_Sequence());
-  }
+  virtual std::auto_ptr<OutputFunc> Clone();
 
 private:
   typedef std::set<const STree*> emitchildren_set;
@@ -146,18 +149,15 @@ public:
   virtual ~OutputFunc_Cap() {}
 
   virtual void Init(const STree& x);
+  virtual void Cleanup();
   virtual void operator() ();
-
-  virtual std::auto_ptr<OutputFunc> Clone() {
-    return std::auto_ptr<OutputFunc>(new OutputFunc_Cap(m_outputFunc->Clone(), m_cap));
-  }
+  virtual std::auto_ptr<OutputFunc> Clone();
 
 protected:
   std::auto_ptr<OutputFunc> m_outputFunc;
   std::string m_cap;
-  IList m_capStart;
-  IList m_capEnd;
-  bool m_isFirstTime;
+  IList* m_capStart;
+  IList* m_capEnd;
 };
 
 }
