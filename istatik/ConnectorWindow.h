@@ -21,6 +21,7 @@ public:
   WindowResponse Input(const statik::Hotlist& hotlist);
 private:
   statik::Connector m_connector;
+  std::string m_str;
 };
 
 }

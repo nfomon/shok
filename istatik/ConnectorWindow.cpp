@@ -13,32 +13,38 @@ using std::string;
 using namespace istatik;
 
 ConnectorWindow::ConnectorWindow(const statik::Rule& rule, const string& graphdir)
-  : m_connector(rule, "", graphdir) {
+  : m_connector(rule, rule.Name(), graphdir) {
   g_log.info() << "Initialized ConnectorWindow for " << rule;
 }
 
 WindowResponse ConnectorWindow::Input(const statik::Hotlist& hotlist) {
   m_connector.ClearHotlist();
+  g_log.info() << "Updating connector " << m_connector.Name() << " with hotlist: " << hotlist.Print();
   m_connector.UpdateWithHotlist(hotlist.GetHotlist());
   WindowResponse response;
   // Find first item in connector's output list, and draw everything
   response.actions.push_back(WindowAction(WindowAction::MOVE, 0, 0, 0));
+  g_log.info() << "Printing WindowResponse list.  Hotlist size is: " << m_connector.GetHotlist().Size();
   if (!m_connector.GetHotlist().IsEmpty()) {
-    const statik::Hotlist::hotlist_vec& hotlist = m_connector.GetHotlist().GetHotlist();
-    const statik::IList* inode = hotlist.at(0).first;
-    while (inode->left) {
-      inode = inode->left;
-    }
-    int x = 0;
+    const statik::IList* inode = m_connector.GetFirstONode();
+    string old_str = m_str;
+    m_str = "";
+    bool first = true;
     while (inode) {
-      string s = inode->name;
-      for (size_t i = 0; i < s.size(); ++i) {
-        response.actions.push_back(WindowAction(WindowAction::INSERT, 0, x, s[i]));
-        ++x;
+      if (first) {
+        first = false;
+      } else {
+        m_str += " ";
       }
-      response.actions.push_back(WindowAction(WindowAction::INSERT, 0, x, ' '));
-      ++x;
+      m_str += inode->name;
       inode = inode->right;
+    }
+    for (size_t i = 0; i < m_str.size(); ++i) {
+      response.actions.push_back(WindowAction(WindowAction::INSERT, 0, i, m_str[i]));
+    }
+    // Clear out the rest of the line
+    for (size_t i = m_str.size(); i < old_str.size(); ++i) {
+      response.actions.push_back(WindowAction(WindowAction::INSERT, 0, i, ' '));
     }
     response.hotlist.Accept(m_connector.GetHotlist().GetHotlist());
   }

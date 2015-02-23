@@ -20,9 +20,8 @@ using namespace istatik;
 
 /* Char */
 
-Char::Char(int x, int ch)
-  : x(x),
-    ch(ch),
+Char::Char(int ch)
+  : ch(ch),
     inode("", string(1, (char)ch)) {
 }
 
@@ -41,7 +40,7 @@ void Char::SetPrevious(Char* prev) {
 }
 
 ostream& istatik::operator<< (ostream& out, const Char& node) {
-  out << "(" << node.x << "):" << (char)node.ch;
+  out << (char)node.ch;
   return out;
 }
 
@@ -57,6 +56,18 @@ bool Line::HasChar(int x) const {
 
 int Line::LastIndex() const {
   return m_chars.size()-1;
+}
+
+size_t Line::Size() const {
+  return m_chars.size();
+}
+
+string Line::GetString(int startx) const {
+  string s;
+  for (size_t x = startx; x < m_chars.size(); ++x) {
+    s += (char)m_chars.at(x).ch;
+  }
+  return s;
 }
 
 Char* Line::GetFirst() {
@@ -92,7 +103,7 @@ Char* Line::GetAtOrAfter(int x) {
 }
 
 Char* Line::Insert(int x, int ch) {
-  auto_ptr<Char> c(new Char(x, ch));
+  auto_ptr<Char> c(new Char(ch));
   Char* cp = c.get();
   g_log.info() << "Line " << y << " inserting " << *c;
   if ((size_t)x > m_chars.size()) {
@@ -106,6 +117,10 @@ Char* Line::Insert(int x, int ch) {
 }
 
 /* LineBuf public */
+
+LineBuf::LineBuf(size_t maxcols)
+  : m_maxcols(maxcols) {
+}
 
 bool LineBuf::HasChar(int y, int x) const {
   if ((size_t)y >= m_lines.size()) {
@@ -132,11 +147,25 @@ WindowResponse LineBuf::Insert(int y, int x, int ch) {
   } else if (m_lines.size() == (size_t)y) {
     g_log.info() << "LineBuf creating line for y=" << y;
     m_lines.push_back(new Line(y));
+  } else if (m_lines.at(y).Size() == m_maxcols-2) {
+    // Line too long; input ignored
+    return response;
   }
   g_log.info() << "LineBuf inserting (" << y << "," << x << "):" << (char)ch;
   Char* prev = FindBefore(y, x);
-  Char* next = FindAtOrAfter(y, x+1);
+  Char* next = FindAtOrAfter(y, x);
   Char* c = m_lines.at(y).Insert(x, ch);
+  int x0 = x+1;
+  int y0 = y;
+  // Re-draw the window starting at the newly-entered character
+  do {
+    string s = m_lines.at(y).GetString(x);
+    for (size_t i = 0; i < s.size(); ++i) {
+      response.actions.push_back(WindowAction(WindowAction::INSERT, y, x + i, s[i]));
+    }
+    x = 0;
+    ++y;
+  } while ((size_t)y < m_lines.size());
   response.hotlist.Insert(c->inode);
   if (prev) {
     g_log.info() << " found before: " << *prev;
@@ -152,12 +181,9 @@ WindowResponse LineBuf::Insert(int y, int x, int ch) {
   while (istart->left) {
     istart = istart->left;
   }
+  response.actions.push_back(WindowAction(WindowAction::MOVE, y0, x0, ch));
   g_log.info() << "window0 olist: " << istart->Print();
   g_log.info() << "window0 hotlist: " << response.hotlist.Print();
-
-  response.actions.push_back(WindowAction(WindowAction::INSERT, y, x, ch));
-  // TODO uhoh, we need to know ALL the nodes that changed (for display), which
-  // might be many, across lines.
   return response;
 }
 
@@ -216,9 +242,9 @@ Char* LineBuf::FindAtOrAfter(int y, int x) {
 
 /* InputWindow */
 
-InputWindow::InputWindow(int maxrows, int maxcols)
+InputWindow::InputWindow(size_t maxrows, size_t maxcols)
   : m_maxrows(maxrows),
-    m_maxcols(maxcols) {
+    m_linebuf(maxcols) {
   if (maxrows <= 0 || maxcols <= 0) {
     throw ISError("Cannot create InputWindow with invalid dimensions");
   }
@@ -234,7 +260,7 @@ WindowResponse InputWindow::Input(int y, int x, int ch) {
     return response;
   } else if (KEY_RIGHT == ch) {
     WindowResponse response;
-    if (m_linebuf.HasChar(y, x+1)) {
+    if (m_linebuf.HasChar(y, x)) {
       response.actions.push_back(WindowAction(WindowAction::MOVE, y, x+1, ch));
     }
     return response;

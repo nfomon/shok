@@ -12,15 +12,15 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 
 #include <ostream>
+#include <string>
 
 namespace istatik {
 
 struct Char {
-  Char(int x, int ch);
+  Char(int ch);
   void SetNext(Char* next);
   void SetPrevious(Char* prev);
 
-  int x;
   int ch;
   statik::IList inode;
 };
@@ -31,6 +31,8 @@ public:
   Line(int y);
   bool HasChar(int x) const;
   int LastIndex() const;
+  size_t Size() const;
+  std::string GetString(int startx = 0) const;
   Char* GetFirst();
   Char* GetLast();
   Char* GetBefore(int x);
@@ -44,6 +46,7 @@ private:
 
 class LineBuf {
 public:
+  LineBuf(size_t maxcols);
   bool HasChar(int y, int x) const;
   bool HasLine(int y) const;
   int LastIndexOfLine(int y) const;
@@ -53,6 +56,7 @@ public:
   WindowResponse Backspace(int y, int x);
 private:
   typedef boost::ptr_vector<Line> line_vec;
+  size_t m_maxcols;
   line_vec m_lines;
   Char* FindBefore(int y, int x);
   Char* FindAtOrAfter(int y, int x);
@@ -60,11 +64,10 @@ private:
 
 class InputWindow {
 public:
-  InputWindow(int maxrows, int maxcols);
+  InputWindow(size_t maxrows, size_t maxcols);
   WindowResponse Input(int y, int x, int ch);
 private:
-  int m_maxrows;
-  int m_maxcols;
+  size_t m_maxrows;
   LineBuf m_linebuf;
 };
 
