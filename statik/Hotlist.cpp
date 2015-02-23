@@ -4,6 +4,7 @@
 #include "Hotlist.h"
 
 #include "IList.h"
+#include "SLog.h"
 
 #include <string>
 using std::string;
@@ -45,6 +46,7 @@ void Hotlist::Accept(const hotlist_vec& hotlist) {
 }
 
 void Hotlist::Clear() {
+  g_log.debug() << "Clearing " << m_hotlist.size() << " items out of hotlist, that had " << m_inserted.size() << " inserted and " << m_deleted.size() << " deleted.";
   m_hotlist.clear();
   m_inserted.clear();
   m_deleted.clear();

@@ -34,6 +34,8 @@ public:
   void Lock() { m_isLocked = true; }
   void Unlock() { m_isLocked = false; }
 
+  bool operator==(const State& rhs) const;
+  bool operator!=(const State& rhs) const;
   virtual operator std::string() const { return UnMapStation(m_station); }
 
 private:

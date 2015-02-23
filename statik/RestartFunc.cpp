@@ -3,7 +3,6 @@
 
 #include "RestartFunc.h"
 
-#include "Connector.h"
 #include "IList.h"
 #include "Rule.h"
 #include "STree.h"
@@ -28,6 +27,7 @@ auto_ptr<RestartFunc> statik::MakeRestartFunc_AllChildrenOfNode() {
 }
 
 void RestartFunc_FirstChildOfNode::operator() (const IList& istart) {
+  g_log.info() << "Restarting " << *m_node << " to first child, with istart=" << istart;
   if (!m_node) {
     throw SError("Cannot compute uninitialized RestartFunc_FirstChildOfNode");
   }
@@ -43,14 +43,15 @@ void RestartFunc_FirstChildOfNode::operator() (const IList& istart) {
     // Remove all children > 1
     for (STree::child_mod_iter i = m_node->children.begin() + 1;
          i != m_node->children.end(); ++i) {
-      i->ClearNode();
+      (*i)->ClearNode();
     }
     m_node->children.erase(m_node->children.begin() + 1, m_node->children.end());
   }
-  m_node->children.at(0).RestartNode(istart);
+  m_node->children.at(0)->RestartNode(istart);
 }
 
 void RestartFunc_AllChildrenOfNode::operator() (const IList& istart) {
+  g_log.info() << "Restarting all children of " << *m_node << ", with istart=" << istart;
   if (!m_node) {
     throw SError("Cannot compute uninitialized RestartFunc_AllChildrenOfNode");
   }
@@ -62,7 +63,7 @@ void RestartFunc_AllChildrenOfNode::operator() (const IList& istart) {
   } else if (m_node->children.size() == m_node->GetRule().GetChildren().size()) {
     for (STree::child_mod_iter i = m_node->children.begin();
          i != m_node->children.end(); ++i) {
-      i->RestartNode(istart);
+      (*i)->RestartNode(istart);
     }
   } else {
     throw SError("Rule " + m_node->GetRule().Name() + " of node " + string(*m_node) + " has inappropriate # of children for RepositionAllChildren");

@@ -27,6 +27,7 @@ STree::STree(Connector& connector,
   : m_connector(connector),
     m_rule(rule),
     m_parent(parent),
+    m_isClear(true),
     depth(m_parent ? m_parent->depth + 1 : 0),
     m_restartFunc(restartFunc),
     m_computeFunc(computeFunc),
@@ -38,32 +39,43 @@ STree::STree(Connector& connector,
 
 void STree::RestartNode(const IList& istart) {
   g_log.info() << "Restarting node " << *this << " with inode " << istart;
+  m_isClear = false;
   m_iconnection.Restart(istart);
+  m_connector.UnlistenAll(*this);
   m_connector.DrawGraph(*this, &istart);
   m_state.Unlock();
-  Restart(istart);
+  (*m_restartFunc.get())(istart);
   (void) ComputeNode();
 }
 
 bool STree::ComputeNode() {
   g_log.info() << "Updating node " << *this;
+  m_isClear = false;
+  const State old_state = m_state;
   const IList& old_iend = IEnd();
   (*m_computeFunc)();
   (*m_outputFunc)();
   m_connector.DrawGraph(*this);
-  bool hasChanged = &old_iend != &IEnd() || !m_outputFunc->GetHotlist().empty();
+  bool hasChanged1 = &old_iend != &IEnd();
+  bool hasChanged2 = !m_outputFunc->GetHotlist().empty();
+  bool hasChanged3 = old_state != m_state;
+  bool hasChanged = hasChanged1 || hasChanged2 || hasChanged3;
   g_log.debug() << " - - - - " << *this << " has " << (hasChanged ? "" : "NOT ") << "changed";
   return hasChanged;
 }
 
 void STree::ClearNode() {
   g_log.info() << "Clearing node " << *this;
+  if (m_isClear) {
+    g_log.info() << " - already clear!";
+    return;
+  }
   for (child_mod_iter i = children.begin(); i != children.end(); ++i) {
-    i->ClearNode();
+    (*i)->ClearNode();
   }
   m_state.Clear();
-  m_outputFunc->Cleanup();
   m_connector.ClearNode(*this);
+  m_isClear = true;
 }
 
 STree::operator std::string() const {
@@ -98,28 +110,22 @@ string STree::DrawNode(const string& context) const {
   // Add its child connections, and draw the children
   // Make sure the children will be ordered in the output graph
   for (child_iter i = children.begin(); i != children.end(); ++i) {
-    s += dotVar(this, context) + " -> " + dotVar(&*i, context) + ";\n";
+    s += dotVar(this, context) + " -> " + dotVar(*i, context) + ";\n";
   }
   if (children.size() > 0) {
     s += "{ rank=same;\n";
     child_iter prev_child = children.begin();
     for (child_iter i = children.begin() + 1; i != children.end(); ++i) {
-      s += dotVar(&*prev_child, context) + " -> " + dotVar(&*i, context) + " [style=\"invis\"];\n";
+      s += dotVar(*prev_child, context) + " -> " + dotVar(*i, context) + " [style=\"invis\"];\n";
       prev_child = i;
     }
     s += "}\n";
   }
   for (child_iter i = children.begin(); i != children.end(); ++i) {
-    s += i->DrawNode(context);
+    s += (*i)->DrawNode(context);
   }
   //s += m_outputFunc->DrawEmitting(context, *this);
   return s;
-}
-
-/* private */
-
-void STree::Restart(const IList& istart) {
-  (*m_restartFunc.get())(istart);
 }
 
 /* non-member */

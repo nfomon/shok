@@ -31,6 +31,14 @@ void State::Clear() {
   Unlock();
 }
 
+bool State::operator==(const State& rhs) const {
+  return m_station == rhs.m_station && m_isLocked == rhs.m_isLocked;
+}
+
+bool State::operator!=(const State& rhs) const {
+  return !(*this == rhs);
+}
+
 /* private */
 
 string State::UnMapStation(Station st) {

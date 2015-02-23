@@ -536,3 +536,49 @@ What is linked to their own last, vs. the "complete" thing that makes them bad? 
 We absolutely need to pool the STree nodes, not just the OList nodes.  The reason to pool the STrees:  Say I'm a Seq/Star and I'm clearing out all the nodes past my last-bad-node.  I do want to remove them.  Removing them means removing all their children as well.  Now my OutputFunc needs to know abotu them.  Either I can tell it right now during the Compute() (ugh) which children are going away, and let it update some internal state about "oh look here's everything I need to know about them, let's record it somehow before they disappear for reals by the time we actually call our outputFunc()", OR I need the outputFunc() to be able to refer to these cleared nodes (figure out for itself which children are gone and so we need to Delete from the Hotlist), which means the STree lifetimes need to last long enough.
 
 Now that we Pool'd the ONodes, we have every ability to do it with the STrees as well.  In fact, we might not even need to pool ONodes if we're pooling STrees.  LOL.  We can go back to OutputFuncs owning their output IList nodes... but the whole STree will stick around long enough for us to use them for any purposes we could have wanted!  STree node is Cleared, it unlinks itself from the Connector's pool.  b00m.
+
+--
+When we reposition a node, remove it from listening to its inodes; they've been replaced.
+
+---
+at 26-27, we approved "new", and inserted ";".  now eventually, we'll wrongly say that ";" was not emitting, so we don't bother deleting it.  That's wrong.  Why do we do that...
+
+between parser_18->lexer_28 is where we do a SEQ REPORT and show that our Or:done child was emitting 0 items.  hmmm.
+ - that's its WAS EMITTING.  We should be checking its EMITTING instead!!
+
+well maybe.  Typically we'd use DeleteChild() to say, let's remove whatever it HAD told us to emit.
+So confused about the difference right now...
+
+The IDEA of ClearNode() screws with the emitting/wasEmitting distinction.
+
+Node computes necessarily come bottom-up. Even if you Restart a node, the Compute()s are done bottom-up.
+After an OutputFunc(), a node has set its Emitting() from scratch for the set<INodes> it's currently emitting.  Its wasEmitting is the set that it was emitting "last time", i.e. last time that OutputFunc() was called.  That is the ONLY statefulness in the OutputFuncs().  Maybe we should get rid of it, and allow parents to track which nodes it actually cared to receive from each child.  That seems way easier and less sketchy.
+
+We were also relying on the idea that whether you InsertChild() or AcceptChild() a child, in both cases you're taking its FULL SET of Emitting() nodes. Only DeleteChild() cared about the WasEmitting().  Instead let's just get rid of WasEmitting().  The parent will keep a map<Child, set<IList>> which are the nodes it actually took from each child.  Then each node is only maintaining its OWN STATE.  w00!
+
+How do we ClearNode() a child then?  Well, the parent will know how to compute itself properly, taking anything it wants from "live" children, and Deleting all the nodes that it HAD emit (from the map<child, set<ilist>>) but aren't current.
+
+--
+
+At lexer_38 I eliminate my whole olist.  Then at lexer_44 I add the whole thing back.  My parser is screwing up (IMO) when I tell it to Insert the node "new" again even though it already has it.  Shouldn't I only have to tell it about the del which we've inserted at the end?
+
+This is all just with straight-up input:  "new;del" no funniness.
+
+--
+
+Two things:
+1. Cleaning out STreePool causes horrific crash.  Why?  What is still using the items that I think we should be deleting?
+2. Ignore that clear out pool.  Insert: new;  Then go to the start and insert: del;.  We're screwing up the olist somehow.  Like the left/right pointers of our lexer's OList are all wrong.
+ - except log.log's window0 olist looks right.  Just our graph looks wrong.  hmmm...
+  - That's our input, silly!  Window1 is our lexer's output which is wrong.
+ - it's unlinking the hotlist that's causing the problem.  It screws it up.
+
+--
+
+new;del;
+new;dxel;
+new;newdxel;
+
+adding that "w" at the end of "new" triggers baaaadcrash.  Why?
+ - because our list is messed up again.  hmmm...
+ - we fail *drawing* the parser.

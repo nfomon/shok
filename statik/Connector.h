@@ -6,8 +6,8 @@
 
 #include "Hotlist.h"
 #include "IList.h"
-#include "ListPool.h"
 #include "ListenerTable.h"
+#include "STreePool.h"
 
 #include <set>
 
@@ -45,16 +45,23 @@ public:
   void Listen(STree& x, const IList& inode);
   void Unlisten(STree& x, const IList& inode);
 
-  // Remove any listening connections regarding a node
+  // Called from a node that's being restarted, to cancel all its listening
+  void UnlistenAll(STree& x);
+
+  // Connector owns the STree nodes.  This allows a ComputeFunc() to "unlink" a
+  // node from the tree before it is actually deleted, so that an OutputFunc()
+  // can refer to its destruction safely.
+  STree* OwnNode(std::auto_ptr<STree> node);
+
+  // Prepare a node to be removed completely
   void ClearNode(STree& x);
 
-  // Connector owns the list of output nodes.  These allow the OutputFuncs to
-  // manage the Connector's ownership.
-  IList* InsertONode(std::auto_ptr<IList> onode);
-  void UnlinkONode(IList& onode);
+  // Get the first node of the output list
   const IList* GetFirstONode() const;
 
   void DrawGraph(const STree& onode, const IList* inode = NULL);
+
+  std::string Name() const { return m_name; }
 
 private:
   const STree& GetRoot() const;
@@ -67,10 +74,10 @@ private:
   // Root of the Rule tree
   const Rule& m_rule;
   // Root of the output tree
-  std::auto_ptr<STree> m_root;
+  STree* m_root;
   std::string m_name;
   std::auto_ptr<Grapher> m_grapher;
-  ListPool m_outputListPool;
+  STreePool m_nodePool;
   ListenerTable<const IList*, STree*> m_listeners;
   Hotlist m_hotlist;
 };

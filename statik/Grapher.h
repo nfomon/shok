@@ -19,8 +19,10 @@ public:
 
   void AddMachine(const std::string& context, const Rule& machineRoot);
   void AddIList(const std::string& context, const IList& start, const std::string& label = "");
-  void AddOTree(const std::string& context, const STree& root, const std::string& label = "");
+  void AddSTree(const std::string& context, const STree& root, const std::string& label = "");
+  void AddOList(const std::string& context, const IList& start, const std::string& label = "");
   void AddIListeners(const std::string& context, const Connector& connector, const IList& start);
+  void AddHotlist(const std::string& context, const Hotlist::hotlist_vec& hotlist);
   void Signal(const std::string& context, const void*, bool isUpdate = false);
 
   bool IsDirty() const { return m_isDirty; }

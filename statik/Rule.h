@@ -48,7 +48,7 @@ public:
   Rule* AddChild(std::auto_ptr<Rule> child);
   Rule* AddChildRecursive(Rule* child);
 
-  std::auto_ptr<STree> MakeRootNode(Connector& connector) const;
+  STree* MakeRootNode(Connector& connector) const;
   STree* MakeNode(STree& parent, const IList& istart) const;
 
   std::string Name() const { return m_name; }

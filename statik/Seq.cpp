@@ -9,9 +9,6 @@
 #include "SLog.h"
 #include "STree.h"
 
-#include <boost/lexical_cast.hpp>
-using boost::lexical_cast;
-
 #include <memory>
 #include <string>
 #include <vector>
@@ -44,7 +41,7 @@ void ComputeFunc_Seq::operator() () {
   } else if (m_node->children.size() > m_node->GetRule().GetChildren().size()) {
     throw SError("SeqRule::Update: Seq node " + string(*m_node) + " has more children than the rule");
   }
-  m_node->GetIConnection().Restart(m_node->children.at(0).IStart());
+  m_node->GetIConnection().Restart(m_node->children.at(0)->IStart());
 
   // Iterate over node children, either existing or being created, so long as
   // our last child is complete.
@@ -59,12 +56,12 @@ void ComputeFunc_Seq::operator() () {
     if (child != m_node->children.end()) {
       // Existing child
       if (prev_child) {
-        if (!child->IStart().left) {
-          throw SError("Computing Seq at " + string(*m_node) + " child " + string(*child) + " has istart at the start of input, but it's not our first child");
+        if (!(*child)->IStart().left) {
+          throw SError("Computing Seq at " + string(*m_node) + " child " + string(**child) + " has istart at the start of input, but it's not our first child");
         }
-        if (&prev_child->IEnd() != &child->IStart()) {
-          g_log.info() << "Computing Seq at " << *m_node << " child " << *child << " needs to be repositioned to the node after the prev child's end";
-          child->RestartNode(prev_child->IEnd());
+        if (&prev_child->IEnd() != &(*child)->IStart()) {
+          g_log.info() << "Computing Seq at " << *m_node << " child " << **child << " needs to be repositioned to the node after the prev child's end";
+          (*child)->RestartNode(prev_child->IEnd());
         }
       }
     } else if (m_node->children.size() > m_node->GetRule().GetChildren().size()) {
@@ -83,10 +80,10 @@ void ComputeFunc_Seq::operator() () {
       (void) m_node->GetRule().GetChildren().at(child_index)->MakeNode(*m_node, *newIStart);
       child = m_node->children.end() - 1;
     }
-    m_node->GetIConnection().SetEnd(child->IEnd());
+    m_node->GetIConnection().SetEnd((*child)->IEnd());
 
     // Now check the child's state, and see if we can keep going.
-    State& istate = child->GetState();
+    State& istate = (*child)->GetState();
 
     if (istate.IsLocked()) {
       state.Lock();
@@ -97,7 +94,7 @@ void ComputeFunc_Seq::operator() () {
       state.GoBad();
       // Clear any subsequent children
       for (STree::child_mod_iter i = child+1; i != m_node->children.end(); ++i) {
-        i->ClearNode();
+        (*i)->ClearNode();
       }
       m_node->children.erase(child+1, m_node->children.end());
       finished = true;
@@ -110,7 +107,7 @@ void ComputeFunc_Seq::operator() () {
         // Cool, keep going!
       }
     } else if (istate.IsAccepting()) {
-      if (child->IEnd().right) {
+      if ((*child)->IEnd().right) {
         throw SError("Computing Seq at " + string(*m_node) + " found incomplete inode that is only ok; not allowed");
       }
       if (istate.IsDone() && child_index == m_node->GetRule().GetChildren().size() - 1) {
@@ -120,7 +117,7 @@ void ComputeFunc_Seq::operator() () {
       }
       // Clear any subsequent children
       for (STree::child_mod_iter i = child+1; i != m_node->children.end(); ++i) {
-        i->ClearNode();
+        (*i)->ClearNode();
       }
       m_node->children.erase(child+1, m_node->children.end());
       finished = true;
@@ -128,7 +125,7 @@ void ComputeFunc_Seq::operator() () {
       throw SError("Computing Seq at " + string(*m_node) + " child is in unexpected state");
     }
 
-    prev_child = &*child;
+    prev_child = *child;
     ++child;
     ++child_index;
   }

@@ -7,20 +7,14 @@
 #include "ComputeFunc.h"
 #include "Connector.h"
 #include "IConnection.h"
-#include "SError.h"
-#include "Hotlist.h"
 #include "OutputFunc.h"
 #include "RestartFunc.h"
 #include "Rule.h"
 #include "State.h"
 
-#include "util/Graphviz.h"
-
-#include <boost/lexical_cast.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
-
 #include <memory>
 #include <ostream>
+#include <string>
 #include <vector>
 
 namespace statik {
@@ -28,7 +22,7 @@ namespace statik {
 class STree {
 public:
   typedef unsigned int depth_t;
-  typedef boost::ptr_vector<STree> child_vec;
+  typedef std::vector<STree*> child_vec;
   typedef child_vec::const_iterator child_iter;
   typedef child_vec::iterator child_mod_iter;
 
@@ -37,6 +31,7 @@ private:
   const Rule& m_rule;
   State m_state;
   STree* m_parent;
+  bool m_isClear;
 
 public:
   child_vec children;
@@ -67,8 +62,6 @@ public:
   std::string DrawNode(const std::string& context) const;
 
 private:
-  void Restart(const IList& istart);
-
   IConnection m_iconnection;
   std::auto_ptr<RestartFunc> m_restartFunc;
   std::auto_ptr<ComputeFunc> m_computeFunc;

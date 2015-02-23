@@ -73,15 +73,15 @@ Rule* Rule::CapOutput(const string& cap) {
   return this;
 }
 
-auto_ptr<STree> Rule::MakeRootNode(Connector& connector) const {
+STree* Rule::MakeRootNode(Connector& connector) const {
   auto_ptr<STree> node(new STree(connector, *this, NULL, m_restartFunc->Clone(), m_computeFunc->Clone(), m_outputFunc->Clone()));
-  return node;
+  return connector.OwnNode(node);
 }
 
 STree* Rule::MakeNode(STree& parent, const IList& istart) const {
   auto_ptr<STree> node(new STree(parent.GetConnector(), *this, &parent, m_restartFunc->Clone(), m_computeFunc->Clone(), m_outputFunc->Clone()));
-  STree* r = node.get();
-  parent.children.push_back(node);
+  STree* r = parent.GetConnector().OwnNode(node);
+  parent.children.push_back(r);
   r->RestartNode(istart);
   return r;
 }

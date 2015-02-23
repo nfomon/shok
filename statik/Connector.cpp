@@ -10,9 +10,6 @@
 #include "SLog.h"
 #include "STree.h"
 
-#include <boost/lexical_cast.hpp>
-using boost::lexical_cast;
-
 #include <map>
 #include <memory>
 #include <set>
@@ -28,6 +25,7 @@ using namespace statik;
 
 Connector::Connector(const Rule& rule, const string& name, const string& graphdir)
   : m_rule(rule),
+    m_root(NULL),
     m_name(name) {
   if (!graphdir.empty()) {
     m_grapher.reset(new Grapher(graphdir, string(name + "_")));
@@ -42,13 +40,13 @@ const Hotlist& Connector::GetHotlist() const {
 
 void Connector::ClearHotlist() {
   m_hotlist.Clear();
-  m_outputListPool.Cleanup();
+  m_nodePool.Cleanup();
 }
 
 void Connector::Insert(const IList& inode) {
   g_log.info() << "Connector " << m_name << ": Inserting IList: " << inode;
 
-  if (!m_root.get()) {
+  if (!m_root) {
     g_log.debug() << " - No root; initializing the tree root";
     m_root = m_rule.MakeRootNode(*this);
     m_root->RestartNode(inode);
@@ -57,7 +55,6 @@ void Connector::Insert(const IList& inode) {
       g_log.debug() << " - Found left inode: updating listeners of " << inode << "'s left and (if present) right";
       UpdateListeners(inode, true);
     } else {
-      // Just reposition the root.
       g_log.debug() << " - No left inode: just repositioning the root";
       m_root->RestartNode(inode);
     }
@@ -70,13 +67,14 @@ void Connector::Insert(const IList& inode) {
   // Stronger check: every inode has at least one listener :)
 
   m_hotlist.Accept(m_root->GetOutputFunc().GetHotlist());
-  g_log.debug() << "Connector: Insert done, hotlist now has size " << boost::lexical_cast<string>(m_hotlist.Size());
+  m_root->GetOutputFunc().ClearHotlist();
+  g_log.debug() << "Connector: Insert done, hotlist now has size " << m_hotlist.Size();
 }
 
 void Connector::Delete(const IList& inode) {
   g_log.info() << "Deleting list inode " << inode;
 
-  if (!m_root.get()) {
+  if (!m_root) {
     throw SError("Connector " + m_name + ": cannot delete " + string(inode) + " when the root has not been initialized");
   }
 
@@ -91,10 +89,12 @@ void Connector::Delete(const IList& inode) {
   }
 
   m_hotlist.Accept(m_root->GetOutputFunc().GetHotlist());
-  g_log.debug() << "Connector: Delete done, hotlist now has size " << boost::lexical_cast<string>(m_hotlist.Size());
+  m_root->GetOutputFunc().ClearHotlist();
+  g_log.debug() << "Connector: Delete done, hotlist now has size " << m_hotlist.Size();
 }
 
 void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
+  g_log.info() << "Updating Connector " << m_name << " with hotlist of size " << hotlist.size();
   for (Hotlist::hotlist_iter i = hotlist.begin(); i != hotlist.end(); ++i) {
     switch (i->second) {
     case Hotlist::OP_INSERT:
@@ -110,10 +110,15 @@ void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
       throw SError("Cannot update with hotlist with unknown hot operation");
     }
   }
+  g_log.info() << "Done updating Connector " << m_name << " with hotlist that had size " << hotlist.size();
+  if (!m_hotlist.IsEmpty()) {
+    DrawGraph(*m_root);
+  }
 }
 
 void Connector::ClearNode(STree& x) {
   m_listeners.RemoveAllListenings(&x);
+  m_nodePool.Unlink(x);
 }
 
 void Connector::Listen(STree& x, const IList& inode) {
@@ -130,26 +135,53 @@ void Connector::Unlisten(STree& x, const IList& inode) {
   m_listeners.RemoveListener(&inode, &x);
 }
 
-IList* Connector::InsertONode(auto_ptr<IList> onode) {
-  g_log.info() << "Connector " << std::string(*m_root.get()) << ": Inserting ONode " << string(*onode);
-  return m_outputListPool.Insert(onode);
+void Connector::UnlistenAll(STree& x) {
+  g_log.info() << "Connector " << m_name << ": Unlistening all from node " << x;
+  m_listeners.RemoveAllListenings(&x);
 }
 
-void Connector::UnlinkONode(IList& onode) {
-  m_outputListPool.Unlink(onode);
+STree* Connector::OwnNode(auto_ptr<STree> node) {
+  g_log.debug() << "Connector " << m_name << ": Owning node " << string(*node);
+  return m_nodePool.Insert(node);
 }
 
 const IList* Connector::GetFirstONode() const {
+  if (!m_root) {
+    return NULL;
+  }
   return m_root->GetOutputFunc().OStart();
+}
+
+void Connector::DrawGraph(const STree& onode, const IList* inode) {
+  if (!m_grapher.get()) {
+    return;
+  }
+  if (!m_root) {
+    return;
+  }
+  m_grapher->AddIList(m_name, m_root->IStart(), m_name + " input");
+  m_grapher->AddSTree(m_name, *m_root, m_name + " output");
+  if (m_root->GetOutputFunc().OStart()) {
+    m_grapher->AddOList(m_name, *m_root->GetOutputFunc().OStart(), m_name + " olist");
+  }
+  m_grapher->AddIListeners(m_name, *this, m_root->IStart());
+  if (inode) {
+    m_grapher->Signal(m_name, &onode);
+    m_grapher->Signal(m_name, inode);
+  } else {
+    m_grapher->Signal(m_name, &onode, true);
+  }
+  m_grapher->AddHotlist(m_name, m_hotlist.GetHotlist());
+  m_grapher->SaveAndClear();
 }
 
 /* private */
 
 const STree& Connector::GetRoot() const {
-  if (!m_root.get()) {
+  if (!m_root) {
     throw SError("Connector " + m_name + "; cannot get root node before it has been initialized");
   }
-  return *m_root.get();
+  return *m_root;
 }
 
 void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListeners) {
@@ -196,7 +228,7 @@ void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListener
     // Update the deepest depth of our changeset
     int depth = changes_by_depth.rbegin()->first;
     change_set changes = changes_by_depth.rbegin()->second;
-    g_log.debug() << "Connector: Updating changes at depth " << lexical_cast<string>(depth);
+    g_log.debug() << "Connector: Updating changes at depth " << depth;
     for (change_iter i = changes.begin(); i != changes.end(); ++i) {
       bool changed = (*i)->ComputeNode();
       if (changed) {
@@ -208,23 +240,4 @@ void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListener
     }
     changes_by_depth.erase(depth);
   }
-}
-
-void Connector::DrawGraph(const STree& onode, const IList* inode) {
-  if (!m_grapher.get()) {
-    return;
-  }
-  if (!m_root.get()) {
-    return;
-  }
-  m_grapher->AddIList(m_name, m_root->IStart(), m_name + " input");
-  m_grapher->AddOTree(m_name, *m_root.get(), m_name + " output");
-  m_grapher->AddIListeners(m_name, *this, m_root->IStart());
-  if (inode) {
-    m_grapher->Signal(m_name, &onode);
-    m_grapher->Signal(m_name, inode);
-  } else {
-    m_grapher->Signal(m_name, &onode, true);
-  }
-  m_grapher->SaveAndClear();
 }

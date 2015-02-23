@@ -22,8 +22,6 @@ STATIK_SRCS = $(COMMON_SRCS) \
     IList.h \
     Keyword.cpp \
     Keyword.h \
-    ListPool.cpp \
-    ListPool.h \
     ListenerTable.h \
     Meta.cpp \
     Meta.h \
@@ -43,6 +41,8 @@ STATIK_SRCS = $(COMMON_SRCS) \
     SLog.h \
     STree.cpp \
     STree.h \
+    STreePool.cpp \
+    STreePool.h \
     Seq.cpp \
     Seq.h \
     Star.cpp \

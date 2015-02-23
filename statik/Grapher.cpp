@@ -55,7 +55,18 @@ void Grapher::AddIList(const string& context, const IList& inode, const string& 
   m_isDirty = true;
 }
 
-void Grapher::AddOTree(const string& context, const STree& onode, const string& label) {
+void Grapher::AddSTree(const string& context, const STree& snode, const string& label) {
+  m_graph += "subgraph cluster_" + context + dotVar(&snode, context) + " {\n";
+  if (!label.empty()) {
+    m_graph += "label=\"" + label + "\";\n";
+    m_graph += "fontsize=12.0;\n";
+  }
+  m_graph += snode.DrawNode(context);
+  m_graph += "}\n";
+  m_isDirty = true;
+}
+
+void Grapher::AddOList(const string& context, const IList& onode, const string& label) {
   m_graph += "subgraph cluster_" + context + dotVar(&onode, context) + " {\n";
   if (!label.empty()) {
     m_graph += "label=\"" + label + "\";\n";
@@ -75,6 +86,27 @@ void Grapher::AddIListeners(const string& context, const Connector& connector, c
     AddIListeners(context, connector, *inode.right);
   }
   m_isDirty = true;
+}
+
+void Grapher::AddHotlist(const string& context, const Hotlist::hotlist_vec& hotlist) {
+  for (Hotlist::hotlist_iter i = hotlist.begin(); i != hotlist.end(); ++i) {
+    string color = "#770000";
+    switch (i->second) {
+    case Hotlist::OP_INSERT:
+      color = "#00bb44";
+      break;
+    case Hotlist::OP_UPDATE:
+      color = "#2222cc";
+      break;
+    case Hotlist::OP_DELETE:
+      color = "#cc2222";
+      break;
+    default:
+      throw SError("Cannot add hotlist to Grapher: unknown Hotlist operation");
+    }
+    m_graph += dotVar(i->first, context) + " [color=\"" + color + "\", penwidth=4.0];\n";
+    m_isDirty = true;
+  }
 }
 
 void Grapher::Signal(const string& context, const void* x, bool isUpdate) {

@@ -43,12 +43,12 @@ void ComputeFunc_Or::operator() () {
   if (m_node->children.empty()) {
     throw SError("Cannot compute Or at " + string(*m_node) + " that has no children");
   }
-  m_node->GetIConnection().Restart(m_node->children.at(0).IStart());
+  m_node->GetIConnection().Restart(m_node->children.at(0)->IStart());
 
   STree::child_mod_iter i = m_node->children.begin();
   bool haveSetEnd = false;
   for (; i != m_node->children.end(); ++i) {
-    State& istate = i->GetState();
+    State& istate = (*i)->GetState();
     bool thisChildLocked = false;
     if (istate.IsLocked()) {
       if (lockedChild) {
@@ -56,16 +56,16 @@ void ComputeFunc_Or::operator() () {
       }
       g_log.info() << "Computing Or at " << *m_node << " found locked child";
       g_log.info() << "Locked child state is " << istate;
-      g_log.info() << "Locked child is " << *i;
-      lockedChild = &*i;
+      g_log.info() << "Locked child is " << **i;
+      lockedChild = *i;
       thisChildLocked = true;
       state.Lock();
     }
     if (!istate.IsBad() && !haveSetEnd) {
-      if (&i->IStart() != &m_node->IStart()) {
+      if (&(*i)->IStart() != &m_node->IStart()) {
         throw SError("Computing Or at " + string(*m_node) + " and a child disagree about istart");
       }
-      m_node->GetIConnection().SetEnd(i->IEnd());
+      m_node->GetIConnection().SetEnd((*i)->IEnd());
       g_log.debug() << "Computing Or at " << *m_node << " assigning iend " << m_node->IEnd() << " from istate " << istate;
       haveSetEnd = true;
     }
@@ -77,7 +77,7 @@ void ComputeFunc_Or::operator() () {
         completes.clear();
         oks.push_back(lockedChild);
       } else if (!lockedChild) {
-        oks.push_back(&*i);
+        oks.push_back(*i);
       }
     } else if (istate.IsBad()) {
       if (thisChildLocked) {
@@ -87,7 +87,7 @@ void ComputeFunc_Or::operator() () {
         completes.clear();
         bads.push_back(lockedChild);
       } else if (!lockedChild) {
-        bads.push_back(&*i);
+        bads.push_back(*i);
       }
     } else if (istate.IsDone()) {
       if (thisChildLocked) {
@@ -97,7 +97,7 @@ void ComputeFunc_Or::operator() () {
         completes.clear();
         dones.push_back(lockedChild);
       } else if (!lockedChild) {
-        dones.push_back(&*i);
+        dones.push_back(*i);
       }
     } else if (istate.IsComplete()) {
       if (thisChildLocked) {
@@ -107,7 +107,7 @@ void ComputeFunc_Or::operator() () {
         completes.clear();
         completes.push_back(lockedChild);
       } else if (!lockedChild) {
-        completes.push_back(&*i);
+        completes.push_back(*i);
       }
     } else {
       throw SError("Computing Or at " + string(*m_node) + " found istate " + string(istate) + " in unknown station");
