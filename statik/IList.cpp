@@ -3,6 +3,7 @@
 
 #include "IList.h"
 
+#include "SLog.h"
 #include "STree.h"
 
 #include "util/Graphviz.h"
@@ -37,6 +38,7 @@ string IList::Print() const {
 
 string IList::DrawNode(const string& context) const {
   string s = dotVar(this, context) + " [label=\"" + safeLabelStr(name + (value.empty() ? "" : (name.empty() ? "" : ":") + value)) + "\", style=\"filled\", fillcolor=\"#dddddd\", fontsize=12.0];\n";
+  g_log.debug() << "Drawing node " << *this << (right ? "+" : "");
   if (right) {
     s += dotVar(this, context) + " -> " + dotVar(right, context) + ";\n";
     s += right->DrawNode(context);

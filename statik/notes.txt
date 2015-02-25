@@ -582,3 +582,22 @@ new;newdxel;
 adding that "w" at the end of "new" triggers baaaadcrash.  Why?
  - because our list is messed up again.  hmmm...
  - we fail *drawing* the parser.
+
+-----
+bug repro:
+    new;del;
+    nxew;del;
+    newxew;del;
+    new;xew;del;
+
+The problem is once again, that we're trying to draw a list that doesn't terminate when it ought.  This time I think we're exposing a flaw in the previous "solution".  We thought it was ok to band-aid OutputFunc_Sequence() to say, if it noticed that it was deleting the node to the right of its newly-determined OEnd(), then it could just wipe out the oend->right.  But that's not sufficient.  We need to clear the pointers to any node that we're CLEARING, at the time that we decide to clear it.  Just do that, it will solve things.
+ - might require some care to determine when and how to do that.
+
+Ah!  In Seq/Star, when we decide to ClearNode()s, we can just set some stuff right there.  The last "sane" child's OEnd()->right = NULL, and (before that) if our laast node's OEnd()->right exists, then set ITS left to NULL.
+We don't need to do anything else.  No bubbling down work at all.
+
+OK, still have a problem.  I'm wiping out those connections in the ComputeFunc(), but it needs to happen in the OutputFunc().  In the Compute() I determine who my last "real" child is.  However, the OutputFunc will update all the connections.......hmm I see how the current form is ugly but ultimately it should be doing the right thing.... so I don't know where the problem is.
+
+- That problem seems to be solved now.  Let's look at why Moderate fails, when new/del keywords and ID regexp are both present.
+
+

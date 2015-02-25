@@ -4,10 +4,7 @@
 #ifndef _Keyword_h_
 #define _Keyword_h_
 
-/* Keyword rule
- *
- * Keywords recognize CharData input nodes, and match a specific string.
- */
+/* Keyword rule */
 
 #include "ComputeFunc.h"
 #include "Rule.h"

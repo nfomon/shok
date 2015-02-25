@@ -52,7 +52,7 @@ void Connector::Insert(const IList& inode) {
     m_root->RestartNode(inode);
   } else {
     if (inode.left) {
-      g_log.debug() << " - Found left inode: updating listeners of " << inode << "'s left and (if present) right";
+      g_log.debug() << " - Found left inode " << *inode.left << ": updating listeners of " << inode << "'s left and (if present) right";
       UpdateListeners(inode, true);
     } else {
       g_log.debug() << " - No left inode: just repositioning the root";

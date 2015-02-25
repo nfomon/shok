@@ -235,10 +235,6 @@ void OutputFunc_Sequence::operator() () {
   // Remove hotlist items from children that are no longer being emit
   for (emitbychild_iter i = wereEmitByChild.begin(); i != wereEmitByChild.end(); ++i) {
     for (emitting_iter j = i->second.begin(); j != i->second.end(); ++j) {
-      if (m_oend && m_oend->right == *j) {
-        g_log.debug() << "Right of last child " << *m_oend << " is now gone, so terminating the OList there";
-        m_oend->right = NULL;
-      }
       m_hotlist.Delete(**j);
     }
   }

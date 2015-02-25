@@ -89,6 +89,13 @@ void ComputeFunc_Star::operator() () {
         state.GoBad();
       }
       // Clear any subsequent children
+      // First fix their oconnections
+      if ((*child)->GetOutputFunc().OEnd()) {
+        if (m_node->children.back()->GetOutputFunc().OEnd()->right) {
+          m_node->children.back()->GetOutputFunc().OEnd()->right->left = NULL;
+        }
+        (*child)->GetOutputFunc().OEnd()->right = NULL;
+      }
       for (STree::child_mod_iter i = child+1; i != m_node->children.end(); ++i) {
         (*i)->ClearNode();
       }
@@ -108,6 +115,13 @@ void ComputeFunc_Star::operator() () {
         state.GoOK();
       }
       // Clear any subsequent children
+      // First fix their oconnections
+      if ((*child)->GetOutputFunc().OEnd()) {
+        if (m_node->children.back()->GetOutputFunc().OEnd()->right) {
+          m_node->children.back()->GetOutputFunc().OEnd()->right->left = NULL;
+        }
+        (*child)->GetOutputFunc().OEnd()->right = NULL;
+      }
       for (STree::child_mod_iter i = child+1; i != m_node->children.end(); ++i) {
         (*i)->ClearNode();
       }
