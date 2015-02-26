@@ -4,6 +4,8 @@
 #ifndef _ListenerTable_h_
 #define _ListenerTable_h_
 
+#include "SError.h"
+
 #include <boost/function.hpp>
 
 #include <map>

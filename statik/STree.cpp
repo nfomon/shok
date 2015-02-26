@@ -73,6 +73,7 @@ void STree::ClearNode() {
   for (child_mod_iter i = children.begin(); i != children.end(); ++i) {
     (*i)->ClearNode();
   }
+  children.clear();
   m_state.Clear();
   m_connector.ClearNode(*this);
   m_isClear = true;

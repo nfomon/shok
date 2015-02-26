@@ -118,7 +118,9 @@ void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
 
 void Connector::ClearNode(STree& x) {
   m_listeners.RemoveAllListenings(&x);
-  m_nodePool.Unlink(x);
+  if (&x != m_root) {
+    m_nodePool.Unlink(x);
+  }
 }
 
 void Connector::Listen(STree& x, const IList& inode) {
