@@ -8,6 +8,7 @@
 #include "WindowResponse.h"
 
 #include "statik/IList.h"
+#include "statik/ObjectPool.h"
 
 #include <boost/ptr_container/ptr_vector.hpp>
 
@@ -20,6 +21,8 @@ struct Char {
   Char(int ch);
   void SetNext(Char* next);
   void SetPrevious(Char* prev);
+  void Unlink();
+  operator std::string() const;
 
   int ch;
   statik::IList inode;
@@ -38,10 +41,12 @@ public:
   Char* GetBefore(int x);
   Char* GetAtOrAfter(int x);
   Char* Insert(int x, int ch);
+  Char* Delete(int x);
 private:
-  typedef boost::ptr_vector<Char> char_vec;
+  typedef std::vector<Char*> char_vec;
   int y;
   char_vec m_chars;
+  statik::ObjectPool<Char> m_charpool;
 };
 
 class LineBuf {

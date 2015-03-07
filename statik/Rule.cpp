@@ -79,9 +79,13 @@ STree* Rule::MakeRootNode(Connector& connector) const {
 }
 
 STree* Rule::MakeNode(STree& parent, const IList& istart) const {
+  return MakeNode(parent, istart, parent.children.end());
+}
+
+STree* Rule::MakeNode(STree& parent, const IList& istart, STree::child_mod_iter insertPos) const {
   auto_ptr<STree> node(new STree(parent.GetConnector(), *this, &parent, m_restartFunc->Clone(), m_computeFunc->Clone(), m_outputFunc->Clone()));
   STree* r = parent.GetConnector().OwnNode(node);
-  parent.children.push_back(r);
+  parent.children.insert(insertPos, r);
   r->RestartNode(istart);
   return r;
 }

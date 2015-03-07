@@ -11,9 +11,11 @@
  */
 
 #include "ComputeFunc.h"
+#include "Connector.h"
 #include "IList.h"
 #include "OutputFunc.h"
 #include "RestartFunc.h"
+#include "STree.h"
 #include "State.h"
 
 #include <memory>
@@ -22,9 +24,6 @@
 #include <vector>
 
 namespace statik {
-
-class Connector;
-class STree;
 
 class Rule {
 public:
@@ -50,6 +49,7 @@ public:
 
   STree* MakeRootNode(Connector& connector) const;
   STree* MakeNode(STree& parent, const IList& istart) const;
+  STree* MakeNode(STree& parent, const IList& istart, STree::child_mod_iter insertPos) const;
 
   std::string Name() const { return m_name; }
   const child_vec& GetChildren() const { return m_children; }

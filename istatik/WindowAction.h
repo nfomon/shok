@@ -13,7 +13,7 @@ struct WindowAction {
     DELETE
   };
 
-  WindowAction(ACTION action, int y, int x, int ch)
+  WindowAction(ACTION action, int y = 0, int x = 0, int ch = '\0')
     : action(action), y(y), x(x), ch(ch) {}
   ACTION action;
   int y;

@@ -94,8 +94,9 @@ void ComputeFunc_Seq::operator() () {
       state.GoBad();
       // Clear any subsequent children
       // First fix their oconnections
+/*
       if ((*child)->GetOutputFunc().OEnd()) {
-        if (m_node->children.back()->GetOutputFunc().OEnd()->right) {
+        if (m_node->children.back()->GetOutputFunc().OEnd() && m_node->children.back()->GetOutputFunc().OEnd()->right) {
           m_node->children.back()->GetOutputFunc().OEnd()->right->left = NULL;
         }
         (*child)->GetOutputFunc().OEnd()->right = NULL;
@@ -104,6 +105,7 @@ void ComputeFunc_Seq::operator() () {
         (*i)->ClearNode();
       }
       m_node->children.erase(child+1, m_node->children.end());
+*/
       finished = true;
     } else if (istate.IsComplete()) {
       // Are we complete at the end of our sequence?
@@ -124,8 +126,9 @@ void ComputeFunc_Seq::operator() () {
       }
       // Clear any subsequent children
       // First fix their oconnections
+/*
       if ((*child)->GetOutputFunc().OEnd()) {
-        if (m_node->children.back()->GetOutputFunc().OEnd()->right) {
+        if (m_node->children.back()->GetOutputFunc().OEnd() && m_node->children.back()->GetOutputFunc().OEnd()->right) {
           m_node->children.back()->GetOutputFunc().OEnd()->right->left = NULL;
         }
         (*child)->GetOutputFunc().OEnd()->right = NULL;
@@ -134,6 +137,7 @@ void ComputeFunc_Seq::operator() () {
         (*i)->ClearNode();
       }
       m_node->children.erase(child+1, m_node->children.end());
+*/
       finished = true;
     } else {
       throw SError("Computing Seq at " + string(*m_node) + " child is in unexpected state");

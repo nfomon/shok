@@ -105,7 +105,6 @@ auto_ptr<Rule> exstatik::CreateLexer_Complex() {
   or_->AddChild(REGEXP("STR", boost::regex("(\\\'([^\\\'\\\\\\\\]|\\\\.)*\\\')|(\\\"([^\\\"\\\\\\\\]|\\\\.)*\\\")")));
   or_->AddChild(REGEXP("ID", boost::regex("[A-Za-z_][0-9A-Za-z_]*")));
   or_->AddChild(REGEXP("WS", boost::regex("[ \t\r]+")));
-  or_->AddChild(KEYWORD(";"));
   return lexer;
 }
 

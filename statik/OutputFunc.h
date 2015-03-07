@@ -120,6 +120,7 @@ public:
 private:
   typedef std::map<const STree*, emitting_set> emitbychild_map;
   typedef emitbychild_map::const_iterator emitbychild_iter;
+  typedef emitbychild_map::iterator emitbychild_mod_iter;
   emitbychild_map m_emitByChild;
 };
 

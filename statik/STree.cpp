@@ -3,6 +3,8 @@
 
 #include "STree.h"
 
+#include "Connector.h"
+#include "Rule.h"
 #include "SLog.h"
 
 #include "util/Graphviz.h"
@@ -38,10 +40,12 @@ STree::STree(Connector& connector,
 }
 
 void STree::RestartNode(const IList& istart) {
-  g_log.info() << "Restarting node " << *this << " with inode " << istart;
   m_isClear = false;
   m_iconnection.Restart(istart);
+  //m_oconnection.Restart();
+  g_log.info() << "Restarting node " << *this << " with inode " << istart << "with " << (istart.left ? "left" : "no left") << " and " << (istart.right ? "right" : "no right");
   m_connector.UnlistenAll(*this);
+  g_log.info() << "Restarting node " << *this << " with inode " << istart << "with " << (istart.left ? "left" : "no left") << " and " << (istart.right ? "right" : "no right");
   m_connector.DrawGraph(*this, &istart);
   m_state.Unlock();
   (*m_restartFunc.get())(istart);
@@ -76,6 +80,7 @@ void STree::ClearNode() {
   children.clear();
   m_state.Clear();
   m_connector.ClearNode(*this);
+  (*m_outputFunc)();
   m_isClear = true;
 }
 

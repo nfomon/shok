@@ -25,6 +25,7 @@ STATIK_SRCS = $(COMMON_SRCS) \
     ListenerTable.h \
     Meta.cpp \
     Meta.h \
+    ObjectPool.h \
     OData.h \
     Or.cpp \
     Or.h \
@@ -41,8 +42,6 @@ STATIK_SRCS = $(COMMON_SRCS) \
     SLog.h \
     STree.cpp \
     STree.h \
-    STreePool.cpp \
-    STreePool.h \
     Seq.cpp \
     Seq.h \
     Star.cpp \

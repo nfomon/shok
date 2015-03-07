@@ -129,17 +129,13 @@ void OutputFunc_Winner::operator() () {
   m_oend = NULL;
 
   const State& state = m_node->GetState();
-  if (!state.IsEmitting()) {
-    g_log.debug() << "OutputFunc_Winner " << *m_node << " is not emitting; skipping update";
-    return;
-  }
-  bool isComplete = state.IsComplete();
   const STree* winner = NULL;
   for (STree::child_iter i = m_node->children.begin(); i != m_node->children.end(); ++i) {
     const State& istate = (*i)->GetState();
     if (istate.IsBad() || istate.IsOK()) {
       continue;
     }
+    bool isComplete = state.IsComplete();
     if ((isComplete && istate.IsComplete()) || (!isComplete && istate.IsDone())) {
       if (!state.IsLocked() || istate.IsLocked()) {
         winner = *i;
@@ -147,32 +143,41 @@ void OutputFunc_Winner::operator() () {
       }
     }
   }
-  if (!winner) {
-    throw SError("OutputFunc_Winner for " + string(*m_node) + " failed to find winner");
+  if (!winner && m_winner) {
+    g_log.info() << "**** OutputFunc_Winner: Did not find a winner, so just taking last winner " << *m_winner;
+    winner = m_winner;
   }
-  g_log.debug() << "**** OutputFunc_Winner: " << *m_node << " Declaring winner " << *winner;
-  m_ostart = winner->GetOutputFunc().OStart();
-  m_oend = winner->GetOutputFunc().OEnd();
-  const emitting_set& e = winner->GetOutputFunc().Emitting();
-  m_emitting.insert(e.begin(), e.end());
-  if (winner == m_winner) {
-    g_log.debug() << "**** OutputFunc_Winner: " << *m_node << " Approving repeat-winner " << *winner;
-    m_hotlist.Accept(winner->GetOutputFunc().GetHotlist());
-  } else {
-    if (m_winner) {
-      g_log.debug() << "OutputFunc_Winner: un-winning (deleting) old winner " << *m_winner;
-      for (emitting_iter i = m_wasEmitting.begin(); i != m_wasEmitting.end(); ++i) {
-        m_hotlist.Delete(**i);
+  if (winner) {
+    g_log.debug() << "**** OutputFunc_Winner: " << *m_node << " Declaring winner " << *winner;
+    m_ostart = winner->GetOutputFunc().OStart();
+    m_oend = winner->GetOutputFunc().OEnd();
+    const emitting_set& e = winner->GetOutputFunc().Emitting();
+    m_emitting.insert(e.begin(), e.end());
+    if (winner == m_winner) {
+      g_log.debug() << "**** OutputFunc_Winner: " << *m_node << " Approving repeat-winner " << *winner;
+      m_hotlist.Accept(winner->GetOutputFunc().GetHotlist());
+    } else {
+      if (m_winner) {
+        g_log.debug() << "OutputFunc_Winner: un-winning (deleting) old winner " << *m_winner;
+        for (emitting_iter i = m_wasEmitting.begin(); i != m_wasEmitting.end(); ++i) {
+          m_hotlist.Delete(**i);
+        }
       }
+      g_log.debug() << "**** OutputFunc_Winner: " << *m_node << " Inserting new winner " << *winner;
+      for (emitting_iter i = e.begin(); i != e.end(); ++i) {
+        m_hotlist.Insert(**i);
+      }
+      m_winner = winner;
     }
-    g_log.debug() << "**** OutputFunc_Winner: " << *m_node << " Inserting new winner " << *winner;
-    for (emitting_iter i = e.begin(); i != e.end(); ++i) {
-      m_hotlist.Insert(**i);
-    }
-    m_winner = winner;
+
+    // We stole the winner's output hotlist
+    winner->GetOutputFunc().ClearHotlist();
+
+    g_log.debug() << "winner is emitting " << e.size() << ", now we emit " << m_emitting.size();
+  } else {
+    g_log.debug() << "**** OutputFunc_Winner: No winner.";
   }
 
-  g_log.debug() << "winner is emitting " << e.size() << ", now we emit " << m_emitting.size();
   g_log.debug() << "OutputFunc_Winner " << *m_node << " done update; hotlist has size " << m_hotlist.Size();
   g_log.debug() << m_hotlist.Print();
 }
@@ -194,28 +199,30 @@ void OutputFunc_Sequence::operator() () {
   g_log.debug() << "OutputFunc_Sequence() " << *m_node << "; previously emit children size=" << wereEmitByChild.size();
   for (STree::child_iter child = m_node->children.begin(); child != m_node->children.end(); ++child) {
     g_log.debug() << "Considering child " << **child;
-    const State& cstate = (*child)->GetState();
-    if (!cstate.IsEmitting()) {
-      // End the sequence at the first non-emit child
-      if (m_oend) {
-        m_oend->right = NULL;
-      }
+
+    // If m_node is Complete and this is the first child past the last approved
+    // child, then discard the output of this child onwards.
+    const State& istate = (*child)->GetState();
+    if (istate.IsComplete() && &(*child)->IStart() == &m_node->IEnd()) {
+      g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " past complete, so blocking at child " << **child;
       break;
     }
+
     const emitting_set& e = (*child)->GetOutputFunc().Emitting();
     m_emitting.insert(e.begin(), e.end());
-    if (wereEmitByChild.end() == wereEmitByChild.find(*child)) {
+    emitbychild_mod_iter emit_i = wereEmitByChild.find(*child);
+    if (wereEmitByChild.end() == emit_i) {
       g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " Inserting child " << **child;
       for (emitting_iter i = e.begin(); i != e.end(); ++i) {
         m_hotlist.Insert(**i);
       }
-      m_emitByChild.insert(std::make_pair(*child, e));
     } else {
       g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " Approving child " << **child;
       m_hotlist.Accept((*child)->GetOutputFunc().GetHotlist());
-      m_emitByChild[*child] = e;
-      wereEmitByChild.erase(*child);
+      wereEmitByChild.erase(emit_i);
     }
+    m_emitByChild.insert(std::make_pair(*child, e));
+
     OutputFunc& cof = (*child)->GetOutputFunc();
     if ((cof.OStart() && !cof.OEnd()) || (!cof.OStart() && cof.OEnd())) {
       throw SError("OutputFunc_Sequence() found " + string(**child) + " with only an ostart or oend, but not both");
@@ -225,14 +232,19 @@ void OutputFunc_Sequence::operator() () {
     }
     if (!m_ostart) {
       m_ostart = cof.OStart();
+      m_ostart->left = NULL;
     } else {
       cof.OStart()->left = m_oend;
       m_oend->right = cof.OStart();
     }
     m_oend = cof.OEnd();
+    m_oend->right = NULL;
+
+    // We stole the child's output hotlist
+    (*child)->GetOutputFunc().ClearHotlist();
   }
 
-  // Remove hotlist items from children that are no longer being emit
+  // Remove hotlist items that came from children that are no longer being emit
   for (emitbychild_iter i = wereEmitByChild.begin(); i != wereEmitByChild.end(); ++i) {
     for (emitting_iter j = i->second.begin(); j != i->second.end(); ++j) {
       m_hotlist.Delete(**j);
@@ -288,6 +300,7 @@ void OutputFunc_Cap::operator() () {
   }
   m_emitting.insert(m_outputFunc->Emitting().begin(), m_outputFunc->Emitting().end());
   m_hotlist.Accept(m_outputFunc->GetHotlist());
+  m_outputFunc->ClearHotlist();
 
   g_log.debug() << "OutputFunc_Cap " << *m_node << " done update; hotlist has size " << m_hotlist.Size();
   g_log.debug() << m_hotlist.Print();

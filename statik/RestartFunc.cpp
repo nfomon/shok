@@ -18,6 +18,10 @@ auto_ptr<RestartFunc> statik::MakeRestartFunc_None() {
   return auto_ptr<RestartFunc>(new RestartFunc_None());
 }
 
+auto_ptr<RestartFunc> statik::MakeRestartFunc_KeepAll() {
+  return auto_ptr<RestartFunc>(new RestartFunc_KeepAll());
+}
+
 auto_ptr<RestartFunc> statik::MakeRestartFunc_FirstChildOfNode() {
   return auto_ptr<RestartFunc>(new RestartFunc_FirstChildOfNode());
 }
@@ -48,6 +52,18 @@ void RestartFunc_FirstChildOfNode::operator() (const IList& istart) {
     m_node->children.erase(m_node->children.begin() + 1, m_node->children.end());
   }
   m_node->children.at(0)->RestartNode(istart);
+}
+
+void RestartFunc_KeepAll::operator() (const IList& istart) {
+  g_log.info() << "Restarting " << *m_node << " to first child, keeping all children, with istart=" << istart;
+  if (!m_node) {
+    throw SError("Cannot compute uninitialized RestartFunc_KeepAll");
+  }
+  if (m_node->GetRule().GetChildren().size() < 1) {
+    throw SError("Rule " + m_node->GetRule().Name() + " of node " + string(*m_node) + " must have at least one child for RestartFunc_KeepAll");
+  }
+
+  m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, istart, m_node->children.begin());
 }
 
 void RestartFunc_AllChildrenOfNode::operator() (const IList& istart) {

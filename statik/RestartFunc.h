@@ -14,6 +14,7 @@ class STree;
 class RestartFunc;
 
 std::auto_ptr<RestartFunc> MakeRestartFunc_None();
+std::auto_ptr<RestartFunc> MakeRestartFunc_KeepAll();
 std::auto_ptr<RestartFunc> MakeRestartFunc_FirstChildOfNode();
 std::auto_ptr<RestartFunc> MakeRestartFunc_AllChildrenOfNode();
 
@@ -47,6 +48,16 @@ struct RestartFunc_FirstChildOfNode : public RestartFunc {
   virtual void operator() (const IList& istart);
   virtual std::auto_ptr<RestartFunc> Clone() {
     return std::auto_ptr<RestartFunc>(new RestartFunc_FirstChildOfNode());
+  }
+};
+
+struct RestartFunc_KeepAll : public RestartFunc {
+  RestartFunc_KeepAll()
+    : RestartFunc() {}
+  virtual ~RestartFunc_KeepAll() {}
+  virtual void operator() (const IList& istart);
+  virtual std::auto_ptr<RestartFunc> Clone() {
+    return std::auto_ptr<RestartFunc>(new RestartFunc_KeepAll());
   }
 };
 

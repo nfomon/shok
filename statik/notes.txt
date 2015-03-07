@@ -600,4 +600,92 @@ OK, still have a problem.  I'm wiping out those connections in the ComputeFunc()
 
 - That problem seems to be solved now.  Let's look at why Moderate fails, when new/del keywords and ID regexp are both present.
 
+-----
+2k15-02-26
+
+We now have a bunch of hacks in place to make Seqs/Stars keel alive and continue to emit from children beyond one that goes bad.  This seems to have no effect.
+
+For Star, given input "newdel" and then insert a semi between new and del... we COULD say: hey, I COULD reposition my second child, but instead let me try to make a child in-between to handle whatever there is in between them.  I think that's what I want, but I'm not sure it's general enough.  I suppose we'd also want to just delete THAT child if its INodes all disappear, too.
+
+But what about Seq?  It can't do any of that.  If you screw up the sequence, it's all ogre.  That's probably okay.
+Seems like there IS desire to implement the Star new-nodes-in-the-middle coolness.
+
+Of course, if we want lots of cool error checking, we can just put lots of low-priority possible-sequences everywhere to catch lots of strange possible entries.  That's probably what most compiler error handling looks like.  Ideally it wouldn't be necessary...
+
+-----
+2k15-03-01
+
+What is the philosophy of OutputFunc()?
+
+Requirements:
+ - give Connector a hotlist of what insertions, deletions, updates have happened
+ - Hotlist nodes need to be "connected" correctly (left/right pointers of main list are correct)
+
+Decision:
+ - OutputFunc() does not care about ITS state.  It might care about its children's IsEmitting().
+ - It should correctly describe what it's doing.
+ - We can't know if we were emitting for real.  BUT we do know that, if we weren't emitting into the final list, and then we ARE taken, we'll automatically be Inserting everything.  AND if we were not emitting for real, then all our stuff will be deleted.
+ - So we might record state and refer to it (is this our first time outputting, or what nodes were we emitting before) in order to... hmm is that right?
+    - If we say we're Updating a node that was not Inserted.. that can't happen, it WILL have been inserted when our node was chosen.
+    - If we say we're Inserting a node that's already in the emitted list... that's bad.  How can that happen? it can't!
+ - When we we're not emitting (to the final list), we're not in the final list, so it doesn't matter what our OutputFunc() does.
+ - When we're transitioning to being accepted, as long as our Emitting() list is correct, we're good, it should all be inserted by the parent.
+ - Same with transitioning to not being accepted, it's up to the parent to Delete all the nodes that we WERE emitting (requires care in Winner and Sequence)
+ - If we were emitting to the final list, and we are still, then we need to be Accepted: Insert new nodes, Update existing nodes, Delete now-gone nodes.  THIS is the scenario where we might refer to our previous computation.  So storing state in an OutputFunc(), we don't need to worry about other cases.  This is the situation of the parents making the calls "oh Insert this child because he's new, Delete that child because he's gone" described in the two points above.
+
+Sequence Compute() might have left us with multiple bad children, OutputFunc() don't care, it don't care if we're emitting or not, we just chain up all the neighbouring children's outputs, and emit everyone we have.
+
+/// Not sure about this:
+//When a Sequence Compute() restarts a child, it should tell its previous child:  You cannot listen to this INode! (or implicitly, anything to its right.)  Different nodes will have to do this differently.  Call this SetLastINode().  Winner will have to tell all its children;
+
+Current bug:
+insert: new^H^H^Hd
+
+We call Connector->GetFirstONode().  Fails.  Why?  Because OutputFunc didn't know to clear its olist yet, it hasn't been called.
+The basic conflict is that OutputFunc_Sequence links nodes when they're added, and doesn't think it needs to know about nodes that are removed (it DOES break the winner-sequence's OStart()->left and OEnd()->right)..  but here we never called it and so it's giving us bad data.
+ - Can we just call OutputFunc() after the Restart?  like always?  this will clear it out.
+ - It WILL, after we DRAW THE GRAPH first.  Are we failing when we draw the graph?  I think we fail after it if we don't output the graph, right?
+
+Yes, if we don't draw the graph, we fail later.
+Um, yeah.  We run a Connector::UpdateWithHotlist(), and then ask for its GetFirstONode(), and it gives us junk.  So a full Compute() should have happened, including OutputFunc(), right?
+ - So we add 'd' to Lexer.  It takes it, and comes back with a Hotlist of "DELETE:new".
+ - Then we pass this to the Parser.  THAT'S where we mess up.... somewhere.
+ - Parser takes DELETE:new.  First thing it does, is walks the root node's OutputFunc().Emitting(), and from the Connector hotlist, deletes everything that it had ever emit before.  Kinda sketch...
+ - Then it tells the root to clear itself, but it replies: I was already cleared!  (really?)
+ - So we report: Delete done, here's a hotlist of size 2.
+ - AH!  So we had cleared the node, and never ran its OutputFunc() so never reset its OStart()/OEnd().  Broken.
+ - We can just run an OutputFunc() there after we've cleared all our state; that should be one way to clear out its OStart()/OEnd()/etc. :)
+
+-----
+
+Ah one more thing
+
+Star is working now..... for the Insert case.  But if you Delete a child in-between others... how does it know not to *insert* another attempt in-between instead of deleting it out?
+Solution: Not great but ok for now.  If we find an incomplete middle element, before constructing something new right there, walk across all the remaining children and see if their IConnection CONTAINS the INode.  If one matches (does contain the INode), then eliminate all the nodes in-between, and if necessary, restart the guy.
+
+Right meowz: we're only looking at the in-between-nodes' IStart(), instead of doing a CONTAINS check.  This might be what's causing the Parser to crash.
+Test case:  new;del;
+            new;;
+            new;del;      when you type "del" again it crashes.
+
+The crash is in STAR:ComputeFunc.  Last thing in the log is investigating child nodes in Star...
+
+OK tried the proposal above.  That seemed to... help?  Not crashing now I think.  But still seeing weirdness.
+Test case:   new;del;
+             newdel;
+
+Maybe solved now by even more complexity/awkwardness in Star.  Now the problems are more fringe, can't find a solid testcase though.  Is the parser really updating properly?
+ - We're leaving junk at the end of a Star.  Of course, that was "by design"...
+
+--
+2 things:
+1. Star should be correct in its final decided State.  We're not good if someone's bad.
+2. There might only be 1 thing.  Subsequent states... should be emit........ but maybe the Lexer should know not to feed them to the Parser?  huh.  idk.... yeah, like just go ahead, but why are we *growing*??  That was a bug somehow.
+
+--
+
+Most recent hack is the KeepAll RestartFunc.  Stop using that for Star, and then commit.
+
+We're not handling StartOfInput properly.  Like at all.  Stars are NOT properly able to handle arbitrary child insertions/deletions... they get mixed up INode orderings across children.  We need a real solution to that.  Hopefully we can just rely on the IStart()/IEnd() boundary of each child.
+
 

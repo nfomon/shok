@@ -7,7 +7,8 @@
 #include "Hotlist.h"
 #include "IList.h"
 #include "ListenerTable.h"
-#include "STreePool.h"
+#include "ObjectPool.h"
+#include "STree.h"
 
 #include <set>
 
@@ -15,7 +16,6 @@ namespace statik {
 
 class Grapher;
 class Rule;
-class STree;
 
 class Connector {
 public:
@@ -77,7 +77,7 @@ private:
   STree* m_root;
   std::string m_name;
   std::auto_ptr<Grapher> m_grapher;
-  STreePool m_nodePool;
+  ObjectPool<STree> m_nodePool;
   ListenerTable<const IList*, STree*> m_listeners;
   Hotlist m_hotlist;
 };

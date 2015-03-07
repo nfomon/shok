@@ -47,9 +47,9 @@ auto_ptr<Rule> exstatik::CreateCodegen_Complex() {
 auto_ptr<Rule> exstatik::CreateCodegen_Nifty() {
   auto_ptr<Rule> compiler(STAR("codegen"));
   Rule* stmt_ = compiler->AddChild(SEQ("stmt"));
-  stmt_->AddChild(META("stmt"));
+  stmt_->AddChild(META("(stmt"));
   Rule* stmts_ = stmt_->AddChild(OR("stmts"));
-  stmt_->AddChild(META("/stmt"));
+  stmt_->AddChild(META(")"));
 
   Rule* cmdstmt_ = stmts_->AddChild(SEQ("cmd stmt"));
   Rule* newstmt_ = stmts_->AddChild(SEQ("new stmt"));

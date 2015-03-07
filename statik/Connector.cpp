@@ -44,7 +44,7 @@ void Connector::ClearHotlist() {
 }
 
 void Connector::Insert(const IList& inode) {
-  g_log.info() << "Connector " << m_name << ": Inserting IList: " << inode;
+  g_log.info() << "Connector " << m_name << ": Inserting IList: " << inode << " with " << (inode.left ? "left" : "no left") << " and " << (inode.right ? "right" : "no right");
 
   if (!m_root) {
     g_log.debug() << " - No root; initializing the tree root";
@@ -81,6 +81,11 @@ void Connector::Delete(const IList& inode) {
   m_listeners.RemoveAllListeners(&inode);
 
   if (!inode.left && !inode.right) {
+    g_log.debug() << "Check for clearing things";
+    for (OutputFunc::emitting_iter i = m_root->GetOutputFunc().Emitting().begin(); i != m_root->GetOutputFunc().Emitting().end(); ++i) {
+      g_log.debug() << "Clearing a thing from hotlist";
+      m_hotlist.Delete(**i);
+    }
     m_root->ClearNode();
   } else if (!inode.left) {
     m_root->RestartNode(*inode.right);
@@ -165,6 +170,7 @@ void Connector::DrawGraph(const STree& onode, const IList* inode) {
   m_grapher->AddSTree(m_name, *m_root, m_name + " output");
   if (m_root->GetOutputFunc().OStart()) {
     m_grapher->AddOList(m_name, *m_root->GetOutputFunc().OStart(), m_name + " olist");
+  g_log.debug() << " Done drawing OList";
   }
   m_grapher->AddIListeners(m_name, *this, m_root->IStart());
   if (inode) {

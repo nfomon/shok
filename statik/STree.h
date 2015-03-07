@@ -5,11 +5,9 @@
 #define _STree_h_
 
 #include "ComputeFunc.h"
-#include "Connector.h"
 #include "IConnection.h"
 #include "OutputFunc.h"
 #include "RestartFunc.h"
-#include "Rule.h"
 #include "State.h"
 
 #include <memory>
@@ -18,6 +16,9 @@
 #include <vector>
 
 namespace statik {
+
+class Connector;
+class Rule;
 
 class STree {
 public:

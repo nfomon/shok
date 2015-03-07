@@ -41,25 +41,85 @@ void ComputeFunc_Star::operator() () {
   }
   m_node->GetIConnection().Restart(m_node->children.at(0)->IStart());
 
-  // Iterate over children, either existing or being created, so long as our
-  // last child is complete.
+  // Iterate over children, either existing or being created.  If our last
+  // child is complete, we can create a new child after it.
   bool finished = false;
   STree::child_mod_iter child = m_node->children.begin();
   const STree* prev_child = NULL;
   bool wasComplete = true;    // Star is "complete" matching absolutely nothing
   while (!finished) {
-    if (child != m_node->children.end()) {
+    bool makeNode = (m_node->children.end() == child);
+    if (!makeNode) {
       // Existing child
       if (prev_child) {
         if (!(*child)->IStart().left) {
           throw SError("Computing Star at " + string(*m_node) + " child " + string(**child) + " has istart at the start of input, but it is not our first child");
         }
         if (&prev_child->IEnd() != &(*child)->IStart()) {
-          g_log.info() << "Computing Star at " << *m_node << " child " << **child << " needs to be repositioned to the node after the prev child's end";
-          (*child)->RestartNode(prev_child->IEnd());
+          //g_log.info() << "Computing Star at " << *m_node << " child " << **child << " needs to be repositioned to the node after the prev child's end";
+          g_log.info() << "Computing Star at " << *m_node << " child " << **child << " is not positioned to the node after the prev child's end.  Determining what to do in-between.";
+          const IList* istart = &prev_child->IEnd();
+          g_log.debug() << "Starting node is: " << *istart;
+          // TODO check if the prev child CONTAINS the (*child->IStart() node.  If it does, then we should clear out this child and all after.
+          // There's not a pressing need for this afaik; just saves some work, presumably.
+
+          // Go forward across all the children, to see if someone's INode list
+          // already CONTAINS this inode.  If it does, delete all the children
+          // up to that point, and restart that node if necessary.  Otherwise,
+          // insert a new child right here, leaving all the subsequent ones.
+          bool foundMatch = false;
+          for (STree::child_mod_iter nextChild = child; nextChild != m_node->children.end(); ++nextChild) {
+            bool done = false;
+            g_log.debug() << " - - investigating child " << **nextChild << " with istart=" << (*nextChild)->IStart();
+            for (const IList* inode = &(*nextChild)->IStart(); inode != NULL && (inode != &(*nextChild)->IEnd() || !inode->right); inode = inode->right) {
+              g_log.debug() << " - - - investigating INode " << *inode;
+              if (istart == inode) {
+                g_log.debug() << " - - found a match!";
+                foundMatch = true;
+
+                // Clear all children between child and nextChild
+                prev_child->GetOutputFunc().OEnd()->right = (*nextChild)->GetOutputFunc().OStart();
+                (*nextChild)->GetOutputFunc().OStart()->left = prev_child->GetOutputFunc().OEnd();
+                vector<STree::child_mod_iter> toClear;
+                for (STree::child_mod_iter i = child; i != nextChild; ++i) {
+                  toClear.push_back(i);
+                }
+                --child;    // don't get clobbered by child deletes
+                g_log.debug() << " - Child is hiding at " << **child;
+                g_log.debug() << toClear.size() << " children to delete";
+                for (vector<STree::child_mod_iter>::const_iterator j = toClear.begin(); j != toClear.end(); ++j) {
+                  g_log.debug() << "Clearing " << ***j;
+                  (**j)->ClearNode();
+                  g_log.debug() << " Done clear";
+                  g_log.debug();
+                  m_node->children.erase(*j);
+                }
+                ++child;    // now go my child to where we want you to be
+                g_log.debug() << " - Child is now " << **child;
+                g_log.debug() << " - And we have " << m_node->children.size() << " children";
+
+                // Restart the node if the INode was in its middle somewhere
+                if (inode != &(*child)->IStart()) {
+                  g_log.debug() << " - - Restarting this child to this inode";
+                  g_log.debug() << "INode is " << *inode << " and child start is " << (*child)->IStart();
+                  (*child)->RestartNode(*istart);
+                }
+
+                done = true;
+                break;
+              }
+            }
+            if (done) { break; }
+          }
+
+          if (!foundMatch) {
+            g_log.debug() << " - found no matches.";
+            makeNode = true;
+          }
         }
       }
-    } else {
+    }
+    if (makeNode) {
       // New child
       const IList* newIStart = &m_node->IStart();
       if (prev_child) {
@@ -68,8 +128,16 @@ void ComputeFunc_Star::operator() () {
       if (!newIStart) {
         throw SError("Computing Star at " + string(*m_node) + (prev_child ? (" with prev child " + string(*prev_child)) : " with no prev child") + " failed to find new istart for new child");
       }
-      m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, *newIStart);
-      child = m_node->children.end() - 1;
+      // TODO let's not do this scan; instead, get back the iterator we want from MakeNode()?
+      STree* newChild = m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, *newIStart, child);
+      for (child = m_node->children.begin(); child != m_node->children.end(); ++child) {
+        if (*child == newChild) {
+          break;
+        }
+      }
+      if (child == m_node->children.end()) {
+        throw SError("Computing Star at " + string(*m_node) + " broke its new child insertion");
+      }
     }
     m_node->GetIConnection().SetEnd((*child)->IEnd());
 
@@ -82,16 +150,22 @@ void ComputeFunc_Star::operator() () {
 
     if (istate.IsBad()) {
       if (wasComplete) {
-        g_log.debug() << "Computing Star at " << *m_node << " has gone bad but its previous child (or empty-state) was complete, so now it's complete";
-        state.GoComplete();
+        if (state.IsBad()) {
+          g_log.debug() << "Computing Star at " << *m_node << " would go complete but is already bad";
+        } else {
+          g_log.debug() << "Computing Star at " << *m_node << " has gone bad at " << **child << " but its previous child (or empty-state) was complete, so now it's complete";
+          state.GoComplete();
+        }
       } else {
-        g_log.debug() << "Computing Star at " << *m_node << " has gone bad";
+        g_log.debug() << "Computing Star at " << *m_node << " has gone bad at " << **child;
         state.GoBad();
       }
+      // Leave any subsequent children be.
+/*
       // Clear any subsequent children
       // First fix their oconnections
       if ((*child)->GetOutputFunc().OEnd()) {
-        if (m_node->children.back()->GetOutputFunc().OEnd()->right) {
+        if (m_node->children.back()->GetOutputFunc().OEnd() && m_node->children.back()->GetOutputFunc().OEnd()->right) {
           m_node->children.back()->GetOutputFunc().OEnd()->right->left = NULL;
         }
         (*child)->GetOutputFunc().OEnd()->right = NULL;
@@ -100,6 +174,7 @@ void ComputeFunc_Star::operator() () {
         (*i)->ClearNode();
       }
       m_node->children.erase(child+1, m_node->children.end());
+*/
       finished = true;
     } else if (istate.IsComplete()) {
       wasComplete = true;
@@ -110,14 +185,23 @@ void ComputeFunc_Star::operator() () {
         throw SError("Star found incomplete inode that is only ok; not allowed");
       }
       if (istate.IsDone()) {
-        state.GoDone();
+        if (state.IsBad()) {
+          g_log.debug() << "Computing Star at " << *m_node << " would go done but is already bad";
+        } else {
+          state.GoDone();
+        }
       } else {
-        state.GoOK();
+        if (state.IsBad()) {
+          g_log.debug() << "Computing Star at " << *m_node << " would go OK but is already bad";
+        } else {
+          state.GoOK();
+        }
       }
       // Clear any subsequent children
       // First fix their oconnections
+/*
       if ((*child)->GetOutputFunc().OEnd()) {
-        if (m_node->children.back()->GetOutputFunc().OEnd()->right) {
+        if (m_node->children.back()->GetOutputFunc().OEnd() && m_node->children.back()->GetOutputFunc().OEnd()->right) {
           m_node->children.back()->GetOutputFunc().OEnd()->right->left = NULL;
         }
         (*child)->GetOutputFunc().OEnd()->right = NULL;
@@ -126,6 +210,7 @@ void ComputeFunc_Star::operator() () {
         (*i)->ClearNode();
       }
       m_node->children.erase(child+1, m_node->children.end());
+*/
       finished = true;
     } else {
       throw SError("Computing Star at " + string(*m_node) + " child is in unexpected state");

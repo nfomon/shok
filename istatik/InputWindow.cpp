@@ -39,6 +39,19 @@ void Char::SetPrevious(Char* prev) {
   }
 }
 
+void Char::Unlink() {
+  if (inode.left) {
+    inode.left->right = inode.right;
+  }
+  if (inode.right) {
+    inode.right->left = inode.left;
+  }
+}
+
+Char::operator std::string() const {
+  return string(1, ch);
+}
+
 ostream& istatik::operator<< (ostream& out, const Char& node) {
   out << (char)node.ch;
   return out;
@@ -65,7 +78,7 @@ size_t Line::Size() const {
 string Line::GetString(int startx) const {
   string s;
   for (size_t x = startx; x < m_chars.size(); ++x) {
-    s += (char)m_chars.at(x).ch;
+    s += (char)m_chars.at(x)->ch;
   }
   return s;
 }
@@ -74,23 +87,23 @@ Char* Line::GetFirst() {
   if (m_chars.empty()) {
     return NULL;
   }
-  return &m_chars.at(0);
+  return m_chars.at(0);
 }
 
 Char* Line::GetLast() {
   if (m_chars.empty()) {
     return NULL;
   }
-  return &m_chars.back();
+  return m_chars.back();
 }
 
 Char* Line::GetBefore(int x) {
   if (m_chars.empty() || 0 == x) {
     return NULL;
   } else if ((size_t)x >= m_chars.size()) {   // TODO is this right? lol
-    return &m_chars.back();
+    return m_chars.back();
   }
-  return &m_chars.at(x-1);
+  return m_chars.at(x-1);
 }
 
 Char* Line::GetAtOrAfter(int x) {
@@ -99,12 +112,11 @@ Char* Line::GetAtOrAfter(int x) {
   } else if ((size_t)x >= m_chars.size()) {
     return NULL;
   }
-  return &m_chars.at(x);
+  return m_chars.at(x);
 }
 
 Char* Line::Insert(int x, int ch) {
-  auto_ptr<Char> c(new Char(ch));
-  Char* cp = c.get();
+  Char* c = m_charpool.Insert(auto_ptr<Char>(new Char(ch)));
   g_log.info() << "Line " << y << " inserting " << *c;
   if ((size_t)x > m_chars.size()) {
     throw ISError(string("Cannot insert ") + (char)ch + "; x out of bounds");
@@ -113,7 +125,18 @@ Char* Line::Insert(int x, int ch) {
   } else {
     m_chars.insert(m_chars.begin() + x, c);
   }
-  return cp;
+  return c;
+}
+
+Char* Line::Delete(int x) {
+  if ((size_t)x >= m_chars.size()) {
+    throw ISError("Cannot insert; x out of bounds");
+  }
+  Char* c = m_chars.at(x);
+  c->Unlink();
+  m_charpool.Unlink(*c);
+  m_chars.erase(m_chars.begin() + x);
+  return c;
 }
 
 /* LineBuf public */
@@ -181,7 +204,7 @@ WindowResponse LineBuf::Insert(int y, int x, int ch) {
   while (istart->left) {
     istart = istart->left;
   }
-  response.actions.push_back(WindowAction(WindowAction::MOVE, y0, x0, ch));
+  response.actions.push_back(WindowAction(WindowAction::MOVE, y0, x0));
   g_log.info() << "window0 olist: " << istart->Print();
   g_log.info() << "window0 hotlist: " << response.hotlist.Print();
   return response;
@@ -194,11 +217,29 @@ WindowResponse LineBuf::Enter(int y, int x, int ch) {
 
 WindowResponse LineBuf::Delete(int y, int x) {
   WindowResponse response;
+  if ((size_t)y > m_lines.size()) {
+    throw ISError("Cannot delete; y out of bounds");
+  } else if ((size_t)y == m_lines.size()) {
+    return response;
+  } else if ((size_t)x > m_lines.at(y).Size()) {
+    throw ISError("Cannot delete; x out of bounds");
+  } else if ((size_t)x == m_lines.at(y).Size()) {
+    return response;
+  }
+  g_log.info() << "LineBuf deleting (" << y << "," << x << ")";
+  Char* c = m_lines.at(y).Delete(x);
+  response.actions.push_back(WindowAction(WindowAction::MOVE, y, x));
+  response.actions.push_back(WindowAction(WindowAction::DELETE));
+  response.hotlist.Delete(c->inode);
   return response;
 }
 
 WindowResponse LineBuf::Backspace(int y, int x) {
-  WindowResponse response;
+  if (0 == x) {
+    return WindowResponse();
+  }
+  WindowResponse response = Delete(y, x-1);
+  response.actions.push_back(WindowAction(WindowAction::MOVE, y, x-1));
   return response;
 }
 
@@ -255,13 +296,13 @@ WindowResponse InputWindow::Input(int y, int x, int ch) {
   if (KEY_LEFT == ch) {
     WindowResponse response;
     if (m_linebuf.HasChar(y, x-1)) {
-      response.actions.push_back(WindowAction(WindowAction::MOVE, y, x-1, ch));
+      response.actions.push_back(WindowAction(WindowAction::MOVE, y, x-1));
     }
     return response;
   } else if (KEY_RIGHT == ch) {
     WindowResponse response;
     if (m_linebuf.HasChar(y, x)) {
-      response.actions.push_back(WindowAction(WindowAction::MOVE, y, x+1, ch));
+      response.actions.push_back(WindowAction(WindowAction::MOVE, y, x+1));
     }
     return response;
   } else if (KEY_UP == ch) {
@@ -270,7 +311,7 @@ WindowResponse InputWindow::Input(int y, int x, int ch) {
       if (!m_linebuf.HasChar(y-1, x)) {
         x = m_linebuf.LastIndexOfLine(y-1);
       }
-      response.actions.push_back(WindowAction(WindowAction::MOVE, y-1, x, ch));
+      response.actions.push_back(WindowAction(WindowAction::MOVE, y-1, x));
     }
     return response;
   } else if (KEY_DOWN == ch) {
@@ -279,7 +320,7 @@ WindowResponse InputWindow::Input(int y, int x, int ch) {
       if (!m_linebuf.HasChar(y+1, x)) {
         x = m_linebuf.LastIndexOfLine(y+1);
       }
-      response.actions.push_back(WindowAction(WindowAction::MOVE, y+1, x, ch));
+      response.actions.push_back(WindowAction(WindowAction::MOVE, y+1, x));
     }
     return response;
   } else if (KEY_DC == ch) {
