@@ -10,9 +10,11 @@
 #include "STree.h"
 
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 using std::auto_ptr;
+using std::set;
 using std::string;
 using std::vector;
 
@@ -41,85 +43,57 @@ void ComputeFunc_Star::operator() () {
   }
   m_node->GetIConnection().Restart(m_node->children.at(0)->IStart());
 
-  // Iterate over children, either existing or being created.  If our last
-  // child is complete, we can create a new child after it.
+  // Iterate over children, either existing or being created.  If a child is
+  // complete, we can create a new child after it.
   bool finished = false;
   STree::child_mod_iter child = m_node->children.begin();
   const STree* prev_child = NULL;
   bool wasComplete = true;    // Star is "complete" matching absolutely nothing
   while (!finished) {
-    bool makeNode = (m_node->children.end() == child);
-    if (!makeNode) {
+    if ((*child)->IsClear()) {
+      size_t pos = child-m_node->children.begin();
+      m_node->children.erase(child);
+      child = m_node->children.begin() + pos-1;
+    }
+    if (child != m_node->children.end()) {
       // Existing child
-      if (prev_child) {
+      if (prev_child) {   // What about the first child?  I think we assert he's already been set up!  via Restart?  yea!
         if (!(*child)->IStart().left) {
           throw SError("Computing Star at " + string(*m_node) + " child " + string(**child) + " has istart at the start of input, but it is not our first child");
         }
         if (&prev_child->IEnd() != &(*child)->IStart()) {
           //g_log.info() << "Computing Star at " << *m_node << " child " << **child << " needs to be repositioned to the node after the prev child's end";
           g_log.info() << "Computing Star at " << *m_node << " child " << **child << " is not positioned to the node after the prev child's end.  Determining what to do in-between.";
-          const IList* istart = &prev_child->IEnd();
-          g_log.debug() << "Starting node is: " << *istart;
-          // TODO check if the prev child CONTAINS the (*child->IStart() node.  If it does, then we should clear out this child and all after.
-          // There's not a pressing need for this afaik; just saves some work, presumably.
 
-          // Go forward across all the children, to see if someone's INode list
-          // already CONTAINS this inode.  If it does, delete all the children
-          // up to that point, and restart that node if necessary.  Otherwise,
-          // insert a new child right here, leaving all the subsequent ones.
-          bool foundMatch = false;
-          for (STree::child_mod_iter nextChild = child; nextChild != m_node->children.end(); ++nextChild) {
-            bool done = false;
-            g_log.debug() << " - - investigating child " << **nextChild << " with istart=" << (*nextChild)->IStart();
-            for (const IList* inode = &(*nextChild)->IStart(); inode != NULL && (inode != &(*nextChild)->IEnd() || !inode->right); inode = inode->right) {
-              g_log.debug() << " - - - investigating INode " << *inode;
-              if (istart == inode) {
-                g_log.debug() << " - - found a match!";
-                foundMatch = true;
-
-                // Clear all children between child and nextChild
-                prev_child->GetOutputFunc().OEnd()->right = (*nextChild)->GetOutputFunc().OStart();
-                (*nextChild)->GetOutputFunc().OStart()->left = prev_child->GetOutputFunc().OEnd();
-                vector<STree::child_mod_iter> toClear;
-                for (STree::child_mod_iter i = child; i != nextChild; ++i) {
-                  toClear.push_back(i);
-                }
-                --child;    // don't get clobbered by child deletes
-                g_log.debug() << " - Child is hiding at " << **child;
-                g_log.debug() << toClear.size() << " children to delete";
-                for (vector<STree::child_mod_iter>::const_iterator j = toClear.begin(); j != toClear.end(); ++j) {
-                  g_log.debug() << "Clearing " << ***j;
-                  (**j)->ClearNode();
-                  g_log.debug() << " Done clear";
-                  g_log.debug();
-                  m_node->children.erase(*j);
-                }
-                ++child;    // now go my child to where we want you to be
-                g_log.debug() << " - Child is now " << **child;
-                g_log.debug() << " - And we have " << m_node->children.size() << " children";
-
-                // Restart the node if the INode was in its middle somewhere
-                if (inode != &(*child)->IStart()) {
-                  g_log.debug() << " - - Restarting this child to this inode";
-                  g_log.debug() << "INode is " << *inode << " and child start is " << (*child)->IStart();
-                  (*child)->RestartNode(*istart);
-                }
-
-                done = true;
+          // Looking at these IStarts(), why only IStart(), and could this look
+          // at bad memory (if INode deleted)?  last answer: YES.  oops lol
+          int numClear = 0;
+          while (child != m_node->children.end() &&
+              (prev_child->ContainsINode((*child)->IStart())
+              || ((*child)->IStart().left && (*child)->IStart().left->right != &(*child)->IStart())
+              || ((*child)->IStart().right && (*child)->IStart().right->left != &(*child)->IStart()))) {
+            g_log.info() << "Star decided to clear " << **child;
+            (*child)->ClearNode();
+            ++child;
+            ++numClear;
+          }
+          // TODO oh noez
+          while (numClear > 0) {
+            for (STree::child_mod_iter i = m_node->children.begin(); i != m_node->children.end(); ++i) {
+              if ((*i)->IsClear()) {
+                g_log.info() << "Star - erasing child " << **i;
+                m_node->children.erase(i);
+                --numClear;
                 break;
               }
             }
-            if (done) { break; }
           }
-
-          if (!foundMatch) {
-            g_log.debug() << " - found no matches.";
-            makeNode = true;
-          }
+          for (child = m_node->children.begin(); *child != prev_child; ++child) {}
+          ++child;
         }
       }
     }
-    if (makeNode) {
+    if (m_node->children.end() == child || (prev_child && &prev_child->IEnd() != &(*child)->IStart())) {
       // New child
       const IList* newIStart = &m_node->IStart();
       if (prev_child) {

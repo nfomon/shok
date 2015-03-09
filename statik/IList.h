@@ -22,6 +22,7 @@ struct IList {
   std::string value;
   IList* left;
   IList* right;
+  bool isDeleted;
 };
 
 std::ostream& operator<< (std::ostream& out, const IList& node);

@@ -50,12 +50,15 @@ void Connector::Insert(const IList& inode) {
     g_log.debug() << " - No root; initializing the tree root";
     m_root = m_rule.MakeRootNode(*this);
     m_root->RestartNode(inode);
+  } else if (m_root->IsClear()) {
+    g_log.debug() << " - Clear root; restarting the tree root";
+    m_root->RestartNode(inode);
   } else {
     if (inode.left) {
       g_log.debug() << " - Found left inode " << *inode.left << ": updating listeners of " << inode << "'s left and (if present) right";
-      UpdateListeners(inode, true);
+      UpdateListeners(inode, true, false, true);
     } else {
-      g_log.debug() << " - No left inode: just repositioning the root";
+      g_log.debug() << " - No left inode: just restarting the root";
       m_root->RestartNode(inode);
     }
   }
@@ -78,8 +81,6 @@ void Connector::Delete(const IList& inode) {
     throw SError("Connector " + m_name + ": cannot delete " + string(inode) + " when the root has not been initialized");
   }
 
-  m_listeners.RemoveAllListeners(&inode);
-
   if (!inode.left && !inode.right) {
     g_log.debug() << "Check for clearing things";
     for (OutputFunc::emitting_iter i = m_root->GetOutputFunc().Emitting().begin(); i != m_root->GetOutputFunc().Emitting().end(); ++i) {
@@ -90,8 +91,11 @@ void Connector::Delete(const IList& inode) {
   } else if (!inode.left) {
     m_root->RestartNode(*inode.right);
   } else {
-    UpdateListeners(inode, true);
+    UpdateListeners(inode, true, true, true);
   }
+
+  //inode.isDeleted = true;
+  m_listeners.RemoveAllListeners(&inode);
 
   m_hotlist.Accept(m_root->GetOutputFunc().GetHotlist());
   m_root->GetOutputFunc().ClearHotlist();
@@ -109,7 +113,7 @@ void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
       Delete(*i->first);
       break;
     case Hotlist::OP_UPDATE:
-      UpdateListeners(*i->first, false);
+      UpdateListeners(*i->first, false, true, false);
       break;
     default:
       throw SError("Cannot update with hotlist with unknown hot operation");
@@ -192,35 +196,21 @@ const STree& Connector::GetRoot() const {
   return *m_root;
 }
 
-void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListeners) {
+void Connector::UpdateListeners(const IList& inode, bool updateLeft, bool updateThis, bool updateRight) {
   typedef set<STree*> change_set;
   typedef change_set::const_iterator change_iter;
   typedef map<STree::depth_t, change_set> change_map;
   change_map changes_by_depth;
 
-  if (updateNeighbourListeners) {
-    if (!inode.left) {
-      throw SError("Cannot update listeners of inode " + string(inode) + " with nothing to its left");
-    }
-
+  if (updateLeft && inode.left) {
     // TODO Unnecessary copy
-    listener_set left_listeners = m_listeners.GetListeners(inode.left);
-    for (listener_iter i = left_listeners.begin();
-         i != left_listeners.end(); ++i) {
+    listener_set listeners = m_listeners.GetListeners(inode.left);
+    for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
       changes_by_depth[(*i)->depth].insert(*i);
     }
+  }
 
-    // If inode.right and inode.right != inode.left, merge the left and right
-    // listeners, depth-ordered.
-    if (inode.right && inode.right != inode.left) {
-      // TODO Unnecessary copy
-      listener_set right_listeners = m_listeners.GetListeners(inode.right);
-      for (listener_iter i = right_listeners.begin();
-           i != right_listeners.end(); ++i) {
-        changes_by_depth[(*i)->depth].insert(*i);
-      }
-    }
-  } else {
+  if (updateThis && (!updateLeft || inode.left != &inode)) {
     // TODO Unnecessary copy
     listener_set listeners = m_listeners.GetListeners(&inode);
     for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
@@ -228,8 +218,17 @@ void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListener
     }
   }
 
+  if (updateRight && (!updateLeft || inode.left != inode.right)
+                  && (!updateThis || &inode != inode.right)) {
+    // TODO Unnecessary copy
+    listener_set listeners = m_listeners.GetListeners(inode.right);
+    for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
+      changes_by_depth[(*i)->depth].insert(*i);
+    }
+  }
+
   if (changes_by_depth.empty()) {
-    g_log.info() << "Connector: No " << (updateNeighbourListeners ? "neighbouring" : "direct") << " listeners of " << inode << " (left: " + (inode.left ? string(*inode.left) : "<null>") << "; right: " << (inode.right ? string(*inode.right) : "<null>") << ") to update.";
+    g_log.info() << "Connector: No listeners of " << inode << " to update (left: " + (inode.left ? string(*inode.left) : "<null>") << "; right: " << (inode.right ? string(*inode.right) : "<null>") << ")";
   }
 
   while (!changes_by_depth.empty()) {
@@ -238,7 +237,16 @@ void Connector::UpdateListeners(const IList& inode, bool updateNeighbourListener
     change_set changes = changes_by_depth.rbegin()->second;
     g_log.debug() << "Connector: Updating changes at depth " << depth;
     for (change_iter i = changes.begin(); i != changes.end(); ++i) {
-      bool changed = (*i)->ComputeNode();
+      bool changed = false;
+      // If the node's IStart() has been deleted, let's clear it.
+      if (&(*i)->IStart() == &inode && ((inode.left && inode.left->right != &inode) || (inode.right && inode.right->left != &inode))) {
+        g_log.debug() << "UpdateListeners: node " << **i << " lost its IStart, so clearing it";
+        (*i)->ClearNode();
+        changed = true;
+      } else {
+        g_log.debug() << "UpdateListeners: Computing node " << **i << " with IStart " << (*i)->IStart() << " in response to INode " << inode;
+        changed = (*i)->ComputeNode();
+      }
       if (changed) {
         STree* parent = (*i)->GetParent();
         if (parent) {

@@ -48,6 +48,12 @@ void ComputeFunc_Or::operator() () {
   STree::child_mod_iter i = m_node->children.begin();
   bool haveSetEnd = false;
   for (; i != m_node->children.end(); ++i) {
+    if ((*i)->IsClear()) {
+      // Clear ourselves!
+      g_log.info() << "Or: " << *m_node << " child " << **i << " is clear - giving up!";
+      m_node->ClearNode();
+      return;
+    }
     State& istate = (*i)->GetState();
     bool thisChildLocked = false;
     if (istate.IsLocked()) {

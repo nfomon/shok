@@ -66,10 +66,9 @@ public:
 private:
   const STree& GetRoot() const;
 
-  // Convenience core for Insert() and Delete().  Updates all listeners to the
-  // left (and if any and distinct, to the right) of the inode, about the
-  // inode.  For STree, updates all listeners of the parent of the inode.
-  void UpdateListeners(const IList& inode, bool updateNeighbourListeners);
+  // Convenience core for Insert() and Delete().  Updates all listeners of an
+  // inode and/or its left and right.
+  void UpdateListeners(const IList& inode, bool updateLeft, bool updateThis, bool updateRight);
 
   // Root of the Rule tree
   const Rule& m_rule;

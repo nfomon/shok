@@ -84,6 +84,15 @@ void STree::ClearNode() {
   m_isClear = true;
 }
 
+bool STree::ContainsINode(const IList& inode) const {
+  for (const IList* i = &m_iconnection.Start(); i != NULL && i != &m_iconnection.End(); i = i->right) {
+    if (&inode == i) {
+      return true;
+    }
+  }
+  return false;
+}
+
 STree::operator std::string() const {
   return m_rule.Name() + ":" + string(GetState());
 }

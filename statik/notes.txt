@@ -688,4 +688,39 @@ Most recent hack is the KeepAll RestartFunc.  Stop using that for Star, and then
 
 We're not handling StartOfInput properly.  Like at all.  Stars are NOT properly able to handle arbitrary child insertions/deletions... they get mixed up INode orderings across children.  We need a real solution to that.  Hopefully we can just rely on the IStart()/IEnd() boundary of each child.
 
+Nope, let's do it the obnoxious way.  Walk across each child's IList, adding each node to a set<IList>.  If we find two children whose boundaries don't line up, then keep looking across the rest for the prev's IEnd().  If we find it then clear up to that point, and continue.  If we don't, insert a node, and then keep going.
 
+Do we ever clear trailing stuff?  Sure.  If we go Complete() at some node, and the next node isn't accepted (i.e. we've determined our IEnd()), then in the Compute() we can ........ hmm, it's not clear that we want to be doing this.  But let's try it!
+... clear out the nodes and let the OutputFunc() do away with their ONodes.
+
+Restart(): implement Restart_KeepAny().  Restarting with an istart, we walk across all our childrens' ILists to try and find it.  If it exists somewhere, delete all the children up to that point, and reposition that node if necessary.  If it doesn't exist anywhere, then fallback to Restart_FirstChildOfNode().
+
+No, we don't fallback to Restart_FirstChildOfNode().  If we don't find any of our children wants this new istart, then: is the new node BEFORE them all, or AFTER?  We can't know.  Well maybe if Restart() took a flag hint saying if it's before or after, maaybe we'd know how to populate that correctly.
+If the new istart is before all the nodes, then we kinda want to keep them.
+If it's after all the nodes, we should blow them away.  Otherwise our INodes are no longer in order (probably an algorithm problem), and we might never notice that, our computes will all just be sluggish if they can work at all.
+
+We COULD special-case the root node.  By giving it a different Restart function!  Little stars throughout can wipe themselves for restarts, I care less.  The root: if it's a Restart, we KNOW if it's from an Insert or a Delete at the start of the IList.  So we can tell it that in the restart.
+Non-root: Restart is caused by a Star or Seq.  When we restart a child, just blow it away.  See how far that gets us.
+
+ROOT restart: we can tell if we're caused by a left insert or delete!  Just check the first child, if it exists and its IStart()->right is the new istart, then we deleted, otherwise assume we inserted :D
+ - This makes us DEPEND on the idea that we're receiving character-by-character at the start of input.  OK for now.
+
+Can we fix OutputFunc first?  And do the restarts properly afterwards.
+ - done.  RunStairs: Well, except OutputFunc is a little too optimistic in how it tries to avoid doing too much IList() walking.  We're only looking at the node prior to a break to see if it contains the next node's IStart().  However we might have swallowed the next node's IStart() by an earlier child.  Not sure of an answer.... but maybe we can somehow delay caring about this next node, until such time as we've actually created a node behind it that looks just like it?  That might fall out of what we have now anyway!  Or maybe we're left with trailing garbage we can't get rid of.
+
+---
+bug:   new;del;
+       new;el;
+       new;del;
+
+parser.  urrrrk everything is wrong..
+
+Are we in a dangerous state when an INode is deleted?  When is it REALLY gone?  Because we're leaving nodes around that could point to it I think..
+
+-----
+
+INodes: Flag the ones that are being deleted.
+Leaf nodes: Need to check which INodes are being deleted.  That includes end nodes!  Deleted nodes will have "valid" left/rights.  So you can get the nodes we should respect.  You can get the new IEnd that way, but if your IStart changes, Clear the node!
+Non-leaf nodes: Need to check if any of your children have been cleared!!  If they've been cleared, better avoid 'em.  If all your children are cleared, then you're cleared I guess.  If your first child is cleared (and you're a Seq/Star), then declare yourself Cleared as well.  Root shouldn't have to worry, Connector deals with that (it doesn't go through UpdateListeners()).
+
+hm if any of an Or's children are clear, uhhh just clear it and wait for further instruction.  lol

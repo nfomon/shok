@@ -48,6 +48,7 @@ public:
   bool ComputeNode();
   void ClearNode();
 
+  bool IsClear() const { return m_isClear; }
   const State& GetState() const { return m_state; }
   State& GetState() { return m_state; }
   Connector& GetConnector() const { return m_connector; }
@@ -55,6 +56,7 @@ public:
   STree* GetParent() const { return m_parent; }
   const IList& IStart() const { return m_iconnection.Start(); }
   const IList& IEnd() const { return m_iconnection.End(); }
+  bool ContainsINode(const IList& inode) const;
 
   IConnection& GetIConnection() { return m_iconnection; }
   OutputFunc& GetOutputFunc() const { return *m_outputFunc.get(); }

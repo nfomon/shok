@@ -25,7 +25,8 @@ IList::IList(const string& name, const string& value)
   : name(name),
     value(value),
     left(NULL),
-    right(NULL) {
+    right(NULL),
+    isDeleted(false) {
 }
 
 string IList::Print() const {
