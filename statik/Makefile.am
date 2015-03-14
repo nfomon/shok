@@ -13,6 +13,7 @@ STATIK_SRCS = $(COMMON_SRCS) \
     ComputeFunc.h \
     Connector.cpp \
     Connector.h \
+    ConnectorAction.h \
     Grapher.cpp \
     Grapher.h \
     Hotlist.cpp \

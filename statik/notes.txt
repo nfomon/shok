@@ -724,3 +724,128 @@ Leaf nodes: Need to check which INodes are being deleted.  That includes end nod
 Non-leaf nodes: Need to check if any of your children have been cleared!!  If they've been cleared, better avoid 'em.  If all your children are cleared, then you're cleared I guess.  If your first child is cleared (and you're a Seq/Star), then declare yourself Cleared as well.  Root shouldn't have to worry, Connector deals with that (it doesn't go through UpdateListeners()).
 
 hm if any of an Or's children are clear, uhhh just clear it and wait for further instruction.  lol
+
+-----
+2k15-03-08
+
+Changing the interface.
+
+Connector receives a SINGLE Insert, Delete, or Update to the IList.
+It finds the relevant listening nodes, and tells them what happened: IList changed, I/D/U.
+The node does its Compute() which is aware of what the change was.
+This Compute() may enqueue one or more actions onto other nodes.  It tells the Connector:  Restart child x at IList y.  Or update my Parent that I've accepted INode q, or deleted INode r.  One at a time.  We're just enqueueing those, the Connector will determine who to update next.  Might even tell a Parent:  Clear me, Delete me, I'm useless.
+
+What about OutputFunc()s?
+ - get compute-specific type of data from the node (e.g. winner)
+ - but these are generally working.
+ - OutputFunc determines an OutputState.  OutputState is the set of ONodes, or set of children, that a node is emitting.
+ - We can compare two OutputStates to get the Hotlist differential between them.  For any child, that means doing the same thing recursing down the tree.
+ - The Connector will store the OutputState of all relevant nodes, so we have the "previous" to compare against.  This lets us tell which nodes are newly considered or not.
+ - So this way the OutputFunc() itself is stateless, and doesn't even need to be called when we're updating the tree.
+ - When we're done a full tree update (Connector::I/D/U), we ask the root to give us its OutputDiff.  We know which of its children have actually changed (we know that from the I/D/U that occurred).  For any of those we ask for their OutputDiff.  Eventually we find nodes .....
+
+Recursive.  Each node gives us an ordered list of things to do:
+ - Insert(ONode)
+ - Insert(child)
+ - Approve(ONode)
+ - Approve(child) -- recurse down, 
+ - Delete(ONode)
+ - Delete(child)
+
+Note: let's see if we don't need to look at a deleted inode's left and right!!
+that would be nice.  We already know which nodes are listening to it, so...
+just update those nodes, we tell them that it's being deleted, and that should
+be it!
+
+Connector::Insert(const INode& inode) {
+  if (m_root->IsClear()) {
+    Enqueue(RestartAction(m_root, inode));
+    // Note: maybe enqueueing a Restart automatically sets the node's IStart (before), and runs a Compute (after)?
+    // Or whatever Connector/STree does already for a Restart!
+    //  - it's STree that does it, it does a few things we'll want to do
+  } else {
+    listener_set listeners = m_listeners.GetListeners(inode);
+    for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
+      Enqueue(INodeInsertAction(inode, *i));
+    }
+  }
+  ProcessActions();
+}
+
+Connector::Delete(const INode& inode) {
+  if (m_root->IsClear()) {
+    throw SError("Cannot delete INode; root is already clear");
+  } else {
+    listener_set listeners = m_listeners.GetListeners(inode);
+    for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
+      Enqueue(INodeDeleteAction(inode, *i));
+    }
+  }
+  ProcessActions();
+}
+
+Keyword::Restart(const ConnectorAction& action) {
+  Clear();    // Wasn't even necessary before..  but let's do it here now, for simple.
+}
+
+Keyword::Compute(const ConnectorAction& action) {
+  // IStart is set appropriate (precondition)
+  // The incoming action will be about an INode we may or may not care about.
+  // We DO care about the INode that makes us bad.
+  // We need to set our State, set our IEnd, Listen to INodes,
+  // and allow our OutputFunc() to determine which ONodes to emit.
+}
+
+
+Star gets update from a child.  Does it get them all at once?
+No, just a single update, does its full update, then gets the next.
+OK, but in the Star update it's just gonna decide to reposition one or two of the children, so then their update was unnecessary.
+That's an optimization which we CAN solve later, and don't need to.  We might recompute it multiple times saying "x child changed" when it didn't (i.e. it already updated in a way that dealt with or oviated that claim).  No problem for now.
+
+
+Delete:
+ - IF there's no left or right, just clear the root (optimization) :)
+ - Tell listeners of the deleted INode
+ - Tell listeners of the node preceding the deleted INode
+
+Insert:
+ - Tell listeners to the left
+ - WHY did we used to tell listeners to the right?  Let's try not doing that for now :)
+ - IF THERE'S NO LEFT: just Restart the root.  Restart() should know how to intelligently handle restarts.  And if a Seq/Star wants to actually really restart a child node, it can Clear and then Restart it.
+
+
+ConnectorActions can all be a single non-polymorphic struct, use the enum.
+
+walk through Restarts, then Computefuncs, bringing everybody up to speed.
+
+It is now the node's RestartFunc's responsibility to connector.UnlistenAll(*this), IF that's what it wants to do!!!
+
+ProcessActions() is confused.  Someone's going to be Enqueueing while we're still processing an action, and deleting it, from the priority queue.
+When we Restart() a node, we want to also insert it for Compute().  I want EVERYTHING to go through the queue.
+ - Solved now.  It just pops.
+
+We can cleverly avoid computing children of a Seq/Star needlessly.  Suppose we have multiple children that received an update.  We figure out which one is the first-est of the children (this is tricky), and update that one only, then Compute the parent, and if it does a Clear and/or Restart of a child that would otherwise have Computed, we do the Clear/Restart/Compute instead.  This is an optimization we can do later, it doesn't save us that much and is quite a bit tricky.
+
+
+Sequence Restart:
+ - If we have any children, then we're putting the provided IStart as preceding all of them.
+ - If we're clear, then create the first child by starting it at this IStart.
+ - When we go to restart a child, Clear it first and then Restart it, unless we want to provide it a node preceding the nodes it already has.
+
+Restart:
+ - isClear = false
+ - IConnection.Restart(inode)
+ - restartFunc()
+
+RestartFunc must:
+ - Set state as appropriate
+ - Create and Restart children as appropriate (err, Enqueue those requests)
+ - UnlistenAll() or listen/unlisten to inodes as appropriate
+ - Enqueue child restarts/updates as appropriate
+
+Seq/Star Restart/Compute, once creating a child, will abort their routine early to let the child compute happen, which will then flip back to them.
+Or, however, can tell ALL of its children to do something (e.g. Restart) before giving control back to the Connector (to update the children all before calling the Or's Compute).
+
+Added IConnection.Size().  ComputeFunc() needs to determine if, in terms of IConnection, it grew or shrank.  Tell this to the parent if we changed, so that it can do something intelligent.
+
+

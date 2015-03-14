@@ -14,6 +14,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <utility>
 using std::auto_ptr;
 using std::map;
 using std::set;
@@ -43,25 +44,40 @@ void Connector::ClearHotlist() {
   m_nodePool.Cleanup();
 }
 
+Connector::listener_set Connector::GetListeners(const IList& x) const {
+  return m_listeners.GetListeners(&x);
+}
+
 void Connector::Insert(const IList& inode) {
   g_log.info() << "Connector " << m_name << ": Inserting IList: " << inode << " with " << (inode.left ? "left" : "no left") << " and " << (inode.right ? "right" : "no right");
 
   if (!m_root) {
     g_log.debug() << " - No root; initializing the tree root";
     m_root = m_rule.MakeRootNode(*this);
-    m_root->RestartNode(inode);
-  } else if (m_root->IsClear()) {
+  }
+  if (m_root->IsClear()) {
     g_log.debug() << " - Clear root; restarting the tree root";
-    m_root->RestartNode(inode);
+    Enqueue(ConnectorAction(ConnectorAction::Restart, *m_root, inode));
   } else {
     if (inode.left) {
       g_log.debug() << " - Found left inode " << *inode.left << ": updating listeners of " << inode << "'s left and (if present) right";
-      UpdateListeners(inode, true, false, true);
+      listener_set listeners = m_listeners.GetListeners(inode.left);
+      for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
+        Enqueue(ConnectorAction(ConnectorAction::INodeInsert, **i, inode));
+      }
+      if (inode.right) {
+        listeners = m_listeners.GetListeners(inode.right);
+        for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
+          Enqueue(ConnectorAction(ConnectorAction::INodeInsert, **i, inode));
+        }
+      }
     } else {
       g_log.debug() << " - No left inode: just restarting the root";
-      m_root->RestartNode(inode);
+      Enqueue(ConnectorAction(ConnectorAction::Restart, *m_root, inode));
     }
   }
+
+  ProcessActions();
 
   // Assert that the inode has at least one listener in the updated set.
   if (!m_listeners.HasAnyListeners(&inode)) {
@@ -82,24 +98,41 @@ void Connector::Delete(const IList& inode) {
   }
 
   if (!inode.left && !inode.right) {
-    g_log.debug() << "Check for clearing things";
+    // FIXME if this is necessary, it means we're doing something wrong.
+    // Hotlist is already ordered.  Anything in it, even old stuff we've
+    // declared as "deleted" since, should be valid memory we can look at.
+    /*
     for (OutputFunc::emitting_iter i = m_root->GetOutputFunc().Emitting().begin(); i != m_root->GetOutputFunc().Emitting().end(); ++i) {
-      g_log.debug() << "Clearing a thing from hotlist";
       m_hotlist.Delete(**i);
     }
+    */
     m_root->ClearNode();
-  } else if (!inode.left) {
-    m_root->RestartNode(*inode.right);
   } else {
-    UpdateListeners(inode, true, true, true);
+    if (inode.left) {
+      listener_set listeners = m_listeners.GetListeners(inode.left);
+      for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
+        Enqueue(ConnectorAction(ConnectorAction::INodeDelete, **i, inode));
+      }
+    }
+    listener_set listeners = m_listeners.GetListeners(&inode);
+    for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
+      Enqueue(ConnectorAction(ConnectorAction::INodeDelete, **i, inode));
+    }
   }
 
-  //inode.isDeleted = true;
   m_listeners.RemoveAllListeners(&inode);
 
   m_hotlist.Accept(m_root->GetOutputFunc().GetHotlist());
   m_root->GetOutputFunc().ClearHotlist();
   g_log.debug() << "Connector: Delete done, hotlist now has size " << m_hotlist.Size();
+}
+
+void Connector::Update(const IList& inode) {
+  g_log.info() << "Connector " << m_name << ": Updating listeners of inode " << inode;
+  listener_set listeners = m_listeners.GetListeners(&inode);
+  for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
+    Enqueue(ConnectorAction(ConnectorAction::INodeUpdate, **i, inode));
+  }
 }
 
 void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
@@ -113,7 +146,7 @@ void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
       Delete(*i->first);
       break;
     case Hotlist::OP_UPDATE:
-      UpdateListeners(*i->first, false, true, false);
+      Update(*i->first);
       break;
     default:
       throw SError("Cannot update with hotlist with unknown hot operation");
@@ -122,6 +155,18 @@ void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
   g_log.info() << "Done updating Connector " << m_name << " with hotlist that had size " << hotlist.size();
   if (!m_hotlist.IsEmpty()) {
     DrawGraph(*m_root);
+  }
+}
+
+void Connector::Enqueue(ConnectorAction action) {
+  int depth = action.node->depth;
+  action_map::iterator ai = m_actions_by_depth.find(depth);
+  if (m_actions_by_depth.end() == ai) {
+    action_queue actions;
+    actions.push_back(action);
+    m_actions_by_depth.insert(std::make_pair(depth, actions));
+  } else {
+    ai->second.push_back(action);
   }
 }
 
@@ -196,12 +241,8 @@ const STree& Connector::GetRoot() const {
   return *m_root;
 }
 
+/*
 void Connector::UpdateListeners(const IList& inode, bool updateLeft, bool updateThis, bool updateRight) {
-  typedef set<STree*> change_set;
-  typedef change_set::const_iterator change_iter;
-  typedef map<STree::depth_t, change_set> change_map;
-  change_map changes_by_depth;
-
   if (updateLeft && inode.left) {
     // TODO Unnecessary copy
     listener_set listeners = m_listeners.GetListeners(inode.left);
@@ -255,5 +296,37 @@ void Connector::UpdateListeners(const IList& inode, bool updateLeft, bool update
       }
     }
     changes_by_depth.erase(depth);
+  }
+}
+*/
+
+void Connector::ProcessActions() {
+  while (!m_actions_by_depth.empty()) {
+    STree::depth_t depth = m_actions_by_depth.rbegin()->first;
+    action_queue& actions = m_actions_by_depth.rbegin()->second;
+    g_log.debug() << "Connector " << m_name << ": Applying actions at depth " << depth;
+    while (m_actions_by_depth.rbegin()->first == depth && !actions.empty()) {
+      ConnectorAction* a = &actions.front();
+      actions.pop_front();
+      switch (a->action) {
+      case ConnectorAction::Restart:
+        a->node->RestartNode(*a->inode);
+        break;
+      case ConnectorAction::INodeUpdate:
+        a->node->ComputeNode(*a->inode, a->initiator);
+        break;
+      case ConnectorAction::INodeInsert:
+        a->node->ComputeNode(*a->inode, a->initiator);
+        break;
+      case ConnectorAction::INodeDelete:
+        a->node->ComputeNode(*a->inode, a->initiator);
+        break;
+      default:
+        throw SError("ProcessActions: unknown action");
+      }
+    }
+    if (m_actions_by_depth.at(depth).empty()) {
+      m_actions_by_depth.erase(depth);
+    }
   }
 }

@@ -4,12 +4,15 @@
 #ifndef _Connector_h_
 #define _Connector_h_
 
+#include "ConnectorAction.h"
 #include "Hotlist.h"
 #include "IList.h"
 #include "ListenerTable.h"
 #include "ObjectPool.h"
 #include "STree.h"
 
+#include <deque>
+#include <map>
 #include <set>
 
 namespace statik {
@@ -26,9 +29,7 @@ public:
 
   const Hotlist& GetHotlist() const;
   void ClearHotlist();
-  listener_set GetListeners(const IList& x) const {
-    return m_listeners.GetListeners(&x);
-  }
+  listener_set GetListeners(const IList& x) const;
 
   // Insert() a new inode.  Call this AFTER attaching its connections in the
   // input list.
@@ -36,9 +37,13 @@ public:
   // Delete() an inode.  Call this AFTER updating its left and right to point
   // to each other, but leave this inode's left and right pointers intact.
   void Delete(const IList& inode);
+  // Update() the listeners of an inode, to let them know it has updated.
+  void Update(const IList& inode);
 
   // Apply a bunch of inode insertions/updates/deletions
   void UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist);
+
+  void Enqueue(ConnectorAction action);
 
   // Called from a rule/state regarding its DS node.
   // Listens for updates to this inode.
@@ -64,11 +69,14 @@ public:
   std::string Name() const { return m_name; }
 
 private:
+  typedef std::deque<ConnectorAction> action_queue;
+  typedef action_queue::const_iterator action_iter;
+  typedef action_queue::iterator action_mod_iter;
+  typedef std::map<STree::depth_t, action_queue> action_map;
+
   const STree& GetRoot() const;
 
-  // Convenience core for Insert() and Delete().  Updates all listeners of an
-  // inode and/or its left and right.
-  void UpdateListeners(const IList& inode, bool updateLeft, bool updateThis, bool updateRight);
+  void ProcessActions();
 
   // Root of the Rule tree
   const Rule& m_rule;
@@ -77,6 +85,7 @@ private:
   std::string m_name;
   std::auto_ptr<Grapher> m_grapher;
   ObjectPool<STree> m_nodePool;
+  action_map m_actions_by_depth;
   ListenerTable<const IList*, STree*> m_listeners;
   Hotlist m_hotlist;
 };

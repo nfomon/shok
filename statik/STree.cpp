@@ -40,21 +40,20 @@ STree::STree(Connector& connector,
 }
 
 void STree::RestartNode(const IList& istart) {
+  g_log.info() << "Restarting node " << *this << " with inode " << istart;
   m_isClear = false;
   m_iconnection.Restart(istart);
-  //m_oconnection.Restart();
-  g_log.info() << "Restarting node " << *this << " with inode " << istart << "with " << (istart.left ? "left" : "no left") << " and " << (istart.right ? "right" : "no right");
-  m_connector.UnlistenAll(*this);
-  g_log.info() << "Restarting node " << *this << " with inode " << istart << "with " << (istart.left ? "left" : "no left") << " and " << (istart.right ? "right" : "no right");
+  //m_connector.UnlistenAll(*this);   // FIXME this needs to be done by the RestartFunc() now!
   m_connector.DrawGraph(*this, &istart);
-  m_state.Unlock();
   (*m_restartFunc.get())(istart);
-  (void) ComputeNode();
+  m_connector.Enqueue(
 }
 
-bool STree::ComputeNode() {
-  g_log.info() << "Updating node " << *this;
-  m_isClear = false;
+void STree::ComputeNode(const IList& inode, const STree* initiator) {
+  if (m_isClear) {
+    throw SError("Cannot compute node " + string(*this) + " which has been cleared");
+  }
+  g_log.info() << "Computing node " << *this << " with inode " << inode << " and initiator " << (initiator ? "<null>" : string(*initiator));
   const State old_state = m_state;
   const IList& old_iend = IEnd();
   (*m_computeFunc)();
@@ -65,7 +64,9 @@ bool STree::ComputeNode() {
   bool hasChanged3 = old_state != m_state;
   bool hasChanged = hasChanged1 || hasChanged2 || hasChanged3;
   g_log.debug() << " - - - - " << *this << " has " << (hasChanged ? "" : "NOT ") << "changed";
-  return hasChanged;
+  if (hasChanged) {
+    m_connector.Enqueue(
+  }
 }
 
 void STree::ClearNode() {

@@ -13,7 +13,8 @@ class IConnection {
 public:
   IConnection()
     : m_istart(NULL),
-      m_iend(NULL) {}
+      m_iend(NULL),
+      m_size(0) {}
 
   const IList& Start() const {
     if (!m_istart) {
@@ -29,15 +30,22 @@ public:
     return *m_iend;
   }
 
+  size_t Size() const { return m_size; }
+
   void Restart(const IList& istart) {
     m_istart = &istart;
     m_iend = &istart;
+    m_size = 1;
   }
-  void SetEnd(const IList& iend) { m_iend = &iend; }
+  void SetEnd(const IList& iend, size_t size) {
+    m_iend = &iend;
+    m_size = size;
+  }
 
 private:
   const IList* m_istart;  // starting inode
   const IList* m_iend;    // inode that makes us bad after we're done, or last
+  size_t m_size;          // number of inodes that are spanned, including IEnd if possible
 };
 
 }

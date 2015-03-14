@@ -45,7 +45,7 @@ public:
          std::auto_ptr<OutputFunc> outputFunc);
 
   void RestartNode(const IList& istart);
-  bool ComputeNode();
+  bool ComputeNode(const IList& inode, const STree* initiator);
   void ClearNode();
 
   bool IsClear() const { return m_isClear; }
