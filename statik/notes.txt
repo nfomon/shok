@@ -838,14 +838,116 @@ Restart:
  - restartFunc()
 
 RestartFunc must:
- - Set state as appropriate
- - Create and Restart children as appropriate (err, Enqueue those requests)
- - UnlistenAll() or listen/unlisten to inodes as appropriate
- - Enqueue child restarts/updates as appropriate
+ - Set state as appropriate  (no!  Ideally, let the Compute() do this!!)
+ - Create/Restart/Update children as appropriate (err, Enqueue those requests)
+ - UnlistenAll() and/or listen/unlisten to inodes as appropriate
+ - Enqueue its own Compute when appropriate  (this is a guess; maybe depends on the rule?)
 
 Seq/Star Restart/Compute, once creating a child, will abort their routine early to let the child compute happen, which will then flip back to them.
 Or, however, can tell ALL of its children to do something (e.g. Restart) before giving control back to the Connector (to update the children all before calling the Or's Compute).
 
 Added IConnection.Size().  ComputeFunc() needs to determine if, in terms of IConnection, it grew or shrank.  Tell this to the parent if we changed, so that it can do something intelligent.
+
+Walkthrough
+Initial Insert:
+  - Connector::Insert()
+    - MakeRootNode()
+    - Enqueue(Restart, m_root, inode)
+  - Connector::ProcessActions()
+    - (root)->RestartNode(inode)
+  - STree::RestartNode()
+    - isClear = false
+    - IConnection.Restart(inode)
+    - restartFunc()
+  - Rule::RestartFunc()
+    - Implement for everyone!
+    - Default RestartFunc:
+      - assert: Rule has no children
+      - assert: Node has no children
+      - UnlistenAll()
+      - Enqueue its own Compute()
+  - Rule::Compute(inode, initiator)
+    - Implement for everyone!
+    - Keyword: probably fine as-is!
+
+Tracking IConnection size kinda sucks.  But we want to tell a Seq/Star: did the child shrink or grow.  Do we?  Is that really necessary?  It would be cool if we can know that.  And we CAN know that.  Still.....
+
+The assumption we were going to make is that knowing if an INode was Inserted or Deleted would be helpful way up the chain.  Not so much.  Inserting an INode could cause a node to shrink in terms of IConnection size.  Then up the chain, its Seq shrinks on that child, so it needs to know that.  Cool, I think we're doing the right thing by tracking IConnection size.
+
+Now it's time to program the rule ComputeFuncs() for simple Rules.  We need to fix all ComputeFunc()s, and also the RestartFunc()s of Or/Seq/Star.
+
+-----
+2k15-03-21
+
+To deal with complexity, it would be nice if each node had 4 functions:
+ - Restart
+ - Process (structure)
+ - Compute (state)
+ - Output
+
+Or at least, conceptually arranged itself like that.  We're back to keeping state in the node, about its processing (its # children and what states they're in generally, to help us determine what state we're in with only looking at the child that notified us of an update).  That state can be cleanly wrapped up as going from Process to Compute.
+
+The ProcessState should have an "unknown" state which it can use when it knows it's not done figuring itself out.  Just because.  That will help us render things correctly in graphs at least.
+
+Or's ProcessState keeps those four vecs, and maps each child into which one it's in.
+ - actually, they don't need to be vecs at all.  Make them sets.  And we lookup which one our updated child is in, and make sure it's only in the right one(s).
+
+Seq/Star: Their ProcessState might just be "what's the last child node that is complete"; not exactly sure though.
+
+Let's try to structure the Computes to do the right thing, and then see what reasonable "ProcessState" abstraction might exist, if any.
+
+--
+
+It's sooooooo sketchy that we don't enqueue the MakeNodes().  The separation of Process vs. Compute is REQUIRED now, and that the Compute works ok even though other later computes will be happening as soon as we say MakeNode..... uhhyyyyy.
+ - so just abort that compute early!  we only need it to Process, not Compute in this case.
+
+Now fix OutputFuncs:
+ - Each node determines its OutputState, which is the set of nodes and/or children that it wants to emit
+ - These aren't stored by the node/OutputFunc, they're stored by the Connector:
+    map: SNode -> [Set of ONodes and/or other SNodes]
+ - At the end of an Insert/Delete/Update (or whenever we want, e.g. after a full UpdateWithHotlist), we have the ONode list we previously emit.  And we know which SNodes we've actually looked at as part of the I/D/U.  Recursively from the root:
+    - if node is not in the list of SNodes we looked at, abort.
+    - diff the ONodes it's emitting against the list of previously-emit-ONodes-for-that-SNode that the Connector has.
+    - likewise for child SNodes: Delete any that were prev emit and aren't anymore, Insert any new ones, and recurse down the Updates.
+
+Removed Connector's m_hotlist.  It doesn't need that.  Individual OutputFuncs don't have hotlists anymore either.
+Call Connector::Insert(), Delete(), Update(), or UpdateWithHotlist().  It will do all the processing.  You can call them multiple times if you like.
+Sometime, call Connector::ExtractOutput(root, UPDATE).  This will:
+ - set m_prevOutputByNode = m_outputByNode;
+ - DetermineOutputRecursive(m_prevOutputPerNode, root, UPDATE);
+   - recurse down the tree, only looking at nodes that are in m_touchedNodes (including the root -- no-op if it was not touched).
+    -- unless we're in INSERT or DELETE mode, in which case we don't care if it was touched or not.
+   - Call OutputFunc() on every node we examine.  This updates m_outputByNode for that node.
+   - for ONode changes, insert/delete the hotlist as appropriate.  What about UPDATE???? seems like only IValues() does this.  Might need to put something weird into the OutputState...
+   - for STree changes, decide how to approach that child node.  If it was removed, then we call a different function that will walk down all the m_prevOutputByNode(that top deleted node), deleting everything we find and recursing down children, note that we do NOT call OutputFuncs for these.
+   - If it was inserted, then we again call a magical function to walk down those nodes, this time on the m_outputByNode (not prev), inserting everything we find.  Except this time we DO call OutputFunc().  So really it's just this function with an INSERT instead of UPDATE param.
+   - If a child was just updated, then keep recursing down the normal way.
+
+
+ - Now we can tell which ONodes changed, and which SNode children changed too.  If an SNode child is newly added, we recurse down it with INSERT instead of UPDATE flag, meaning all nodes under that subtree will be inserted into the hotlist.  Similarly for DELETE.
+ - set m_needsCleanup = true
+
+-----
+
+2k15-03-24
+
+In Connector::ComputeOutput(), I had to copy the OutputState into newState early, and not at the end of the fx when I insert into the map.  WHY???  That's pretty weird.  OutputFuncs aren't supposed to be doing a whole lot, so how could they have invalidated our state?  Or is it because of the recursive calls?  Or is a node getting cleared?  We crash just with "new;" input if we copy newState late instead of early.
+
+Why the awkward spurious graphs during computes?  Maybe let's pick better times to draw graphs, and also determine that we're doing the right sequence of computes/restarts across the board.
+
+Definitely some bugs with OutputFunc.  We're not linking up ONodes properly (we get a second ";" inserted which doesn't have a left anymore apparently I guess?  so we just restart the parser for no reason...)
+
+
+Updates are weird because:  first compute on keyword new, does not change its state (the node starts ok and is ok after its first update).  Since it doesn't change, we don't notify the parent to recompute.  Only the del and ; will cause it to compute.  That's sketchy.
+Not sure what's the right way to do this.  Maybe we put isClear into State instead of STree.  Clear is a State (station), and we start there even if a node starts as done instead of ok.  Because it should still need a Compute() to get to that.  I guess?  Seems weird.
+
+
+-----
+
+In Connector::ExtractHotlist() we ComputeOutput() which will have called m_root->GetOutputFunc().  So why did this not set an OStart?? (Can tell because the DrawGraph should have drawn the OList/hotlist in that case, but it didn't)
+
+ - Or is not calling Basic output func at right time it seems??
+
+OutputFunc::operator() needs to populate the OutputState: the OList nodes and STree children that would be output by that node.  The Connector will recurse down as appropriate to call the OutputFunc() on those children.  Then ConnectONodes() gets called, which can just link/set OList node starts/ends.
 
 

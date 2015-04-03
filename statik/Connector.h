@@ -9,6 +9,7 @@
 #include "IList.h"
 #include "ListenerTable.h"
 #include "ObjectPool.h"
+#include "OutputFunc.h"
 #include "STree.h"
 
 #include <deque>
@@ -27,8 +28,7 @@ public:
 
   Connector(const Rule& rule, const std::string& name = "", const std::string& graphdir = "");
 
-  const Hotlist& GetHotlist() const;
-  void ClearHotlist();
+  void ExtractHotlist(Hotlist& out_hotlist);
   listener_set GetListeners(const IList& x) const;
 
   // Insert() a new inode.  Call this AFTER attaching its connections in the
@@ -64,7 +64,12 @@ public:
   // Get the first node of the output list
   const IList* GetFirstONode() const;
 
-  void DrawGraph(const STree& onode, const IList* inode = NULL);
+  // Indicate that a node has been computed.  Called by STree::ComputeNode()
+  void TouchNode(const STree& node);
+
+  void DrawGraph(const STree& onode,
+                 const IList* inode = NULL,
+                 const Hotlist* hotlist = NULL);
 
   std::string Name() const { return m_name; }
 
@@ -76,18 +81,36 @@ private:
 
   const STree& GetRoot() const;
 
+  // Called by UpdateWithHotlist()
+  void InsertNode(const IList& inode);
+  void DeleteNode(const IList& inode);
+  void UpdateNode(const IList& inode);
+
+  enum ComputeOutputMode {
+    COM_UPDATE,
+    COM_INSERT,
+    COM_DELETE
+  };
+
   void ProcessActions();
+  void ComputeOutput(const STree* node, ComputeOutputMode mode, Hotlist& out_hotlist);
+  void CleanupIfNeeded();
 
   // Root of the Rule tree
   const Rule& m_rule;
   // Root of the output tree
   STree* m_root;
   std::string m_name;
+  bool m_needsCleanup;
   std::auto_ptr<Grapher> m_grapher;
   ObjectPool<STree> m_nodePool;
   action_map m_actions_by_depth;
   ListenerTable<const IList*, STree*> m_listeners;
-  Hotlist m_hotlist;
+  typedef std::map<const STree*, OutputState> output_map;
+  typedef output_map::const_iterator output_iter;
+  typedef output_map::iterator output_mod_iter;
+  output_map m_outputPerNode;
+  std::set<const STree*> m_touchedNodes;
 };
 
 }

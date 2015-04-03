@@ -122,17 +122,16 @@ int main(int argc, char *argv[]) {
           s->right->left = s->left;
         }
         connectors.at(0).Delete(*s);
-        const Hotlist* hotlist = &connectors.at(0).GetHotlist();
-        connector_mod_iter prevConnector = connectors.begin();
+        Hotlist hotlist;
+        connectors.front().ExtractHotlist(hotlist);
         for (connector_mod_iter i = connectors.begin()+1; i != connectors.end(); ++i) {
-          if (hotlist->IsEmpty()) {
+          if (hotlist.IsEmpty()) {
             g_log.info() << "* main: Connector returned no hotlist items.";
             break;
           } else {
-            g_log.info() << "* main: Connector returned hotlist; sending to parser.  Hotlist:" << hotlist->Print();
-            i->UpdateWithHotlist(hotlist->GetHotlist());
-            prevConnector->ClearHotlist();
-            hotlist = &i->GetHotlist();
+            g_log.info() << "* main: Connector returned hotlist; sending to parser.  Hotlist:" << hotlist.Print();
+            i->UpdateWithHotlist(hotlist.GetHotlist());
+            i->ExtractHotlist(hotlist);
           }
         }
         continue;
@@ -147,17 +146,16 @@ int main(int argc, char *argv[]) {
         g_log.info();
         g_log.info() << "* main: Inserting character '" << c->Print();
         connectors.at(0).Insert(*c);
-        const Hotlist* hotlist = &connectors.at(0).GetHotlist();
-        connector_mod_iter prevConnector = connectors.begin();
+        Hotlist hotlist;
+        connectors.front().ExtractHotlist(hotlist);
         for (connector_mod_iter i = connectors.begin()+1; i != connectors.end(); ++i) {
-          if (hotlist->IsEmpty()) {
+          if (hotlist.IsEmpty()) {
             g_log.info() << "* main: Connector returned no hotlist items.";
             break;
           } else {
-            g_log.info() << "* main: Connector returned hotlist; sending to parser.  Hotlist:" << hotlist->Print();
-            i->UpdateWithHotlist(hotlist->GetHotlist());
-            prevConnector->ClearHotlist();
-            hotlist = &i->GetHotlist();
+            g_log.info() << "* main: Connector returned hotlist; sending to parser.  Hotlist:" << hotlist.Print();
+            i->UpdateWithHotlist(hotlist.GetHotlist());
+            i->ExtractHotlist(hotlist);
           }
         }
         prev = c;

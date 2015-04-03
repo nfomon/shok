@@ -56,6 +56,7 @@ void Grapher::AddIList(const string& context, const IList& inode, const string& 
 }
 
 void Grapher::AddSTree(const string& context, const STree& snode, const string& label) {
+  //g_log.debug() << "Adding STree";
   m_graph += "subgraph cluster_" + context + dotVar(&snode, context) + " {\n";
   if (!label.empty()) {
     m_graph += "label=\"" + label + "\";\n";
@@ -64,10 +65,11 @@ void Grapher::AddSTree(const string& context, const STree& snode, const string& 
   m_graph += snode.DrawNode(context);
   m_graph += "}\n";
   m_isDirty = true;
+  //g_log.debug() << "Done adding STree";
 }
 
 void Grapher::AddOList(const string& context, const IList& onode, const string& label) {
-  g_log.debug() << "Adding OList";
+  //g_log.debug() << "Adding OList";
   m_graph += "subgraph cluster_" + context + dotVar(&onode, context) + " {\n";
   if (!label.empty()) {
     m_graph += "label=\"" + label + "\";\n";
@@ -76,7 +78,7 @@ void Grapher::AddOList(const string& context, const IList& onode, const string& 
   m_graph += onode.DrawNode(context);
   m_graph += "}\n";
   m_isDirty = true;
-  g_log.debug() << "Done adding OList";
+  //g_log.debug() << "Done adding OList";
 }
 
 void Grapher::AddIListeners(const string& context, const Connector& connector, const IList& inode) {

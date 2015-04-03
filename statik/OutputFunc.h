@@ -4,7 +4,6 @@
 #ifndef _OutputFunc_h_
 #define _OutputFunc_h_
 
-#include "Hotlist.h"
 #include "IList.h"
 
 #include <map>
@@ -24,34 +23,36 @@ std::auto_ptr<OutputFunc> MakeOutputFunc_Winner();
 std::auto_ptr<OutputFunc> MakeOutputFunc_Sequence();
 std::auto_ptr<OutputFunc> MakeOutputFunc_Cap(std::auto_ptr<OutputFunc> outputFunc, const std::string& cap);
 
+struct OutputState {
+  typedef std::set<const IList*> onode_set;
+  typedef onode_set::const_iterator onode_iter;
+  typedef std::set<const STree*> child_set;
+  typedef child_set::const_iterator child_iter;
+  onode_set onodes;
+  child_set children;
+  std::string value;
+};
+
 class OutputFunc {
 public:
-  typedef std::set<const IList*> emitting_set;
-  typedef emitting_set::const_iterator emitting_iter;
-
   OutputFunc();
   virtual ~OutputFunc() {}
 
   virtual void Init(const STree& x) { m_node = &x; }
 
+  const OutputState& GetState() { return m_state; }
   IList* OStart() { return m_ostart; }
   IList* OEnd() { return m_oend; }
-  const emitting_set& Emitting() const { return m_emitting; }
-  const Hotlist::hotlist_vec& GetHotlist() const { return m_hotlist.GetHotlist(); }
 
   virtual void operator() () = 0;
+  virtual void ConnectONodes() {}
   virtual std::auto_ptr<OutputFunc> Clone() = 0;
-
-  //std::string DrawEmitting(const std::string& context) const;
-  std::string PrintHotlist() const { return m_hotlist.Print(); }
-  void ClearHotlist() { m_hotlist.Clear(); }
 
 protected:
   const STree* m_node;
+  OutputState m_state;
   IList* m_ostart;    // first emittable olist node that is spanned
   IList* m_oend;      // last emittable olist node that is spanned
-  emitting_set m_emitting;    // ONodes that we are currently happy to emit
-  Hotlist m_hotlist;  // active olist updates
 };
 
 class OutputFunc_Silent : public OutputFunc {
@@ -100,11 +101,11 @@ public:
   virtual ~OutputFunc_Winner() {}
 
   virtual void operator() ();
+  virtual void ConnectONodes();
   virtual std::auto_ptr<OutputFunc> Clone();
 
 private:
   const STree* m_winner;
-  emitting_set m_wasEmitting;
 };
 
 // Outputs all the nodes from the children that are emitting, in child order.
@@ -115,13 +116,8 @@ public:
   virtual ~OutputFunc_Sequence() {}
 
   virtual void operator() ();
+  virtual void ConnectONodes();
   virtual std::auto_ptr<OutputFunc> Clone();
-
-private:
-  typedef std::map<const STree*, emitting_set> emitbychild_map;
-  typedef emitbychild_map::const_iterator emitbychild_iter;
-  typedef emitbychild_map::iterator emitbychild_mod_iter;
-  emitbychild_map m_emitByChild;
 };
 
 // Wraps an OutputFunc with an extra output node at the start and end.
@@ -132,6 +128,7 @@ public:
 
   virtual void Init(const STree& x);
   virtual void operator() ();
+  virtual void ConnectONodes();
   virtual std::auto_ptr<OutputFunc> Clone();
 
 protected:

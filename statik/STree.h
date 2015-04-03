@@ -5,6 +5,7 @@
 #define _STree_h_
 
 #include "ComputeFunc.h"
+#include "ConnectorAction.h"
 #include "IConnection.h"
 #include "OutputFunc.h"
 #include "RestartFunc.h"
@@ -45,7 +46,7 @@ public:
          std::auto_ptr<OutputFunc> outputFunc);
 
   void RestartNode(const IList& istart);
-  bool ComputeNode(const IList& inode, const STree* initiator);
+  void ComputeNode(ConnectorAction::Action action, const IList& inode, const STree* initiator);
   void ClearNode();
 
   bool IsClear() const { return m_isClear; }
@@ -56,6 +57,7 @@ public:
   STree* GetParent() const { return m_parent; }
   const IList& IStart() const { return m_iconnection.Start(); }
   const IList& IEnd() const { return m_iconnection.End(); }
+  size_t ISize() const { return m_iconnection.Size(); }
   bool ContainsINode(const IList& inode) const;
 
   IConnection& GetIConnection() { return m_iconnection; }

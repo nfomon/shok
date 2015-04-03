@@ -13,9 +13,9 @@ namespace statik {
 class STree;
 class RestartFunc;
 
-std::auto_ptr<RestartFunc> MakeRestartFunc_None();
+std::auto_ptr<RestartFunc> MakeRestartFunc_Default();
 std::auto_ptr<RestartFunc> MakeRestartFunc_KeepAll();
-std::auto_ptr<RestartFunc> MakeRestartFunc_FirstChildOfNode();
+std::auto_ptr<RestartFunc> MakeRestartFunc_Sequence();
 std::auto_ptr<RestartFunc> MakeRestartFunc_AllChildrenOfNode();
 
 struct RestartFunc {
@@ -30,24 +30,24 @@ protected:
   STree* m_node;
 };
 
-struct RestartFunc_None : public RestartFunc {
+struct RestartFunc_Default : public RestartFunc {
 public:
-  RestartFunc_None()
+  RestartFunc_Default()
     : RestartFunc() {}
-  virtual ~RestartFunc_None() {}
-  virtual void operator() (const IList& istart) {}
+  virtual ~RestartFunc_Default() {}
+  virtual void operator() (const IList& istart);
   virtual std::auto_ptr<RestartFunc> Clone() {
-    return std::auto_ptr<RestartFunc>(new RestartFunc_None());
+    return std::auto_ptr<RestartFunc>(new RestartFunc_Default());
   }
 };
 
-struct RestartFunc_FirstChildOfNode : public RestartFunc {
-  RestartFunc_FirstChildOfNode()
+struct RestartFunc_Sequence : public RestartFunc {
+  RestartFunc_Sequence()
     : RestartFunc() {}
-  virtual ~RestartFunc_FirstChildOfNode() {}
+  virtual ~RestartFunc_Sequence() {}
   virtual void operator() (const IList& istart);
   virtual std::auto_ptr<RestartFunc> Clone() {
-    return std::auto_ptr<RestartFunc>(new RestartFunc_FirstChildOfNode());
+    return std::auto_ptr<RestartFunc>(new RestartFunc_Sequence());
   }
 };
 

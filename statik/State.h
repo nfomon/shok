@@ -19,6 +19,7 @@ public:
 
   void Clear();
 
+  bool IsInit() const { return ST_INIT == m_station; }
   bool IsOK() const { return ST_OK == m_station; }
   bool IsBad() const { return ST_BAD == m_station; }
   bool IsDone() const { return ST_DONE == m_station; }
@@ -40,6 +41,7 @@ public:
 
 private:
   enum Station {
+    ST_INIT,
     ST_OK,
     ST_BAD,
     ST_DONE,

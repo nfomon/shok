@@ -22,7 +22,7 @@ class ComputeFunc_Keyword : public ComputeFunc {
 public:
   ComputeFunc_Keyword(const std::string& str);
   virtual ~ComputeFunc_Keyword() {}
-  virtual void operator() ();
+  virtual void operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator);
   virtual std::auto_ptr<ComputeFunc> Clone() {
     return std::auto_ptr<ComputeFunc>(new ComputeFunc_Keyword(m_str));
   }

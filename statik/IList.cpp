@@ -45,6 +45,7 @@ string IList::DrawNode(const string& context) const {
     s += dotVar(this, context) + " -> " + dotVar(right, context) + ";\n";
     s += right->DrawNode(context);
   }
+  g_log.debug() << "Done drawing node " << *this << (right ? "+" : "");
   return s;
 }
 

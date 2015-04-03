@@ -28,7 +28,9 @@ auto_ptr<ComputeFunc> statik::MakeComputeFunc_Or() {
   return auto_ptr<ComputeFunc>(new ComputeFunc_Or());
 }
 
-void ComputeFunc_Or::operator() () {
+// TODO consider initiator, keep vectors as state that gets updated by each
+// call to this function, and then we finally just update State from the vecs.
+void ComputeFunc_Or::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) {
   g_log.debug() << "Computing Or at " << *m_node;
 
   // Compute new state flags
@@ -71,7 +73,7 @@ void ComputeFunc_Or::operator() () {
       if (&(*i)->IStart() != &m_node->IStart()) {
         throw SError("Computing Or at " + string(*m_node) + " and a child disagree about istart");
       }
-      m_node->GetIConnection().SetEnd((*i)->IEnd());
+      m_node->GetIConnection().SetEnd((*i)->IEnd(), (*i)->ISize());
       g_log.debug() << "Computing Or at " << *m_node << " assigning iend " << m_node->IEnd() << " from istate " << istate;
       haveSetEnd = true;
     }
@@ -120,10 +122,10 @@ void ComputeFunc_Or::operator() () {
     }
   }
   if (1 == completes.size()) {
-    m_node->GetIConnection().SetEnd(completes.at(0)->IEnd());
+    m_node->GetIConnection().SetEnd(completes.at(0)->IEnd(), completes.at(0)->ISize());
     g_log.debug() << "Computing Or at " << *m_node << " declares complete winner " << *completes.at(0);
   } else if (1 == dones.size()) {
-    m_node->GetIConnection().SetEnd(dones.at(0)->IEnd());
+    m_node->GetIConnection().SetEnd(dones.at(0)->IEnd(), dones.at(0)->ISize());
     g_log.debug() << "Computing Or at " << *m_node << " declares done winner " << *dones.at(0);
   }
   if (1 == completes.size()) {

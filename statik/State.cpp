@@ -18,8 +18,7 @@ using namespace statik;
 State::State(bool startDone)
   : m_startDone(startDone),
     m_isLocked(false),
-    m_station(ST_BAD) {
-  Clear();
+    m_station(ST_INIT) {
 }
 
 void State::Clear() {
@@ -43,6 +42,7 @@ bool State::operator!=(const State& rhs) const {
 
 string State::UnMapStation(Station st) {
   switch (st) {
+  case ST_INIT:     return "init";
   case ST_OK:       return "ok";
   case ST_BAD:      return "bad";
   case ST_DONE:     return "done";

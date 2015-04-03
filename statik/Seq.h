@@ -16,7 +16,7 @@ std::auto_ptr<Rule> SEQ(const std::string& name);
 
 struct ComputeFunc_Seq : public ComputeFunc {
   virtual ~ComputeFunc_Seq() {}
-  virtual void operator() ();
+  virtual void operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator);
   virtual std::auto_ptr<ComputeFunc> Clone() {
     return std::auto_ptr<ComputeFunc>(new ComputeFunc_Seq());
   }

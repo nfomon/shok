@@ -27,7 +27,8 @@ using namespace statik;
 Connector::Connector(const Rule& rule, const string& name, const string& graphdir)
   : m_rule(rule),
     m_root(NULL),
-    m_name(name) {
+    m_name(name),
+    m_needsCleanup(false) {
   if (!graphdir.empty()) {
     m_grapher.reset(new Grapher(graphdir, string(name + "_")));
     m_grapher->AddMachine(name, m_rule);
@@ -35,13 +36,15 @@ Connector::Connector(const Rule& rule, const string& name, const string& graphdi
   }
 }
 
-const Hotlist& Connector::GetHotlist() const {
-  return m_hotlist;
-}
-
-void Connector::ClearHotlist() {
-  m_hotlist.Clear();
-  m_nodePool.Cleanup();
+void Connector::ExtractHotlist(Hotlist& out_hotlist) {
+  g_log.debug() << "EXTRACT START: " << m_name;
+  ComputeOutput(m_root, COM_UPDATE, out_hotlist);
+  g_log.debug() << "EXTRACT DONE: " << m_name;
+  m_touchedNodes.clear();
+  m_needsCleanup = true;
+  if (!out_hotlist.IsEmpty()) {
+    DrawGraph(*m_root, /*inode*/ NULL, &out_hotlist);
+  }
 }
 
 Connector::listener_set Connector::GetListeners(const IList& x) const {
@@ -49,116 +52,46 @@ Connector::listener_set Connector::GetListeners(const IList& x) const {
 }
 
 void Connector::Insert(const IList& inode) {
-  g_log.info() << "Connector " << m_name << ": Inserting IList: " << inode << " with " << (inode.left ? "left" : "no left") << " and " << (inode.right ? "right" : "no right");
-
-  if (!m_root) {
-    g_log.debug() << " - No root; initializing the tree root";
-    m_root = m_rule.MakeRootNode(*this);
-  }
-  if (m_root->IsClear()) {
-    g_log.debug() << " - Clear root; restarting the tree root";
-    Enqueue(ConnectorAction(ConnectorAction::Restart, *m_root, inode));
-  } else {
-    if (inode.left) {
-      g_log.debug() << " - Found left inode " << *inode.left << ": updating listeners of " << inode << "'s left and (if present) right";
-      listener_set listeners = m_listeners.GetListeners(inode.left);
-      for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
-        Enqueue(ConnectorAction(ConnectorAction::INodeInsert, **i, inode));
-      }
-      if (inode.right) {
-        listeners = m_listeners.GetListeners(inode.right);
-        for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
-          Enqueue(ConnectorAction(ConnectorAction::INodeInsert, **i, inode));
-        }
-      }
-    } else {
-      g_log.debug() << " - No left inode: just restarting the root";
-      Enqueue(ConnectorAction(ConnectorAction::Restart, *m_root, inode));
-    }
-  }
-
-  ProcessActions();
-
-  // Assert that the inode has at least one listener in the updated set.
-  if (!m_listeners.HasAnyListeners(&inode)) {
-    m_root->GetState().GoBad();
-  }
-  // Stronger check: every inode has at least one listener :)
-
-  m_hotlist.Accept(m_root->GetOutputFunc().GetHotlist());
-  m_root->GetOutputFunc().ClearHotlist();
-  g_log.debug() << "Connector: Insert done, hotlist now has size " << m_hotlist.Size();
+  Hotlist hotlist;
+  hotlist.Insert(inode);
+  UpdateWithHotlist(hotlist.GetHotlist());
 }
 
 void Connector::Delete(const IList& inode) {
-  g_log.info() << "Deleting list inode " << inode;
-
-  if (!m_root) {
-    throw SError("Connector " + m_name + ": cannot delete " + string(inode) + " when the root has not been initialized");
-  }
-
-  if (!inode.left && !inode.right) {
-    // FIXME if this is necessary, it means we're doing something wrong.
-    // Hotlist is already ordered.  Anything in it, even old stuff we've
-    // declared as "deleted" since, should be valid memory we can look at.
-    /*
-    for (OutputFunc::emitting_iter i = m_root->GetOutputFunc().Emitting().begin(); i != m_root->GetOutputFunc().Emitting().end(); ++i) {
-      m_hotlist.Delete(**i);
-    }
-    */
-    m_root->ClearNode();
-  } else {
-    if (inode.left) {
-      listener_set listeners = m_listeners.GetListeners(inode.left);
-      for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
-        Enqueue(ConnectorAction(ConnectorAction::INodeDelete, **i, inode));
-      }
-    }
-    listener_set listeners = m_listeners.GetListeners(&inode);
-    for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
-      Enqueue(ConnectorAction(ConnectorAction::INodeDelete, **i, inode));
-    }
-  }
-
-  m_listeners.RemoveAllListeners(&inode);
-
-  m_hotlist.Accept(m_root->GetOutputFunc().GetHotlist());
-  m_root->GetOutputFunc().ClearHotlist();
-  g_log.debug() << "Connector: Delete done, hotlist now has size " << m_hotlist.Size();
+  Hotlist hotlist;
+  hotlist.Delete(inode);
+  UpdateWithHotlist(hotlist.GetHotlist());
 }
 
 void Connector::Update(const IList& inode) {
-  g_log.info() << "Connector " << m_name << ": Updating listeners of inode " << inode;
-  listener_set listeners = m_listeners.GetListeners(&inode);
-  for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
-    Enqueue(ConnectorAction(ConnectorAction::INodeUpdate, **i, inode));
-  }
+  Hotlist hotlist;
+  hotlist.Update(inode);
+  UpdateWithHotlist(hotlist.GetHotlist());
 }
 
 void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
   g_log.info() << "Updating Connector " << m_name << " with hotlist of size " << hotlist.size();
+  CleanupIfNeeded();
   for (Hotlist::hotlist_iter i = hotlist.begin(); i != hotlist.end(); ++i) {
     switch (i->second) {
     case Hotlist::OP_INSERT:
-      Insert(*i->first);
+      InsertNode(*i->first);
       break;
     case Hotlist::OP_DELETE:
-      Delete(*i->first);
+      DeleteNode(*i->first);
       break;
     case Hotlist::OP_UPDATE:
-      Update(*i->first);
+      UpdateNode(*i->first);
       break;
     default:
       throw SError("Cannot update with hotlist with unknown hot operation");
     }
   }
   g_log.info() << "Done updating Connector " << m_name << " with hotlist that had size " << hotlist.size();
-  if (!m_hotlist.IsEmpty()) {
-    DrawGraph(*m_root);
-  }
 }
 
 void Connector::Enqueue(ConnectorAction action) {
+  g_log.info() << "Connector " << m_name << ": Enqueuing action " << ConnectorAction::UnMapAction(action.action) << " - " << *action.node << " at depth " << action.node->depth;
   int depth = action.node->depth;
   action_map::iterator ai = m_actions_by_depth.find(depth);
   if (m_actions_by_depth.end() == ai) {
@@ -208,7 +141,11 @@ const IList* Connector::GetFirstONode() const {
   return m_root->GetOutputFunc().OStart();
 }
 
-void Connector::DrawGraph(const STree& onode, const IList* inode) {
+void Connector::TouchNode(const STree& node) {
+  m_touchedNodes.insert(&node);
+}
+
+void Connector::DrawGraph(const STree& onode, const IList* inode, const Hotlist* hotlist) {
   if (!m_grapher.get()) {
     return;
   }
@@ -217,9 +154,12 @@ void Connector::DrawGraph(const STree& onode, const IList* inode) {
   }
   m_grapher->AddIList(m_name, m_root->IStart(), m_name + " input");
   m_grapher->AddSTree(m_name, *m_root, m_name + " output");
-  if (m_root->GetOutputFunc().OStart()) {
-    m_grapher->AddOList(m_name, *m_root->GetOutputFunc().OStart(), m_name + " olist");
-  g_log.debug() << " Done drawing OList";
+  const IList* ostart = GetFirstONode();
+  if (ostart) {
+    m_grapher->AddOList(m_name, *ostart, m_name + " olist");
+    if (hotlist) {
+      m_grapher->AddHotlist(m_name, hotlist->GetHotlist());
+    }
   }
   m_grapher->AddIListeners(m_name, *this, m_root->IStart());
   if (inode) {
@@ -228,7 +168,6 @@ void Connector::DrawGraph(const STree& onode, const IList* inode) {
   } else {
     m_grapher->Signal(m_name, &onode, true);
   }
-  m_grapher->AddHotlist(m_name, m_hotlist.GetHotlist());
   m_grapher->SaveAndClear();
 }
 
@@ -241,64 +180,78 @@ const STree& Connector::GetRoot() const {
   return *m_root;
 }
 
-/*
-void Connector::UpdateListeners(const IList& inode, bool updateLeft, bool updateThis, bool updateRight) {
-  if (updateLeft && inode.left) {
-    // TODO Unnecessary copy
-    listener_set listeners = m_listeners.GetListeners(inode.left);
-    for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
-      changes_by_depth[(*i)->depth].insert(*i);
-    }
-  }
+void Connector::InsertNode(const IList& inode) {
+  g_log.info() << "Connector " << m_name << ": Inserting IList: " << inode << " with " << (inode.left ? "left" : "no left") << " and " << (inode.right ? "right" : "no right");
 
-  if (updateThis && (!updateLeft || inode.left != &inode)) {
-    // TODO Unnecessary copy
-    listener_set listeners = m_listeners.GetListeners(&inode);
-    for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
-      changes_by_depth[(*i)->depth].insert(*i);
-    }
+  if (!m_root) {
+    g_log.debug() << " - No root; initializing the tree root";
+    m_root = m_rule.MakeRootNode(*this);
   }
-
-  if (updateRight && (!updateLeft || inode.left != inode.right)
-                  && (!updateThis || &inode != inode.right)) {
-    // TODO Unnecessary copy
-    listener_set listeners = m_listeners.GetListeners(inode.right);
-    for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
-      changes_by_depth[(*i)->depth].insert(*i);
-    }
-  }
-
-  if (changes_by_depth.empty()) {
-    g_log.info() << "Connector: No listeners of " << inode << " to update (left: " + (inode.left ? string(*inode.left) : "<null>") << "; right: " << (inode.right ? string(*inode.right) : "<null>") << ")";
-  }
-
-  while (!changes_by_depth.empty()) {
-    // Update the deepest depth of our changeset
-    int depth = changes_by_depth.rbegin()->first;
-    change_set changes = changes_by_depth.rbegin()->second;
-    g_log.debug() << "Connector: Updating changes at depth " << depth;
-    for (change_iter i = changes.begin(); i != changes.end(); ++i) {
-      bool changed = false;
-      // If the node's IStart() has been deleted, let's clear it.
-      if (&(*i)->IStart() == &inode && ((inode.left && inode.left->right != &inode) || (inode.right && inode.right->left != &inode))) {
-        g_log.debug() << "UpdateListeners: node " << **i << " lost its IStart, so clearing it";
-        (*i)->ClearNode();
-        changed = true;
-      } else {
-        g_log.debug() << "UpdateListeners: Computing node " << **i << " with IStart " << (*i)->IStart() << " in response to INode " << inode;
-        changed = (*i)->ComputeNode();
+  if (m_root->IsClear()) {
+    g_log.debug() << " - Clear root; restarting the tree root";
+    Enqueue(ConnectorAction(ConnectorAction::Restart, *m_root, inode));
+  } else {
+    if (inode.left) {
+      g_log.debug() << " - Found left inode " << *inode.left << ": updating listeners of " << inode << "'s left and (if present) right";
+      listener_set listeners = m_listeners.GetListeners(inode.left);
+      for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
+        Enqueue(ConnectorAction(ConnectorAction::INodeInsert, **i, inode));
       }
-      if (changed) {
-        STree* parent = (*i)->GetParent();
-        if (parent) {
-          changes_by_depth[parent->depth].insert(parent);
+      if (inode.right) {
+        listeners = m_listeners.GetListeners(inode.right);
+        for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
+          Enqueue(ConnectorAction(ConnectorAction::INodeInsert, **i, inode));
         }
       }
+    } else {
+      g_log.debug() << " - No left inode: just restarting the root";
+      Enqueue(ConnectorAction(ConnectorAction::Restart, *m_root, inode));
     }
-    changes_by_depth.erase(depth);
+  }
+
+  ProcessActions();
+
+  // Assert that the inode has at least one listener in the updated set.
+  if (!m_listeners.HasAnyListeners(&inode)) {
+    m_root->GetState().GoBad();
+  }
+  // Stronger check: every inode has at least one listener :)
+  g_log.debug() << "Connector: Insert done";
+}
+
+void Connector::DeleteNode(const IList& inode) {
+  g_log.info() << "Deleting list inode " << inode;
+
+  if (!m_root) {
+    throw SError("Connector " + m_name + ": cannot delete " + string(inode) + " when the root has not been initialized");
+  }
+
+  if (!inode.left && !inode.right) {
+    m_root->ClearNode();
+  } else {
+    if (inode.left) {
+      listener_set listeners = m_listeners.GetListeners(inode.left);
+      for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
+        Enqueue(ConnectorAction(ConnectorAction::INodeDelete, **i, inode));
+      }
+    }
+    listener_set listeners = m_listeners.GetListeners(&inode);
+    for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
+      Enqueue(ConnectorAction(ConnectorAction::INodeDelete, **i, inode));
+    }
+  }
+
+  m_listeners.RemoveAllListeners(&inode);
+  g_log.debug() << "Connector: Delete done";
+}
+
+void Connector::UpdateNode(const IList& inode) {
+  g_log.info() << "Connector " << m_name << ": Updating listeners of inode " << inode;
+  listener_set listeners = m_listeners.GetListeners(&inode);
+  for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
+    Enqueue(ConnectorAction(ConnectorAction::INodeUpdate, **i, inode));
   }
 }
-*/
 
 void Connector::ProcessActions() {
   while (!m_actions_by_depth.empty()) {
@@ -306,27 +259,109 @@ void Connector::ProcessActions() {
     action_queue& actions = m_actions_by_depth.rbegin()->second;
     g_log.debug() << "Connector " << m_name << ": Applying actions at depth " << depth;
     while (m_actions_by_depth.rbegin()->first == depth && !actions.empty()) {
+      g_log.debug() << "Connector " << m_name << " * * Action loop iteration";
       ConnectorAction* a = &actions.front();
       actions.pop_front();
-      switch (a->action) {
-      case ConnectorAction::Restart:
+      if (ConnectorAction::Restart == a->action) {
         a->node->RestartNode(*a->inode);
-        break;
-      case ConnectorAction::INodeUpdate:
-        a->node->ComputeNode(*a->inode, a->initiator);
-        break;
-      case ConnectorAction::INodeInsert:
-        a->node->ComputeNode(*a->inode, a->initiator);
-        break;
-      case ConnectorAction::INodeDelete:
-        a->node->ComputeNode(*a->inode, a->initiator);
-        break;
-      default:
-        throw SError("ProcessActions: unknown action");
+      } else {
+        a->node->ComputeNode(a->action, *a->inode, a->initiator);
       }
     }
     if (m_actions_by_depth.at(depth).empty()) {
+      g_log.debug() << "Connector " << m_name << " Clearing actions at depth " << depth;
       m_actions_by_depth.erase(depth);
     }
+  }
+}
+
+void Connector::ComputeOutput(const STree* node, ComputeOutputMode mode, Hotlist& out_hotlist) {
+  g_log.debug() << "Connector " << m_name << ": Computing output for node " << *node << " with mode " << mode;
+  // TODO do this check before we call ComputeOutput() on a node (including the root)
+  if (m_touchedNodes.end() == m_touchedNodes.find(node)) {
+    g_log.debug() << " - node " << *node << " has not been touched";
+    return;
+  }
+
+  node->GetOutputFunc()();
+  const OutputState& os = node->GetOutputFunc().GetState();
+
+  output_mod_iter posi = m_outputPerNode.find(node);
+
+  // debug
+  if (m_outputPerNode.end() != posi) {
+    OutputState& pos = posi->second;
+    g_log.debug() << *node << " was emitting " << pos.onodes.size() << " onodes and " << pos.children.size() << " children";
+    for (OutputState::onode_iter ponode = pos.onodes.begin(); ponode != pos.onodes.end(); ++ponode) {
+      g_log.debug() << m_name << "    yyy   " << *node << "  -  prev ONode: " << **ponode;
+    }
+    for (OutputState::child_iter child = pos.children.begin(); child != pos.children.end(); ++child) {
+      g_log.debug() << m_name << "    yyy    " << *node << "  -  prev child: " << **child;
+    }
+  }
+
+  if (COM_UPDATE == mode) {
+    if (m_outputPerNode.end() == posi) {
+      // We weren't emitting before, but are emitting now.  Insert all.
+      mode = COM_INSERT;
+    } else {
+      OutputState& pos = posi->second;
+      for (OutputState::onode_iter onode = os.onodes.begin(); onode != os.onodes.end(); ++onode) {
+        OutputState::onode_iter ponode = pos.onodes.find(*onode);
+        if (pos.onodes.end() == ponode) {
+          g_log.debug() << *node << " WAS NOT EMITTING node " << **onode << "; inserting now.";
+          out_hotlist.Insert(**onode);
+        } else {
+          g_log.debug() << *node << " WAS EMITTING node " << **onode << "; updating, and erasing from pos.";
+          pos.onodes.erase(ponode);
+          if (os.value != pos.value) {
+            out_hotlist.Update(**onode);
+          }
+        }
+      }
+      for (OutputState::onode_iter ponode = pos.onodes.begin(); ponode != pos.onodes.end(); ++ponode) {
+        out_hotlist.Delete(**ponode);
+      }
+      for (OutputState::child_iter child = os.children.begin(); child != os.children.end(); ++child) {
+        ComputeOutput(*child, COM_UPDATE, out_hotlist);
+      }
+    }
+  }
+  if (COM_INSERT == mode) {
+    // Just insert everything, disregard what the prev output says
+    for (OutputState::onode_iter onode = os.onodes.begin(); onode != os.onodes.end(); ++onode) {
+      out_hotlist.Insert(**onode);
+    }
+    for (OutputState::child_iter child = os.children.begin(); child != os.children.end(); ++child) {
+      ComputeOutput(*child, COM_INSERT, out_hotlist);
+    }
+  } else if (COM_DELETE == mode) {
+    // Just delete everything from prev, disregard what the current output says
+    const OutputState& pos = posi->second;
+    for (OutputState::onode_iter ponode = pos.onodes.begin(); ponode != pos.onodes.end(); ++ponode) {
+      out_hotlist.Delete(**ponode);
+    }
+    for (OutputState::child_iter child = pos.children.begin(); child != pos.children.end(); ++child) {
+      ComputeOutput(*child, COM_DELETE, out_hotlist);
+    }
+  }
+
+  g_log.debug() << "Done computing output for node " << *node << ".  Hotlist so far: " << out_hotlist.Print();
+  for (OutputState::onode_iter onode = os.onodes.begin(); onode != os.onodes.end(); ++onode) {
+    g_log.debug() << m_name << "    xxx   " << *node << "  -  ONode: " << **onode;
+  }
+  for (OutputState::child_iter child = os.children.begin(); child != os.children.end(); ++child) {
+    g_log.debug() << m_name << "    xxx    " << *node << "  -  Child: " << **child;
+  }
+  m_outputPerNode[node] = os;   // copy
+  g_log.debug() << m_name << " node " << *node << " is now emitting " << os.onodes.size() << " ONodes and " << os.children.size() << " children.";
+  node->GetOutputFunc().ConnectONodes();
+}
+
+void Connector::CleanupIfNeeded() {
+  if (m_needsCleanup) {
+    g_log.debug() << "Connector " << m_name << " - cleaning up";
+    m_nodePool.Cleanup();
+    m_needsCleanup = false;
   }
 }

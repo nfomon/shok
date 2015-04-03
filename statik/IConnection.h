@@ -16,6 +16,8 @@ public:
       m_iend(NULL),
       m_size(0) {}
 
+  bool IsClear() const { return !m_istart; }
+
   const IList& Start() const {
     if (!m_istart) {
       throw SError("Cannot get start of uninitialized IConnection");

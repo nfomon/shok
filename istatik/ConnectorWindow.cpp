@@ -17,15 +17,16 @@ ConnectorWindow::ConnectorWindow(const statik::Rule& rule, const string& graphdi
   g_log.info() << "Initialized ConnectorWindow for " << rule;
 }
 
-WindowResponse ConnectorWindow::Input(const statik::Hotlist& hotlist) {
-  m_connector.ClearHotlist();
-  g_log.info() << "Updating connector " << m_connector.Name() << " with hotlist: " << hotlist.Print();
-  m_connector.UpdateWithHotlist(hotlist.GetHotlist());
+WindowResponse ConnectorWindow::Input(const statik::Hotlist& ihotlist) {
+  g_log.info() << "Updating connector " << m_connector.Name() << " with hotlist: " << ihotlist.Print();
+  m_connector.UpdateWithHotlist(ihotlist.GetHotlist());
   WindowResponse response;
   // Find first item in connector's output list, and draw everything
   response.actions.push_back(WindowAction(WindowAction::MOVE, 0, 0, 0));
-  g_log.info() << "Printing WindowResponse list.  Hotlist size is: " << m_connector.GetHotlist().Size();
-  if (!m_connector.GetHotlist().IsEmpty()) {
+  statik::Hotlist hotlist;
+  m_connector.ExtractHotlist(hotlist);
+  g_log.info() << "Printing WindowResponse list.  Hotlist size is: " << hotlist.Size();
+  if (!hotlist.IsEmpty()) {
     const statik::IList* inode = m_connector.GetFirstONode();
     string old_str = m_str;
     m_str = "";
@@ -46,7 +47,7 @@ WindowResponse ConnectorWindow::Input(const statik::Hotlist& hotlist) {
     for (size_t i = m_str.size(); i < old_str.size(); ++i) {
       response.actions.push_back(WindowAction(WindowAction::INSERT, 0, i, ' '));
     }
-    response.hotlist.Accept(m_connector.GetHotlist().GetHotlist());
+    response.hotlist.Accept(hotlist.GetHotlist());
   }
   return response;
 }

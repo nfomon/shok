@@ -4,19 +4,20 @@
 #ifndef _ComputeFunc_h_
 #define _ComputeFunc_h_
 
-#include "IList.h"
+#include "ConnectorAction.h"
 
 #include <memory>
 
 namespace statik {
 
+class IList;
 class STree;
 
 struct ComputeFunc {
 public:
   virtual ~ComputeFunc() {}
   void Init(STree& x) { m_node = &x; }
-  virtual void operator() () = 0;
+  virtual void operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) = 0;
   virtual std::auto_ptr<ComputeFunc> Clone() = 0;
 protected:
   STree* m_node;

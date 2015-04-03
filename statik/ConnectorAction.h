@@ -5,14 +5,16 @@
 #define _ConnectorAction_h_
 
 #include "IList.h"
-#include "STree.h"
 
 namespace statik {
+
+class STree;
 
 struct ConnectorAction {
 public:
   enum Action {
     Restart,
+    Compute,    // Determine leaf state after a restart
     INodeInsert,
     INodeDelete,
     INodeUpdate,
@@ -21,6 +23,21 @@ public:
     ChildUpdate,
     ClearChild
   };
+
+  static std::string UnMapAction(Action action) {
+    switch (action) {
+      case Restart: return "Restart";
+      case Compute: return "Compute";
+      case INodeInsert: return "INodeInsert";
+      case INodeDelete: return "INodeDelete";
+      case INodeUpdate: return "INodeUpdate";
+      case ChildGrow: return "ChildGrow";
+      case ChildShrink: return "ChildShrink";
+      case ChildUpdate: return "ChildUpdate";
+      case ClearChild: return "ClearChild";
+      default: throw SError("Cannot unmap unknown action");
+    }
+  }
 
   ConnectorAction(Action action, STree& node, const IList& inode, const STree* initiator = NULL)
     : action(action),
