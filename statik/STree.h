@@ -61,6 +61,7 @@ public:
   bool ContainsINode(const IList& inode) const;
 
   IConnection& GetIConnection() { return m_iconnection; }
+  const IConnection& GetIConnection() const { return m_iconnection; }
   OutputFunc& GetOutputFunc() const { return *m_outputFunc.get(); }
 
   operator std::string() const;

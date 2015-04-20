@@ -61,6 +61,7 @@ void ComputeFunc_Keyword::operator() (ConnectorAction::Action action, const ILis
       break;
     } else {
       // Just ok; keep going (if possible)
+      state.GoOK();
     }
     m_node->GetConnector().Listen(*m_node, *i);
     ++size;
@@ -70,5 +71,8 @@ void ComputeFunc_Keyword::operator() (ConnectorAction::Action action, const ILis
   } else {
     state.Unlock();
   }
-  g_log.debug() << "Keyword now at: " << *m_node;
+  if (state.IsInit()) {
+    throw SError("Keyword failed to determine state; left at init");
+  }
+  g_log.debug() << "Keyword now at: " << *m_node << " with IStart: " << m_node->IStart() << " and IEnd: " << m_node->IEnd();
 }

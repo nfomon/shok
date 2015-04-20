@@ -61,6 +61,9 @@ public:
   // Prepare a node to be removed completely
   void ClearNode(STree& x);
 
+  // Get the first node of the input list
+  const IList* GetFirstINode() const;
+
   // Get the first node of the output list
   const IList* GetFirstONode() const;
 
@@ -70,6 +73,9 @@ public:
   void DrawGraph(const STree& onode,
                  const IList* inode = NULL,
                  const Hotlist* hotlist = NULL);
+
+  void SanityCheck();
+  void SanityCheck(const STree* s) const;
 
   std::string Name() const { return m_name; }
 
@@ -86,14 +92,10 @@ private:
   void DeleteNode(const IList& inode);
   void UpdateNode(const IList& inode);
 
-  enum ComputeOutputMode {
-    COM_UPDATE,
-    COM_INSERT,
-    COM_DELETE
-  };
-
   void ProcessActions();
-  void ComputeOutput(const STree* node, ComputeOutputMode mode, Hotlist& out_hotlist);
+  void ComputeOutput_Update(const STree* node, Hotlist& out_hotlist);
+  void ComputeOutput_Insert(const STree* node, Hotlist& out_hotlist);
+  void ComputeOutput_Delete(const STree* node, Hotlist& out_hotlist);
   void CleanupIfNeeded();
 
   // Root of the Rule tree
@@ -111,6 +113,7 @@ private:
   typedef output_map::iterator output_mod_iter;
   output_map m_outputPerNode;
   std::set<const STree*> m_touchedNodes;
+  int m_sancount;
 };
 
 }

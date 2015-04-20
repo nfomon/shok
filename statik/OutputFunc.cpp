@@ -112,6 +112,7 @@ OutputFunc_Winner::OutputFunc_Winner()
 
 void OutputFunc_Winner::operator() () {
   g_log.debug() << "OutputFunc_Winner() " << *m_node;
+  m_state.children.clear();
   const State& state = m_node->GetState();
   const STree* winner = NULL;
   for (STree::child_iter i = m_node->children.begin(); i != m_node->children.end(); ++i) {
@@ -141,7 +142,7 @@ void OutputFunc_Winner::operator() () {
 }
 
 void OutputFunc_Winner::ConnectONodes() {
-  g_log.debug() << "OutputFunc_Winner::ComputeONodes() " << *m_node;
+  g_log.debug() << "OutputFunc_Winner::ConnectONodes() " << *m_node;
   if (m_winner) {
     g_log.debug() << "**** OutputFunc_Winner: " << *m_node << " Setting ONodes from winner " << *m_winner;
     m_ostart = m_winner->GetOutputFunc().OStart();
@@ -165,15 +166,18 @@ void OutputFunc_Sequence::operator() () {
   g_log.debug() << "OutputFunc_Sequence() " << *m_node;
   m_ostart = NULL;
   m_oend = NULL;
+  m_state.children.clear();
 
   for (STree::child_iter child = m_node->children.begin(); child != m_node->children.end(); ++child) {
-    g_log.debug() << "Considering child " << **child;
+    g_log.debug() << " - Considering child " << **child;
 
-    // If m_node is Complete and this is the first child past the last approved
-    // child, then discard the output of this child onwards.
     const State& istate = (*child)->GetState();
-    if (istate.IsComplete() && &(*child)->IStart() == &m_node->IEnd()) {
-      g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " past complete, so blocking at child " << **child;
+    if (istate.IsBad() || istate.IsInit()) {
+      g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " aborting at " << (istate.IsBad() ? "bad" : "init") << " child " << **child;
+      break;
+    } else if (istate.IsDone() || istate.IsOK()) {
+      g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " aborting after " << (istate.IsOK() ? "ok" : "done") << " child " << **child;
+      m_state.children.insert(*child);
       break;
     }
     m_state.children.insert(*child);

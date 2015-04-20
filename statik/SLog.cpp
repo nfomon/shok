@@ -6,3 +6,4 @@
 using namespace statik;
 
 Log statik::g_log;
+Log statik::g_san;

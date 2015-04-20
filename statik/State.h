@@ -15,13 +15,14 @@ namespace statik {
 
 class State {
 public:
-  State(bool startDone = false);
+  State();
 
   void Clear();
 
   bool IsInit() const { return ST_INIT == m_station; }
   bool IsOK() const { return ST_OK == m_station; }
   bool IsBad() const { return ST_BAD == m_station; }
+  bool IsBadOrInit() const { return ST_BAD == m_station || ST_INIT == m_station; }
   bool IsDone() const { return ST_DONE == m_station; }
   bool IsComplete() const { return ST_COMPLETE == m_station; }
   bool IsAccepting() const { return ST_OK == m_station || ST_DONE == m_station; }
@@ -50,7 +51,6 @@ private:
 
   static std::string UnMapStation(Station st);
 
-  bool m_startDone;
   bool m_isLocked;
   Station m_station;
 };

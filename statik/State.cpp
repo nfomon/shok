@@ -15,18 +15,13 @@ using namespace statik;
 
 /* public */
 
-State::State(bool startDone)
-  : m_startDone(startDone),
-    m_isLocked(false),
+State::State()
+  : m_isLocked(false),
     m_station(ST_INIT) {
 }
 
 void State::Clear() {
-  if (m_startDone) {
-    m_station = ST_DONE;
-  } else {
-    m_station = ST_OK;
-  }
+  m_station = ST_INIT;
   Unlock();
 }
 

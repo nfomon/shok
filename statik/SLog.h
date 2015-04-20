@@ -9,6 +9,7 @@
 namespace statik {
 
 extern Log g_log;
+extern Log g_san;
 
 }
 

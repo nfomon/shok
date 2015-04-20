@@ -950,4 +950,33 @@ In Connector::ExtractHotlist() we ComputeOutput() which will have called m_root-
 
 OutputFunc::operator() needs to populate the OutputState: the OList nodes and STree children that would be output by that node.  The Connector will recurse down as appropriate to call the OutputFunc() on those children.  Then ConnectONodes() gets called, which can just link/set OList node starts/ends.
 
+-----
+2k15-04-05
+
+Stop Connector::Delete()'s new fancy attempts to just outright clear stuff if inode.right is null.  actually, don't do that.  We might not even need to update the inode's directly listeners anyway (just inode left... n'est-ce pas? in what situations otherwise?).  Instead, the Seq or Star up above should notice when one node's IEnd().right doesn't exist, and clear everything after that point just because.  I thought we had that?  Was there something wrong with that?
+ - nurr, NO, I'm uncomfortable with leaving nodes with bad IStarts.  Let's just clear those nodes k..
+
+-----
+
+IConnection has a tentative start.
+Restart sets the tentative start (IConnection::Restart() does that).  Computes should call ConfirmStart() IF they're in a not-bad state.
+IStart/IEnd must only be set by nodes that are in a not-bad state; going bad should wipe it out.
+
+ - IConnection Clear: means no IStart/IEnd. But it could have a Restart.
+ - call Restart to set a restart start, and clear the start/end.  You can't ask for start/end, but you can ask for its TentativeStart().
+ - In STree::ComputeNode(), if it is clear but has a TentativeStart, sets the start/end/size=1. Then calls Compute().
+ - If it does not have a TentativeStart nor existing start/end, then it's cleared, and the ComputeFunc() is not called.
+  - warn in this case, because I don't think we call ComputeNode() on cleared nodes, but we could if we want to.
+ - ComputeFunc(): Has a start necessarily.  Sets an End if it finds a good one.  Don't need to call SetEnd() or anything if it goes Bad.
+ - ComputeNode(): After ComputeFunc(), if the state is Bad, then Clear the IConnection.  Just outright Clear it, not even a Tentative anymore.  I think.
+
+-----
+2k15-04-19
+
+Bad nodes need to know their start at least.  Because otherwise, on this sequence:
+ newd;
+ newde;
+
+there's a del node that's bad with "d;" but now it's "de;" and it needs to know it started at d and is trying to match something.
+
 

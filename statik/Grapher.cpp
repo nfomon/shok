@@ -56,7 +56,7 @@ void Grapher::AddIList(const string& context, const IList& inode, const string& 
 }
 
 void Grapher::AddSTree(const string& context, const STree& snode, const string& label) {
-  //g_log.debug() << "Adding STree";
+  g_log.debug() << "Adding STree at " << snode;
   m_graph += "subgraph cluster_" + context + dotVar(&snode, context) + " {\n";
   if (!label.empty()) {
     m_graph += "label=\"" + label + "\";\n";
@@ -65,7 +65,7 @@ void Grapher::AddSTree(const string& context, const STree& snode, const string& 
   m_graph += snode.DrawNode(context);
   m_graph += "}\n";
   m_isDirty = true;
-  //g_log.debug() << "Done adding STree";
+  g_log.debug() << "Done adding STree";
 }
 
 void Grapher::AddOList(const string& context, const IList& onode, const string& label) {
@@ -103,6 +103,7 @@ void Grapher::AddHotlist(const string& context, const Hotlist::hotlist_vec& hotl
       color = "#2222cc";
       break;
     case Hotlist::OP_DELETE:
+      g_log.debug() << "HOTLIST ADD DELETE " << context << " - " << *i->first;
       color = "#cc2222";
       break;
     default:

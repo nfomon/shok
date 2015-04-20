@@ -61,57 +61,79 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
   // What happened to the initiator child?  Cleared / Shrank / Stayed / Grew
   State& state = m_node->GetState();
   const State& childState = (*child)->GetState();
+  STree::child_mod_iter next = child+1;
   if ((*child)->IsClear()) {
     g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child was cleared, so restarting next";
-    STree* next = NULL;
-    if (child+1 != m_node->children.end()) {
-      next = *(child+1);
-    }
+    if (next != m_node->children.end()) {
+      if (!prev_child) {
+        throw SError("Seq: Not sure we handle this case right.. first child was removed, and it has subsequent child that we are not restarting (here).");
+      } else if (prev_child->GetState().IsBadOrInit()) {
+        throw SError("Seq initiator child cleared but prev_child exists and is bad or init.  What to do about next children -- clear them all?");
+      }
+      m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, prev_child->IEnd(), m_node));
+      state.GoOK();
+      return;
+    } 
+    // This is safe down here because the above just enqueues stuff, nothing else.
     m_node->children.erase(child);
-    if (next && prev_child) {
-      m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, *next, prev_child->IEnd(), m_node));
-    } else if (next && !prev_child) {
-      g_log.warning() << "Seq: Not sure we handle this case right.. first child was removed, and it has subsequent child that we are not restarting (here).";
-    }
   } else if (!childState.IsComplete()) {
     g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child is not complete, so not fixing its next connections";
+    if (!(*child)->GetState().IsBadOrInit() && next != m_node->children.end() && !(*child)->IEnd().right) {
+      g_log.debug() << " - but we're at end of input, so clear all subsequent children";
+      for (STree::child_mod_iter i = next; i != m_node->children.end(); ++i) {
+        (*i)->ClearNode();
+      }
+      m_node->children.erase(next, m_node->children.end());
+    }
   } else {
     switch(action) {
     case ConnectorAction::ChildGrow: {
-      STree::child_mod_iter next = child+1;
       if (next != m_node->children.end()) {
-        g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child grew, so clearing and restarting next, which is " << **next;
-        // Clear and Restart the next child
-        (*next)->ClearNode();
-        m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
+        if (&(*child)->IEnd() == &(*next)->IStart()) {
+          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child grew, but next node is already in the right spot";
+        } else {
+          // Clear and Restart the next child
+          g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child grew, so clearing and restarting next, which is " << **next;
+          (*next)->ClearNode();
+          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
+          state.GoOK();
+          return;
+        }
       } else if (child_index != m_node->GetRule().GetChildren().size() - 1) {
         g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child grew, so creating new next";
         // Create next child
         (void) m_node->GetRule().GetChildren().at(child_index+1)->MakeNode(*m_node, (*child)->IEnd());
+        state.GoOK();
+        return;
       }
     } break;
     case ConnectorAction::ChildShrink: {
       g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child shrank, so restarting next without clearing it";
-      STree::child_mod_iter next = child+1;
       if (next != m_node->children.end()) {
         // Restart the next child
         m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
+        state.GoOK();
+        return;
       } else if (child_index != m_node->GetRule().GetChildren().size() - 1) {
         // Create next child
         (void) m_node->GetRule().GetChildren().at(child_index+1)->MakeNode(*m_node, (*child)->IEnd());
-        g_log.debug() << "Created next child!";
+        state.GoOK();
+        return;
       }
     } break;
     case ConnectorAction::ChildUpdate: {
       g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child update, but did not change size.  Make sure its next connection is correct";
-      STree::child_mod_iter next = child+1;
       if (next != m_node->children.end()) {
         if (&(*child)->IEnd() != &(*next)->IStart()) {
           m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
+          state.GoOK();
+          return;
         }
       } else if (child_index != m_node->GetRule().GetChildren().size() - 1) {
         // Create next child
         (void) m_node->GetRule().GetChildren().at(child_index+1)->MakeNode(*m_node, (*child)->IEnd());
+        state.GoOK();
+        return;
       }
     } break;
     default:
@@ -128,14 +150,12 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
   const STree* lockedChild = NULL;
   size_t isize = 0;
   child_index = 0;
-  g_log.debug() << "Finding breach";
   for (STree::child_iter i = m_node->children.begin(); i != m_node->children.end(); ++i) {
-    g_log.debug() << "Investigating child " << **i;
     if (!breachChild) {
       isize += (*i)->ISize();
     }
     const State& istate = (*i)->GetState();
-    if (istate.IsBad() || istate.IsInit() || (!istate.IsComplete() && child_index < m_node->GetRule().GetChildren().size() - 1)) {
+    if (istate.IsBadOrInit() || (!istate.IsComplete() && child_index < m_node->GetRule().GetChildren().size() - 1)) {
       breachChild = *i;
     }
     if (istate.IsLocked()) {
@@ -155,11 +175,8 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
     // We have a breach.  Check it out, it determines our state and IEnd.
     const State& istate = breachChild->GetState();
     g_log.debug() << "Investigating breach child " << *breachChild;
-    if (istate.IsInit()) {
+    if (istate.IsBadOrInit()) {
       // Cannot set IEnd!
-      state.GoBad();
-    } else if (istate.IsBad()) {
-      m_node->GetIConnection().SetEnd(breachChild->IStart(), isize);
       state.GoBad();
     } else {
       m_node->GetIConnection().SetEnd(breachChild->IEnd(), isize + breachChild->ISize());
@@ -173,7 +190,7 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
     } else {
       const STree& lastChild = *m_node->children.back();
       const State& istate = lastChild.GetState();
-      if (istate.IsBad() || istate.IsInit()) {
+      if (istate.IsBadOrInit()) {
         throw SError("Found bad last child, but breach child was not set"); 
       } else if (istate.IsComplete()) {
         state.GoComplete();
@@ -189,5 +206,4 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
   }
 
   g_log.debug() << "Computing Seq at " << *m_node << " done update; now has state " << *m_node;
-  g_log.debug() << " - and it has istart " << m_node->IStart() << " and iend " << m_node->IEnd();
 }

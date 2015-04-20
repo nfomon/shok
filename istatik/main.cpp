@@ -7,6 +7,8 @@
 #include "ISLog.h"
 #include "IStatik.h"
 
+#include "statik/SLog.h"
+
 #include <boost/program_options.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 using boost::ptr_vector;
@@ -70,6 +72,10 @@ int main(int argc, char *argv[]) {
     if (!slogfile.empty()) {
       statik::g_log.setLevel(sloglevel);
       statik::g_log.Init(slogfile);
+      if (Log::DEBUG == g_log.getLevel()) {
+        statik::g_san.setLevel(Log::DEBUG);
+        statik::g_san.Init(slogfile + "_sanity");
+      }
     }
 
     IStatik istatik(compilerName, graphdir);

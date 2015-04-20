@@ -45,6 +45,8 @@ public:
   void setLevel(LEVEL level);
   void setLevel(const std::string& level);
 
+  LEVEL getLevel() const { return m_level; }
+
   std::ostream& error();
   std::ostream& warning();
   std::ostream& info();

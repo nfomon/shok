@@ -45,7 +45,7 @@ void ComputeFunc_Or::operator() (ConnectorAction::Action action, const IList& in
   if (m_node->children.empty()) {
     throw SError("Cannot compute Or at " + string(*m_node) + " that has no children");
   }
-  m_node->GetIConnection().Restart(m_node->children.at(0)->IStart());
+  m_node->GetIConnection().SetEnd(m_node->IStart(), 1);
 
   STree::child_mod_iter i = m_node->children.begin();
   bool haveSetEnd = false;
@@ -62,9 +62,7 @@ void ComputeFunc_Or::operator() (ConnectorAction::Action action, const IList& in
       if (lockedChild) {
         throw SError("Computing Or at " + string(*m_node) + " found more than one locked children");
       }
-      g_log.info() << "Computing Or at " << *m_node << " found locked child";
-      g_log.info() << "Locked child state is " << istate;
-      g_log.info() << "Locked child is " << **i;
+      g_log.info() << "Computing Or at " << *m_node << " found locked child " << **i << " in state " << istate;
       lockedChild = *i;
       thisChildLocked = true;
       state.Lock();

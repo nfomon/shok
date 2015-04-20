@@ -6,6 +6,8 @@
 
 #include "SError.h"
 
+#include <boost/lexical_cast.hpp>
+
 #include <memory>
 #include <set>
 #include <string>
@@ -40,9 +42,15 @@ public:
 
   void Cleanup() {
     for (item_mod_iter i = m_unlinked.begin(); i != m_unlinked.end(); ++i) {
+      g_log.debug() << "Object pool deleting " << **i << " - " << *i;
+      g_san.debug() << "Object pool deleting " << **i << " - " << *i;
       delete *i;
     }
     m_unlinked.clear();
+  }
+
+  operator std::string() const {
+    return std::string("Object pool has " + boost::lexical_cast<std::string>(m_active.size()) + " active and " + boost::lexical_cast<std::string>(m_unlinked.size()) + " unlinked");
   }
 
 private:
