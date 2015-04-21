@@ -168,17 +168,26 @@ void OutputFunc_Sequence::operator() () {
   m_oend = NULL;
   m_state.children.clear();
 
+  if (m_node->GetState().IsBad()) {
+    m_state.children.insert(m_node->children.begin(), m_node->children.end());
+    return;
+  }
+
   for (STree::child_iter child = m_node->children.begin(); child != m_node->children.end(); ++child) {
     g_log.debug() << " - Considering child " << **child;
 
     const State& istate = (*child)->GetState();
-    if (istate.IsBad() || istate.IsInit()) {
-      g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " aborting at " << (istate.IsBad() ? "bad" : "init") << " child " << **child;
+    if (istate.IsPending()) {
+      throw SError("OutputFunc Sequence found Pending child");
+    } else if (istate.IsBad()) {
+      g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " aborting at bad child " << **child;
       break;
     } else if (istate.IsDone() || istate.IsOK()) {
       g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " aborting after " << (istate.IsOK() ? "ok" : "done") << " child " << **child;
       m_state.children.insert(*child);
       break;
+    } else if (!istate.IsComplete()) {
+      throw SError("OutputFunc Seq found child in unknown state");
     }
     m_state.children.insert(*child);
   }

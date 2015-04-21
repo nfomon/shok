@@ -50,33 +50,22 @@ void STree::RestartNode(const IList& istart) {
 void STree::ComputeNode(ConnectorAction::Action action, const IList& inode, const STree* initiator) {
   if (m_isClear) {
     throw SError("Cannot compute node " + string(*this) + " which has been cleared");
+  } else if (m_iconnection.IsClear()) {
+    throw SError("Cannot compute node " + string(*this) + " with cleared IConnection");
   }
   g_log.info() << "Computing node " << *this << " with inode " << inode << " and initiator " << (initiator ? string(*initiator) : "<null>");
   const State old_state = m_state;
-  const IList* old_iend = NULL;
+  const IList* old_iend = &IEnd();
   size_t old_size = ISize();
 
-  if (m_iconnection.TentativeStart()) {
-    m_iconnection.ConfirmStart();
-  } else if (m_iconnection.IsClear()) {
-    g_log.info() << "Cannot compute node " << *this << " with cleared IConnection";
-    return;
-  } else {
-    old_iend = &IEnd();
-  }
-
   (*m_computeFunc)(action, inode, initiator);
-
-  if (m_state.IsBadOrInit()) {
-    m_iconnection.Clear();
-  }
 
   bool hasChanged1 = old_iend != (m_iconnection.IsClear() ? NULL : &IEnd());
   bool hasChanged2 = old_state != m_state;
   bool hasChanged = hasChanged1 || hasChanged2;
   g_log.info() << " - - - - " << *this << " has " << (hasChanged ? "" : "NOT ") << "changed  " << hasChanged1 << ":" << hasChanged2;
   m_connector.TouchNode(*this);
-  if (hasChanged) {
+  if (hasChanged && !m_isClear) {
     if (m_parent) {
       size_t new_size = ISize();
       ConnectorAction::Action a;
@@ -90,24 +79,15 @@ void STree::ComputeNode(ConnectorAction::Action action, const IList& inode, cons
       m_connector.Enqueue(ConnectorAction(a, *m_parent, inode, this));
     }
   }
-  m_connector.DrawGraph(*this);
+  m_connector.DrawGraph(*this, &inode, NULL, initiator);
 }
 
-void STree::ClearNode() {
+void STree::ClearNode(const IList& inode) {
   g_log.info() << "Clearing node " << *this;
-  if (m_isClear) {
-    g_log.info() << " - already clear!";
-    return;
+  ClearSubNode();
+  if (m_parent) {
+    m_connector.Enqueue(ConnectorAction(ConnectorAction::ClearChild, *m_parent, inode, this));
   }
-  for (child_mod_iter i = children.begin(); i != children.end(); ++i) {
-    (*i)->ClearNode();
-  }
-  children.clear();
-  m_state.Clear();
-  m_iconnection.Clear();
-  m_connector.TouchNode(*this);
-  m_connector.ClearNode(*this);
-  m_isClear = true;
 }
 
 bool STree::ContainsINode(const IList& inode) const {
@@ -126,12 +106,11 @@ STree::operator std::string() const {
   return m_rule.Name() + ":" + string(GetState());
 }
 
-string STree::DrawNode(const string& context) const {
-  g_log.debug() << "Drawing node: " << *this;
+string STree::DrawNode(const string& context, const STree* initiator) const {
   string s;
   // Style the node to indicate its State
   string fillcolor = "#000000";
-  if (m_state.IsInit()) {
+  if (m_state.IsPending()) {
     fillcolor = "#eeeeee";
   } else if (m_state.IsBad()) {
     fillcolor = "#ff8888";
@@ -149,7 +128,7 @@ string STree::DrawNode(const string& context) const {
   s += dotVar(this, context) + " [label=\"" + Util::safeLabelStr(m_rule.Name()) + "\", style=\"filled\", fillcolor=\"" + fillcolor + "\", fontsize=12.0];\n";
 
   // Connect the node to its IConnection
-  if (!m_isClear && !m_state.IsBadOrInit()) {
+  if (!m_iconnection.IsClear()) {
     string istartcolor = "#006600";
     string iendcolor = "#660000";
     if (m_state.IsBad()) {
@@ -157,15 +136,17 @@ string STree::DrawNode(const string& context) const {
       iendcolor = "#cc6666";
     }
     s += dotVar(this, context) + " -> " + dotVar(&m_iconnection.Start(), context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + istartcolor + "\"];\n";
-    //s += dotVar(this, context) + " -> " + dotVar(this, context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + istartcolor + "\"];\n";
     s += dotVar(this, context) + " -> " + dotVar(&m_iconnection.End(), context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + iendcolor + "\"];\n";
-    //s += dotVar(this, context) + " -> " + dotVar(this, context) + " [constraint=false, weight=0, style=dotted, arrowsize=0.5, color=\"" + iendcolor + "\"];\n";
   }
 
   // Add its child connections, and draw the children
   // Make sure the children will be ordered in the output graph
   for (child_iter i = children.begin(); i != children.end(); ++i) {
-    s += dotVar(this, context) + " -> " + dotVar(*i, context) + ";\n";
+    s += dotVar(this, context) + " -> " + dotVar(*i, context);
+    if (initiator == *i) {
+      s += " [penwidth=2.5, color=\"#330066\"]";
+    }
+    s += ";\n";
   }
   if (children.size() > 0) {
     s += "{ rank=same;\n";
@@ -176,12 +157,28 @@ string STree::DrawNode(const string& context) const {
     }
     s += "}\n";
   }
-  g_log.debug() << "STree node " << *this << " has " << children.size() << " children";
   for (child_iter i = children.begin(); i != children.end(); ++i) {
-    s += (*i)->DrawNode(context);
+    s += (*i)->DrawNode(context, initiator);
   }
   //s += m_outputFunc->DrawEmitting(context, *this);
   return s;
+}
+
+void STree::ClearSubNode() {
+  g_log.info() << "Clearing sub node " << *this;
+  if (m_isClear) {
+    g_log.info() << " - already clear!";
+    return;
+  }
+  for (child_mod_iter i = children.begin(); i != children.end(); ++i) {
+    (*i)->ClearSubNode();
+  }
+  children.clear();
+  m_state.Clear();
+  m_iconnection.Clear();
+  m_connector.TouchNode(*this);
+  m_connector.ClearNode(*this);
+  m_isClear = true;
 }
 
 /* non-member */

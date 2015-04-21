@@ -52,8 +52,8 @@ void ComputeFunc_Or::operator() (ConnectorAction::Action action, const IList& in
   for (; i != m_node->children.end(); ++i) {
     if ((*i)->IsClear()) {
       // Clear ourselves!
-      g_log.info() << "Or: " << *m_node << " child " << **i << " is clear - giving up!";
-      m_node->ClearNode();
+      g_log.info() << "Or: " << *m_node << " child " << **i << " is clear - giving up on entire Or!";
+      m_node->ClearNode(inode);
       return;
     }
     State& istate = (*i)->GetState();

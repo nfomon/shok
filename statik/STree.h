@@ -47,7 +47,7 @@ public:
 
   void RestartNode(const IList& istart);
   void ComputeNode(ConnectorAction::Action action, const IList& inode, const STree* initiator);
-  void ClearNode();
+  void ClearNode(const IList& inode);
 
   bool IsClear() const { return m_isClear; }
   const State& GetState() const { return m_state; }
@@ -65,13 +65,15 @@ public:
   OutputFunc& GetOutputFunc() const { return *m_outputFunc.get(); }
 
   operator std::string() const;
-  std::string DrawNode(const std::string& context) const;
+  std::string DrawNode(const std::string& context, const STree* initiator = NULL) const;
 
 private:
   IConnection m_iconnection;
   std::auto_ptr<RestartFunc> m_restartFunc;
   std::auto_ptr<ComputeFunc> m_computeFunc;
   std::auto_ptr<OutputFunc> m_outputFunc;
+
+  void ClearSubNode();
 };
 
 std::ostream& operator<< (std::ostream& out, const STree& node);

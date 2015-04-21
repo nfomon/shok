@@ -33,6 +33,8 @@ public:
   }
 
   void Unlink(T& item) {
+    g_log.debug() << "Object pool unlinking " << item << " - " << &item;
+    g_san.debug() << "Object pool unlinking " << item << " - " << &item;
     if (m_active.end() == m_active.find(&item)) {
       throw SError("Cannot unlink " + std::string(item) + "; item not found in pool");
     }

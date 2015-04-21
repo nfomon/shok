@@ -71,8 +71,8 @@ void ComputeFunc_Keyword::operator() (ConnectorAction::Action action, const ILis
   } else {
     state.Unlock();
   }
-  if (state.IsInit()) {
-    throw SError("Keyword failed to determine state; left at init");
+  if (state.IsPending()) {
+    throw SError("Keyword failed to determine state");
   }
   g_log.debug() << "Keyword now at: " << *m_node << " with IStart: " << m_node->IStart() << " and IEnd: " << m_node->IEnd();
 }

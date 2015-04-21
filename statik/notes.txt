@@ -979,4 +979,39 @@ Bad nodes need to know their start at least.  Because otherwise, on this sequenc
 
 there's a del node that's bad with "d;" but now it's "de;" and it needs to know it started at d and is trying to match something.
 
+--
+
+Pending state is probably a good idea.
+ - Pending means: I'm waiting for my children, before I can compute my state.
+ - A parent should NEVER see a child in Pending state, it means the child is borked.
+ - So then what about when a Child gets cleared? then it should be delibrately in a Cleared state.
+ - Nodes can start as Cleared, then Restart moves them from Cleared to Pending!!
+
+ComputeFunc: CLEAR semantics regarding clearing of children etc. plz
+ - and if multiple children are updated, we don't know which order they'll make us Compute.  That's worrisome.
+
+Initiator child was cleared.  Star and Seq should have different behaviours to deal with that I think.
+
+Sanity check: When we unlink an INode, warn about all the nodes that refer to it, and ERROR if we do a full UpdateWithHotlist() and still have anything point to an unlinked INode
+
+CURIOUS: Connector::Delete(), checks IF the deleted INode is a listener's IStart, then it Clears the node.  Otherwise (if it's not the listener's IStart), it just sends the listener an IDelete message.
+ - I'm not sure this is consistent with anything else, but it makes sense.
+
+STree clear means: the node is totally cleared out.  No children, no state info, jamais.
+IConnection clear means: I have no IStart or IEnd.  Restart sets both.  IConnection::Clear() will unset them.
+State Clear is not a thing.  You should have checked the STree node if it was clear before looking into its state.
+State Pending means: My state is waiting on a computation that my children must be performing.  A parent should NOT see this in a child; that's an error.
+
+We could share: EVERY node's Compute, when it discovers that its first child is clear, clears itself.  We could wrap that out if we're sure it's universal.
+- NO.  That's not what we want from a top-level Lexer *.  We delete the first character, it deletes the first node, then the Star says:  I don't care, I start at the new list start now kthx.
+ - Is that actually how we want things to be handled when it's not the start of the whole IList?
+
+RISK: when Computing a Seq/Star, we look at an Initiator node, and possibly its prev/next, and assume that those are in an OK shape, including their IStarts and IEnds.  That's a bit aggressive.
+
+OK, we're not in terrible shape.
+ - eliminate RestartFunc.  I think it's better, simpler, cleaner.
+ - Determine all the scenarios for a Star.
+ - would be nice if a node's children's updates coming in, had a deterministic ordering
+ - Are we still ok telling Star/Seq just that a child grew/shrank?  Do we also want to know if it was an INode Insert/Delete that caused it?  Do we want to just have INode-order-comparable children?
+
 

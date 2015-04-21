@@ -66,9 +66,10 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
     g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child was cleared, so restarting next";
     if (next != m_node->children.end()) {
       if (!prev_child) {
-        throw SError("Seq: Not sure we handle this case right.. first child was removed, and it has subsequent child that we are not restarting (here).");
-      } else if (prev_child->GetState().IsBadOrInit()) {
-        throw SError("Seq initiator child cleared but prev_child exists and is bad or init.  What to do about next children -- clear them all?");
+        m_node->ClearNode(inode);
+        return;
+      } else if (prev_child->GetState().IsPending()) {
+        throw SError("Cannot investigate pending child");
       }
       m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, prev_child->IEnd(), m_node));
       state.GoOK();
@@ -78,10 +79,10 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
     m_node->children.erase(child);
   } else if (!childState.IsComplete()) {
     g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child is not complete, so not fixing its next connections";
-    if (!(*child)->GetState().IsBadOrInit() && next != m_node->children.end() && !(*child)->IEnd().right) {
+    if (next != m_node->children.end() && !(*child)->IEnd().right) {
       g_log.debug() << " - but we're at end of input, so clear all subsequent children";
       for (STree::child_mod_iter i = next; i != m_node->children.end(); ++i) {
-        (*i)->ClearNode();
+        (*i)->ClearNode(inode);
       }
       m_node->children.erase(next, m_node->children.end());
     }
@@ -94,7 +95,7 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
         } else {
           // Clear and Restart the next child
           g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child grew, so clearing and restarting next, which is " << **next;
-          (*next)->ClearNode();
+          (*next)->ClearNode(inode);
           m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
           state.GoOK();
           return;
@@ -155,7 +156,7 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
       isize += (*i)->ISize();
     }
     const State& istate = (*i)->GetState();
-    if (istate.IsBadOrInit() || (!istate.IsComplete() && child_index < m_node->GetRule().GetChildren().size() - 1)) {
+    if (istate.IsPending() || istate.IsBad() || (!istate.IsComplete() && child_index < m_node->GetRule().GetChildren().size() - 1)) {
       breachChild = *i;
     }
     if (istate.IsLocked()) {
@@ -175,8 +176,10 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
     // We have a breach.  Check it out, it determines our state and IEnd.
     const State& istate = breachChild->GetState();
     g_log.debug() << "Investigating breach child " << *breachChild;
-    if (istate.IsBadOrInit()) {
-      // Cannot set IEnd!
+    if (istate.IsPending()) {
+      throw SError("Breached child is pending");
+    } else if (istate.IsBad()) {
+      m_node->GetIConnection().SetEnd(breachChild->IEnd(), isize + breachChild->ISize());
       state.GoBad();
     } else {
       m_node->GetIConnection().SetEnd(breachChild->IEnd(), isize + breachChild->ISize());
@@ -186,11 +189,13 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
     // All children are complete until the last observed child.  Determine our
     // state and IEnd based on this last child.
     if (m_node->children.empty()) {
-      m_node->ClearNode();    // TODO this might be overkill
+      m_node->ClearNode(inode);    // TODO this might be overkill
     } else {
       const STree& lastChild = *m_node->children.back();
       const State& istate = lastChild.GetState();
-      if (istate.IsBadOrInit()) {
+      if (istate.IsPending()) {
+        throw SError("Found pending last child! And furthermore, breach child was not set!"); 
+      } else if (istate.IsBad()) {
         throw SError("Found bad last child, but breach child was not set"); 
       } else if (istate.IsComplete()) {
         state.GoComplete();

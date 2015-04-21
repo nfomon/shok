@@ -20,7 +20,6 @@ auto_ptr<Compiler> exstatik::MakeCompiler(const string& name) {
   auto_ptr<Compiler> c(new Compiler());
   if ("Simple" == name) {
     c->push_back(CreateLexer_Simple());
-    c->push_back(CreateParser_Simple());
   } else if ("Moderate" == name) {
     c->push_back(CreateLexer_Moderate());
     c->push_back(CreateParser_Moderate());

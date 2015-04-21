@@ -19,7 +19,7 @@ public:
 
   void AddMachine(const std::string& context, const Rule& machineRoot);
   void AddIList(const std::string& context, const IList& start, const std::string& label = "");
-  void AddSTree(const std::string& context, const STree& root, const std::string& label = "");
+  void AddSTree(const std::string& context, const STree& root, const std::string& label = "", const STree* initiator = NULL);
   void AddOList(const std::string& context, const IList& start, const std::string& label = "");
   void AddIListeners(const std::string& context, const Connector& connector, const IList& start);
   void AddHotlist(const std::string& context, const Hotlist::hotlist_vec& hotlist);

@@ -17,11 +17,11 @@ using namespace statik;
 
 State::State()
   : m_isLocked(false),
-    m_station(ST_INIT) {
+    m_station(ST_PENDING) {
 }
 
 void State::Clear() {
-  m_station = ST_INIT;
+  m_station = ST_PENDING;
   Unlock();
 }
 
@@ -37,7 +37,7 @@ bool State::operator!=(const State& rhs) const {
 
 string State::UnMapStation(Station st) {
   switch (st) {
-  case ST_INIT:     return "init";
+  case ST_PENDING:  return "pending";
   case ST_OK:       return "ok";
   case ST_BAD:      return "bad";
   case ST_DONE:     return "done";

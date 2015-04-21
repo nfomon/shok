@@ -53,85 +53,129 @@ void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& 
     ++child;
   }
   if (!foundInitiator) {
-    throw SError("ComputeFunc_Star at " + string(*m_node) + " provided an initiator which is not a child");
+    g_log.info() << "ComputeFunc_Star at " << *m_node << " provided an initiator which is not a child; presumably we've already dealt with this";
+    return;
   }
 
-  // What happened to the initiator child?  Cleared / Shrank / Stayed / Grew
+  // What happened to the initiator child?  Cleared / Pending / Incomplete / Shrank / Stayed / Grew
   State& state = m_node->GetState();
   const State& childState = (*child)->GetState();
   STree::child_mod_iter next = child+1;
   if ((*child)->IsClear()) {
-    g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child was cleared, so restarting next";
     if (next != m_node->children.end()) {
       if (!prev_child) {
-        throw SError("Star: Not sure we handle this case right.. first child was removed, and it has subsequent child that we are not restarting (here).");
-      } else if (prev_child->GetState().IsBadOrInit()) {
-        throw SError("Seq initiator child cleared but prev_child exists and is bad or init.  What to do about next children -- clear them all?");
+        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": First Child was cleared, so hack-restarting self";
+        m_node->GetIConnection().Restart((*next)->IStart());
+        m_node->children.erase(child);
+        // Keep going to determine our state
+      } else if (prev_child->GetState().IsPending()) {
+        throw SError("Cannot investigate Pending prev child");
+      } else if (prev_child->IsClear() || prev_child->GetState().IsPending()) {
+        throw SError("Would look at clear prev_child");
+      } else if ((*next)->IsClear() || (*next)->GetState().IsPending()) {
+        throw SError("Would look at clear next");
+      } else {
+        if (prev_child->GetState().IsBad()) {
+          g_log.warning() << "Using bad prev_child's IEnd";
+        }
+        // TODO this chunk might be aggressive; we're using prev_child's IEnd even if it's somehow Bad.
+        if (&prev_child->IEnd() == &(*next)->IStart()) {
+          // How can this happen?  It's because we received the update from the
+          // cleared child before receiving the prev_child's update.
+          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Not-first Child was cleared, but next is already in the right spot";
+          m_node->children.erase(child);
+          // Keep going to determine our state
+        } else {
+          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, prev_child->IEnd(), m_node));
+          m_node->children.erase(child);
+          state.GoPending();
+          return;
+        }
       }
-      m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, prev_child->IEnd(), m_node));
-      state.GoOK();
-      return;
+    } else {
+      if (prev_child) {
+        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": last child was cleared; erasing";
+        m_node->children.erase(child);
+        // Keep going to determine our state
+      } else {
+        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": only child was cleared, so clearing self";
+        m_node->ClearNode(inode);
+        return;
+      }
     }
-    // This is safe down here because the above just enqueues stuff, nothing else.
-    m_node->children.erase(child);
-  } else if (!childState.IsComplete()) {
-    g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child is not complete, so not fixing its next connections";
-    if (!(*child)->GetState().IsBadOrInit() && next != m_node->children.end() && !(*child)->IEnd().right) {
+  } else if (childState.IsPending()) {
+    throw SError("Star child should not be Pending");
+  } else if (childState.IsOK() || childState.IsDone()) {
+    g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child is ok or done but not complete, so not fixing its next connections";
+    if (next != m_node->children.end() && !(*child)->IEnd().right) {
       g_log.debug() << " - but we're at end of input, so clear all subsequent children";
       for (STree::child_mod_iter i = next; i != m_node->children.end(); ++i) {
-        (*i)->ClearNode();
+        (*i)->ClearNode(inode);
       }
       m_node->children.erase(next, m_node->children.end());
     }
-  } else {
+    // Keep going to determine our state
+  } else if (childState.IsComplete()) {
     switch(action) {
     case ConnectorAction::ChildGrow: {
       if (next != m_node->children.end()) {
         if (&(*child)->IEnd() == &(*next)->IStart()) {
-          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child grew, but next node is already in the right spot";
+          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child grew and is complete, but next child is already in the right spot";
+          // Keep going to determine our state
         } else {
+          // FIXME WHAT was the difference between "Clear and Restart" vs just "Restart"?? Because I'm pretty sure that was important, and I'm pretty sure it can't exist anymore.  Instead of Clearing, let's try just Restarting here...
           // Clear and Restart the next child
-          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child grew, so clearing and restarting next, which is " << **next;
-          (*next)->ClearNode();
+          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child grew and is complete, so clearing and restarting next, which is " << **next;
+          //(*next)->ClearNode(inode);  // NOPE lol, then Restarting it would crash! I could clear and make a new node; is that what I would want?  Why?
           m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
-          state.GoOK();
+          state.GoPending();
           return;
         }
       } else {
         // Create next child
-        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child grew, and no next child, so creating new next child";
+        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Last child grew and is complete, so creating new next child";
         (void) m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, (*child)->IEnd());
-        state.GoOK();
+        state.GoPending();
         return;
       }
     } break;
     case ConnectorAction::ChildShrink: {
-      g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child shrank, so restarting next without clearing it";
       if (next != m_node->children.end()) {
-        // Restart the next child
-        m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
-        state.GoOK();
-        return;
-      } else {
-        // Create next child
-        (void) m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, (*child)->IEnd());
-        state.GoOK();
-        return;
-      }
-    } break;
-    case ConnectorAction::ChildUpdate: {
-      g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child update, but did not change size.  Make sure its next connection is correct";
-      if (next != m_node->children.end()) {
-        if (&(*child)->IEnd() != &(*next)->IStart()) {
-          //m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
-          (void) m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, (*child)->IEnd(), next);
-          state.GoOK();
+        if (&(*child)->IEnd() == &(*next)->IStart()) {
+          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child shrank and is complete, but next child is already in the right spot";
+          // Keep going to determine our state
+        } else {
+          // Restart the next child
+          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child shrank and is complete, so restarting next without clearing it, which is " << **next;
+          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
+          state.GoPending();
           return;
         }
       } else {
         // Create next child
+        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Last child shrank and is complete, so creating new next child";
         (void) m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, (*child)->IEnd());
-        state.GoOK();
+        state.GoPending();
+        return;
+      }
+    } break;
+    case ConnectorAction::ChildUpdate: {
+      if (next != m_node->children.end()) {
+        if (&(*child)->IEnd() == &(*next)->IStart()) {
+          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child updated and is complete, but did not change size, but next child is already in the right spot";
+          // Keep going to determine our state
+        } else {
+          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child updated and is complete, but did not change size.  Creating new intermediary node -- I think that's right?";
+          //m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
+          (void) m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, (*child)->IEnd(), next);
+          state.GoPending();
+          return;
+        }
+      } else {
+        // Create next child
+        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Last child update and is complete, but did not change size.  Creating new next child.";
+        (void) m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, (*child)->IEnd());
+        state.GoPending();
         return;
       }
     } break;
@@ -153,7 +197,7 @@ void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& 
       isize += (*i)->ISize();
     }
     const State& istate = (*i)->GetState();
-    if (istate.IsBadOrInit() || !istate.IsComplete()) {
+    if (!istate.IsComplete()) {
       breachChild = *i;
     }
     if (istate.IsLocked()) {
@@ -172,9 +216,11 @@ void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& 
     // We have a breach.  Check it out, it determines our state and IEnd.
     const State& istate = breachChild->GetState();
     g_log.debug() << "Investigating breach child " << *breachChild;
-    if (istate.IsBadOrInit()) {
-      // Cannot set IEnd!
+    if (istate.IsPending()) {
+      throw SError("Star's breach child is Pending");
+    } else if (istate.IsBad()) {
       state.GoBad();
+      m_node->GetIConnection().SetEnd(breachChild->IEnd(), isize + breachChild->ISize());
     } else if (istate.IsOK()) {
       state.GoOK();
       m_node->GetIConnection().SetEnd(breachChild->IEnd(), isize + breachChild->ISize());
@@ -189,11 +235,13 @@ void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& 
     // state and IEnd based on this last child.
     g_log.debug() << " - no breach child";
     if (m_node->children.empty()) {
-      m_node->ClearNode();    // TODO this might be overkill
+      throw SError("Star no breach; how did all my children get empty?");
     } else {
       const STree& lastChild = *m_node->children.back();
       const State& istate = lastChild.GetState();
-      if (istate.IsBadOrInit()) {
+      if (istate.IsPending()) {
+        throw SError("Found pending last child! Furthermore, breach child was not set!");
+      } else if (istate.IsBad()) {
         throw SError("Found bad last child, but breach child was not set");
       } else if (istate.IsComplete()) {
         state.GoComplete();

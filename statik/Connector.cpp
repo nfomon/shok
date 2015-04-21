@@ -140,11 +140,8 @@ STree* Connector::OwnNode(auto_ptr<STree> node) {
 }
 
 const IList* Connector::GetFirstINode() const {
-  if (!m_root) {
+  if (!m_root || m_root->IsClear() || m_root->GetIConnection().IsClear()) {
     return NULL;
-  }
-  if (m_root->GetIConnection().IsClear()) {
-    return m_root->GetIConnection().TentativeStart();
   }
   return &m_root->IStart();
 }
@@ -160,7 +157,7 @@ void Connector::TouchNode(const STree& node) {
   m_touchedNodes.insert(&node);
 }
 
-void Connector::DrawGraph(const STree& onode, const IList* inode, const Hotlist* hotlist) {
+void Connector::DrawGraph(const STree& onode, const IList* inode, const Hotlist* hotlist, const STree* initiator) {
   if (!m_grapher.get()) {
     return;
   }
@@ -172,7 +169,7 @@ void Connector::DrawGraph(const STree& onode, const IList* inode, const Hotlist*
   if (istart) {
     m_grapher->AddIList(m_name, *istart, m_name + " input");
   }
-  m_grapher->AddSTree(m_name, *m_root, m_name + " output");
+  m_grapher->AddSTree(m_name, *m_root, m_name + " output", initiator);
   const IList* ostart = GetFirstONode();
   if (ostart) {
     m_grapher->AddOList(m_name, *ostart, m_name + " olist");
@@ -300,7 +297,7 @@ void Connector::DeleteNode(const IList& inode) {
   }
 
   if (!inode.left && !inode.right) {
-    m_root->ClearNode();
+    m_root->ClearNode(inode);
   } else {
     if (inode.left) {
       listener_set listeners = m_listeners.GetListeners(inode.left);
@@ -311,10 +308,7 @@ void Connector::DeleteNode(const IList& inode) {
     listener_set listeners = m_listeners.GetListeners(&inode);
     for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
       if (&(*i)->IStart() == &inode) {
-        if ((*i)->GetParent()) {
-          Enqueue(ConnectorAction(ConnectorAction::ClearChild, *(*i)->GetParent(), inode, *i));
-        }
-        (*i)->ClearNode();
+        (*i)->ClearNode(inode);
       } else {
         Enqueue(ConnectorAction(ConnectorAction::INodeDelete, **i, inode));
       }

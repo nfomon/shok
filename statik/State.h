@@ -19,16 +19,16 @@ public:
 
   void Clear();
 
-  bool IsInit() const { return ST_INIT == m_station; }
+  bool IsPending() const { return ST_PENDING == m_station; }
   bool IsOK() const { return ST_OK == m_station; }
   bool IsBad() const { return ST_BAD == m_station; }
-  bool IsBadOrInit() const { return ST_BAD == m_station || ST_INIT == m_station; }
   bool IsDone() const { return ST_DONE == m_station; }
   bool IsComplete() const { return ST_COMPLETE == m_station; }
   bool IsAccepting() const { return ST_OK == m_station || ST_DONE == m_station; }
   bool IsEmitting() const { return ST_DONE == m_station || ST_COMPLETE == m_station; }
   bool IsLocked() const { return m_isLocked; }
 
+  void GoPending() { m_station = ST_PENDING; }
   void GoOK() { m_station = ST_OK; }
   void GoBad() { m_station = ST_BAD; }
   void GoDone() { m_station = ST_DONE; }
@@ -42,7 +42,7 @@ public:
 
 private:
   enum Station {
-    ST_INIT,
+    ST_PENDING,
     ST_OK,
     ST_BAD,
     ST_DONE,

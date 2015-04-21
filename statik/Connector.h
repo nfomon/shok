@@ -72,7 +72,8 @@ public:
 
   void DrawGraph(const STree& onode,
                  const IList* inode = NULL,
-                 const Hotlist* hotlist = NULL);
+                 const Hotlist* hotlist = NULL,
+                 const STree* initiator = NULL);
 
   void SanityCheck();
   void SanityCheck(const STree* s) const;
