@@ -54,18 +54,6 @@ void RestartFunc_Sequence::operator() (const IList& istart) {
   m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, istart, m_node->children.begin());
 }
 
-void RestartFunc_KeepAll::operator() (const IList& istart) {
-  g_log.info() << "Restarting " << *m_node << " to first child, keeping all children, with istart=" << istart;
-  if (!m_node) {
-    throw SError("Cannot compute uninitialized RestartFunc_KeepAll");
-  }
-  if (m_node->GetRule().GetChildren().size() < 1) {
-    throw SError("Rule " + m_node->GetRule().Name() + " of node " + string(*m_node) + " must have at least one child for RestartFunc_KeepAll");
-  }
-
-  m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, istart, m_node->children.begin());
-}
-
 void RestartFunc_AllChildrenOfNode::operator() (const IList& istart) {
   g_log.info() << "Restarting all children of " << *m_node << ", with istart=" << istart;
   if (!m_node) {

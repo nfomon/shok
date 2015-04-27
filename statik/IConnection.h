@@ -39,10 +39,17 @@ public:
 
   size_t Size() const { return m_size; }
 
-  void Restart(const IList& istart) {
+  void Restart(const IList& istart, int resize = 0) {
     m_istart = &istart;
-    m_iend = &istart;
-    m_size = 0;
+    if (0 == resize) {
+      m_iend = &istart;
+      m_size = 0;
+    } else {
+      if (!m_iend) {
+        throw SError("Cannot resize-restart IConnection which does not have IEnd set");
+      }
+      m_size -= resize;
+    }
   }
 
   void SetEnd(const IList& iend, size_t size) {

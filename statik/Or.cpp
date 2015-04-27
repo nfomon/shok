@@ -4,7 +4,6 @@
 #include "Or.h"
 
 #include "OutputFunc.h"
-#include "RestartFunc.h"
 #include "SLog.h"
 #include "STree.h"
 
@@ -19,7 +18,6 @@ using namespace statik;
 
 auto_ptr<Rule> statik::OR(const string& name) {
   return auto_ptr<Rule>(new Rule(name,
-      MakeRestartFunc_AllChildrenOfNode(),
       MakeComputeFunc_Or(),
       MakeOutputFunc_Winner()));
 }
@@ -30,8 +28,28 @@ auto_ptr<ComputeFunc> statik::MakeComputeFunc_Or() {
 
 // TODO consider initiator, keep vectors as state that gets updated by each
 // call to this function, and then we finally just update State from the vecs.
-void ComputeFunc_Or::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Or::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator, int resize) {
   g_log.debug() << "Computing Or at " << *m_node;
+
+  if (ConnectorAction::Restart == action) {
+    if (m_node->children.empty()) {
+      for (Rule::child_iter i = m_node->GetRule().GetChildren().begin();
+          i != m_node->GetRule().GetChildren().end(); ++i) {
+        (*i)->MakeNode(*m_node, inode);
+      }
+    } else if (m_node->children.size() == m_node->GetRule().GetChildren().size()) {
+      for (STree::child_mod_iter i = m_node->children.begin();
+           i != m_node->children.end(); ++i) {
+        (*i)->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Start, **i, inode));
+      }
+    } else {
+      throw SError("Or node had inappropriate # children");
+    }
+    if (m_node->children.empty()) {
+      throw SError("Failed to create children for Or node");
+    }
+    return;
+  }
 
   // Compute new state flags
   State& state = m_node->GetState();

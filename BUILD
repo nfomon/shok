@@ -4,7 +4,7 @@ The shok interpreter-system is built using the GNU autotools:
    https://www.gnu.org/software/autoconf
    GNU GPL v3+
 
- - GNU Automake 1.13.3
+ - GNU Automake 1.13.3+
    https://www.gnu.org/software/automake
    GNU GPL v2+
 

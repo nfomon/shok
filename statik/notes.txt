@@ -1014,4 +1014,49 @@ OK, we're not in terrible shape.
  - would be nice if a node's children's updates coming in, had a deterministic ordering
  - Are we still ok telling Star/Seq just that a child grew/shrank?  Do we also want to know if it was an INode Insert/Delete that caused it?  Do we want to just have INode-order-comparable children?
 
+Yay we're in good shape!
+-----
+Node types: Keyword, Regexp, Meta, Or, Star, Seq
+
+Any node receives:
+ - Restart
+ - RestartBehind (param: amount)
+ - RestartAhead (param: amount)
+
+Leaf nodes receive:
+ - INodeInsert
+
+Insert:
+These update the root and/or leaves (listeners):
+ - Root is clear: Restart (top-down)
+ - INode has left, no right: INodeInsert on the left's listeners
+ - INode has right, no left: RestartPrepend the root (top-down, arbitrarily)
+ - INode has left and right: INodeInsert on listeners of both left and right
+
+Intermediate nodes receive:
+ - Child update, no size change:
+ - Child grows:
+ - Child shrinks:
+
+Delete:
+
+--
+nurr, start/restart:
+Connector decides to Start a node, by enqueueing a Start action
+STree::Start initializes some stuff, and enqueues a Restart action, with size of 0
+Restart actions are just a ComputeFunc().  The node should check what children it has, if any, and correct them, maybe particularly if action==Restart and resize==0 (meaning we're newly Started).
+
+Nodes might Clear themselves in response to INode updates.  STree::ClearNode calls Connector::ClearNode which auto-enqueues a parent update.  A node cannot be Started unless it is Clear, so that leaves the possibility of re-Starting a node (e.g. the root).  All good.
+
+Seq/Star nodes may Restart children.  They can just enqueue a Restart with the appropriate size, which shouldn't be 0.
+--
+
+Star ComputeFunc:
+1. If we have no children, that should mean it's a Restart action with resize==0.  MakeNode first child.
+2. Restart with resize<0: Prepend a new node that starts at the provided inode.
+3. Restart with resize>0: Kill nodes up until the node that contains the mentioned size.  Restart that node with an appropriate resize amount.
+4. ChildUpdate: if resize==0, no worries.
+                if resize<0, child shrank, so create a new child after it.
+                if resize>0, child grew, so kill nodes up until the node that contains the initiator's new IEnd, and restart it with an appropriate resize amount.
+
 

@@ -5,7 +5,6 @@
 
 #include "Connector.h"
 #include "OutputFunc.h"
-#include "RestartFunc.h"
 #include "SLog.h"
 #include "STree.h"
 
@@ -22,7 +21,6 @@ using namespace statik;
 
 auto_ptr<Rule> statik::STAR(const string& name) {
   return auto_ptr<Rule>(new Rule(name,
-      MakeRestartFunc_Sequence(),
       MakeComputeFunc_Star(),
       MakeOutputFunc_Sequence()));
 }
@@ -31,12 +29,15 @@ auto_ptr<ComputeFunc> statik::MakeComputeFunc_Star() {
   return auto_ptr<ComputeFunc>(new ComputeFunc_Star());
 }
 
-void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator, int resize) {
   // Process
   g_log.debug() << "Computing Star at " << *m_node << " which has " << m_node->children.size() << " children";
 
+  State& state = m_node->GetState();
   if (m_node->children.empty()) {
-    throw SError("Computing Star at " + string(*m_node) + " must have children");
+    m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, inode, m_node->children.begin());
+    state.GoPending();
+    return;
   }
 
   // Find the initiator child
@@ -58,7 +59,6 @@ void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& 
   }
 
   // What happened to the initiator child?  Cleared / Pending / Incomplete / Shrank / Stayed / Grew
-  State& state = m_node->GetState();
   const State& childState = (*child)->GetState();
   STree::child_mod_iter next = child+1;
   if ((*child)->IsClear()) {
@@ -86,7 +86,7 @@ void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& 
           m_node->children.erase(child);
           // Keep going to determine our state
         } else {
-          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, prev_child->IEnd(), m_node));
+          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, prev_child->IEnd(), /*FIXME*/0, m_node));
           m_node->children.erase(child);
           state.GoPending();
           return;
@@ -117,6 +117,7 @@ void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& 
     // Keep going to determine our state
   } else if (childState.IsComplete()) {
     switch(action) {
+/*
     case ConnectorAction::ChildGrow: {
       if (next != m_node->children.end()) {
         if (&(*child)->IEnd() == &(*next)->IStart()) {
@@ -159,6 +160,7 @@ void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& 
         return;
       }
     } break;
+*/
     case ConnectorAction::ChildUpdate: {
       if (next != m_node->children.end()) {
         if (&(*child)->IEnd() == &(*next)->IStart()) {

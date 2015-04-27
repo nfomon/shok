@@ -1,15 +1,4 @@
-UTIL_DIR = ../util
-UTIL_SRCS = \
-    $(UTIL_DIR)/Graphviz.cpp \
-    $(UTIL_DIR)/Graphviz.h \
-    $(UTIL_DIR)/Log.cpp \
-    $(UTIL_DIR)/Log.h \
-    $(UTIL_DIR)/Util.cpp \
-    $(UTIL_DIR)/Util.h
-
-COMMON_SRCS = $(UTIL_SRCS)
-
-STATIK_SRCS = $(COMMON_SRCS) \
+STATIK_SRCS = \
     ComputeFunc.h \
     Connector.cpp \
     Connector.h \
@@ -34,8 +23,6 @@ STATIK_SRCS = $(COMMON_SRCS) \
     OutputFunc.h \
     Regexp.cpp \
     Regexp.h \
-    RestartFunc.cpp \
-    RestartFunc.h \
     Rule.cpp \
     Rule.h \
     SError.h \
@@ -50,6 +37,9 @@ STATIK_SRCS = $(COMMON_SRCS) \
     State.cpp \
     State.h
 
+LIB_CXXFLAGS = -I ../
+
 lib_LIBRARIES = libstatik.a
+libstatik_a_LIBADD = ../util/libutil.a
 libstatik_a_SOURCES = $(STATIK_SRCS)
-libstatik_a_CXXFLAGS = -ggdb -Wall -pedantic $(BOOST_CXXFLAGS)
+libstatik_a_CXXFLAGS = -ggdb -Wall -pedantic $(BOOST_CXXFLAGS) $(LIB_CXXFLAGS)

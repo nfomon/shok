@@ -4,7 +4,6 @@
 #include "Meta.h"
 
 #include "OutputFunc.h"
-#include "RestartFunc.h"
 #include "SLog.h"
 #include "STree.h"
 
@@ -21,7 +20,6 @@ auto_ptr<Rule> statik::META(const string& searchName) {
 
 auto_ptr<Rule> statik::META(const string& name, const string& searchName) {
   return auto_ptr<Rule>(new Rule(name,
-      MakeRestartFunc_Default(),
       MakeComputeFunc_Meta(searchName),
       MakeOutputFunc_IValues(name)));
 }
@@ -30,7 +28,7 @@ auto_ptr<ComputeFunc> statik::MakeComputeFunc_Meta(const string& searchName) {
   return auto_ptr<ComputeFunc>(new ComputeFunc_Meta(searchName));
 }
 
-void ComputeFunc_Meta::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Meta::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator, int resize) {
   g_log.info() << "Computing Meta at " << *m_node << " with inode "<< inode;
   State& state = m_node->GetState();
   state.Clear();

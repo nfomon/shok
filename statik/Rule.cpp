@@ -29,11 +29,9 @@ using namespace statik;
 /* public */
 
 Rule::Rule(const string& debugName,
-           auto_ptr<RestartFunc> restartFunc,
            auto_ptr<ComputeFunc> computeFunc,
            auto_ptr<OutputFunc> outputFunc)
   : m_name(debugName),
-    m_restartFunc(restartFunc),
     m_computeFunc(computeFunc),
     m_outputFunc(outputFunc),
     m_parent(NULL) {
@@ -49,11 +47,6 @@ Rule::~Rule() {
       delete *child_i;
     }
   }
-}
-
-Rule& Rule::SetRestartFunc(auto_ptr<RestartFunc> restartFunc) {
-  m_restartFunc = restartFunc;
-  return *this;
 }
 
 Rule& Rule::SetComputeFunc(auto_ptr<ComputeFunc> computeFunc) {
@@ -77,7 +70,7 @@ Rule* Rule::CapOutput(const string& cap) {
 }
 
 STree* Rule::MakeRootNode(Connector& connector) const {
-  auto_ptr<STree> node(new STree(connector, *this, NULL, m_restartFunc->Clone(), m_computeFunc->Clone(), m_outputFunc->Clone()));
+  auto_ptr<STree> node(new STree(connector, *this, NULL, m_computeFunc->Clone(), m_outputFunc->Clone()));
   return connector.OwnNode(node);
 }
 
@@ -86,11 +79,11 @@ STree* Rule::MakeNode(STree& parent, const IList& istart) const {
 }
 
 STree* Rule::MakeNode(STree& parent, const IList& istart, STree::child_mod_iter insertPos) const {
-  auto_ptr<STree> node(new STree(parent.GetConnector(), *this, &parent, m_restartFunc->Clone(), m_computeFunc->Clone(), m_outputFunc->Clone()));
+  auto_ptr<STree> node(new STree(parent.GetConnector(), *this, &parent, m_computeFunc->Clone(), m_outputFunc->Clone()));
   g_log.debug() << "Rule " << m_name << " making node " << *node.get() << " under parent that had " << parent.children.size() << " children";
   STree* r = parent.GetConnector().OwnNode(node);
   parent.children.insert(insertPos, r);
-  parent.GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, *r, istart));
+  parent.GetConnector().Enqueue(ConnectorAction(ConnectorAction::Start, *r, istart));
   return r;
 }
 

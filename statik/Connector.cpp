@@ -259,7 +259,7 @@ void Connector::InsertNode(const IList& inode) {
   }
   if (m_root->IsClear()) {
     g_log.debug() << " - Clear root; restarting the tree root";
-    Enqueue(ConnectorAction(ConnectorAction::Restart, *m_root, inode));
+    Enqueue(ConnectorAction(ConnectorAction::Start, *m_root, inode));
   } else {
     if (inode.left) {
       g_log.debug() << " - Found left inode " << *inode.left << ": updating listeners of " << inode << "'s left and (if present) right";
@@ -274,8 +274,8 @@ void Connector::InsertNode(const IList& inode) {
         }
       }
     } else {
-      g_log.debug() << " - No left inode: just restarting the root";
-      Enqueue(ConnectorAction(ConnectorAction::Restart, *m_root, inode));
+      g_log.debug() << " - No left inode: prepending behind the root";
+      Enqueue(ConnectorAction(ConnectorAction::Restart, *m_root, inode, -1));
     }
   }
 
@@ -335,13 +335,15 @@ void Connector::ProcessActions() {
     action_queue& actions = m_actions_by_depth.rbegin()->second;
     g_log.debug() << "Connector " << m_name << ": Applying actions at depth " << depth;
     while (m_actions_by_depth.rbegin()->first == depth && !actions.empty()) {
-      g_log.debug() << "Connector " << m_name << " * * Action loop iteration";
       ConnectorAction* a = &actions.front();
       actions.pop_front();
-      if (ConnectorAction::Restart == a->action) {
-        a->node->RestartNode(*a->inode);
+      if (ConnectorAction::Start == a->action) {
+        if (!a->node->IsClear()) {
+          throw SError("Why are we trying to Start a node that isn't clear?");
+        }
+        a->node->StartNode(*a->inode);
       } else {
-        a->node->ComputeNode(a->action, *a->inode, a->initiator);
+        a->node->ComputeNode(a->action, *a->inode, a->initiator, a->resize);
       }
     }
     if (m_actions_by_depth.at(depth).empty()) {

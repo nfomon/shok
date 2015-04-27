@@ -16,7 +16,7 @@ std::auto_ptr<Rule> OR(const std::string& name);
 
 struct ComputeFunc_Or : public ComputeFunc {
   virtual ~ComputeFunc_Or() {}
-  virtual void operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator);
+  virtual void operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator, int resize);
   virtual std::auto_ptr<ComputeFunc> Clone() {
     return std::auto_ptr<ComputeFunc>(new ComputeFunc_Or());
   }

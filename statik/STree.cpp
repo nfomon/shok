@@ -23,7 +23,6 @@ using namespace statik;
 
 STree::STree(Connector& connector,
                const Rule& rule, STree* parent,
-               auto_ptr<RestartFunc> restartFunc,
                auto_ptr<ComputeFunc> computeFunc,
                auto_ptr<OutputFunc> outputFunc)
   : m_connector(connector),
@@ -31,53 +30,52 @@ STree::STree(Connector& connector,
     m_parent(parent),
     m_isClear(true),
     depth(m_parent ? m_parent->depth + 1 : 0),
-    m_restartFunc(restartFunc),
     m_computeFunc(computeFunc),
     m_outputFunc(outputFunc) {
-  m_restartFunc->Init(*this);
   m_computeFunc->Init(*this);
   m_outputFunc->Init(*this);
 }
 
-void STree::RestartNode(const IList& istart) {
-  g_log.info() << "Restarting node " << *this << " with inode " << istart;
+void STree::StartNode(const IList& istart) {
+  g_log.info() << "Starting node " << *this << " with inode " << istart;
+  if (!m_isClear) {
+    throw SError("Cannot Start node that isn't clear");
+  }
   m_isClear = false;
   m_iconnection.Restart(istart);
   m_connector.DrawGraph(*this, &istart);
-  (*m_restartFunc.get())(istart);
+  m_connector.Enqueue(ConnectorAction(ConnectorAction::Restart, *this, istart));
 }
 
-void STree::ComputeNode(ConnectorAction::Action action, const IList& inode, const STree* initiator) {
+void STree::ComputeNode(ConnectorAction::Action action, const IList& inode, const STree* initiator, int resize) {
   if (m_isClear) {
     throw SError("Cannot compute node " + string(*this) + " which has been cleared");
   } else if (m_iconnection.IsClear()) {
     throw SError("Cannot compute node " + string(*this) + " with cleared IConnection");
+  } else if (ConnectorAction::Start == action) {
+    throw SError("Cannot compute node " + string(*this) + " with Start action");
   }
+
+  if (ConnectorAction::Restart == action) {
+    m_iconnection.Restart(inode, resize);
+  }
+
   g_log.info() << "Computing node " << *this << " with inode " << inode << " and initiator " << (initiator ? string(*initiator) : "<null>");
   const State old_state = m_state;
   const IList* old_iend = &IEnd();
   size_t old_size = ISize();
 
-  (*m_computeFunc)(action, inode, initiator);
+  (*m_computeFunc)(action, inode, initiator, resize);
 
   bool hasChanged1 = old_iend != (m_iconnection.IsClear() ? NULL : &IEnd());
   bool hasChanged2 = old_state != m_state;
   bool hasChanged = hasChanged1 || hasChanged2;
   g_log.info() << " - - - - " << *this << " has " << (hasChanged ? "" : "NOT ") << "changed  " << hasChanged1 << ":" << hasChanged2;
   m_connector.TouchNode(*this);
-  if (hasChanged && !m_isClear) {
-    if (m_parent) {
-      size_t new_size = ISize();
-      ConnectorAction::Action a;
-      if (old_size < new_size) {
-        a = ConnectorAction::ChildGrow;
-      } else if (old_size == new_size) {
-        a = ConnectorAction::ChildUpdate;
-      } else {
-        a = ConnectorAction::ChildShrink;
-      }
-      m_connector.Enqueue(ConnectorAction(a, *m_parent, inode, this));
-    }
+  if (hasChanged && !m_isClear && m_parent && !m_state.IsPending()) {
+    size_t new_size = ISize();
+    ConnectorAction::Action a = ConnectorAction::ChildUpdate;
+    m_connector.Enqueue(ConnectorAction(a, *m_parent, inode, new_size - old_size, this));
   }
   m_connector.DrawGraph(*this, &inode, NULL, initiator);
 }
@@ -86,10 +84,11 @@ void STree::ClearNode(const IList& inode) {
   g_log.info() << "Clearing node " << *this;
   ClearSubNode();
   if (m_parent) {
-    m_connector.Enqueue(ConnectorAction(ConnectorAction::ClearChild, *m_parent, inode, this));
+    m_connector.Enqueue(ConnectorAction(ConnectorAction::ChildUpdate, *m_parent, inode, 0, this));
   }
 }
 
+/*
 bool STree::ContainsINode(const IList& inode) const {
   if (m_iconnection.IsClear()) {
     return false;
@@ -101,6 +100,7 @@ bool STree::ContainsINode(const IList& inode) const {
   }
   return false;
 }
+*/
 
 STree::operator std::string() const {
   return m_rule.Name() + ":" + string(GetState());

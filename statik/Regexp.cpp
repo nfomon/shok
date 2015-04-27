@@ -4,7 +4,6 @@
 #include "Regexp.h"
 
 #include "OutputFunc.h"
-#include "RestartFunc.h"
 #include "SError.h"
 #include "SLog.h"
 #include "STree.h"
@@ -18,7 +17,6 @@ using namespace statik;
 
 auto_ptr<Rule> statik::REGEXP(const string& name, const boost::regex& regex) {
   return auto_ptr<Rule>(new Rule(name,
-      MakeRestartFunc_Default(),
       MakeComputeFunc_Regexp(regex),
       MakeOutputFunc_IValues(name)));
 }
@@ -34,7 +32,7 @@ ComputeFunc_Regexp::ComputeFunc_Regexp(const boost::regex& regex)
   }
 }
 
-void ComputeFunc_Regexp::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Regexp::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator, int resize) {
   g_log.info() << "Computing Regexp at " << *m_node;
   State& state = m_node->GetState();
   state.Clear();

@@ -8,7 +8,6 @@
 #include "ConnectorAction.h"
 #include "IConnection.h"
 #include "OutputFunc.h"
-#include "RestartFunc.h"
 #include "State.h"
 
 #include <memory>
@@ -41,12 +40,11 @@ public:
 
   STree(Connector& connector,
          const Rule& rule, STree* parent,
-         std::auto_ptr<RestartFunc> restartFunc,
          std::auto_ptr<ComputeFunc> computeFunc,
          std::auto_ptr<OutputFunc> outputFunc);
 
-  void RestartNode(const IList& istart);
-  void ComputeNode(ConnectorAction::Action action, const IList& inode, const STree* initiator);
+  void StartNode(const IList& istart);
+  void ComputeNode(ConnectorAction::Action action, const IList& inode, const STree* initiator, int resize);
   void ClearNode(const IList& inode);
 
   bool IsClear() const { return m_isClear; }
@@ -58,7 +56,7 @@ public:
   const IList& IStart() const { return m_iconnection.Start(); }
   const IList& IEnd() const { return m_iconnection.End(); }
   size_t ISize() const { return m_iconnection.Size(); }
-  bool ContainsINode(const IList& inode) const;
+  //bool ContainsINode(const IList& inode) const;
 
   IConnection& GetIConnection() { return m_iconnection; }
   const IConnection& GetIConnection() const { return m_iconnection; }
@@ -69,7 +67,6 @@ public:
 
 private:
   IConnection m_iconnection;
-  std::auto_ptr<RestartFunc> m_restartFunc;
   std::auto_ptr<ComputeFunc> m_computeFunc;
   std::auto_ptr<OutputFunc> m_outputFunc;
 

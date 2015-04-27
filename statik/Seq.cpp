@@ -5,7 +5,6 @@
 
 #include "Connector.h"
 #include "OutputFunc.h"
-#include "RestartFunc.h"
 #include "SLog.h"
 #include "STree.h"
 
@@ -20,7 +19,6 @@ using namespace statik;
 
 auto_ptr<Rule> statik::SEQ(const string& name) {
   return auto_ptr<Rule>(new Rule(name,
-      MakeRestartFunc_Sequence(),
       MakeComputeFunc_Seq(),
       MakeOutputFunc_Sequence()));
 }
@@ -29,7 +27,7 @@ auto_ptr<ComputeFunc> statik::MakeComputeFunc_Seq() {
   return auto_ptr<ComputeFunc>(new ComputeFunc_Seq());
 }
 
-void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator, int resize) {
   // Process
   g_log.debug() << "Computing Seq at " << *m_node << " with initiator " << (initiator ? string(*initiator) : "<null>");
 
@@ -71,7 +69,7 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
       } else if (prev_child->GetState().IsPending()) {
         throw SError("Cannot investigate pending child");
       }
-      m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, prev_child->IEnd(), m_node));
+      m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, prev_child->IEnd(), /*FIXME*/0, m_node));
       state.GoOK();
       return;
     } 
@@ -88,6 +86,7 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
     }
   } else {
     switch(action) {
+/*
     case ConnectorAction::ChildGrow: {
       if (next != m_node->children.end()) {
         if (&(*child)->IEnd() == &(*next)->IStart()) {
@@ -122,11 +121,12 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
         return;
       }
     } break;
+*/
     case ConnectorAction::ChildUpdate: {
       g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child update, but did not change size.  Make sure its next connection is correct";
       if (next != m_node->children.end()) {
         if (&(*child)->IEnd() != &(*next)->IStart()) {
-          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
+          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), /*FIXME*/0, m_node));
           state.GoOK();
           return;
         }

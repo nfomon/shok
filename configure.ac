@@ -5,7 +5,6 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_PROG_AR
 
 AC_PROG_CXX
-AC_PROG_RANLIB
 AC_PROG_LIBTOOL
 
 AM_PATH_PYTHON([2])
@@ -17,6 +16,7 @@ AX_WITH_CURSES
 
 AC_CONFIG_FILES([
   Makefile
+  util/Makefile
   statik/Makefile
   exstatik/Makefile
   istatik/Makefile

@@ -4,7 +4,6 @@
 #include "Keyword.h"
 
 #include "OutputFunc.h"
-#include "RestartFunc.h"
 #include "SError.h"
 #include "SLog.h"
 #include "STree.h"
@@ -22,7 +21,6 @@ auto_ptr<Rule> statik::KEYWORD(const string& str) {
 
 auto_ptr<Rule> statik::KEYWORD(const string& name, const string& str) {
   return auto_ptr<Rule>(new Rule(name,
-      MakeRestartFunc_Default(),
       MakeComputeFunc_Keyword(str),
       MakeOutputFunc_Basic(name)));
 }
@@ -38,7 +36,7 @@ ComputeFunc_Keyword::ComputeFunc_Keyword(const string& str)
   }
 }
 
-void ComputeFunc_Keyword::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Keyword::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator, int resize) {
   g_log.info() << "Computing Keyword at " << *m_node << " with inode " << inode;
   State& state = m_node->GetState();
   state.Clear();

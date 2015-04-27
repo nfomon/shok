@@ -14,7 +14,6 @@
 #include "Connector.h"
 #include "IList.h"
 #include "OutputFunc.h"
-#include "RestartFunc.h"
 #include "STree.h"
 #include "State.h"
 
@@ -33,12 +32,10 @@ public:
   typedef childOwnership_vec::const_iterator childOwnership_iter;
 
   Rule(const std::string& debugName,
-      std::auto_ptr<RestartFunc>,
       std::auto_ptr<ComputeFunc>,
       std::auto_ptr<OutputFunc>);
   ~Rule();
 
-  Rule& SetRestartFunc(std::auto_ptr<RestartFunc> restartFunc);
   Rule& SetComputeFunc(std::auto_ptr<ComputeFunc> computeFunc);
   Rule& SetOutputFunc(std::auto_ptr<OutputFunc> outputFunc);
   Rule* SilenceOutput();
@@ -63,7 +60,6 @@ protected:
   }
 
   std::string m_name;
-  std::auto_ptr<RestartFunc> m_restartFunc;
   std::auto_ptr<ComputeFunc> m_computeFunc;
   std::auto_ptr<OutputFunc> m_outputFunc;
   Rule* m_parent;
