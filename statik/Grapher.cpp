@@ -124,7 +124,7 @@ void Grapher::Save() {
     return;
   }
   m_graph += "}\n";
-  string outfile(m_out_dir + "/" + m_base_filename + Util::pad_str(lexical_cast<string>(m_img_count), '0', 2) + ".dot");
+  string outfile(m_out_dir + "/" + m_base_filename + Util::pad_str(lexical_cast<string>(m_img_count), '0', 3) + ".dot");
   g_log.debug();
   g_log.debug() << "GGG Grapher: Saving graph " << outfile;
   g_log.debug();

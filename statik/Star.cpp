@@ -34,10 +34,47 @@ void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& 
   g_log.debug() << "Computing Star at " << *m_node << " which has " << m_node->children.size() << " children";
 
   State& state = m_node->GetState();
+  if (ConnectorAction::Restart == action && 0 == resize) {
+    if (m_node->children.empty()) {
+      m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, inode, m_node->children.begin());
+      state.GoPending();
+      return;
+    } else {
+      throw SError("Cannot resize Star by 0 when it already has children; or maybe just not implemented.  Clear it first?");
+    }
+  }
+
   if (m_node->children.empty()) {
-    m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, inode, m_node->children.begin());
-    state.GoPending();
-    return;
+    throw SError("Cannot compute Star node which has no children");
+  }
+
+  if (ConnectorAction::Restart == action) {
+    if (resize < 0) {
+      g_log.info() << "Prepending a new child behind our first child";
+      m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, inode, m_node->children.begin());
+      state.GoPending();
+      return;
+    } else if (resize > 0) {
+      int child_size = (*m_node->children.begin())->ISize();
+      if (child_size < resize) {
+        g_log.debug() << "Eliminating child that is now passed";
+        m_node->children.erase(m_node->children.begin());
+        m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, *m_node, inode, resize-child_size, m_node));
+        state.GoPending();
+        return;
+      } else {
+        g_log.debug() << "Restarting first child to new, further-ahead location";
+        m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **m_node->children.begin(), inode, child_size-resize, m_node));
+        state.GoPending();
+        return;
+      }
+    } else {
+      throw SError("Star node found Restart=0 action unexpectedly");
+    }
+  }
+
+  if (ConnectorAction::ChildUpdate != action) {
+    throw SError("Star failed to process non-ChildUpdate-action properly");
   }
 
   // Find the initiator child
@@ -54,20 +91,20 @@ void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& 
     ++child;
   }
   if (!foundInitiator) {
-    g_log.info() << "ComputeFunc_Star at " << *m_node << " provided an initiator which is not a child; presumably we've already dealt with this";
+    g_log.info() << "ComputeFunc_Star at " << *m_node << " provided an initiator which is not a child; presumably we've already dealt with this update";
     return;
   }
 
-  // What happened to the initiator child?  Cleared / Pending / Incomplete / Shrank / Stayed / Grew
   const State& childState = (*child)->GetState();
   STree::child_mod_iter next = child+1;
   if ((*child)->IsClear()) {
     if (next != m_node->children.end()) {
+      // resize param is the size of the cleared child
       if (!prev_child) {
-        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": First Child was cleared, so hack-restarting self";
-        m_node->GetIConnection().Restart((*next)->IStart());
-        m_node->children.erase(child);
-        // Keep going to determine our state
+        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": First Child was cleared, so restarting self";
+        m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, *m_node, inode, resize, m_node));
+        state.GoPending();
+        return;
       } else if (prev_child->GetState().IsPending()) {
         throw SError("Cannot investigate Pending prev child");
       } else if (prev_child->IsClear() || prev_child->GetState().IsPending()) {
@@ -75,6 +112,7 @@ void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& 
       } else if ((*next)->IsClear() || (*next)->GetState().IsPending()) {
         throw SError("Would look at clear next");
       } else {
+        g_log.info() << "Dealing with cleared middle child";
         if (prev_child->GetState().IsBad()) {
           g_log.warning() << "Using bad prev_child's IEnd";
         }
@@ -86,7 +124,7 @@ void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& 
           m_node->children.erase(child);
           // Keep going to determine our state
         } else {
-          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, prev_child->IEnd(), /*FIXME*/0, m_node));
+          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, prev_child->IEnd(), resize, m_node));
           m_node->children.erase(child);
           state.GoPending();
           return;
@@ -94,7 +132,7 @@ void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& 
       }
     } else {
       if (prev_child) {
-        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": last child was cleared; erasing";
+        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": last child was cleared; erasing it";
         m_node->children.erase(child);
         // Keep going to determine our state
       } else {
@@ -116,74 +154,69 @@ void ComputeFunc_Star::operator() (ConnectorAction::Action action, const IList& 
     }
     // Keep going to determine our state
   } else if (childState.IsComplete()) {
-    switch(action) {
-/*
-    case ConnectorAction::ChildGrow: {
-      if (next != m_node->children.end()) {
-        if (&(*child)->IEnd() == &(*next)->IStart()) {
-          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child grew and is complete, but next child is already in the right spot";
-          // Keep going to determine our state
-        } else {
-          // FIXME WHAT was the difference between "Clear and Restart" vs just "Restart"?? Because I'm pretty sure that was important, and I'm pretty sure it can't exist anymore.  Instead of Clearing, let's try just Restarting here...
-          // Clear and Restart the next child
-          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child grew and is complete, so clearing and restarting next, which is " << **next;
-          //(*next)->ClearNode(inode);  // NOPE lol, then Restarting it would crash! I could clear and make a new node; is that what I would want?  Why?
-          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
+    if (m_node->children.end() == next) {
+      // Create new next child
+      g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Last child updated, and is complete.  Creating new next child.";
+      (void) m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, (*child)->IEnd());
+      state.GoPending();
+      return;
+    }
+
+    if (&(*child)->IEnd() == &(*next)->IStart()) {
+      g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Next child is linked properly, so no changes to children";
+    } else {
+      if (0 == resize) {
+        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child is complete but stayed same size, so restarting next, which is " << **next;
+        // FIXME this might be a hack
+        if (&inode == &(*child)->IEnd()) {
+          g_log.debug() << " -- hack inserted case";
+          m_node->GetConnector().Enqueue(ConnectorAction(action, *m_node, inode, resize+1, *child));
           state.GoPending();
           return;
-        }
-      } else {
-        // Create next child
-        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Last child grew and is complete, so creating new next child";
-        (void) m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, (*child)->IEnd());
-        state.GoPending();
-        return;
-      }
-    } break;
-    case ConnectorAction::ChildShrink: {
-      if (next != m_node->children.end()) {
-        if (&(*child)->IEnd() == &(*next)->IStart()) {
-          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child shrank and is complete, but next child is already in the right spot";
-          // Keep going to determine our state
-        } else {
-          // Restart the next child
-          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child shrank and is complete, so restarting next without clearing it, which is " << **next;
-          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
+        } else if (&inode == &(*next)->IStart()) {
+          g_log.debug() << " -- hack deleted case";
+          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, inode, 1, m_node));
           state.GoPending();
           return;
-        }
-      } else {
-        // Create next child
-        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Last child shrank and is complete, so creating new next child";
-        (void) m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, (*child)->IEnd());
-        state.GoPending();
-        return;
-      }
-    } break;
-*/
-    case ConnectorAction::ChildUpdate: {
-      if (next != m_node->children.end()) {
-        if (&(*child)->IEnd() == &(*next)->IStart()) {
-          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child updated and is complete, but did not change size, but next child is already in the right spot";
-          // Keep going to determine our state
         } else {
-          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child updated and is complete, but did not change size.  Creating new intermediary node -- I think that's right?";
-          //m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
+          // Weird case: child is complete, resize=0, but nodes are not
+          // connected right.  This probably happened when we faked resize=0
+          // from a bad child that turned complete.  So create a new
+          // intermediary node, assuming that the next child comes later.
+          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Weird case; making new intermediary node";
           (void) m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, (*child)->IEnd(), next);
           state.GoPending();
           return;
         }
-      } else {
-        // Create next child
-        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Last child update and is complete, but did not change size.  Creating new next child.";
-        (void) m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, (*child)->IEnd());
+      } else if (resize < 0) {
+        // Create a new intermediary child
+        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child shrank and is complete, so creating a new intermediary child";
+        (void) m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, (*child)->IEnd(), next);
         state.GoPending();
         return;
+      } else {  // resize > 0
+        // Eliminate nodes until we get to the resize amount of size change.
+        // Then restart that node forward if it's not in the right place.
+        int child_size = (*child)->ISize();
+        if (child_size < resize) {
+          g_log.debug() << "Eliminating child that is now passed";
+          // TODO this will cause an automatic self-update, right?  And we'll come back here and keep clearing as far as necessary?
+          (*child)->ClearNode(inode);
+          m_node->children.erase(child);
+          state.GoPending();
+          return;
+        } else {
+          g_log.debug() << "Restarting next child to new, further-ahead location";
+          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, inode, child_size-resize, m_node));
+          state.GoPending();
+          return;
+        }
       }
-    } break;
-    default:
-      throw SError("ComputeFunc_Star at " + string(*m_node) + " received unexpected action " + ConnectorAction::UnMapAction(action));
     }
+  } else if (childState.IsBad()) {
+    g_log.debug() << "Child is bad, so leaving subsequent connections alone; let it breach";
+  } else {
+    throw SError("Child update but is in unknown state");
   }
 
   // Compute

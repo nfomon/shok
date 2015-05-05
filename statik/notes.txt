@@ -1059,4 +1059,14 @@ Star ComputeFunc:
                 if resize<0, child shrank, so create a new child after it.
                 if resize>0, child grew, so kill nodes up until the node that contains the initiator's new IEnd, and restart it with an appropriate resize amount.
 
+-----
+Real bugs.  Real hacks.  Let's go back to the drawing board with the new Seq/Star actions.
+
+Ah!  IConnection has ISize.  But ConnectorAction resize amount is:  How much did a node's IEnd change location?  That's an entirely different number.  And all nodes need to report it accurately.
+Keyword/Regexp/Meta: Need to report this number aware of the INode Insert/Delete/Update they received.
+Or:
+ - wrong:  need to think this reeally through
+     - if we didn't have a winner, then our resize-export is the winner's ISize.
+     - if we changed winner, then our resize-export is the size of the new winner minus the size of the old winner, + their .  (But what if it grew from an Insert?  uhy...)
+    Gets multiple updates for multiple children... so how to report this number accurately?  Doesn't each node update multiple times, so then..... what do we do?
 

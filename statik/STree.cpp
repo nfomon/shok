@@ -63,29 +63,53 @@ void STree::ComputeNode(ConnectorAction::Action action, const IList& inode, cons
   g_log.info() << "Computing node " << *this << " with inode " << inode << " and initiator " << (initiator ? string(*initiator) : "<null>");
   const State old_state = m_state;
   const IList* old_iend = &IEnd();
-  size_t old_size = ISize();
 
   (*m_computeFunc)(action, inode, initiator, resize);
 
-  bool hasChanged1 = old_iend != (m_iconnection.IsClear() ? NULL : &IEnd());
+  const IList* new_iend = (m_iconnection.IsClear() ? NULL : &IEnd());
+
+  bool hasChanged1 = old_iend != new_iend;
   bool hasChanged2 = old_state != m_state;
   bool hasChanged = hasChanged1 || hasChanged2;
   g_log.info() << " - - - - " << *this << " has " << (hasChanged ? "" : "NOT ") << "changed  " << hasChanged1 << ":" << hasChanged2;
   m_connector.TouchNode(*this);
   if (hasChanged && !m_isClear && m_parent && !m_state.IsPending()) {
-    size_t new_size = ISize();
     ConnectorAction::Action a = ConnectorAction::ChildUpdate;
-    m_connector.Enqueue(ConnectorAction(a, *m_parent, inode, new_size - old_size, this));
+
+    // Determine the resize amount, i.e. how much the IEnd has moved.
+    // TODO this should be provided by the ComputeFunc, because this determination here is slooow.
+    int resize = 0;
+    if (!old_state.IsBad() && !old_state.IsPending()) {
+      const IList* fwd = old_iend->right;
+      const IList* bck = old_iend;
+      do {
+        if (fwd && fwd == new_iend) {
+          break;
+        } else if (bck && bck == new_iend) {
+          resize = -resize;
+          break;
+        }
+        ++resize;
+        if (fwd) { fwd = fwd->right; }
+        if (bck) { bck = bck->left; }
+      } while (fwd || bck);
+      g_log.debug() << "Computed resize of " << resize;
+    } else {
+      g_log.debug() << "Old state was bad, so faking resize=0";
+    }
+
+    m_connector.Enqueue(ConnectorAction(a, *m_parent, inode, resize, this));
   }
   m_connector.DrawGraph(*this, &inode, NULL, initiator);
 }
 
 void STree::ClearNode(const IList& inode) {
   g_log.info() << "Clearing node " << *this;
-  ClearSubNode();
   if (m_parent) {
+    // The size we report is irrelevant; cleared nodes do not need to report how their IEnd changes
     m_connector.Enqueue(ConnectorAction(ConnectorAction::ChildUpdate, *m_parent, inode, 0, this));
   }
+  ClearSubNode();
 }
 
 /*
