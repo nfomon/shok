@@ -44,6 +44,15 @@ void Grapher::AddMachine(const string& context, const Rule& machineRoot) {
   m_isDirty = true;
 }
 
+void Grapher::AddOrderList(const string& context, const OrderList& orderList, const IList& start) {
+  m_graph += "subgraph cluster_" + dotVar(&orderList, context) + " {\n";
+  m_graph += "node [shape=box];\n";
+  m_graph += "graph [style=\"filled\", fillcolor=\"#f0e0d0\"];\n";
+  m_graph += orderList.Draw(context, start);
+  m_graph += "}\n";
+  m_isDirty = true;
+}
+
 void Grapher::AddIList(const string& context, const IList& inode, const string& label) {
   m_graph += "subgraph cluster_" + context + dotVar(&inode, context) + " {\n";
   if (!label.empty()) {

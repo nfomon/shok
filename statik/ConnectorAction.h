@@ -33,18 +33,16 @@ public:
     }
   }
 
-  ConnectorAction(Action action, STree& node, const IList& inode, int resize = 0, const STree* initiator = NULL)
+  ConnectorAction(Action action, STree& node, const IList& inode, const STree* initiator = NULL)
     : action(action),
       node(&node),
       inode(&inode),
-      resize(resize),
       initiator(initiator) {}
   virtual ~ConnectorAction() {}
 
   Action action;
   STree* node;
   const IList* inode;
-  int resize;
   const STree* initiator;
 };
 

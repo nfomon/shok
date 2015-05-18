@@ -5,65 +5,25 @@
 #define _IConnection_h_
 
 #include "IList.h"
-#include "SError.h"
 
 namespace statik {
 
 class IConnection {
 public:
-  IConnection()
-    : m_istart(NULL),
-      m_iend(NULL),
-      m_size(0) {}
+  IConnection();
 
-  void Clear() {
-    m_istart = NULL;
-    m_iend = NULL;
-    m_size = 0;
-  }
-  bool IsClear() const { return !m_istart; }
+  void Clear();
+  bool IsClear() const;
 
-  const IList& Start() const {
-    if (!m_istart) {
-      throw SError("Cannot get start of uninitialized IConnection");
-    }
-    return *m_istart;
-  }
+  const IList& Start() const;
+  const IList& End() const;
 
-  const IList& End() const {
-    if (!m_iend) {
-      throw SError("Cannot get end of uninitialized IConnection");
-    }
-    return *m_iend;
-  }
-
-  size_t Size() const { return m_size; }
-
-  void Restart(const IList& istart, int resize = 0) {
-    m_istart = &istart;
-    if (0 == resize) {
-      m_iend = &istart;
-      m_size = 0;
-    } else {
-      if (!m_iend) {
-        throw SError("Cannot resize-restart IConnection which does not have IEnd set");
-      }
-      m_size -= resize;
-    }
-  }
-
-  void SetEnd(const IList& iend, size_t size) {
-    if (!m_istart) {
-      throw SError("Cannot set end of IConnection that has not been started");
-    }
-    m_iend = &iend;
-    m_size = size;
-  }
+  void Restart(const IList& istart, bool total = true);
+  void SetEnd(const IList& iend);
 
 private:
   const IList* m_istart;  // starting inode
   const IList* m_iend;    // inode that makes us bad after we're done, or last
-  size_t m_size;          // number of inodes that are spanned, including IEnd if possible
 };
 
 }

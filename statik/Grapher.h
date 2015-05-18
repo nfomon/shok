@@ -18,6 +18,7 @@ public:
   Grapher(const std::string& out_dir, const std::string& base_filename);
 
   void AddMachine(const std::string& context, const Rule& machineRoot);
+  void AddOrderList(const std::string& context, const OrderList& orderList, const IList& start);
   void AddIList(const std::string& context, const IList& start, const std::string& label = "");
   void AddSTree(const std::string& context, const STree& root, const std::string& label = "", const STree* initiator = NULL);
   void AddOList(const std::string& context, const IList& start, const std::string& label = "");

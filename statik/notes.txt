@@ -1070,3 +1070,43 @@ Or:
      - if we changed winner, then our resize-export is the size of the new winner minus the size of the old winner, + their .  (But what if it grew from an Insert?  uhy...)
     Gets multiple updates for multiple children... so how to report this number accurately?  Doesn't each node update multiple times, so then..... what do we do?
 
+-----
+OrderList
+
+Suppose we get a batch of INode inserts/deletes.  We need to be careful about which one(s) we're inserting into the OrderList at a time, since we're relying on their neighbours to ascertain their position in the tree.
+ - the tree knows the old ordering.  the node knows the new ordering.   trust the tree.  REALLY?
+ - YES.  An UpdateHotlist has nodes that are newly-connected; any INode's left or right might be another new INode that we haven't Inserted yet.  They won't point to newly-deleted nodes; those will be conspicuously absent.
+
+--
+
+problem is not OutputList.  On this input:
+  new;
+  ew;
+  w;
+  ;
+  d;
+it fails because the Star's IStart is still "e" for some weird reason.  "ew" are still floating around, and "d" is not yet our IStart. why?
+ - no, Star's IStart is not still "e".  We're just drawing the list starting at "e" because that's the INode in question when we draw the OutputList, and while the root has no IStart.
+ - The picture looks funny AGAIN when "d" is inserted, for the same reason!
+
+-----
+2k15-05-13
+
+Bad nodes have IStarts/IEnds.  They're not supposed to?  But how are we supposed to clear them?  They don't Listen either, so they won't necessarily get the update when their INodes are deleted.
+
+-----
+2k15-05-17
+
+Problems:
+1. Decide who needs to receive updates.  I think there's a distinction between "strong listening" and "weak listening".  Weak listening: a Complete node's IEnd, or a Bad node's IEnd.  If a node is inserted or deleted to the right of that INode, we don't care.
+ - is that right?  isn't it just, if an INode's left listener is bad or complete, don't update it with an INodeInsert?
+ - When a node is inserted in-place, tell the STree node that it can Unlisten from the subsequent nodes it doesn't care about anymore.
+
+So we're updating too many nodes.  Not a huge crime.
+
+2. The "top node" may have different output behaviour than intermediary nodes.
+This has to do with what the consumer wants: do they care to know that our output is "bad", and which parts of it are questionable?  Presumably they do.
+
+Other work:
+3. Tests
+

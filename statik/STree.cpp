@@ -47,9 +47,10 @@ void STree::StartNode(const IList& istart) {
   m_connector.Enqueue(ConnectorAction(ConnectorAction::Restart, *this, istart));
 }
 
-void STree::ComputeNode(ConnectorAction::Action action, const IList& inode, const STree* initiator, int resize) {
+void STree::ComputeNode(ConnectorAction::Action action, const IList& inode, const STree* initiator) {
   if (m_isClear) {
-    throw SError("Cannot compute node " + string(*this) + " which has been cleared");
+    g_log.info() << "Not computing node " + string(*this) + " which has been cleared";
+    return;
   } else if (m_iconnection.IsClear()) {
     throw SError("Cannot compute node " + string(*this) + " with cleared IConnection");
   } else if (ConnectorAction::Start == action) {
@@ -57,48 +58,28 @@ void STree::ComputeNode(ConnectorAction::Action action, const IList& inode, cons
   }
 
   if (ConnectorAction::Restart == action) {
-    m_iconnection.Restart(inode, resize);
+    m_iconnection.Restart(inode);
   }
 
   g_log.info() << "Computing node " << *this << " with inode " << inode << " and initiator " << (initiator ? string(*initiator) : "<null>");
   const State old_state = m_state;
+  const IList* old_istart = &IStart();
   const IList* old_iend = &IEnd();
 
-  (*m_computeFunc)(action, inode, initiator, resize);
+  (*m_computeFunc)(action, inode, initiator);
 
+  const IList* new_istart = (m_iconnection.IsClear() ? NULL : &IStart());
   const IList* new_iend = (m_iconnection.IsClear() ? NULL : &IEnd());
 
+  bool hasChanged0 = old_istart != new_istart;
   bool hasChanged1 = old_iend != new_iend;
   bool hasChanged2 = old_state != m_state;
-  bool hasChanged = hasChanged1 || hasChanged2;
+  bool hasChanged = hasChanged0 || hasChanged1 || hasChanged2;
   g_log.info() << " - - - - " << *this << " has " << (hasChanged ? "" : "NOT ") << "changed  " << hasChanged1 << ":" << hasChanged2;
   m_connector.TouchNode(*this);
   if (hasChanged && !m_isClear && m_parent && !m_state.IsPending()) {
     ConnectorAction::Action a = ConnectorAction::ChildUpdate;
-
-    // Determine the resize amount, i.e. how much the IEnd has moved.
-    // TODO this should be provided by the ComputeFunc, because this determination here is slooow.
-    int resize = 0;
-    if (!old_state.IsBad() && !old_state.IsPending()) {
-      const IList* fwd = old_iend->right;
-      const IList* bck = old_iend;
-      do {
-        if (fwd && fwd == new_iend) {
-          break;
-        } else if (bck && bck == new_iend) {
-          resize = -resize;
-          break;
-        }
-        ++resize;
-        if (fwd) { fwd = fwd->right; }
-        if (bck) { bck = bck->left; }
-      } while (fwd || bck);
-      g_log.debug() << "Computed resize of " << resize;
-    } else {
-      g_log.debug() << "Old state was bad, so faking resize=0";
-    }
-
-    m_connector.Enqueue(ConnectorAction(a, *m_parent, inode, resize, this));
+    m_connector.Enqueue(ConnectorAction(a, *m_parent, inode, this));
   }
   m_connector.DrawGraph(*this, &inode, NULL, initiator);
 }
@@ -107,24 +88,10 @@ void STree::ClearNode(const IList& inode) {
   g_log.info() << "Clearing node " << *this;
   if (m_parent) {
     // The size we report is irrelevant; cleared nodes do not need to report how their IEnd changes
-    m_connector.Enqueue(ConnectorAction(ConnectorAction::ChildUpdate, *m_parent, inode, 0, this));
+    m_connector.Enqueue(ConnectorAction(ConnectorAction::ChildUpdate, *m_parent, inode, this));
   }
   ClearSubNode();
 }
-
-/*
-bool STree::ContainsINode(const IList& inode) const {
-  if (m_iconnection.IsClear()) {
-    return false;
-  }
-  for (const IList* i = &IStart(); i != NULL && i != &IEnd(); i = i->right) {
-    if (&inode == i) {
-      return true;
-    }
-  }
-  return false;
-}
-*/
 
 STree::operator std::string() const {
   return m_rule.Name() + ":" + string(GetState());
@@ -145,8 +112,6 @@ string STree::DrawNode(const string& context, const STree* initiator) const {
   } else if (m_state.IsComplete()) {
     fillcolor = "#aaaaff";
   } else {
-    g_log.error() << "DrawNode: unknown state";
-    g_log.error() << "state is " << m_state;
     throw SError("Stree::DrawNode() - unknown state");
   }
   s += dotVar(this, context) + " [label=\"" + Util::safeLabelStr(m_rule.Name()) + "\", style=\"filled\", fillcolor=\"" + fillcolor + "\", fontsize=12.0];\n";
@@ -184,7 +149,6 @@ string STree::DrawNode(const string& context, const STree* initiator) const {
   for (child_iter i = children.begin(); i != children.end(); ++i) {
     s += (*i)->DrawNode(context, initiator);
   }
-  //s += m_outputFunc->DrawEmitting(context, *this);
   return s;
 }
 

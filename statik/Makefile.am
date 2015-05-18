@@ -7,6 +7,7 @@ STATIK_SRCS = \
     Grapher.h \
     Hotlist.cpp \
     Hotlist.h \
+    IConnection.cpp \
     IConnection.h \
     IList.cpp \
     IList.h \
@@ -19,6 +20,8 @@ STATIK_SRCS = \
     OData.h \
     Or.cpp \
     Or.h \
+    OrderList.cpp \
+    OrderList.h \
     OutputFunc.cpp \
     OutputFunc.h \
     Regexp.cpp \
@@ -37,7 +40,7 @@ STATIK_SRCS = \
     State.cpp \
     State.h
 
-LIB_CXXFLAGS = -I ../
+LIB_CXXFLAGS = -I../
 
 lib_LIBRARIES = libstatik.a
 libstatik_a_LIBADD = ../util/libutil.a

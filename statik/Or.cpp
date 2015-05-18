@@ -28,7 +28,7 @@ auto_ptr<ComputeFunc> statik::MakeComputeFunc_Or() {
 
 // TODO consider initiator, keep vectors as state that gets updated by each
 // call to this function, and then we finally just update State from the vecs.
-void ComputeFunc_Or::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator, int resize) {
+void ComputeFunc_Or::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) {
   g_log.debug() << "Computing Or at " << *m_node;
 
   if (ConnectorAction::Restart == action) {
@@ -40,7 +40,7 @@ void ComputeFunc_Or::operator() (ConnectorAction::Action action, const IList& in
     } else if (m_node->children.size() == m_node->GetRule().GetChildren().size()) {
       for (STree::child_mod_iter i = m_node->children.begin();
            i != m_node->children.end(); ++i) {
-        (*i)->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Start, **i, inode));
+        (*i)->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **i, inode));
       }
     } else {
       throw SError("Or node had inappropriate # children");
@@ -63,7 +63,7 @@ void ComputeFunc_Or::operator() (ConnectorAction::Action action, const IList& in
   if (m_node->children.empty()) {
     throw SError("Cannot compute Or at " + string(*m_node) + " that has no children");
   }
-  m_node->GetIConnection().SetEnd(m_node->IStart(), 1);
+  m_node->GetIConnection().SetEnd(m_node->IStart());
 
   STree::child_mod_iter i = m_node->children.begin();
   bool haveSetEnd = false;
@@ -89,7 +89,7 @@ void ComputeFunc_Or::operator() (ConnectorAction::Action action, const IList& in
       if (&(*i)->IStart() != &m_node->IStart()) {
         throw SError("Computing Or at " + string(*m_node) + " and a child disagree about istart");
       }
-      m_node->GetIConnection().SetEnd((*i)->IEnd(), (*i)->ISize());
+      m_node->GetIConnection().SetEnd((*i)->IEnd());
       g_log.debug() << "Computing Or at " << *m_node << " assigning iend " << m_node->IEnd() << " from istate " << istate;
       haveSetEnd = true;
     }
@@ -138,10 +138,10 @@ void ComputeFunc_Or::operator() (ConnectorAction::Action action, const IList& in
     }
   }
   if (1 == completes.size()) {
-    m_node->GetIConnection().SetEnd(completes.at(0)->IEnd(), completes.at(0)->ISize());
+    m_node->GetIConnection().SetEnd(completes.at(0)->IEnd());
     g_log.debug() << "Computing Or at " << *m_node << " declares complete winner " << *completes.at(0);
   } else if (1 == dones.size()) {
-    m_node->GetIConnection().SetEnd(dones.at(0)->IEnd(), dones.at(0)->ISize());
+    m_node->GetIConnection().SetEnd(dones.at(0)->IEnd());
     g_log.debug() << "Computing Or at " << *m_node << " declares done winner " << *dones.at(0);
   }
   if (1 == completes.size()) {

@@ -9,6 +9,7 @@
 #include "IList.h"
 #include "ListenerTable.h"
 #include "ObjectPool.h"
+#include "OrderList.h"
 #include "OutputFunc.h"
 #include "STree.h"
 
@@ -70,6 +71,8 @@ public:
   // Indicate that a node has been computed.  Called by STree::ComputeNode()
   void TouchNode(const STree& node);
 
+  int INodeCompare(const IList& a, const IList& b) const;
+
   void DrawGraph(const STree& onode,
                  const IList* inode = NULL,
                  const Hotlist* hotlist = NULL,
@@ -107,6 +110,7 @@ private:
   bool m_needsCleanup;
   std::auto_ptr<Grapher> m_grapher;
   ObjectPool<STree> m_nodePool;
+  OrderList m_orderList;
   action_map m_actions_by_depth;
   ListenerTable<const IList*, STree*> m_listeners;
   typedef std::map<const STree*, OutputState> output_map;

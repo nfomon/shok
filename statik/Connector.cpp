@@ -251,7 +251,16 @@ const STree& Connector::GetRoot() const {
 }
 
 void Connector::InsertNode(const IList& inode) {
-  g_log.info() << "Connector " << m_name << ": Inserting IList: " << inode << " with " << (inode.left ? "left" : "no left") << " and " << (inode.right ? "right" : "no right");
+  g_log.info() << "Connector " << m_name << ": Inserting IList: " << inode << " with " << (inode.left ? "left" : "no left") << " and " << (inode.right ? "with a right" : "no right");
+  m_orderList.Insert(inode);
+  if (m_grapher.get()) {
+    if (GetFirstINode()) {
+      m_grapher->AddOrderList(m_name, m_orderList, *GetFirstINode());
+    } else {
+      m_grapher->AddOrderList(m_name, m_orderList, inode);
+    }
+    m_grapher->SaveAndClear();
+  }
 
   if (!m_root) {
     g_log.debug() << " - No root; initializing the tree root";
@@ -265,7 +274,11 @@ void Connector::InsertNode(const IList& inode) {
       g_log.debug() << " - Found left inode " << *inode.left << ": updating listeners of " << inode << "'s left and (if present) right";
       listener_set listeners = m_listeners.GetListeners(inode.left);
       for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
-        Enqueue(ConnectorAction(ConnectorAction::INodeInsert, **i, inode));
+        //if ((*i)->GetState().IsBad() || (*i)->GetState().IsComplete()) {
+        //  g_log.debug() << "Not enqueueing INodeInsert for left listener " << **i << " because it is bad or complete";
+        //} else {
+          Enqueue(ConnectorAction(ConnectorAction::INodeInsert, **i, inode));
+        //}
       }
       if (inode.right) {
         listeners = m_listeners.GetListeners(inode.right);
@@ -275,7 +288,7 @@ void Connector::InsertNode(const IList& inode) {
       }
     } else {
       g_log.debug() << " - No left inode: prepending behind the root";
-      Enqueue(ConnectorAction(ConnectorAction::Restart, *m_root, inode, -1));
+      Enqueue(ConnectorAction(ConnectorAction::Restart, *m_root, inode));
     }
   }
 
@@ -291,21 +304,32 @@ void Connector::InsertNode(const IList& inode) {
 
 void Connector::DeleteNode(const IList& inode) {
   g_log.info() << "Deleting list inode " << inode;
+  if (m_grapher.get()) {
+    if (GetFirstINode()) {
+      m_grapher->AddOrderList(m_name, m_orderList, *GetFirstINode());
+    } else {
+      m_grapher->AddOrderList(m_name, m_orderList, inode);
+    }
+    m_grapher->SaveAndClear();
+  }
 
   if (!m_root) {
     throw SError("Connector " + m_name + ": cannot delete " + string(inode) + " when the root has not been initialized");
   }
 
   if (!inode.left && !inode.right) {
+    g_log.debug() << "Connector: Deleted node has no left or right; clearing root";
     m_root->ClearNode(inode);
   } else {
     if (inode.left) {
+      g_log.debug() << "Connector: Deleted node has inode.left, so enqueuing INodeDelete actions on its listeners";
       listener_set listeners = m_listeners.GetListeners(inode.left);
       for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
         Enqueue(ConnectorAction(ConnectorAction::INodeDelete, **i, inode));
       }
     }
     listener_set listeners = m_listeners.GetListeners(&inode);
+    g_log.debug() << "Connector: Deleted node has listeners, so either clearing them or sending INodeDelete";
     for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
       if (&(*i)->IStart() == &inode) {
         (*i)->ClearNode(inode);
@@ -316,8 +340,8 @@ void Connector::DeleteNode(const IList& inode) {
   }
 
   ProcessActions();
-
   m_listeners.RemoveAllListeners(&inode);
+  m_orderList.Delete(inode);
   g_log.debug() << "Connector: Delete done";
 }
 
@@ -343,7 +367,7 @@ void Connector::ProcessActions() {
         }
         a->node->StartNode(*a->inode);
       } else {
-        a->node->ComputeNode(a->action, *a->inode, a->initiator, a->resize);
+        a->node->ComputeNode(a->action, *a->inode, a->initiator);
       }
     }
     if (m_actions_by_depth.at(depth).empty()) {
@@ -470,4 +494,8 @@ void Connector::CleanupIfNeeded() {
     m_needsCleanup = false;
     SanityCheck();
   }
+}
+
+int Connector::INodeCompare(const IList& a, const IList& b) const {
+  return m_orderList.Compare(a, b);
 }

@@ -44,7 +44,7 @@ public:
          std::auto_ptr<OutputFunc> outputFunc);
 
   void StartNode(const IList& istart);
-  void ComputeNode(ConnectorAction::Action action, const IList& inode, const STree* initiator, int resize);
+  void ComputeNode(ConnectorAction::Action action, const IList& inode, const STree* initiator);
   void ClearNode(const IList& inode);
 
   bool IsClear() const { return m_isClear; }
@@ -55,8 +55,6 @@ public:
   STree* GetParent() const { return m_parent; }
   const IList& IStart() const { return m_iconnection.Start(); }
   const IList& IEnd() const { return m_iconnection.End(); }
-  size_t ISize() const { return m_iconnection.Size(); }
-  //bool ContainsINode(const IList& inode) const;
 
   IConnection& GetIConnection() { return m_iconnection; }
   const IConnection& GetIConnection() const { return m_iconnection; }

@@ -36,16 +36,16 @@ ComputeFunc_Keyword::ComputeFunc_Keyword(const string& str)
   }
 }
 
-void ComputeFunc_Keyword::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator, int resize) {
+void ComputeFunc_Keyword::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) {
   g_log.info() << "Computing Keyword at " << *m_node << " with inode " << inode;
   State& state = m_node->GetState();
   state.Clear();
   string matched;
   bool done = false;
   const IList* i = &m_node->IStart();
-  size_t size = 1;
   for (; i != NULL; i = i->right) {
-    m_node->GetIConnection().SetEnd(*i, size);
+    m_node->GetConnector().Listen(*m_node, *i);
+    m_node->GetIConnection().SetEnd(*i);
     if (done) {
       state.GoComplete();
       break;
@@ -61,8 +61,6 @@ void ComputeFunc_Keyword::operator() (ConnectorAction::Action action, const ILis
       // Just ok; keep going (if possible)
       state.GoOK();
     }
-    m_node->GetConnector().Listen(*m_node, *i);
-    ++size;
   }
   if (state.IsEmitting()) {
     state.Lock();

@@ -28,20 +28,20 @@ auto_ptr<ComputeFunc> statik::MakeComputeFunc_Meta(const string& searchName) {
   return auto_ptr<ComputeFunc>(new ComputeFunc_Meta(searchName));
 }
 
-void ComputeFunc_Meta::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator, int resize) {
+void ComputeFunc_Meta::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) {
   g_log.info() << "Computing Meta at " << *m_node << " with inode "<< inode;
   State& state = m_node->GetState();
   state.Clear();
   const IList& first = m_node->IStart();
+  m_node->GetConnector().Listen(*m_node, first);
   if (first.name == m_searchName) {
-    m_node->GetConnector().Listen(*m_node, first);
     state.GoDone();
     const IList* second = first.right;
     if (second) {
       state.GoComplete();
-      m_node->GetIConnection().SetEnd(*second, 2);
+      m_node->GetIConnection().SetEnd(*second);
     } else {
-      m_node->GetIConnection().SetEnd(first, 1);
+      m_node->GetIConnection().SetEnd(first);
     }
   } else {
     state.GoBad();

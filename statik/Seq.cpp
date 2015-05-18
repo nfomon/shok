@@ -27,7 +27,7 @@ auto_ptr<ComputeFunc> statik::MakeComputeFunc_Seq() {
   return auto_ptr<ComputeFunc>(new ComputeFunc_Seq());
 }
 
-void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator, int resize) {
+void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) {
   // Process
   g_log.debug() << "Computing Seq at " << *m_node << " with initiator " << (initiator ? string(*initiator) : "<null>");
 
@@ -69,7 +69,7 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
       } else if (prev_child->GetState().IsPending()) {
         throw SError("Cannot investigate pending child");
       }
-      m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, prev_child->IEnd(), /*FIXME*/0, m_node));
+      m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, prev_child->IEnd(), m_node));
       state.GoOK();
       return;
     } 
@@ -126,7 +126,7 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
       g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child update, but did not change size.  Make sure its next connection is correct";
       if (next != m_node->children.end()) {
         if (&(*child)->IEnd() != &(*next)->IStart()) {
-          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), /*FIXME*/0, m_node));
+          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
           state.GoOK();
           return;
         }
@@ -145,16 +145,12 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
   // Compute
   // Find the first breach and locked children
   // TODO eliminate this loop, just cache the index of the first
-  // breached/locked children as sequence state (and vector of ISizes!) and
+  // breached/locked children as sequence state and
   // update during Process as appropriate.
   const STree* breachChild = NULL;
   const STree* lockedChild = NULL;
-  size_t isize = 0;
   child_index = 0;
   for (STree::child_iter i = m_node->children.begin(); i != m_node->children.end(); ++i) {
-    if (!breachChild) {
-      isize += (*i)->ISize();
-    }
     const State& istate = (*i)->GetState();
     if (istate.IsPending() || istate.IsBad() || (!istate.IsComplete() && child_index < m_node->GetRule().GetChildren().size() - 1)) {
       breachChild = *i;
@@ -179,10 +175,10 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
     if (istate.IsPending()) {
       throw SError("Breached child is pending");
     } else if (istate.IsBad()) {
-      m_node->GetIConnection().SetEnd(breachChild->IEnd(), isize + breachChild->ISize());
+      m_node->GetIConnection().SetEnd(breachChild->IEnd());
       state.GoBad();
     } else {
-      m_node->GetIConnection().SetEnd(breachChild->IEnd(), isize + breachChild->ISize());
+      m_node->GetIConnection().SetEnd(breachChild->IEnd());
       state.GoOK();
     }
   } else {
@@ -206,7 +202,7 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
       } else {
         throw SError("Last child has unknown state");
       }
-      m_node->GetIConnection().SetEnd(lastChild.IEnd(), isize);
+      m_node->GetIConnection().SetEnd(lastChild.IEnd());
     }
   }
 
