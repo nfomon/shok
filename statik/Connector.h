@@ -29,6 +29,8 @@ public:
 
   Connector(const Rule& rule, const std::string& name = "", const std::string& graphdir = "");
 
+  const STree& GetRoot() const;
+
   void ExtractHotlist(Hotlist& out_hotlist);
   listener_set GetListeners(const IList& x) const;
 
@@ -88,8 +90,6 @@ private:
   typedef action_queue::const_iterator action_iter;
   typedef action_queue::iterator action_mod_iter;
   typedef std::map<STree::depth_t, action_queue> action_map;
-
-  const STree& GetRoot() const;
 
   // Called by UpdateWithHotlist()
   void InsertNode(const IList& inode);

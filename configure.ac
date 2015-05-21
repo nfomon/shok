@@ -18,6 +18,7 @@ AC_CONFIG_FILES([
   Makefile
   util/Makefile
   statik/Makefile
+  statik/test/Makefile
   exstatik/Makefile
   istatik/Makefile
 ])
