@@ -15,6 +15,7 @@ namespace exstatik {
 
 typedef boost::ptr_vector<statik::Rule> Compiler;
 typedef Compiler::const_iterator Compiler_iter;
+typedef Compiler::iterator Compiler_mod_iter;
 std::auto_ptr<Compiler> MakeCompiler(const std::string& name);
 
 }

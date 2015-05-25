@@ -52,7 +52,7 @@ void IStatik::run() {
   typedef ptr_vector<ConnectorWindow> connectorWindow_vec;
   typedef connectorWindow_vec::iterator connectorWindow_mod_iter;
   ptr_vector<ConnectorWindow> connectorWindows;
-  for (exstatik::Compiler::const_iterator i = m_compiler->begin();
+  for (exstatik::Compiler_mod_iter i = m_compiler->begin();
        i != m_compiler->end(); ++i) {
     g_log.info() << "Adding connector window for " << i->Name();
     connectorWindows.push_back(new ConnectorWindow(*i, m_graphdir));

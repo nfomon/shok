@@ -3,6 +3,7 @@
 
 #include "Regexp.h"
 
+#include "Connector.h"
 #include "OutputFunc.h"
 #include "SError.h"
 #include "SLog.h"

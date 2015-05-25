@@ -17,6 +17,7 @@ class STree;
 class OutputFunc;
 
 std::auto_ptr<OutputFunc> MakeOutputFunc_Silent();
+std::auto_ptr<OutputFunc> MakeOutputFunc_Pass();
 std::auto_ptr<OutputFunc> MakeOutputFunc_Basic(const std::string& name, const std::string& value = "");
 std::auto_ptr<OutputFunc> MakeOutputFunc_IValues(const std::string& name);
 std::auto_ptr<OutputFunc> MakeOutputFunc_Winner();
@@ -61,9 +62,17 @@ public:
     : OutputFunc() {}
   virtual ~OutputFunc_Silent() {}
   virtual void operator() () {}
-  virtual std::auto_ptr<OutputFunc> Clone() {
-    return std::auto_ptr<OutputFunc>(new OutputFunc_Silent());
-  }
+  virtual std::auto_ptr<OutputFunc> Clone();
+};
+
+// Simple pass through the child node's output, no changes
+class OutputFunc_Pass : public OutputFunc {
+public:
+  OutputFunc_Pass()
+    : OutputFunc() {}
+  virtual ~OutputFunc_Pass() {}
+  virtual void operator() ();
+  virtual std::auto_ptr<OutputFunc> Clone();
 };
 
 // Emits a single output list node, that contains the provided name and value.

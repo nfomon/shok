@@ -11,7 +11,6 @@
  */
 
 #include "ComputeFunc.h"
-#include "Connector.h"
 #include "IList.h"
 #include "OutputFunc.h"
 #include "STree.h"
@@ -24,6 +23,8 @@
 
 namespace statik {
 
+class Connector;
+
 class Rule {
 public:
   typedef std::vector<Rule*> child_vec;
@@ -31,7 +32,7 @@ public:
   typedef std::vector<bool> childOwnership_vec;
   typedef childOwnership_vec::const_iterator childOwnership_iter;
 
-  Rule(const std::string& debugName,
+  Rule(const std::string& name,
       std::auto_ptr<ComputeFunc>,
       std::auto_ptr<OutputFunc>);
   ~Rule();
@@ -44,7 +45,6 @@ public:
   Rule* AddChild(std::auto_ptr<Rule> child);
   Rule* AddChildRecursive(Rule* child);
 
-  STree* MakeRootNode(Connector& connector) const;
   STree* MakeNode(STree& parent, const IList& istart) const;
   STree* MakeNode(STree& parent, const IList& istart, STree::child_mod_iter insertPos) const;
 

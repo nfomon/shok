@@ -3,6 +3,7 @@
 
 #include "Or.h"
 
+#include "Connector.h"
 #include "OutputFunc.h"
 #include "SLog.h"
 #include "STree.h"

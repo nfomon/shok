@@ -28,10 +28,10 @@ using namespace statik;
 
 /* public */
 
-Rule::Rule(const string& debugName,
+Rule::Rule(const string& name,
            auto_ptr<ComputeFunc> computeFunc,
            auto_ptr<OutputFunc> outputFunc)
-  : m_name(debugName),
+  : m_name(name),
     m_computeFunc(computeFunc),
     m_outputFunc(outputFunc),
     m_parent(NULL) {
@@ -67,11 +67,6 @@ Rule* Rule::SilenceOutput() {
 Rule* Rule::CapOutput(const string& cap) {
   m_outputFunc = MakeOutputFunc_Cap(m_outputFunc, cap);
   return this;
-}
-
-STree* Rule::MakeRootNode(Connector& connector) const {
-  auto_ptr<STree> node(new STree(connector, *this, NULL, m_computeFunc->Clone(), m_outputFunc->Clone()));
-  return connector.OwnNode(node);
 }
 
 STree* Rule::MakeNode(STree& parent, const IList& istart) const {

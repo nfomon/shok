@@ -26,6 +26,8 @@ STATIK_SRCS = \
     OutputFunc.h \
     Regexp.cpp \
     Regexp.h \
+    Root.cpp \
+    Root.h \
     Rule.cpp \
     Rule.h \
     SError.h \

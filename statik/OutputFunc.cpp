@@ -25,6 +25,10 @@ auto_ptr<OutputFunc> statik::MakeOutputFunc_Silent() {
   return auto_ptr<OutputFunc>(new OutputFunc_Silent());
 }
 
+auto_ptr<OutputFunc> statik::MakeOutputFunc_Pass() {
+  return auto_ptr<OutputFunc>(new OutputFunc_Pass());
+}
+
 auto_ptr<OutputFunc> statik::MakeOutputFunc_Basic(const string& name, const string& value) {
   return auto_ptr<OutputFunc>(new OutputFunc_Basic(name, value));
 }
@@ -49,6 +53,29 @@ OutputFunc::OutputFunc()
   : m_node(NULL),
     m_ostart(NULL),
     m_oend(NULL) {
+}
+
+/* OutputFunc_Silent */
+
+auto_ptr<OutputFunc> OutputFunc_Silent::Clone() {
+  return auto_ptr<OutputFunc>(new OutputFunc_Silent());
+}
+
+/* OutputFunc_Pass */
+
+auto_ptr<OutputFunc> OutputFunc_Pass::Clone() {
+  return std::auto_ptr<OutputFunc>(new OutputFunc_Pass());
+}
+
+void OutputFunc_Pass::operator() () {
+  if (m_node->children.empty()) {
+    // Leave our dangling old state, I guess
+  } else {
+    const STree& child = *m_node->children.front();
+    m_state = child.GetOutputFunc().GetState();
+    m_ostart = child.GetOutputFunc().OStart();
+    m_oend = child.GetOutputFunc().OEnd();
+  }
 }
 
 /* OutputFunc_Basic */

@@ -11,6 +11,7 @@
 #include "ObjectPool.h"
 #include "OrderList.h"
 #include "OutputFunc.h"
+#include "Rule.h"
 #include "STree.h"
 
 #include <deque>
@@ -20,16 +21,16 @@
 namespace statik {
 
 class Grapher;
-class Rule;
 
 class Connector {
 public:
   typedef typename ListenerTable<const IList*, STree*>::listener_set listener_set;
   typedef typename ListenerTable<const IList*, STree*>::listener_iter listener_iter;
 
-  Connector(const Rule& rule, const std::string& name = "", const std::string& graphdir = "");
+  Connector(Rule& rule, const std::string& name = "", const std::string& graphdir = "");
 
-  const STree& GetRoot() const;
+  const STree& GetRoot() const; // for tests
+  const State& GetState() const;
 
   void ExtractHotlist(Hotlist& out_hotlist);
   listener_set GetListeners(const IList& x) const;
@@ -97,15 +98,14 @@ private:
   void UpdateNode(const IList& inode);
 
   void ProcessActions();
-  void ComputeOutput_Update(const STree* node, Hotlist& out_hotlist);
-  void ComputeOutput_Insert(const STree* node, Hotlist& out_hotlist);
-  void ComputeOutput_Delete(const STree* node, Hotlist& out_hotlist);
+  void ComputeOutput_Update(const STree& node, Hotlist& out_hotlist);
+  void ComputeOutput_Insert(const STree& node, Hotlist& out_hotlist);
+  void ComputeOutput_Delete(const STree& node, Hotlist& out_hotlist);
   void CleanupIfNeeded();
 
-  // Root of the Rule tree
-  const Rule& m_rule;
-  // Root of the output tree
-  STree* m_root;
+  Rule m_rootRule; // Rule for the Root node
+  STree m_root; // Root of the output tree
+  Rule& m_grammar; // Root of the Grammar
   std::string m_name;
   bool m_needsCleanup;
   std::auto_ptr<Grapher> m_grapher;

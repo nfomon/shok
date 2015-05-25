@@ -6,6 +6,7 @@
 
 /* Regexp rule */
 
+#include "ConnectorAction.h"
 #include "ComputeFunc.h"
 #include "Rule.h"
 

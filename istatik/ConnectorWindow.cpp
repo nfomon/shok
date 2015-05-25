@@ -12,7 +12,7 @@ using std::string;
 
 using namespace istatik;
 
-ConnectorWindow::ConnectorWindow(const statik::Rule& rule, const string& graphdir)
+ConnectorWindow::ConnectorWindow(statik::Rule& rule, const string& graphdir)
   : m_connector(rule, rule.Name(), graphdir) {
   g_log.info() << "Initialized ConnectorWindow for " << rule;
 }

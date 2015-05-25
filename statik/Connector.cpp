@@ -6,6 +6,7 @@
 #include "Grapher.h"
 #include "Hotlist.h"
 #include "IList.h"
+#include "Root.h"
 #include "Rule.h"
 #include "SLog.h"
 #include "STree.h"
@@ -24,29 +25,31 @@ using namespace statik;
 
 /* public */
 
-Connector::Connector(const Rule& rule, const string& name, const string& graphdir)
-  : m_rule(rule),
-    m_root(NULL),
+Connector::Connector(Rule& grammar, const string& name, const string& graphdir)
+  : m_rootRule(name, MakeComputeFunc_Root(name), MakeOutputFunc_Pass()),
+    m_root(*this, m_rootRule, NULL, MakeComputeFunc_Root(name), MakeOutputFunc_Pass()),
+    m_grammar(grammar),
     m_name(name),
     m_needsCleanup(false),
     m_sancount(0) {
+  m_rootRule.AddChildRecursive(&m_grammar); // not "recursive", just unowned
   if (!graphdir.empty()) {
     m_grapher.reset(new Grapher(graphdir, string(name + "_")));
-    m_grapher->AddMachine(name, m_rule);
+    m_grapher->AddMachine(name, m_rootRule);
     m_grapher->SaveAndClear();
   }
 }
 
 void Connector::ExtractHotlist(Hotlist& out_hotlist) {
   g_log.debug() << "EXTRACT START: " << m_name;
-  if (m_touchedNodes.find(m_root) != m_touchedNodes.end()) {
+  if (m_touchedNodes.find(&m_root) != m_touchedNodes.end()) {
     ComputeOutput_Update(m_root, out_hotlist);
   }
   g_log.debug() << "EXTRACT DONE: " << m_name;
   m_touchedNodes.clear();
   m_needsCleanup = true;
   if (!out_hotlist.IsEmpty()) {
-    DrawGraph(*m_root, /*inode*/ NULL, &out_hotlist);
+    DrawGraph(m_root, /*inode*/ NULL, &out_hotlist);
   }
 }
 
@@ -109,7 +112,7 @@ void Connector::Enqueue(ConnectorAction action) {
 
 void Connector::ClearNode(STree& x) {
   m_listeners.RemoveAllListenings(&x);
-  if (&x != m_root) {
+  if (&x != &m_root) {
     g_san.debug() << "xx Unlinking node " << x << " - " << &x;
     m_nodePool.Unlink(x);
   }
@@ -140,17 +143,14 @@ STree* Connector::OwnNode(auto_ptr<STree> node) {
 }
 
 const IList* Connector::GetFirstINode() const {
-  if (!m_root || m_root->IsClear() || m_root->GetIConnection().IsClear()) {
+  if (m_root.IsClear() || m_root.GetIConnection().IsClear()) {
     return NULL;
   }
-  return &m_root->IStart();
+  return &m_root.IStart();
 }
 
 const IList* Connector::GetFirstONode() const {
-  if (!m_root) {
-    return NULL;
-  }
-  return m_root->GetOutputFunc().OStart();
+  return m_root.GetOutputFunc().OStart();
 }
 
 void Connector::TouchNode(const STree& node) {
@@ -161,15 +161,12 @@ void Connector::DrawGraph(const STree& onode, const IList* inode, const Hotlist*
   if (!m_grapher.get()) {
     return;
   }
-  if (!m_root) {
-    return;
-  }
   SanityCheck();
   const IList* istart = GetFirstINode();
   if (istart) {
     m_grapher->AddIList(m_name, *istart, m_name + " input");
   }
-  m_grapher->AddSTree(m_name, *m_root, m_name + " output", initiator);
+  m_grapher->AddSTree(m_name, m_root, m_name + " output", initiator);
   const IList* ostart = GetFirstONode();
   if (ostart) {
     m_grapher->AddOList(m_name, *ostart, m_name + " olist");
@@ -194,11 +191,7 @@ void Connector::SanityCheck() {
   g_log.debug() << "Sanity check " << m_sancount;
   g_san.info();
   g_san.info() << "Sanity check " << m_sancount;
-  if (m_root) {
-    SanityCheck(m_root);
-  } else {
-    g_san.info() << "No root";
-  }
+  SanityCheck(&m_root);
   ++m_sancount;
 }
 
@@ -244,10 +237,7 @@ void Connector::SanityCheck(const STree* s) const {
 /* private */
 
 const STree& Connector::GetRoot() const {
-  if (!m_root) {
-    throw SError("Connector " + m_name + "; cannot get root node before it has been initialized");
-  }
-  return *m_root;
+  return m_root;
 }
 
 void Connector::InsertNode(const IList& inode) {
@@ -262,13 +252,9 @@ void Connector::InsertNode(const IList& inode) {
     m_grapher->SaveAndClear();
   }
 
-  if (!m_root) {
-    g_log.debug() << " - No root; initializing the tree root";
-    m_root = m_rule.MakeRootNode(*this);
-  }
-  if (m_root->IsClear()) {
+  if (m_root.IsClear()) {
     g_log.debug() << " - Clear root; restarting the tree root";
-    Enqueue(ConnectorAction(ConnectorAction::Start, *m_root, inode));
+    Enqueue(ConnectorAction(ConnectorAction::Start, m_root, inode));
   } else {
     if (inode.left) {
       g_log.debug() << " - Found left inode " << *inode.left << ": updating listeners of " << inode << "'s left and (if present) right";
@@ -288,7 +274,7 @@ void Connector::InsertNode(const IList& inode) {
       }
     } else {
       g_log.debug() << " - No left inode: prepending behind the root";
-      Enqueue(ConnectorAction(ConnectorAction::Restart, *m_root, inode));
+      Enqueue(ConnectorAction(ConnectorAction::Restart, m_root, inode));
     }
   }
 
@@ -296,7 +282,7 @@ void Connector::InsertNode(const IList& inode) {
 
   // Assert that the inode has at least one listener in the updated set.
   if (!m_listeners.HasAnyListeners(&inode)) {
-    m_root->GetState().GoBad();
+    m_root.GetState().GoBad();
   }
   // Stronger check: every inode has at least one listener :)
   g_log.debug() << "Connector: Insert done";
@@ -313,13 +299,9 @@ void Connector::DeleteNode(const IList& inode) {
     m_grapher->SaveAndClear();
   }
 
-  if (!m_root) {
-    throw SError("Connector " + m_name + ": cannot delete " + string(inode) + " when the root has not been initialized");
-  }
-
   if (!inode.left && !inode.right) {
     g_log.debug() << "Connector: Deleted node has no left or right; clearing root";
-    m_root->ClearNode(inode);
+    m_root.ClearNode(inode);
   } else {
     if (inode.left) {
       g_log.debug() << "Connector: Deleted node has inode.left, so enqueuing INodeDelete actions on its listeners";
@@ -377,12 +359,12 @@ void Connector::ProcessActions() {
   }
 }
 
-void Connector::ComputeOutput_Update(const STree* node, Hotlist& out_hotlist) {
-  g_log.debug() << "Connector " << m_name << ": Computing output UPDATE for node " << *node;
+void Connector::ComputeOutput_Update(const STree& node, Hotlist& out_hotlist) {
+  g_log.debug() << "Connector " << m_name << ": Computing output UPDATE for node " << node;
 
-  node->GetOutputFunc()();
-  const OutputState& os = node->GetOutputFunc().GetState();
-  output_mod_iter posi = m_outputPerNode.find(node);
+  node.GetOutputFunc()();
+  const OutputState& os = node.GetOutputFunc().GetState();
+  output_mod_iter posi = m_outputPerNode.find(&node);
 
   if (m_outputPerNode.end() == posi) {
     // We weren't emitting before, but are emitting now.  Insert all.
@@ -391,16 +373,16 @@ void Connector::ComputeOutput_Update(const STree* node, Hotlist& out_hotlist) {
   }
 
   OutputState& pos = posi->second;
-  g_log.debug() << *node << " was emitting " << pos.onodes.size() << " ONodes and " << pos.children.size() << " children";
-  g_log.debug() << *node << " is now emitting " << os.onodes.size() << " ONodes and " << os.children.size() << " children";
+  g_log.debug() << node << " was emitting " << pos.onodes.size() << " ONodes and " << pos.children.size() << " children";
+  g_log.debug() << node << " is now emitting " << os.onodes.size() << " ONodes and " << os.children.size() << " children";
   // ONodes
   for (OutputState::onode_iter onode = os.onodes.begin(); onode != os.onodes.end(); ++onode) {
     OutputState::onode_iter ponode = pos.onodes.find(*onode);
     if (pos.onodes.end() == ponode) {
-      g_log.debug() << *node << " WAS NOT EMITTING node " << **onode << "; inserting now.";
+      g_log.debug() << node << " WAS NOT EMITTING node " << **onode << "; inserting now.";
       out_hotlist.Insert(**onode);
     } else {
-      g_log.debug() << *node << " WAS EMITTING node " << **onode << "; updating, and erasing from pos.";
+      g_log.debug() << node << " WAS EMITTING node " << **onode << "; updating, and erasing from pos.";
       pos.onodes.erase(ponode);
       if (os.value != pos.value) {
         out_hotlist.Update(**onode);
@@ -416,60 +398,60 @@ void Connector::ComputeOutput_Update(const STree* node, Hotlist& out_hotlist) {
   for (OutputState::child_iter child = os.children.begin(); child != os.children.end(); ++child) {
     OutputState::child_iter pchild = pos.children.find(*child);
     if (pos.children.end() == pchild) {
-      g_log.debug() << *node << " WAS NOT EMITTING child " << **child << "; inserting now.";
-      ComputeOutput_Insert(*child, out_hotlist);
+      g_log.debug() << node << " WAS NOT EMITTING child " << **child << "; inserting now.";
+      ComputeOutput_Insert(**child, out_hotlist);
     } else {
-      g_log.debug() << *node << " WAS EMITTING child " << **child << "; updating child.";
+      g_log.debug() << node << " WAS EMITTING child " << **child << "; updating child.";
       pos.children.erase(pchild);
       if (m_touchedNodes.find(*child) != m_touchedNodes.end()) {
-        ComputeOutput_Update(*child, out_hotlist);
+        ComputeOutput_Update(**child, out_hotlist);
       }
     }
   }
 
   for (OutputState::child_iter pchild = pos.children.begin(); pchild != pos.children.end(); ++pchild) {
     g_log.debug() << "Update causes deletion of pchild " << **pchild;
-    ComputeOutput_Delete(*pchild, out_hotlist);
+    ComputeOutput_Delete(**pchild, out_hotlist);
   }
 
   if (os.onodes.empty() && os.children.empty()) {
-    m_outputPerNode.erase(node);
+    m_outputPerNode.erase(&node);
   } else {
-    m_outputPerNode[node] = os;   // copy
+    m_outputPerNode[&node] = os;   // copy
   }
-  g_log.debug() << "Done computing UPDATE output for node " << *node << ".  Hotlist so far: " << out_hotlist.Print();
+  g_log.debug() << "Done computing UPDATE output for node " << node << ".  Hotlist so far: " << out_hotlist.Print();
   g_log.debug() << " - have " << os.onodes.size() << " ONodes and " << os.children.size() << " children";
-  node->GetOutputFunc().ConnectONodes();
+  node.GetOutputFunc().ConnectONodes();
 }
 
-void Connector::ComputeOutput_Insert(const STree* node, Hotlist& out_hotlist) {
-  g_log.debug() << "Connector " << m_name << ": Computing output INSERT for node " << *node;
+void Connector::ComputeOutput_Insert(const STree& node, Hotlist& out_hotlist) {
+  g_log.debug() << "Connector " << m_name << ": Computing output INSERT for node " << node;
 
-  node->GetOutputFunc()();
-  const OutputState& os = node->GetOutputFunc().GetState();
+  node.GetOutputFunc()();
+  const OutputState& os = node.GetOutputFunc().GetState();
 
   // Just insert everything, disregard what the prev output says
   for (OutputState::onode_iter onode = os.onodes.begin(); onode != os.onodes.end(); ++onode) {
     out_hotlist.Insert(**onode);
   }
   for (OutputState::child_iter child = os.children.begin(); child != os.children.end(); ++child) {
-    ComputeOutput_Insert(*child, out_hotlist);
+    ComputeOutput_Insert(**child, out_hotlist);
   }
 
   if (os.onodes.empty() && os.children.empty()) {
-    m_outputPerNode.erase(node);
+    m_outputPerNode.erase(&node);
   } else {
-    m_outputPerNode[node] = os;   // copy
+    m_outputPerNode[&node] = os;   // copy
   }
-  g_log.debug() << "Done computing INSERT output for node " << *node << ".  Hotlist so far: " << out_hotlist.Print();
-  g_log.debug() << m_name << " node " << *node << " is now emitting " << os.onodes.size() << " ONodes and " << os.children.size() << " children.";
-  node->GetOutputFunc().ConnectONodes();
+  g_log.debug() << "Done computing INSERT output for node " << node << ".  Hotlist so far: " << out_hotlist.Print();
+  g_log.debug() << m_name << " node " << node << " is now emitting " << os.onodes.size() << " ONodes and " << os.children.size() << " children.";
+  node.GetOutputFunc().ConnectONodes();
 }
 
-void Connector::ComputeOutput_Delete(const STree* node, Hotlist& out_hotlist) {
-  g_log.debug() << "Connector " << m_name << ": Computing output DELETE for node " << *node;
+void Connector::ComputeOutput_Delete(const STree& node, Hotlist& out_hotlist) {
+  g_log.debug() << "Connector " << m_name << ": Computing output DELETE for node " << node;
 
-  output_mod_iter posi = m_outputPerNode.find(node);
+  output_mod_iter posi = m_outputPerNode.find(&node);
   if (m_outputPerNode.end() == posi) {
     return;
   }
@@ -480,10 +462,10 @@ void Connector::ComputeOutput_Delete(const STree* node, Hotlist& out_hotlist) {
     out_hotlist.Delete(**ponode);
   }
   for (OutputState::child_iter child = pos.children.begin(); child != pos.children.end(); ++child) {
-    ComputeOutput_Delete(*child, out_hotlist);
+    ComputeOutput_Delete(**child, out_hotlist);
   }
-  m_outputPerNode.erase(node);
-  g_log.debug() << "Done computing DELETE output for node " << *node << ".  Hotlist so far: " << out_hotlist.Print();
+  m_outputPerNode.erase(&node);
+  g_log.debug() << "Done computing DELETE output for node " << node << ".  Hotlist so far: " << out_hotlist.Print();
 }
 
 void Connector::CleanupIfNeeded() {

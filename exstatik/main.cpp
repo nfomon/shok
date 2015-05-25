@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
     typedef boost::ptr_vector<Connector> connector_vec;
     typedef connector_vec::iterator connector_mod_iter;
     connector_vec connectors;
-    for (Compiler_iter i = compiler->begin(); i != compiler->end(); ++i) {
+    for (Compiler_mod_iter i = compiler->begin(); i != compiler->end(); ++i) {
       g_log.info() << "Compiler item: " << i->Print();
       connectors.push_back(new Connector(*i, i->Name(), graphdir));
     }

@@ -10,7 +10,10 @@
  */
 
 #include "ComputeFunc.h"
+#include "ConnectorAction.h"
+#include "IList.h"
 #include "Rule.h"
+#include "STree.h"
 
 #include <memory>
 #include <string>
