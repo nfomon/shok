@@ -28,14 +28,6 @@ IList::IList(const string& name, const string& value)
     right(NULL) {
 }
 
-string IList::Print() const {
-  string s = "<" + string(*this) + ">";
-  if (right) {
-    s += "-" + right->Print();
-  }
-  return s;
-}
-
 string IList::DrawNode(const string& context) const {
   //g_log.debug() << "Drawing List node " << *this << " with " << (left ? "left" : "no left") << " and " << (right ? "right" : "no right");
   string s = dotVar(this, context) + " [label=\"" + safeLabelStr(name + (value.empty() ? "" : (name.empty() ? "" : ":") + value)) + "\", style=\"filled\", fillcolor=\"#dddddd\", fontsize=12.0];\n";

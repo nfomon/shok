@@ -29,10 +29,10 @@ auto_ptr<ComputeFunc> statik::MakeComputeFunc_Or() {
 
 // TODO consider initiator, keep vectors as state that gets updated by each
 // call to this function, and then we finally just update State from the vecs.
-void ComputeFunc_Or::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Or::operator() (ParseAction::Action action, const IList& inode, const STree* initiator) {
   g_log.debug() << "Computing Or at " << *m_node;
 
-  if (ConnectorAction::Restart == action) {
+  if (ParseAction::Restart == action) {
     if (m_node->children.empty()) {
       for (Rule::child_iter i = m_node->GetRule().GetChildren().begin();
           i != m_node->GetRule().GetChildren().end(); ++i) {
@@ -41,7 +41,7 @@ void ComputeFunc_Or::operator() (ConnectorAction::Action action, const IList& in
     } else if (m_node->children.size() == m_node->GetRule().GetChildren().size()) {
       for (STree::child_mod_iter i = m_node->children.begin();
            i != m_node->children.end(); ++i) {
-        (*i)->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **i, inode));
+        (*i)->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **i, inode));
       }
     } else {
       throw SError("Or node had inappropriate # children");

@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _statik_ConnectorAction_h_
-#define _statik_ConnectorAction_h_
+#ifndef _statik_ParseAction_h_
+#define _statik_ParseAction_h_
 
 #include "IList.h"
 
@@ -10,7 +10,7 @@ namespace statik {
 
 class STree;
 
-struct ConnectorAction {
+struct ParseAction {
 public:
   enum Action {
     Start,
@@ -33,12 +33,12 @@ public:
     }
   }
 
-  ConnectorAction(Action action, STree& node, const IList& inode, const STree* initiator = NULL)
+  ParseAction(Action action, STree& node, const IList& inode, const STree* initiator = NULL)
     : action(action),
       node(&node),
       inode(&inode),
       initiator(initiator) {}
-  virtual ~ConnectorAction() {}
+  virtual ~ParseAction() {}
 
   Action action;
   STree* node;
@@ -48,4 +48,4 @@ public:
 
 }
 
-#endif // _statik_ConnectorAction_h_
+#endif // _statik_ParseAction_h_

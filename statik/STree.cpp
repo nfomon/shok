@@ -44,20 +44,20 @@ void STree::StartNode(const IList& istart) {
   m_isClear = false;
   m_iconnection.Restart(istart);
   m_connector.DrawGraph(*this, &istart);
-  m_connector.Enqueue(ConnectorAction(ConnectorAction::Restart, *this, istart));
+  m_connector.Enqueue(ParseAction(ParseAction::Restart, *this, istart));
 }
 
-void STree::ComputeNode(ConnectorAction::Action action, const IList& inode, const STree* initiator) {
+void STree::ComputeNode(ParseAction::Action action, const IList& inode, const STree* initiator) {
   if (m_isClear) {
     g_log.info() << "Not computing node " + string(*this) + " which has been cleared";
     return;
   } else if (m_iconnection.IsClear()) {
     throw SError("Cannot compute node " + string(*this) + " with cleared IConnection");
-  } else if (ConnectorAction::Start == action) {
+  } else if (ParseAction::Start == action) {
     throw SError("Cannot compute node " + string(*this) + " with Start action");
   }
 
-  if (ConnectorAction::Restart == action) {
+  if (ParseAction::Restart == action) {
     m_iconnection.Restart(inode);
   }
 
@@ -78,8 +78,8 @@ void STree::ComputeNode(ConnectorAction::Action action, const IList& inode, cons
   g_log.info() << " - - - - " << *this << " has " << (hasChanged ? "" : "NOT ") << "changed  " << hasChanged1 << ":" << hasChanged2;
   m_connector.TouchNode(*this);
   if (hasChanged && !m_isClear && m_parent && !m_state.IsPending()) {
-    ConnectorAction::Action a = ConnectorAction::ChildUpdate;
-    m_connector.Enqueue(ConnectorAction(a, *m_parent, inode, this));
+    ParseAction::Action a = ParseAction::ChildUpdate;
+    m_connector.Enqueue(ParseAction(a, *m_parent, inode, this));
   }
   m_connector.DrawGraph(*this, &inode, NULL, initiator);
 }
@@ -88,7 +88,7 @@ void STree::ClearNode(const IList& inode) {
   g_log.info() << "Clearing node " << *this;
   if (m_parent) {
     // The size we report is irrelevant; cleared nodes do not need to report how their IEnd changes
-    m_connector.Enqueue(ConnectorAction(ConnectorAction::ChildUpdate, *m_parent, inode, this));
+    m_connector.Enqueue(ParseAction(ParseAction::ChildUpdate, *m_parent, inode, this));
   }
   ClearSubNode();
 }

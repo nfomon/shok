@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
           c->left = prev;
         }
         g_log.info();
-        g_log.info() << "* main: Inserting character '" << c->Print();
+        g_log.info() << "* main: Inserting character '" << *c;
         connectors.at(0).Insert(*c);
         Hotlist hotlist;
         connectors.front().ExtractHotlist(hotlist);

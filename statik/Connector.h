@@ -4,13 +4,13 @@
 #ifndef _statik_Connector_h_
 #define _statik_Connector_h_
 
-#include "ConnectorAction.h"
 #include "Hotlist.h"
 #include "IList.h"
 #include "ListenerTable.h"
 #include "ObjectPool.h"
 #include "OrderList.h"
 #include "OutputFunc.h"
+#include "ParseAction.h"
 #include "Rule.h"
 #include "STree.h"
 
@@ -47,7 +47,7 @@ public:
   // Apply a bunch of inode insertions/updates/deletions
   void UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist);
 
-  void Enqueue(ConnectorAction action);
+  void Enqueue(ParseAction action);
 
   // Called from a rule/state regarding its DS node.
   // Listens for updates to this inode.
@@ -87,7 +87,7 @@ public:
   std::string Name() const { return m_name; }
 
 private:
-  typedef std::deque<ConnectorAction> action_queue;
+  typedef std::deque<ParseAction> action_queue;
   typedef action_queue::const_iterator action_iter;
   typedef action_queue::iterator action_mod_iter;
   typedef std::map<STree::depth_t, action_queue> action_map;

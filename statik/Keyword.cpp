@@ -37,7 +37,7 @@ ComputeFunc_Keyword::ComputeFunc_Keyword(const string& str)
   }
 }
 
-void ComputeFunc_Keyword::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Keyword::operator() (ParseAction::Action action, const IList& inode, const STree* initiator) {
   g_log.info() << "Computing Keyword at " << *m_node << " with inode " << inode;
   State& state = m_node->GetState();
   state.Clear();

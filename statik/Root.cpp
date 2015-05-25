@@ -24,8 +24,8 @@ ComputeFunc_Root::ComputeFunc_Root(const string& name)
   : m_name(name) {
 }
 
-void ComputeFunc_Root::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) {
-  g_log.info() << "Computing Root at " << *m_node << " with inode " << inode << " and action " << ConnectorAction::UnMapAction(action);
+void ComputeFunc_Root::operator() (ParseAction::Action action, const IList& inode, const STree* initiator) {
+  g_log.info() << "Computing Root at " << *m_node << " with inode " << inode << " and action " << ParseAction::UnMapAction(action);
   State& state = m_node->GetState();
   if (m_node->children.empty()) {
     if (inode.right && !inode.right->left) {
@@ -38,8 +38,8 @@ void ComputeFunc_Root::operator() (ConnectorAction::Action action, const IList& 
       return;
     }
   }
-  if (ConnectorAction::Restart == action) {
-    m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **m_node->children.begin(), inode, m_node));
+  if (ParseAction::Restart == action) {
+    m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **m_node->children.begin(), inode, m_node));
     state.GoPending();
     return;
   }
@@ -49,7 +49,7 @@ void ComputeFunc_Root::operator() (ConnectorAction::Action action, const IList& 
     // This is wrong.  Supposed to set to m_firstINode but we removed that because tricky to maintain lol...
     m_node->children.erase(m_node->children.begin());
     if (inode.right && inode.right->left != &inode) {
-      m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, *m_node, *inode.right, m_node));
+      m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, *m_node, *inode.right, m_node));
       state.GoPending();
       return;
     } else {

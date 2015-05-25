@@ -27,7 +27,7 @@ auto_ptr<ComputeFunc> statik::MakeComputeFunc_Seq() {
   return auto_ptr<ComputeFunc>(new ComputeFunc_Seq());
 }
 
-void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Seq::operator() (ParseAction::Action action, const IList& inode, const STree* initiator) {
   // Process
   g_log.debug() << "Computing Seq at " << *m_node << " with initiator " << (initiator ? string(*initiator) : "<null>");
 
@@ -69,7 +69,7 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
       } else if (prev_child->GetState().IsPending()) {
         throw SError("Cannot investigate pending child");
       }
-      m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, prev_child->IEnd(), m_node));
+      m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **next, prev_child->IEnd(), m_node));
       state.GoOK();
       return;
     } 
@@ -87,7 +87,7 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
   } else {
     switch(action) {
 /*
-    case ConnectorAction::ChildGrow: {
+    case ParseAction::ChildGrow: {
       if (next != m_node->children.end()) {
         if (&(*child)->IEnd() == &(*next)->IStart()) {
           g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child grew, but next node is already in the right spot";
@@ -95,7 +95,7 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
           // Clear and Restart the next child
           g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child grew, so clearing and restarting next, which is " << **next;
           (*next)->ClearNode(inode);
-          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
+          m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
           state.GoOK();
           return;
         }
@@ -107,11 +107,11 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
         return;
       }
     } break;
-    case ConnectorAction::ChildShrink: {
+    case ParseAction::ChildShrink: {
       g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child shrank, so restarting next without clearing it";
       if (next != m_node->children.end()) {
         // Restart the next child
-        m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
+        m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
         state.GoOK();
         return;
       } else if (child_index != m_node->GetRule().GetChildren().size() - 1) {
@@ -122,11 +122,11 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
       }
     } break;
 */
-    case ConnectorAction::ChildUpdate: {
+    case ParseAction::ChildUpdate: {
       g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child update, but did not change size.  Make sure its next connection is correct";
       if (next != m_node->children.end()) {
         if (&(*child)->IEnd() != &(*next)->IStart()) {
-          m_node->GetConnector().Enqueue(ConnectorAction(ConnectorAction::Restart, **next, (*child)->IEnd(), m_node));
+          m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
           state.GoOK();
           return;
         }
@@ -138,7 +138,7 @@ void ComputeFunc_Seq::operator() (ConnectorAction::Action action, const IList& i
       }
     } break;
     default:
-      throw SError("ComputeFunc_Seq at " + string(*m_node) + " received unexpected action " + ConnectorAction::UnMapAction(action));
+      throw SError("ComputeFunc_Seq at " + string(*m_node) + " received unexpected action " + ParseAction::UnMapAction(action));
     }
   }
 

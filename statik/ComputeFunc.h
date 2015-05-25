@@ -4,7 +4,7 @@
 #ifndef _statik_ComputeFunc_h_
 #define _statik_ComputeFunc_h_
 
-#include "ConnectorAction.h"
+#include "ParseAction.h"
 
 #include <memory>
 
@@ -17,7 +17,7 @@ struct ComputeFunc {
 public:
   virtual ~ComputeFunc() {}
   void Init(STree& x) { m_node = &x; }
-  virtual void operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator) = 0;
+  virtual void operator() (ParseAction::Action action, const IList& inode, const STree* initiator) = 0;
   virtual std::auto_ptr<ComputeFunc> Clone() = 0;
 protected:
   STree* m_node;

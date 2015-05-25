@@ -5,9 +5,9 @@
 #define _statik_STree_h_
 
 #include "ComputeFunc.h"
-#include "ConnectorAction.h"
 #include "IConnection.h"
 #include "OutputFunc.h"
+#include "ParseAction.h"
 #include "State.h"
 
 #include <memory>
@@ -44,7 +44,7 @@ public:
          std::auto_ptr<OutputFunc> outputFunc);
 
   void StartNode(const IList& istart);
-  void ComputeNode(ConnectorAction::Action action, const IList& inode, const STree* initiator);
+  void ComputeNode(ParseAction::Action action, const IList& inode, const STree* initiator);
   void ClearNode(const IList& inode);
 
   bool IsClear() const { return m_isClear; }

@@ -78,7 +78,7 @@ STree* Rule::MakeNode(STree& parent, const IList& istart, STree::child_mod_iter 
   g_log.debug() << "Rule " << m_name << " making node " << *node.get() << " under parent that had " << parent.children.size() << " children";
   STree* r = parent.GetConnector().OwnNode(node);
   parent.children.insert(insertPos, r);
-  parent.GetConnector().Enqueue(ConnectorAction(ConnectorAction::Start, *r, istart));
+  parent.GetConnector().Enqueue(ParseAction(ParseAction::Start, *r, istart));
   return r;
 }
 

@@ -7,8 +7,8 @@
 /* Special Rule for the Root node */
 
 #include "ComputeFunc.h"
-#include "ConnectorAction.h"
 #include "IList.h"
+#include "ParseAction.h"
 #include "Rule.h"
 #include "STree.h"
 
@@ -21,7 +21,7 @@ class ComputeFunc_Root : public ComputeFunc {
 public:
   ComputeFunc_Root(const std::string& name);
   virtual ~ComputeFunc_Root() {}
-  virtual void operator() (ConnectorAction::Action action, const IList& inode, const STree* initiator);
+  virtual void operator() (ParseAction::Action action, const IList& inode, const STree* initiator);
   virtual std::auto_ptr<ComputeFunc> Clone() {
     return std::auto_ptr<ComputeFunc>(new ComputeFunc_Root(m_name));
   }

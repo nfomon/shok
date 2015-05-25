@@ -96,8 +96,8 @@ void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
   g_log.info() << "Done updating Connector " << m_name << " with hotlist that had size " << hotlist.size();
 }
 
-void Connector::Enqueue(ConnectorAction action) {
-  g_log.info() << "Connector " << m_name << ": Enqueuing action " << ConnectorAction::UnMapAction(action.action) << " - " << *action.node << " at depth " << action.node->depth;
+void Connector::Enqueue(ParseAction action) {
+  g_log.info() << "Connector " << m_name << ": Enqueuing action " << ParseAction::UnMapAction(action.action) << " - " << *action.node << " at depth " << action.node->depth;
   int depth = action.node->depth;
   action_map::iterator ai = m_actions_by_depth.find(depth);
   if (m_actions_by_depth.end() == ai) {
@@ -254,7 +254,7 @@ void Connector::InsertNode(const IList& inode) {
 
   if (m_root.IsClear()) {
     g_log.debug() << " - Clear root; restarting the tree root";
-    Enqueue(ConnectorAction(ConnectorAction::Start, m_root, inode));
+    Enqueue(ParseAction(ParseAction::Start, m_root, inode));
   } else {
     if (inode.left) {
       g_log.debug() << " - Found left inode " << *inode.left << ": updating listeners of " << inode << "'s left and (if present) right";
@@ -263,18 +263,18 @@ void Connector::InsertNode(const IList& inode) {
         //if ((*i)->GetState().IsBad() || (*i)->GetState().IsComplete()) {
         //  g_log.debug() << "Not enqueueing INodeInsert for left listener " << **i << " because it is bad or complete";
         //} else {
-          Enqueue(ConnectorAction(ConnectorAction::INodeInsert, **i, inode));
+          Enqueue(ParseAction(ParseAction::INodeInsert, **i, inode));
         //}
       }
       if (inode.right) {
         listeners = m_listeners.GetListeners(inode.right);
         for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
-          Enqueue(ConnectorAction(ConnectorAction::INodeInsert, **i, inode));
+          Enqueue(ParseAction(ParseAction::INodeInsert, **i, inode));
         }
       }
     } else {
       g_log.debug() << " - No left inode: prepending behind the root";
-      Enqueue(ConnectorAction(ConnectorAction::Restart, m_root, inode));
+      Enqueue(ParseAction(ParseAction::Restart, m_root, inode));
     }
   }
 
@@ -307,7 +307,7 @@ void Connector::DeleteNode(const IList& inode) {
       g_log.debug() << "Connector: Deleted node has inode.left, so enqueuing INodeDelete actions on its listeners";
       listener_set listeners = m_listeners.GetListeners(inode.left);
       for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
-        Enqueue(ConnectorAction(ConnectorAction::INodeDelete, **i, inode));
+        Enqueue(ParseAction(ParseAction::INodeDelete, **i, inode));
       }
     }
     listener_set listeners = m_listeners.GetListeners(&inode);
@@ -316,7 +316,7 @@ void Connector::DeleteNode(const IList& inode) {
       if (&(*i)->IStart() == &inode) {
         (*i)->ClearNode(inode);
       } else {
-        Enqueue(ConnectorAction(ConnectorAction::INodeDelete, **i, inode));
+        Enqueue(ParseAction(ParseAction::INodeDelete, **i, inode));
       }
     }
   }
@@ -331,7 +331,7 @@ void Connector::UpdateNode(const IList& inode) {
   g_log.info() << "Connector " << m_name << ": Updating listeners of inode " << inode;
   listener_set listeners = m_listeners.GetListeners(&inode);
   for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
-    Enqueue(ConnectorAction(ConnectorAction::INodeUpdate, **i, inode));
+    Enqueue(ParseAction(ParseAction::INodeUpdate, **i, inode));
   }
 }
 
@@ -341,9 +341,9 @@ void Connector::ProcessActions() {
     action_queue& actions = m_actions_by_depth.rbegin()->second;
     g_log.debug() << "Connector " << m_name << ": Applying actions at depth " << depth;
     while (m_actions_by_depth.rbegin()->first == depth && !actions.empty()) {
-      ConnectorAction* a = &actions.front();
+      ParseAction* a = &actions.front();
       actions.pop_front();
-      if (ConnectorAction::Start == a->action) {
+      if (ParseAction::Start == a->action) {
         if (!a->node->IsClear()) {
           throw SError("Why are we trying to Start a node that isn't clear?");
         }

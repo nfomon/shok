@@ -205,7 +205,6 @@ WindowResponse LineBuf::Insert(int y, int x, int ch) {
     istart = istart->left;
   }
   response.actions.push_back(WindowAction(WindowAction::MOVE, y0, x0));
-  g_log.info() << "window0 olist: " << istart->Print();
   g_log.info() << "window0 hotlist: " << response.hotlist.Print();
   return response;
 }
