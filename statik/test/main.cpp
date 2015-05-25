@@ -7,7 +7,6 @@
 #include "STLog.h"
 #include "StatikBattery.h"
 
-#include "statik/Connector.h"
 #include "statik/Hotlist.h"
 #include "statik/IList.h"
 #include "statik/Rule.h"

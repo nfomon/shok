@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _Lexer_h_
-#define _Lexer_h_
+#ifndef _exstatik_Lexer_h_
+#define _exstatik_Lexer_h_
 
 #include "statik/Rule.h"
 
@@ -17,4 +17,4 @@ std::auto_ptr<statik::Rule> CreateLexer_Nifty();
 
 }
 
-#endif // _Lexer_h_
+#endif // _exstatik_Lexer_h_

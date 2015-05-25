@@ -1,8 +1,8 @@
 // Copyright (C) 2015 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _ObjectPool_h_
-#define _ObjectPool_h_
+#ifndef _statik_ObjectPool_h_
+#define _statik_ObjectPool_h_
 
 #include "SError.h"
 
@@ -64,4 +64,4 @@ private:
 
 }
 
-#endif // _ObjectPool_h_
+#endif // _statik_ObjectPool_h_

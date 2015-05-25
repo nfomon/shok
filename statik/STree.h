@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _STree_h_
-#define _STree_h_
+#ifndef _statik_STree_h_
+#define _statik_STree_h_
 
 #include "ComputeFunc.h"
 #include "ConnectorAction.h"
@@ -75,4 +75,4 @@ std::ostream& operator<< (std::ostream& out, const STree& node);
 
 }
 
-#endif // _STree_h_
+#endif // _statik_STree_h_

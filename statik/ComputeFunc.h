@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _ComputeFunc_h_
-#define _ComputeFunc_h_
+#ifndef _statik_ComputeFunc_h_
+#define _statik_ComputeFunc_h_
 
 #include "ConnectorAction.h"
 
@@ -25,4 +25,4 @@ protected:
 
 }
 
-#endif // _ComputeFunc_h_
+#endif // _statik_ComputeFunc_h_

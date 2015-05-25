@@ -1,8 +1,8 @@
 // Copyright (C) 2015 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _InputWindow_h_
-#define _InputWindow_h_
+#ifndef _istatik_InputWindow_h_
+#define _istatik_InputWindow_h_
 
 #include "ISError.h"
 #include "WindowResponse.h"
@@ -78,4 +78,4 @@ private:
 
 }
 
-#endif // _InputWindow_h_
+#endif // _istatik_InputWindow_h_

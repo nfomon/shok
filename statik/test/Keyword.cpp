@@ -23,7 +23,7 @@ void Keyword::run() {
     bool p = false;
     try {
       auto_ptr<statik::Rule> r(KEYWORD(""));
-      statik::Connector c(*r.get());
+      statik::Connector c(*r.get(), "test1");
     } catch (const statik::SError& e) {
       p = true;
     }
@@ -33,7 +33,7 @@ void Keyword::run() {
   // Single-character keyword
   {
     auto_ptr<statik::Rule> r(KEYWORD("a"));
-    statik::Connector c(*r.get());
+    statik::Connector c(*r.get(), "test2");
 
     statik::IList c1("1", "x");
     c.Insert(c1);

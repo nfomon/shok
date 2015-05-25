@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _SError_h_
-#define _SError_h_
+#ifndef _statik_SError_h_
+#define _statik_SError_h_
 
 /* Compiler framework errors */
 
@@ -21,4 +21,4 @@ public:
 
 }
 
-#endif // _SError_h_
+#endif // _statik_SError_h_

@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _Meta_h_
-#define _Meta_h_
+#ifndef _statik_Meta_h_
+#define _statik_Meta_h_
 
 /* Meta rule
  *
@@ -42,4 +42,4 @@ std::auto_ptr<ComputeFunc> MakeComputeFunc_Meta(const std::string& searchName);
 
 }
 
-#endif // _Meta_h_
+#endif // _statik_Meta_h_

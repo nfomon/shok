@@ -1,0 +1,19 @@
+Rule is just a factory for STree nodes.
+ - Give it auto_ptr<ComputeFunc>, auto_ptr<OutputFunc>
+    - it doesn't use these, just clones them for STree nodes
+ - AddChild(auto_ptr), AddChildRecursive(Rule*), ownership vec (vector<bool> eeps)
+ - SilenceOutput, CapOutput are kinda funny
+
+ComputeFunc, OutputFunc are Init(STree&) to their STree node on STree constructor
+ - except for the Rule funcs which are just prototypes
+
+STree:
+ - Connector&
+ - Rule&
+ - State
+ - parent*
+ - isClear
+ - vector<STree*> children, depth
+ - IConnection
+ - auto_ptr<ComputeFunc>, auto_ptr<OutputFunc>
+

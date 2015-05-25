@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _OutputFunc_h_
-#define _OutputFunc_h_
+#ifndef _statik_OutputFunc_h_
+#define _statik_OutputFunc_h_
 
 #include "IList.h"
 
@@ -149,4 +149,4 @@ protected:
 
 }
 
-#endif // _OutputFunc_h_
+#endif // _statik_OutputFunc_h_

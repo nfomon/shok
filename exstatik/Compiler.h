@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _Compiler_h_
-#define _Compiler_h_
+#ifndef _exstatik_Compiler_h_
+#define _exstatik_Compiler_h_
 
 #include "statik/Rule.h"
 
@@ -20,4 +20,4 @@ std::auto_ptr<Compiler> MakeCompiler(const std::string& name);
 
 }
 
-#endif // _Compiler_h_
+#endif // _exstatik_Compiler_h_

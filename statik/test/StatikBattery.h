@@ -1,8 +1,8 @@
 // Copyright (C) 2015 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _StatikBattery_h_
-#define _StatikBattery_h_
+#ifndef _statik_test_StatikBattery_h_
+#define _statik_test_StatikBattery_h_
 
 #include "Battery.h"
 
@@ -21,4 +21,4 @@ public:
 
 }
 
-#endif // _StatikBattery_h_
+#endif // _statik_test_StatikBattery_h_

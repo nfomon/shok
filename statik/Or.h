@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _Or_h_
-#define _Or_h_
+#ifndef _statik_Or_h_
+#define _statik_Or_h_
 
 #include "ComputeFunc.h"
 #include "ConnectorAction.h"
@@ -29,4 +29,4 @@ std::auto_ptr<ComputeFunc> MakeComputeFunc_Or();
 
 }
 
-#endif // _Or_h_
+#endif // _statik_Or_h_

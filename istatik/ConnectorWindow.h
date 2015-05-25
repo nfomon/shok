@@ -1,8 +1,8 @@
 // Copyright (C) 2015 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _ConnectorWindow_h_
-#define _ConnectorWindow_h_
+#ifndef _istatik_ConnectorWindow_h_
+#define _istatik_ConnectorWindow_h_
 
 #include "ISError.h"
 #include "WindowResponse.h"
@@ -26,4 +26,4 @@ private:
 
 }
 
-#endif // _ConnectorWindow_h_
+#endif // _istatik_ConnectorWindow_h_

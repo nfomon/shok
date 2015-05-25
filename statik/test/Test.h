@@ -1,8 +1,8 @@
 // Copyright (C) 2015 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _Test_h_
-#define _Test_h_
+#ifndef _statik_test_Test_h_
+#define _statik_test_Test_h_
 
 #include "STLog.h"
 
@@ -49,4 +49,4 @@ private:
 
 }
 
-#endif // _Test_h_
+#endif // _statik_test_Test_h_

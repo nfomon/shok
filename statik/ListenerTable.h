@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _ListenerTable_h_
-#define _ListenerTable_h_
+#ifndef _statik_ListenerTable_h_
+#define _statik_ListenerTable_h_
 
 #include "SError.h"
 
@@ -136,4 +136,4 @@ private:
 
 }
 
-#endif // _ListenerTable_h_
+#endif // _statik_ListenerTable_h_

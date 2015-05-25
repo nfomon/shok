@@ -1,8 +1,8 @@
 // Copyright (C) 2015 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _WindowAction_h_
-#define _WindowAction_h_
+#ifndef _istatik_WindowAction_h_
+#define _istatik_WindowAction_h_
 
 namespace istatik {
 
@@ -23,4 +23,4 @@ struct WindowAction {
 
 }
 
-#endif // _WindowAction_h_
+#endif // _istatik_WindowAction_h_

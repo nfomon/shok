@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _State_h_
-#define _State_h_
+#ifndef _statik_State_h_
+#define _statik_State_h_
 
 #include "SError.h"
 
@@ -59,4 +59,4 @@ std::ostream& operator<< (std::ostream& out, const State& state);
 
 }
 
-#endif // _State_h_
+#endif // _statik_State_h_

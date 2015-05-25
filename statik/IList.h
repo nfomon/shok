@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _IList_h_
-#define _IList_h_
+#ifndef _statik_IList_h_
+#define _statik_IList_h_
 
 #include "SError.h"
 
@@ -28,4 +28,4 @@ std::ostream& operator<< (std::ostream& out, const IList& node);
 
 }
 
-#endif // _IList_h_
+#endif // _statik_IList_h_

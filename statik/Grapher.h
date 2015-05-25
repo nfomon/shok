@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _Grapher_h_
-#define _Grapher_h_
+#ifndef _statik_Grapher_h_
+#define _statik_Grapher_h_
 
 #include "Connector.h"
 #include "IList.h"
@@ -46,4 +46,4 @@ private:
 
 }
 
-#endif // _Grapher_h_
+#endif // _statik_Grapher_h_

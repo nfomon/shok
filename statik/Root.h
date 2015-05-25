@@ -1,8 +1,8 @@
 // Copyright (C) 2015 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _Root_h_
-#define _Root_h_
+#ifndef _statik_Root_h_
+#define _statik_Root_h_
 
 /* Special Rule for the Root node */
 
@@ -34,4 +34,4 @@ std::auto_ptr<ComputeFunc> MakeComputeFunc_Root(const std::string& name);
 
 }
 
-#endif // _Root_h_
+#endif // _statik_Root_h_

@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _Connector_h_
-#define _Connector_h_
+#ifndef _statik_Connector_h_
+#define _statik_Connector_h_
 
 #include "ConnectorAction.h"
 #include "Hotlist.h"
@@ -123,4 +123,4 @@ private:
 
 }
 
-#endif // _Connector_h_
+#endif // _statik_Connector_h_

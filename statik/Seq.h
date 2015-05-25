@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _Seq_h_
-#define _Seq_h_
+#ifndef _statik_Seq_h_
+#define _statik_Seq_h_
 
 #include "ComputeFunc.h"
 #include "ConnectorAction.h"
@@ -29,4 +29,4 @@ std::auto_ptr<ComputeFunc> MakeComputeFunc_Seq();
 
 }
 
-#endif // _Seq_h_
+#endif // _statik_Seq_h_

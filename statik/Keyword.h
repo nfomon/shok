@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _Keyword_h_
-#define _Keyword_h_
+#ifndef _statik_Keyword_h_
+#define _statik_Keyword_h_
 
 /* Keyword rule */
 
@@ -38,4 +38,4 @@ std::auto_ptr<ComputeFunc> MakeComputeFunc_Keyword(const std::string& str);
 
 }
 
-#endif // _Keyword_h_
+#endif // _statik_Keyword_h_

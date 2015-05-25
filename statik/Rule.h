@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _Rule_h_
-#define _Rule_h_
+#ifndef _statik_Rule_h_
+#define _statik_Rule_h_
 
 /* Production rules
  *
@@ -73,4 +73,4 @@ std::ostream& operator<< (std::ostream& out, const Rule& rule);
 
 }
 
-#endif // _Rule_h_
+#endif // _statik_Rule_h_

@@ -1,8 +1,8 @@
 // Copyright (C) 2015 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _OrderList_h_
-#define _OrderList_h_
+#ifndef _statik_OrderList_h_
+#define _statik_OrderList_h_
 
 #include "IList.h"
 
@@ -69,4 +69,4 @@ private:
 
 }
 
-#endif // _OrderList_h_
+#endif // _statik_OrderList_h_

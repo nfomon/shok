@@ -1,8 +1,8 @@
 // Copyright (C) 2015 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _IStatik_h_
-#define _IStatik_h_
+#ifndef _istatik_IStatik_h_
+#define _istatik_IStatik_h_
 
 #include "ISError.h"
 #include "WindowResponse.h"
@@ -38,4 +38,4 @@ private:
 
 }
 
-#endif // _IStatik_h_
+#endif // _istatik_IStatik_h_
