@@ -7,7 +7,7 @@
 /* Regexp rule */
 
 #include "ComputeFunc.h"
-#include "IList.h"
+#include "List.h"
 #include "ParseAction.h"
 #include "Rule.h"
 #include "STree.h"
@@ -26,7 +26,7 @@ class ComputeFunc_Regexp : public ComputeFunc {
 public:
   ComputeFunc_Regexp(const boost::regex& regex);
   virtual ~ComputeFunc_Regexp() {}
-  virtual void operator() (ParseAction::Action action, const IList& inode, const STree* initiator);
+  virtual void operator() (ParseAction::Action action, const List& inode, const STree* initiator);
   virtual std::auto_ptr<ComputeFunc> Clone() {
     return std::auto_ptr<ComputeFunc>(new ComputeFunc_Regexp(m_regex));
   }

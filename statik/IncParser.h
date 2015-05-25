@@ -5,7 +5,7 @@
 #define _statik_IncParser_h_
 
 #include "Hotlist.h"
-#include "IList.h"
+#include "List.h"
 #include "ListenerTable.h"
 #include "ObjectPool.h"
 #include "OrderList.h"
@@ -24,8 +24,8 @@ class Grapher;
 
 class IncParser {
 public:
-  typedef typename ListenerTable<const IList*, STree*>::listener_set listener_set;
-  typedef typename ListenerTable<const IList*, STree*>::listener_iter listener_iter;
+  typedef typename ListenerTable<const List*, STree*>::listener_set listener_set;
+  typedef typename ListenerTable<const List*, STree*>::listener_iter listener_iter;
 
   IncParser(Rule& grammar, const std::string& name = "", const std::string& graphdir = "");
 
@@ -33,16 +33,16 @@ public:
   const State& GetState() const;
 
   void ExtractHotlist(Hotlist& out_hotlist);
-  listener_set GetListeners(const IList& x) const;
+  listener_set GetListeners(const List& x) const;
 
   // Insert() a new inode.  Call this AFTER attaching its connections in the
   // input list.
-  void Insert(const IList& inode);
+  void Insert(const List& inode);
   // Delete() an inode.  Call this AFTER updating its left and right to point
   // to each other, but leave this inode's left and right pointers intact.
-  void Delete(const IList& inode);
+  void Delete(const List& inode);
   // Update() the listeners of an inode, to let them know it has updated.
-  void Update(const IList& inode);
+  void Update(const List& inode);
 
   // Apply a bunch of inode insertions/updates/deletions
   void UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist);
@@ -51,8 +51,8 @@ public:
 
   // Called from a rule/state regarding its DS node.
   // Listens for updates to this inode.
-  void Listen(STree& x, const IList& inode);
-  void Unlisten(STree& x, const IList& inode);
+  void Listen(STree& x, const List& inode);
+  void Unlisten(STree& x, const List& inode);
 
   // Called from a node that's being restarted, to cancel all its listening
   void UnlistenAll(STree& x);
@@ -66,18 +66,18 @@ public:
   void ClearNode(STree& x);
 
   // Get the first node of the input list
-  const IList* GetFirstINode() const;
+  const List* GetFirstINode() const;
 
   // Get the first node of the output list
-  const IList* GetFirstONode() const;
+  const List* GetFirstONode() const;
 
   // Indicate that a node has been computed.  Called by STree::ComputeNode()
   void TouchNode(const STree& node);
 
-  int INodeCompare(const IList& a, const IList& b) const;
+  int INodeCompare(const List& a, const List& b) const;
 
   void DrawGraph(const STree& onode,
-                 const IList* inode = NULL,
+                 const List* inode = NULL,
                  const Hotlist* hotlist = NULL,
                  const STree* initiator = NULL);
 
@@ -93,9 +93,9 @@ private:
   typedef std::map<STree::depth_t, action_queue> action_map;
 
   // Called by UpdateWithHotlist()
-  void InsertNode(const IList& inode);
-  void DeleteNode(const IList& inode);
-  void UpdateNode(const IList& inode);
+  void InsertNode(const List& inode);
+  void DeleteNode(const List& inode);
+  void UpdateNode(const List& inode);
 
   void ProcessActions();
   void ComputeOutput_Update(const STree& node, Hotlist& out_hotlist);
@@ -112,7 +112,7 @@ private:
   ObjectPool<STree> m_nodePool;
   OrderList m_orderList;
   action_map m_actions_by_depth;
-  ListenerTable<const IList*, STree*> m_listeners;
+  ListenerTable<const List*, STree*> m_listeners;
   typedef std::map<const STree*, OutputState> output_map;
   typedef output_map::const_iterator output_iter;
   typedef output_map::iterator output_mod_iter;

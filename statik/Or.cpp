@@ -29,7 +29,7 @@ auto_ptr<ComputeFunc> statik::MakeComputeFunc_Or() {
 
 // TODO consider initiator, keep vectors as state that gets updated by each
 // call to this function, and then we finally just update State from the vecs.
-void ComputeFunc_Or::operator() (ParseAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Or::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
   g_log.debug() << "Computing Or at " << *m_node;
 
   if (ParseAction::Restart == action) {

@@ -29,15 +29,15 @@ auto_ptr<ComputeFunc> statik::MakeComputeFunc_Meta(const string& searchName) {
   return auto_ptr<ComputeFunc>(new ComputeFunc_Meta(searchName));
 }
 
-void ComputeFunc_Meta::operator() (ParseAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Meta::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
   g_log.info() << "Computing Meta at " << *m_node << " with inode "<< inode;
   State& state = m_node->GetState();
   state.Clear();
-  const IList& first = m_node->IStart();
+  const List& first = m_node->IStart();
   m_node->GetIncParser().Listen(*m_node, first);
   if (first.name == m_searchName) {
     state.GoDone();
-    const IList* second = first.right;
+    const List* second = first.right;
     if (second) {
       state.GoComplete();
       m_node->GetIConnection().SetEnd(*second);

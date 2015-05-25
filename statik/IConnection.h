@@ -4,7 +4,7 @@
 #ifndef _statik_IConnection_h_
 #define _statik_IConnection_h_
 
-#include "IList.h"
+#include "List.h"
 
 namespace statik {
 
@@ -15,15 +15,15 @@ public:
   void Clear();
   bool IsClear() const;
 
-  const IList& Start() const;
-  const IList& End() const;
+  const List& Start() const;
+  const List& End() const;
 
-  void Restart(const IList& istart, bool total = true);
-  void SetEnd(const IList& iend);
+  void Restart(const List& istart, bool total = true);
+  void SetEnd(const List& iend);
 
 private:
-  const IList* m_istart;  // starting inode
-  const IList* m_iend;    // inode that makes us bad after we're done, or last
+  const List* m_istart;  // starting inode
+  const List* m_iend;    // inode that makes us bad after we're done, or last
 };
 
 }

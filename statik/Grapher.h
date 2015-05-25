@@ -4,8 +4,8 @@
 #ifndef _statik_Grapher_h_
 #define _statik_Grapher_h_
 
-#include "IList.h"
 #include "IncParser.h"
+#include "List.h"
 #include "Rule.h"
 #include "STree.h"
 
@@ -18,11 +18,11 @@ public:
   Grapher(const std::string& out_dir, const std::string& base_filename);
 
   void AddMachine(const std::string& context, const Rule& machineRoot);
-  void AddOrderList(const std::string& context, const OrderList& orderList, const IList& start);
-  void AddIList(const std::string& context, const IList& start, const std::string& label = "");
+  void AddOrderList(const std::string& context, const OrderList& orderList, const List& start);
+  void AddIList(const std::string& context, const List& start, const std::string& label = "");
   void AddSTree(const std::string& context, const STree& root, const std::string& label = "", const STree* initiator = NULL);
-  void AddOList(const std::string& context, const IList& start, const std::string& label = "");
-  void AddIListeners(const std::string& context, const IncParser& incParser, const IList& start);
+  void AddOList(const std::string& context, const List& start, const std::string& label = "");
+  void AddIListeners(const std::string& context, const IncParser& incParser, const List& start);
   void AddHotlist(const std::string& context, const Hotlist::hotlist_vec& hotlist);
   void Signal(const std::string& context, const void*, bool isUpdate = false);
 

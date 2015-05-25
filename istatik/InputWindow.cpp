@@ -200,7 +200,7 @@ WindowResponse LineBuf::Insert(int y, int x, int ch) {
     next->SetPrevious(c);
     c->SetNext(next);
   }
-  statik::IList* istart = &c->inode;
+  statik::List* istart = &c->inode;
   while (istart->left) {
     istart = istart->left;
   }

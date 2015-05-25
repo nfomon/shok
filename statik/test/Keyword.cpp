@@ -3,9 +3,9 @@
 
 #include "Keyword.h"
 
-#include "statik/IList.h"
 #include "statik/IncParser.h"
 #include "statik/Keyword.h"
+#include "statik/List.h"
 #include "statik/Rule.h"
 #include "statik/SError.h"
 #include "statik/STree.h"
@@ -35,7 +35,7 @@ void Keyword::run() {
     auto_ptr<statik::Rule> r(KEYWORD("a"));
     statik::IncParser ip(*r.get(), "test2");
 
-    statik::IList c1("1", "x");
+    statik::List c1("1", "x");
     ip.Insert(c1);
     const statik::STree& root = ip.GetRoot();
     test(root.GetState().IsBad(), "x");
@@ -43,17 +43,17 @@ void Keyword::run() {
     ip.Delete(c1);
     test(root.IsClear());
 
-    statik::IList c2("2", "a");
+    statik::List c2("2", "a");
     ip.Insert(c2);
     test(root.GetState().IsDone(), "a");
 
-    statik::IList c3("3", "b");
+    statik::List c3("3", "b");
     c3.left = &c2;
     c2.right = &c3;
     ip.Insert(c3);
     test(root.GetState().IsComplete(), "ab");
 
-    statik::IList c4("4", "c");
+    statik::List c4("4", "c");
     c4.left = &c3;
     c3.right = &c4;
     ip.Insert(c4);

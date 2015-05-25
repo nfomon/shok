@@ -6,6 +6,7 @@
 
 #include "ComputeFunc.h"
 #include "IConnection.h"
+#include "List.h"
 #include "OutputFunc.h"
 #include "ParseAction.h"
 #include "State.h"
@@ -43,9 +44,9 @@ public:
          std::auto_ptr<ComputeFunc> computeFunc,
          std::auto_ptr<OutputFunc> outputFunc);
 
-  void StartNode(const IList& istart);
-  void ComputeNode(ParseAction::Action action, const IList& inode, const STree* initiator);
-  void ClearNode(const IList& inode);
+  void StartNode(const List& istart);
+  void ComputeNode(ParseAction::Action action, const List& inode, const STree* initiator);
+  void ClearNode(const List& inode);
 
   bool IsClear() const { return m_isClear; }
   const State& GetState() const { return m_state; }
@@ -53,8 +54,8 @@ public:
   IncParser& GetIncParser() const { return m_incParser; }
   const Rule& GetRule() const { return m_rule; }
   STree* GetParent() const { return m_parent; }
-  const IList& IStart() const { return m_iconnection.Start(); }
-  const IList& IEnd() const { return m_iconnection.End(); }
+  const List& IStart() const { return m_iconnection.Start(); }
+  const List& IEnd() const { return m_iconnection.End(); }
 
   IConnection& GetIConnection() { return m_iconnection; }
   const IConnection& GetIConnection() const { return m_iconnection; }

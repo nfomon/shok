@@ -4,7 +4,7 @@
 #ifndef _statik_ParseAction_h_
 #define _statik_ParseAction_h_
 
-#include "IList.h"
+#include "List.h"
 
 namespace statik {
 
@@ -33,7 +33,7 @@ public:
     }
   }
 
-  ParseAction(Action action, STree& node, const IList& inode, const STree* initiator = NULL)
+  ParseAction(Action action, STree& node, const List& inode, const STree* initiator = NULL)
     : action(action),
       node(&node),
       inode(&inode),
@@ -42,7 +42,7 @@ public:
 
   Action action;
   STree* node;
-  const IList* inode;
+  const List* inode;
   const STree* initiator;
 };
 

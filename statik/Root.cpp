@@ -24,7 +24,7 @@ ComputeFunc_Root::ComputeFunc_Root(const string& name)
   : m_name(name) {
 }
 
-void ComputeFunc_Root::operator() (ParseAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Root::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
   g_log.info() << "Computing Root at " << *m_node << " with inode " << inode << " and action " << ParseAction::UnMapAction(action);
   State& state = m_node->GetState();
   if (m_node->children.empty()) {

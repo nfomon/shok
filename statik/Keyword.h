@@ -7,7 +7,7 @@
 /* Keyword rule */
 
 #include "ComputeFunc.h"
-#include "IList.h"
+#include "List.h"
 #include "ParseAction.h"
 #include "Rule.h"
 #include "STree.h"
@@ -25,7 +25,7 @@ class ComputeFunc_Keyword : public ComputeFunc {
 public:
   ComputeFunc_Keyword(const std::string& str);
   virtual ~ComputeFunc_Keyword() {}
-  virtual void operator() (ParseAction::Action action, const IList& inode, const STree* initiator);
+  virtual void operator() (ParseAction::Action action, const List& inode, const STree* initiator);
   virtual std::auto_ptr<ComputeFunc> Clone() {
     return std::auto_ptr<ComputeFunc>(new ComputeFunc_Keyword(m_str));
   }

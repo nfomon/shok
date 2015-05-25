@@ -3,7 +3,7 @@
 
 #include "Hotlist.h"
 
-#include "IList.h"
+#include "List.h"
 #include "SLog.h"
 
 #include <string>
@@ -20,17 +20,17 @@ std::string Hotlist::UnMapHotOp(const HOT_OP& hotop) {
   }
 }
 
-void Hotlist::Insert(const IList& inode) {
+void Hotlist::Insert(const List& inode) {
   m_hotlist.push_back(std::make_pair(&inode, OP_INSERT));
   m_inserted.insert(&inode);
 }
 
-void Hotlist::Delete(const IList& inode) {
+void Hotlist::Delete(const List& inode) {
   m_hotlist.push_back(std::make_pair(&inode, OP_DELETE));
   m_deleted.insert(&inode);
 }
 
-void Hotlist::Update(const IList& inode) {
+void Hotlist::Update(const List& inode) {
   m_hotlist.push_back(std::make_pair(&inode, OP_UPDATE));
 }
 

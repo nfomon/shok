@@ -11,7 +11,7 @@
  */
 
 #include "ComputeFunc.h"
-#include "IList.h"
+#include "List.h"
 #include "OutputFunc.h"
 #include "STree.h"
 #include "State.h"
@@ -43,8 +43,8 @@ public:
   Rule* AddChild(std::auto_ptr<Rule> child);
   Rule* AddChildRecursive(Rule* child);
 
-  STree* MakeNode(STree& parent, const IList& istart) const;
-  STree* MakeNode(STree& parent, const IList& istart, STree::child_mod_iter insertPos) const;
+  STree* MakeNode(STree& parent, const List& istart) const;
+  STree* MakeNode(STree& parent, const List& istart, STree::child_mod_iter insertPos) const;
 
   std::string Name() const { return m_name; }
   const child_vec& GetChildren() const { return m_children; }

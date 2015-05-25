@@ -3,7 +3,7 @@
 
 #include "OutputFunc.h"
 
-#include "IList.h"
+#include "List.h"
 #include "SLog.h"
 #include "STree.h"
 #include "State.h"
@@ -116,11 +116,11 @@ void OutputFunc_IValues::operator() () {
   }
 
   string value;
-  const IList* ilast = NULL;
+  const List* ilast = NULL;
   if (m_node->GetState().IsComplete()) {
     ilast = &m_node->IEnd();
   }
-  for (const IList* i = &m_node->IStart(); i != ilast; i = i->right) {
+  for (const List* i = &m_node->IStart(); i != ilast; i = i->right) {
     value += i->value;
   }
   m_state.value = value;

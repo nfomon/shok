@@ -36,7 +36,7 @@ STree::STree(IncParser& incParser,
   m_outputFunc->Init(*this);
 }
 
-void STree::StartNode(const IList& istart) {
+void STree::StartNode(const List& istart) {
   g_log.info() << "Starting node " << *this << " with inode " << istart;
   if (!m_isClear) {
     throw SError("Cannot Start node that isn't clear");
@@ -47,7 +47,7 @@ void STree::StartNode(const IList& istart) {
   m_incParser.Enqueue(ParseAction(ParseAction::Restart, *this, istart));
 }
 
-void STree::ComputeNode(ParseAction::Action action, const IList& inode, const STree* initiator) {
+void STree::ComputeNode(ParseAction::Action action, const List& inode, const STree* initiator) {
   if (m_isClear) {
     g_log.info() << "Not computing node " + string(*this) + " which has been cleared";
     return;
@@ -63,13 +63,13 @@ void STree::ComputeNode(ParseAction::Action action, const IList& inode, const ST
 
   g_log.info() << "Computing node " << *this << " with inode " << inode << " and initiator " << (initiator ? string(*initiator) : "<null>");
   const State old_state = m_state;
-  const IList* old_istart = &IStart();
-  const IList* old_iend = &IEnd();
+  const List* old_istart = &IStart();
+  const List* old_iend = &IEnd();
 
   (*m_computeFunc)(action, inode, initiator);
 
-  const IList* new_istart = (m_iconnection.IsClear() ? NULL : &IStart());
-  const IList* new_iend = (m_iconnection.IsClear() ? NULL : &IEnd());
+  const List* new_istart = (m_iconnection.IsClear() ? NULL : &IStart());
+  const List* new_iend = (m_iconnection.IsClear() ? NULL : &IEnd());
 
   bool hasChanged0 = old_istart != new_istart;
   bool hasChanged1 = old_iend != new_iend;
@@ -84,7 +84,7 @@ void STree::ComputeNode(ParseAction::Action action, const IList& inode, const ST
   m_incParser.DrawGraph(*this, &inode, NULL, initiator);
 }
 
-void STree::ClearNode(const IList& inode) {
+void STree::ClearNode(const List& inode) {
   g_log.info() << "Clearing node " << *this;
   if (m_parent) {
     // The size we report is irrelevant; cleared nodes do not need to report how their IEnd changes

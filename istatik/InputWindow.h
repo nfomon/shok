@@ -7,7 +7,7 @@
 #include "ISError.h"
 #include "WindowResponse.h"
 
-#include "statik/IList.h"
+#include "statik/List.h"
 #include "statik/ObjectPool.h"
 
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -25,7 +25,7 @@ struct Char {
   operator std::string() const;
 
   int ch;
-  statik::IList inode;
+  statik::List inode;
 };
 std::ostream& operator<< (std::ostream& out, const Char& node);
 

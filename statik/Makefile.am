@@ -7,12 +7,12 @@ STATIK_SRCS = \
     Hotlist.h \
     IConnection.cpp \
     IConnection.h \
-    IList.cpp \
-    IList.h \
     IncParser.cpp \
     IncParser.h \
     Keyword.cpp \
     Keyword.h \
+    List.cpp \
+    List.h \
     ListenerTable.h \
     Meta.cpp \
     Meta.h \

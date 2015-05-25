@@ -27,7 +27,7 @@ auto_ptr<ComputeFunc> statik::MakeComputeFunc_Seq() {
   return auto_ptr<ComputeFunc>(new ComputeFunc_Seq());
 }
 
-void ComputeFunc_Seq::operator() (ParseAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Seq::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
   // Process
   g_log.debug() << "Computing Seq at " << *m_node << " with initiator " << (initiator ? string(*initiator) : "<null>");
 

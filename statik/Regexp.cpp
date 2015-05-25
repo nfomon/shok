@@ -33,12 +33,12 @@ ComputeFunc_Regexp::ComputeFunc_Regexp(const boost::regex& regex)
   }
 }
 
-void ComputeFunc_Regexp::operator() (ParseAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Regexp::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
   g_log.info() << "Computing Regexp at " << *m_node;
   State& state = m_node->GetState();
   state.Clear();
   string str;
-  const IList* i = &m_node->IStart();
+  const List* i = &m_node->IStart();
   for (; i != NULL; i = i->right) {
     m_node->GetIncParser().Listen(*m_node, *i);
     m_node->GetIConnection().SetEnd(*i);

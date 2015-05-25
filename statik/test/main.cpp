@@ -7,9 +7,6 @@
 #include "STLog.h"
 #include "StatikBattery.h"
 
-#include "statik/Hotlist.h"
-#include "statik/IList.h"
-#include "statik/Rule.h"
 #include "statik/SLog.h"
 
 #include <boost/program_options.hpp>

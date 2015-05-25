@@ -5,6 +5,8 @@
 
 #include "ISError.h"
 
+#include "statik/List.h"
+
 #include <string>
 #include <iostream>
 using std::endl;
@@ -27,7 +29,7 @@ WindowResponse ParserWindow::Input(const statik::Hotlist& ihotlist) {
   m_incParser.ExtractHotlist(hotlist);
   g_log.info() << "Printing WindowResponse list.  Hotlist size is: " << hotlist.Size();
   if (!hotlist.IsEmpty()) {
-    const statik::IList* inode = m_incParser.GetFirstONode();
+    const statik::List* inode = m_incParser.GetFirstONode();
     string old_str = m_str;
     m_str = "";
     bool first = true;

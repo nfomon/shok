@@ -4,9 +4,11 @@
 #ifndef _statik_Hotlist_h_
 #define _statik_Hotlist_h_
 
-/* A set of IList nodes that are "hot", meaning their done-ness has changed.
+/* A set of List nodes that are "hot", meaning their done-ness has changed.
  * They can be Insert()ed or Delete()d on the next IncParser.
  */
+
+#include "List.h"
 
 #include <set>
 #include <string>
@@ -14,8 +16,6 @@
 #include <vector>
 
 namespace statik {
-
-struct IList;
 
 class Hotlist {
 public:
@@ -27,10 +27,10 @@ public:
 
   static std::string UnMapHotOp(const HOT_OP& hotop);
 
-  typedef std::pair<const IList*, HOT_OP> hotpair;
+  typedef std::pair<const List*, HOT_OP> hotpair;
   typedef std::vector<hotpair> hotlist_vec;
   typedef hotlist_vec::const_iterator hotlist_iter;
-  typedef std::set<const IList*> hot_set;
+  typedef std::set<const List*> hot_set;
   typedef hot_set::const_iterator hotset_iter;
 
   const hotlist_vec& GetHotlist() const { return m_hotlist; }
@@ -39,9 +39,9 @@ public:
   size_t Size() const { return m_hotlist.size(); }
   bool IsEmpty() const { return m_hotlist.empty(); }
 
-  void Insert(const IList& inode);
-  void Update(const IList& inode);
-  void Delete(const IList& inode);
+  void Insert(const List& inode);
+  void Update(const List& inode);
+  void Delete(const List& inode);
   void Accept(const hotlist_vec& hotlist);
   void Clear();
 

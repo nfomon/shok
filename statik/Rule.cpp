@@ -69,11 +69,11 @@ Rule* Rule::CapOutput(const string& cap) {
   return this;
 }
 
-STree* Rule::MakeNode(STree& parent, const IList& istart) const {
+STree* Rule::MakeNode(STree& parent, const List& istart) const {
   return MakeNode(parent, istart, parent.children.end());
 }
 
-STree* Rule::MakeNode(STree& parent, const IList& istart, STree::child_mod_iter insertPos) const {
+STree* Rule::MakeNode(STree& parent, const List& istart, STree::child_mod_iter insertPos) const {
   auto_ptr<STree> node(new STree(parent.GetIncParser(), *this, &parent, m_computeFunc->Clone(), m_outputFunc->Clone()));
   g_log.debug() << "Rule " << m_name << " making node " << *node.get() << " under parent that had " << parent.children.size() << " children";
   STree* r = parent.GetIncParser().OwnNode(node);

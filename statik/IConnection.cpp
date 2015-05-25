@@ -21,21 +21,21 @@ bool IConnection::IsClear() const {
   return !m_istart;
 }
 
-const IList& IConnection::Start() const {
+const List& IConnection::Start() const {
   if (!m_istart) {
     throw SError("Cannot get start of uninitialized IConnection");
   }
   return *m_istart;
 }
 
-const IList& IConnection::End() const {
+const List& IConnection::End() const {
   if (!m_iend) {
     throw SError("Cannot get end of uninitialized IConnection");
   }
   return *m_iend;
 }
 
-void IConnection::Restart(const IList& istart, bool total) {
+void IConnection::Restart(const List& istart, bool total) {
   g_log.debug() << "Restarting node to " << istart;
   m_istart = &istart;
   if (total) {
@@ -43,7 +43,7 @@ void IConnection::Restart(const IList& istart, bool total) {
   }
 }
 
-void IConnection::SetEnd(const IList& iend) {
+void IConnection::SetEnd(const List& iend) {
   if (!m_istart) {
     throw SError("Cannot set end of IConnection that has not been started");
   }

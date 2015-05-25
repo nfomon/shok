@@ -3,7 +3,7 @@
 
 #include "Grapher.h"
 
-#include "IList.h"
+#include "List.h"
 #include "Rule.h"
 #include "SError.h"
 #include "SLog.h"
@@ -43,7 +43,7 @@ void Grapher::AddMachine(const string& context, const Rule& machineRoot) {
   m_isDirty = true;
 }
 
-void Grapher::AddOrderList(const string& context, const OrderList& orderList, const IList& start) {
+void Grapher::AddOrderList(const string& context, const OrderList& orderList, const List& start) {
   m_graph += "subgraph cluster_" + dotVar(&orderList, context) + " {\n";
   m_graph += "node [shape=box];\n";
   m_graph += "graph [style=\"filled\", fillcolor=\"#f0e0d0\"];\n";
@@ -52,7 +52,7 @@ void Grapher::AddOrderList(const string& context, const OrderList& orderList, co
   m_isDirty = true;
 }
 
-void Grapher::AddIList(const string& context, const IList& inode, const string& label) {
+void Grapher::AddIList(const string& context, const List& inode, const string& label) {
   m_graph += "subgraph cluster_" + context + dotVar(&inode, context) + " {\n";
   if (!label.empty()) {
     m_graph += "label=\"" + label + "\";\n";
@@ -74,7 +74,7 @@ void Grapher::AddSTree(const string& context, const STree& snode, const string& 
   m_isDirty = true;
 }
 
-void Grapher::AddOList(const string& context, const IList& onode, const string& label) {
+void Grapher::AddOList(const string& context, const List& onode, const string& label) {
   m_graph += "subgraph cluster_" + context + dotVar(&onode, context) + " {\n";
   if (!label.empty()) {
     m_graph += "label=\"" + label + "\";\n";
@@ -85,7 +85,7 @@ void Grapher::AddOList(const string& context, const IList& onode, const string& 
   m_isDirty = true;
 }
 
-void Grapher::AddIListeners(const string& context, const IncParser& incParser, const IList& inode) {
+void Grapher::AddIListeners(const string& context, const IncParser& incParser, const List& inode) {
   IncParser::listener_set ls = incParser.GetListeners(inode);
   for (IncParser::listener_iter i = ls.begin(); i != ls.end(); ++i) {
     m_graph += dotVar(&inode, context) + " -> " + dotVar(*i, context) + " [constraint=false, weight=0, style=dashed, arrowsize=0.5, color=\"#3333cc\"];\n";

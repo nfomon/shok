@@ -71,7 +71,7 @@ void OrderNode::RemoveChild(const OrderNode& child) {
   throw SError("Failed to remove child from OrderNode");
 }
 
-void OrderNode::RemoveLeaf(const IList& leaf) {
+void OrderNode::RemoveLeaf(const List& leaf) {
   //g_log.debug() << "OrderNode: removing leaf " << leaf;
   for (leaf_mod_iter i = m_leaves.begin(); i != m_leaves.end(); ++i) {
     if (*i == &leaf) {
@@ -89,7 +89,7 @@ void OrderNode::RemoveLeaf(const IList& leaf) {
   throw SError("Failed to remove leaf from OrderNode");
 }
 
-void OrderNode::InsertLeaf(const IList& leaf, node_map& out_changes) {
+void OrderNode::InsertLeaf(const List& leaf, node_map& out_changes) {
   //g_log.debug() << "OrderNode: Inserting leaf " << leaf;
   m_leaves.push_back(&leaf);
   out_changes[&leaf] = this;
@@ -98,7 +98,7 @@ void OrderNode::InsertLeaf(const IList& leaf, node_map& out_changes) {
   }
 }
 
-void OrderNode::InsertLeafBefore(const IList& leaf, const IList& next, node_map& out_changes) {
+void OrderNode::InsertLeafBefore(const List& leaf, const List& next, node_map& out_changes) {
   //g_log.debug() << "OrderNode: Inserting leaf " << leaf << " before " << next;
   for (leaf_mod_iter i = m_leaves.begin(); i != m_leaves.end(); ++i) {
     if (*i == &next) {
@@ -113,7 +113,7 @@ void OrderNode::InsertLeafBefore(const IList& leaf, const IList& next, node_map&
   throw SError("Failed to find next-leaf " + string(next) + " to insert " + string(leaf) + " before");
 }
 
-void OrderNode::InsertLeafAfter(const IList& leaf, const IList& prev, node_map& out_changes) {
+void OrderNode::InsertLeafAfter(const List& leaf, const List& prev, node_map& out_changes) {
   //g_log.debug() << "OrderNode: Inserting leaf " << leaf << " after " << prev;
   for (leaf_mod_iter i = m_leaves.begin(); i != m_leaves.end(); ++i) {
     if (*i == &prev) {
@@ -144,7 +144,7 @@ void OrderNode::InsertChildAfter(OrderNode* child, const OrderNode& prev, node_m
   throw SError("Failed to find prev-child to insert another child after");
 }
 
-int OrderNode::CompareLeaves(const IList& a, const IList& b) const {
+int OrderNode::CompareLeaves(const List& a, const List& b) const {
   g_log.debug() << "OrderNode: comparing leaves " << a << " and " << b;
   for (leaf_iter i = m_leaves.begin(); i != m_leaves.end(); ++i) {
     if (&a == *i && &b == *i) {
@@ -254,11 +254,11 @@ OrderList::~OrderList() {
   }
 }
 
-void OrderList::Insert(const IList& inode) {
+void OrderList::Insert(const List& inode) {
   g_log.debug() << "OrderList: inserting " << inode;
   OrderNode::node_map changes;
   {
-    IList* left = inode.left;
+    List* left = inode.left;
     while (left && m_nodes.end() == m_nodes.find(left)) {
       left = left->left;
     }
@@ -273,7 +273,7 @@ void OrderList::Insert(const IList& inode) {
       }
     }
   } {
-    IList* right = inode.right;
+    List* right = inode.right;
     while (right && m_nodes.end() == m_nodes.find(right)) {
       right = right->right;
     }
@@ -296,7 +296,7 @@ void OrderList::Insert(const IList& inode) {
   }
 }
 
-void OrderList::Delete(const IList& inode) {
+void OrderList::Delete(const List& inode) {
   g_log.debug() << "OrderList: deleting " << inode;
   OrderNode::node_iter i = m_nodes.find(&inode);
   if (m_nodes.end() == i) {
@@ -309,7 +309,7 @@ void OrderList::Delete(const IList& inode) {
   m_nodes.erase(&inode);
 }
 
-int OrderList::Compare(const IList& a, const IList& b) const {
+int OrderList::Compare(const List& a, const List& b) const {
   g_log.info() << "OrderList: comparing " << a << " and " << b;
   OrderNode::node_iter ai = m_nodes.find(&a);
   OrderNode::node_iter bi = m_nodes.find(&b);
@@ -337,12 +337,12 @@ int OrderList::Compare(const IList& a, const IList& b) const {
   return an->CompareChildren(*an_prev, *bn_prev);
 }
 
-string OrderList::Draw(const string& context, const IList& start) const {
+string OrderList::Draw(const string& context, const List& start) const {
   typedef vector<const OrderNode*> level_vec;
   typedef level_vec::const_iterator level_iter;
   level_vec level;
   set<const OrderNode*> levelset;
-  for (const IList* i = &start; i != NULL; i = i->right) {
+  for (const List* i = &start; i != NULL; i = i->right) {
     OrderNode::node_iter node = m_nodes.find(i);
     if (node != m_nodes.end() && levelset.end() == levelset.find(node->second)) {
       level.push_back(node->second);
@@ -350,7 +350,7 @@ string OrderList::Draw(const string& context, const IList& start) const {
     }
   }
   string s = "/*list*/\n{ rank=same;\n";
-  s += start.DrawNode(context);   // draws the whole IList
+  s += start.DrawNode(context);   // draws the whole List
   s += "}\n";
   while (!level.empty()) {
     level_vec nextLevel;

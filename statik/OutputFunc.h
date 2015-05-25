@@ -4,7 +4,7 @@
 #ifndef _statik_OutputFunc_h_
 #define _statik_OutputFunc_h_
 
-#include "IList.h"
+#include "List.h"
 
 #include <map>
 #include <memory>
@@ -25,7 +25,7 @@ std::auto_ptr<OutputFunc> MakeOutputFunc_Sequence();
 std::auto_ptr<OutputFunc> MakeOutputFunc_Cap(std::auto_ptr<OutputFunc> outputFunc, const std::string& cap);
 
 struct OutputState {
-  typedef std::set<const IList*> onode_set;
+  typedef std::set<const List*> onode_set;
   typedef onode_set::const_iterator onode_iter;
   typedef std::set<const STree*> child_set;
   typedef child_set::const_iterator child_iter;
@@ -42,8 +42,8 @@ public:
   virtual void Init(const STree& x) { m_node = &x; }
 
   const OutputState& GetState() { return m_state; }
-  IList* OStart() { return m_ostart; }
-  IList* OEnd() { return m_oend; }
+  List* OStart() { return m_ostart; }
+  List* OEnd() { return m_oend; }
 
   virtual void operator() () = 0;
   virtual void ConnectONodes() {}
@@ -52,8 +52,8 @@ public:
 protected:
   const STree* m_node;
   OutputState m_state;
-  IList* m_ostart;    // first emittable olist node that is spanned
-  IList* m_oend;      // last emittable olist node that is spanned
+  List* m_ostart;    // first emittable olist node that is spanned
+  List* m_oend;      // last emittable olist node that is spanned
 };
 
 class OutputFunc_Silent : public OutputFunc {
@@ -85,7 +85,7 @@ public:
   virtual std::auto_ptr<OutputFunc> Clone();
 
 protected:
-  IList m_onode;    // Single output list node
+  List m_onode;    // Single output list node
 };
 
 // Single output node with the provided name.  The value is the concatenation
@@ -99,7 +99,7 @@ public:
   virtual std::auto_ptr<OutputFunc> Clone();
 
 protected:
-  IList m_onode;    // Single output list node
+  List m_onode;    // Single output list node
 };
 
 // Outputs all the nodes from the single child that is a "winner".  Corresponds
@@ -143,8 +143,8 @@ public:
 protected:
   std::auto_ptr<OutputFunc> m_outputFunc;
   std::string m_cap;
-  IList m_capStart;
-  IList m_capEnd;
+  List m_capStart;
+  List m_capEnd;
 };
 
 }

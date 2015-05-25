@@ -10,8 +10,8 @@
 
 #include "statik/Grapher.h"
 #include "statik/Hotlist.h"
-#include "statik/IList.h"
 #include "statik/IncParser.h"
+#include "statik/List.h"
 #include "statik/Rule.h"
 #include "statik/SError.h"
 #include "statik/SLog.h"
@@ -85,8 +85,8 @@ int main(int argc, char *argv[]) {
       parsers.push_back(new IncParser(*i, i->Name(), graphdir));
     }
 
-    IList* start = NULL;
-    IList* prev = NULL;
+    List* start = NULL;
+    List* prev = NULL;
     string line;
     while (getline(cin, line)) {
       //line += "\n";
@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
           delnum *= 10;
           delnum += line[2] - '0';
         }
-        IList* s = start;
+        List* s = start;
         if (!s) {
           throw SError("Cannot delete entry without start");
         }
@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
         continue;
       }
       for (size_t i=0; i < line.size(); ++i) {
-        IList* c = new IList("", string(1, line.at(i)));
+        List* c = new List("", string(1, line.at(i)));
         if (!start) { start = c; }
         if (prev) {
           prev->right = c;
@@ -162,9 +162,9 @@ int main(int argc, char *argv[]) {
       }
     }
     g_log.info() << "Clearing input";
-    IList* i = start;
+    List* i = start;
     while (i) {
-      IList* j = i->right;
+      List* j = i->right;
       delete i;
       i = j;
     }

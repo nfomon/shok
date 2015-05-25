@@ -4,7 +4,7 @@
 #ifndef _statik_OrderList_h_
 #define _statik_OrderList_h_
 
-#include "IList.h"
+#include "List.h"
 
 #include <map>
 #include <string>
@@ -14,20 +14,20 @@ namespace statik {
 
 class OrderNode {
 public:
-  typedef std::map<const IList*, OrderNode*> node_map;
+  typedef std::map<const List*, OrderNode*> node_map;
   typedef node_map::const_iterator node_iter;
   typedef node_map::iterator node_mod_iter;
 
   OrderNode(OrderNode* parent);
   ~OrderNode();
 
-  void RemoveLeaf(const IList& leaf);
-  void InsertLeaf(const IList& leaf, node_map& out_changes);
-  void InsertLeafBefore(const IList& leaf, const IList& next, node_map& out_changes);
-  void InsertLeafAfter(const IList& leaf, const IList& prev, node_map& out_changes);
+  void RemoveLeaf(const List& leaf);
+  void InsertLeaf(const List& leaf, node_map& out_changes);
+  void InsertLeafBefore(const List& leaf, const List& next, node_map& out_changes);
+  void InsertLeafAfter(const List& leaf, const List& prev, node_map& out_changes);
   void InsertChildAfter(OrderNode* child, const OrderNode& prev, node_map& out_changes);
 
-  int CompareLeaves(const IList& a, const IList& b) const;
+  int CompareLeaves(const List& a, const List& b) const;
   int CompareChildren(const OrderNode& a, const OrderNode& b) const;
 
   bool HasLeaves() const;
@@ -44,7 +44,7 @@ private:
   typedef child_vec::const_iterator child_iter;
   typedef child_vec::iterator child_mod_iter;
   child_vec m_children;
-  typedef std::vector<const IList*> leaf_vec;
+  typedef std::vector<const List*> leaf_vec;
   typedef leaf_vec::const_iterator leaf_iter;
   typedef leaf_vec::iterator leaf_mod_iter;
   leaf_vec m_leaves;
@@ -57,11 +57,11 @@ private:
 class OrderList {
 public:
   ~OrderList();
-  void Insert(const IList& inode);
-  void Delete(const IList& inode);
-  int Compare(const IList& a, const IList& b) const;
+  void Insert(const List& inode);
+  void Delete(const List& inode);
+  int Compare(const List& a, const List& b) const;
 
-  std::string Draw(const std::string& context, const IList& start) const;
+  std::string Draw(const std::string& context, const List& start) const;
 
 private:
   OrderNode::node_map m_nodes;

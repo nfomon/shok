@@ -5,7 +5,7 @@
 #define _statik_Star_h_
 
 #include "ComputeFunc.h"
-#include "IList.h"
+#include "List.h"
 #include "ParseAction.h"
 #include "Rule.h"
 #include "STree.h"
@@ -19,7 +19,7 @@ std::auto_ptr<Rule> STAR(const std::string& name);
 
 struct ComputeFunc_Star : public ComputeFunc {
   virtual ~ComputeFunc_Star() {}
-  virtual void operator() (ParseAction::Action action, const IList& inode, const STree* initiator);
+  virtual void operator() (ParseAction::Action action, const List& inode, const STree* initiator);
   virtual std::auto_ptr<ComputeFunc> Clone() {
     return std::auto_ptr<ComputeFunc>(new ComputeFunc_Star());
   }

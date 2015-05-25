@@ -5,7 +5,7 @@
 
 #include "Grapher.h"
 #include "Hotlist.h"
-#include "IList.h"
+#include "List.h"
 #include "Root.h"
 #include "Rule.h"
 #include "SLog.h"
@@ -53,23 +53,23 @@ void IncParser::ExtractHotlist(Hotlist& out_hotlist) {
   }
 }
 
-IncParser::listener_set IncParser::GetListeners(const IList& x) const {
+IncParser::listener_set IncParser::GetListeners(const List& x) const {
   return m_listeners.GetListeners(&x);
 }
 
-void IncParser::Insert(const IList& inode) {
+void IncParser::Insert(const List& inode) {
   Hotlist hotlist;
   hotlist.Insert(inode);
   UpdateWithHotlist(hotlist.GetHotlist());
 }
 
-void IncParser::Delete(const IList& inode) {
+void IncParser::Delete(const List& inode) {
   Hotlist hotlist;
   hotlist.Delete(inode);
   UpdateWithHotlist(hotlist.GetHotlist());
 }
 
-void IncParser::Update(const IList& inode) {
+void IncParser::Update(const List& inode) {
   Hotlist hotlist;
   hotlist.Update(inode);
   UpdateWithHotlist(hotlist.GetHotlist());
@@ -118,7 +118,7 @@ void IncParser::ClearNode(STree& x) {
   }
 }
 
-void IncParser::Listen(STree& x, const IList& inode) {
+void IncParser::Listen(STree& x, const List& inode) {
   if (m_listeners.IsListening(&inode, &x)) {
     g_log.info() << "IncParser: " << x << " is already listening to " << inode;
   } else {
@@ -127,7 +127,7 @@ void IncParser::Listen(STree& x, const IList& inode) {
   }
 }
 
-void IncParser::Unlisten(STree& x, const IList& inode) {
+void IncParser::Unlisten(STree& x, const List& inode) {
   g_log.info() << "IncParser: " << x << " will NOT listen to " << inode;
   m_listeners.RemoveListener(&inode, &x);
 }
@@ -142,14 +142,14 @@ STree* IncParser::OwnNode(auto_ptr<STree> node) {
   return m_nodePool.Insert(node);
 }
 
-const IList* IncParser::GetFirstINode() const {
+const List* IncParser::GetFirstINode() const {
   if (m_root.IsClear() || m_root.GetIConnection().IsClear()) {
     return NULL;
   }
   return &m_root.IStart();
 }
 
-const IList* IncParser::GetFirstONode() const {
+const List* IncParser::GetFirstONode() const {
   return m_root.GetOutputFunc().OStart();
 }
 
@@ -157,17 +157,17 @@ void IncParser::TouchNode(const STree& node) {
   m_touchedNodes.insert(&node);
 }
 
-void IncParser::DrawGraph(const STree& onode, const IList* inode, const Hotlist* hotlist, const STree* initiator) {
+void IncParser::DrawGraph(const STree& onode, const List* inode, const Hotlist* hotlist, const STree* initiator) {
   if (!m_grapher.get()) {
     return;
   }
   SanityCheck();
-  const IList* istart = GetFirstINode();
+  const List* istart = GetFirstINode();
   if (istart) {
     m_grapher->AddIList(m_name, *istart, m_name + " input");
   }
   m_grapher->AddSTree(m_name, m_root, m_name + " output", initiator);
-  const IList* ostart = GetFirstONode();
+  const List* ostart = GetFirstONode();
   if (ostart) {
     m_grapher->AddOList(m_name, *ostart, m_name + " olist");
   }
@@ -199,7 +199,7 @@ void IncParser::SanityCheck(const STree* s) const {
   g_san.info() << "SNode: " << s;
   g_san.info() << ":: " << *s;
   if (!s->GetIConnection().IsClear()) {
-    const IList* inode = &s->IStart();
+    const List* inode = &s->IStart();
     while (inode) {
       g_san.info() << " - INode: " << inode;
       g_san.info() << " - :: " << *inode;
@@ -222,7 +222,7 @@ void IncParser::SanityCheck(const STree* s) const {
     g_san.info() << s << " (" << *s << ") -> " << *child;
     SanityCheck(*child);
   }
-  const IList* onode = s->GetOutputFunc().OStart();
+  const List* onode = s->GetOutputFunc().OStart();
   while (onode) {
     g_san.info() << " - ONode: " << onode;
     g_san.info() << " - :: " << *onode;
@@ -240,8 +240,8 @@ const STree& IncParser::GetRoot() const {
   return m_root;
 }
 
-void IncParser::InsertNode(const IList& inode) {
-  g_log.info() << "IncParser " << m_name << ": Inserting IList: " << inode << " with " << (inode.left ? "left" : "no left") << " and " << (inode.right ? "with a right" : "no right");
+void IncParser::InsertNode(const List& inode) {
+  g_log.info() << "IncParser " << m_name << ": Inserting INode: " << inode << " with " << (inode.left ? "left" : "no left") << " and " << (inode.right ? "with a right" : "no right");
   m_orderList.Insert(inode);
   if (m_grapher.get()) {
     if (GetFirstINode()) {
@@ -288,7 +288,7 @@ void IncParser::InsertNode(const IList& inode) {
   g_log.debug() << "IncParser: Insert done";
 }
 
-void IncParser::DeleteNode(const IList& inode) {
+void IncParser::DeleteNode(const List& inode) {
   g_log.info() << "Deleting list inode " << inode;
   if (m_grapher.get()) {
     if (GetFirstINode()) {
@@ -327,7 +327,7 @@ void IncParser::DeleteNode(const IList& inode) {
   g_log.debug() << "IncParser: Delete done";
 }
 
-void IncParser::UpdateNode(const IList& inode) {
+void IncParser::UpdateNode(const List& inode) {
   g_log.info() << "IncParser " << m_name << ": Updating listeners of inode " << inode;
   listener_set listeners = m_listeners.GetListeners(&inode);
   for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
@@ -478,6 +478,6 @@ void IncParser::CleanupIfNeeded() {
   }
 }
 
-int IncParser::INodeCompare(const IList& a, const IList& b) const {
+int IncParser::INodeCompare(const List& a, const List& b) const {
   return m_orderList.Compare(a, b);
 }

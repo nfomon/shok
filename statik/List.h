@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _statik_IList_h_
-#define _statik_IList_h_
+#ifndef _statik_List_h_
+#define _statik_List_h_
 
 #include "SError.h"
 
@@ -11,20 +11,20 @@
 
 namespace statik {
 
-struct IList {
-  IList(const std::string& name, const std::string& value = "");
+struct List {
+  List(const std::string& name, const std::string& value = "");
 
-  operator std::string() const { return "(IList " + name + ":" + value + ")"; }
+  operator std::string() const { return "(List " + name + ":" + value + ")"; }
   std::string DrawNode(const std::string& context) const;
 
   const std::string name;
   std::string value;
-  IList* left;
-  IList* right;
+  List* left;
+  List* right;
 };
 
-std::ostream& operator<< (std::ostream& out, const IList& node);
+std::ostream& operator<< (std::ostream& out, const List& node);
 
 }
 
-#endif // _statik_IList_h_
+#endif // _statik_List_h_

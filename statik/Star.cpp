@@ -29,7 +29,7 @@ auto_ptr<ComputeFunc> statik::MakeComputeFunc_Star() {
   return auto_ptr<ComputeFunc>(new ComputeFunc_Star());
 }
 
-void ComputeFunc_Star::operator() (ParseAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Star::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
   // Process
   g_log.debug() << "Computing Star at " << *m_node << " which has " << m_node->children.size() << " children";
 

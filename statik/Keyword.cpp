@@ -37,13 +37,13 @@ ComputeFunc_Keyword::ComputeFunc_Keyword(const string& str)
   }
 }
 
-void ComputeFunc_Keyword::operator() (ParseAction::Action action, const IList& inode, const STree* initiator) {
+void ComputeFunc_Keyword::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
   g_log.info() << "Computing Keyword at " << *m_node << " with inode " << inode;
   State& state = m_node->GetState();
   state.Clear();
   string matched;
   bool done = false;
-  const IList* i = &m_node->IStart();
+  const List* i = &m_node->IStart();
   for (; i != NULL; i = i->right) {
     m_node->GetIncParser().Listen(*m_node, *i);
     m_node->GetIConnection().SetEnd(*i);
