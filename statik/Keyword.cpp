@@ -3,7 +3,7 @@
 
 #include "Keyword.h"
 
-#include "Connector.h"
+#include "IncParser.h"
 #include "OutputFunc.h"
 #include "SError.h"
 #include "SLog.h"
@@ -45,7 +45,7 @@ void ComputeFunc_Keyword::operator() (ParseAction::Action action, const IList& i
   bool done = false;
   const IList* i = &m_node->IStart();
   for (; i != NULL; i = i->right) {
-    m_node->GetConnector().Listen(*m_node, *i);
+    m_node->GetIncParser().Listen(*m_node, *i);
     m_node->GetIConnection().SetEnd(*i);
     if (done) {
       state.GoComplete();

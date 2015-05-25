@@ -3,10 +3,8 @@
 
 #include "IStatik.h"
 
-#include "ConnectorWindow.h"
+#include "ParserWindow.h"
 #include "InputWindow.h"
-
-#include "statik/Connector.h"
 
 #include <curses.h>
 #include <panel.h>
@@ -49,13 +47,13 @@ void IStatik::run() {
   (void) getmaxyx(m_windows.at(0), inrows, incols);
   InputWindow inputWindow(inrows, incols);
 
-  typedef ptr_vector<ConnectorWindow> connectorWindow_vec;
-  typedef connectorWindow_vec::iterator connectorWindow_mod_iter;
-  ptr_vector<ConnectorWindow> connectorWindows;
+  typedef ptr_vector<ParserWindow> parserWindow_vec;
+  typedef parserWindow_vec::iterator parserWindow_mod_iter;
+  ptr_vector<ParserWindow> parserWindows;
   for (exstatik::Compiler_mod_iter i = m_compiler->begin();
        i != m_compiler->end(); ++i) {
-    g_log.info() << "Adding connector window for " << i->Name();
-    connectorWindows.push_back(new ConnectorWindow(*i, m_graphdir));
+    g_log.info() << "Adding parser window for " << i->Name();
+    parserWindows.push_back(new ParserWindow(*i, m_graphdir));
   }
 
   bool done = false;
@@ -73,9 +71,9 @@ void IStatik::run() {
     int y0, x0;
     getyx(m_windows.at(0), y0, x0);
 
-    for (connectorWindow_mod_iter i = connectorWindows.begin();
-         i != connectorWindows.end(); ++i) {
-      g_log.info() << " - update connector?";
+    for (parserWindow_mod_iter i = parserWindows.begin();
+         i != parserWindows.end(); ++i) {
+      g_log.info() << " - update parser?";
       if (response.hotlist.IsEmpty()) { break; }
       response = i->Input(response.hotlist);
       ++window_index;

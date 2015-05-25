@@ -3,7 +3,6 @@
 
 #include "Grapher.h"
 
-#include "Connector.h"
 #include "IList.h"
 #include "Rule.h"
 #include "SError.h"
@@ -86,13 +85,13 @@ void Grapher::AddOList(const string& context, const IList& onode, const string& 
   m_isDirty = true;
 }
 
-void Grapher::AddIListeners(const string& context, const Connector& connector, const IList& inode) {
-  Connector::listener_set ls = connector.GetListeners(inode);
-  for (Connector::listener_iter i = ls.begin(); i != ls.end(); ++i) {
+void Grapher::AddIListeners(const string& context, const IncParser& incParser, const IList& inode) {
+  IncParser::listener_set ls = incParser.GetListeners(inode);
+  for (IncParser::listener_iter i = ls.begin(); i != ls.end(); ++i) {
     m_graph += dotVar(&inode, context) + " -> " + dotVar(*i, context) + " [constraint=false, weight=0, style=dashed, arrowsize=0.5, color=\"#3333cc\"];\n";
   }
   if (inode.right) {
-    AddIListeners(context, connector, *inode.right);
+    AddIListeners(context, incParser, *inode.right);
   }
   m_isDirty = true;
 }

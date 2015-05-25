@@ -3,7 +3,7 @@
 
 #include "Regexp.h"
 
-#include "Connector.h"
+#include "IncParser.h"
 #include "OutputFunc.h"
 #include "SError.h"
 #include "SLog.h"
@@ -40,7 +40,7 @@ void ComputeFunc_Regexp::operator() (ParseAction::Action action, const IList& in
   string str;
   const IList* i = &m_node->IStart();
   for (; i != NULL; i = i->right) {
-    m_node->GetConnector().Listen(*m_node, *i);
+    m_node->GetIncParser().Listen(*m_node, *i);
     m_node->GetIConnection().SetEnd(*i);
     str += i->value;
     if (!boost::regex_match(str, m_regex)) {

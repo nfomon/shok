@@ -3,7 +3,7 @@
 
 #include "Root.h"
 
-#include "Connector.h"
+#include "IncParser.h"
 #include "OutputFunc.h"
 #include "SError.h"
 #include "SLog.h"
@@ -39,7 +39,7 @@ void ComputeFunc_Root::operator() (ParseAction::Action action, const IList& inod
     }
   }
   if (ParseAction::Restart == action) {
-    m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **m_node->children.begin(), inode, m_node));
+    m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **m_node->children.begin(), inode, m_node));
     state.GoPending();
     return;
   }
@@ -49,7 +49,7 @@ void ComputeFunc_Root::operator() (ParseAction::Action action, const IList& inod
     // This is wrong.  Supposed to set to m_firstINode but we removed that because tricky to maintain lol...
     m_node->children.erase(m_node->children.begin());
     if (inode.right && inode.right->left != &inode) {
-      m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, *m_node, *inode.right, m_node));
+      m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, *m_node, *inode.right, m_node));
       state.GoPending();
       return;
     } else {

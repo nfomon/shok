@@ -1,7 +1,5 @@
 STATIK_SRCS = \
     ComputeFunc.h \
-    Connector.cpp \
-    Connector.h \
     ConnectorAction.h \
     Grapher.cpp \
     Grapher.h \
@@ -11,6 +9,8 @@ STATIK_SRCS = \
     IConnection.h \
     IList.cpp \
     IList.h \
+    IncParser.cpp \
+    IncParser.h \
     Keyword.cpp \
     Keyword.h \
     ListenerTable.h \

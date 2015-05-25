@@ -3,7 +3,7 @@
 
 #include "Or.h"
 
-#include "Connector.h"
+#include "IncParser.h"
 #include "OutputFunc.h"
 #include "SLog.h"
 #include "STree.h"
@@ -41,7 +41,7 @@ void ComputeFunc_Or::operator() (ParseAction::Action action, const IList& inode,
     } else if (m_node->children.size() == m_node->GetRule().GetChildren().size()) {
       for (STree::child_mod_iter i = m_node->children.begin();
            i != m_node->children.end(); ++i) {
-        (*i)->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **i, inode));
+        (*i)->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **i, inode));
       }
     } else {
       throw SError("Or node had inappropriate # children");

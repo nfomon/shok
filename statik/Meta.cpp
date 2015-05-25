@@ -3,7 +3,7 @@
 
 #include "Meta.h"
 
-#include "Connector.h"
+#include "IncParser.h"
 #include "OutputFunc.h"
 #include "SLog.h"
 #include "STree.h"
@@ -34,7 +34,7 @@ void ComputeFunc_Meta::operator() (ParseAction::Action action, const IList& inod
   State& state = m_node->GetState();
   state.Clear();
   const IList& first = m_node->IStart();
-  m_node->GetConnector().Listen(*m_node, first);
+  m_node->GetIncParser().Listen(*m_node, first);
   if (first.name == m_searchName) {
     state.GoDone();
     const IList* second = first.right;

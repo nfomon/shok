@@ -4,8 +4,8 @@
 #ifndef _statik_Grapher_h_
 #define _statik_Grapher_h_
 
-#include "Connector.h"
 #include "IList.h"
+#include "IncParser.h"
 #include "Rule.h"
 #include "STree.h"
 
@@ -22,7 +22,7 @@ public:
   void AddIList(const std::string& context, const IList& start, const std::string& label = "");
   void AddSTree(const std::string& context, const STree& root, const std::string& label = "", const STree* initiator = NULL);
   void AddOList(const std::string& context, const IList& start, const std::string& label = "");
-  void AddIListeners(const std::string& context, const Connector& connector, const IList& start);
+  void AddIListeners(const std::string& context, const IncParser& incParser, const IList& start);
   void AddHotlist(const std::string& context, const Hotlist::hotlist_vec& hotlist);
   void Signal(const std::string& context, const void*, bool isUpdate = false);
 

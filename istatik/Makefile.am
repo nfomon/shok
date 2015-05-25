@@ -1,6 +1,4 @@
 ISTATIK_SRCS = \
-    ConnectorWindow.cpp \
-    ConnectorWindow.h \
     ISError.h \
     ISLog.cpp \
     ISLog.h \
@@ -8,6 +6,8 @@ ISTATIK_SRCS = \
     IStatik.h \
     InputWindow.cpp \
     InputWindow.h \
+    ParserWindow.cpp \
+    ParserWindow.h \
     WindowAction.h \
     WindowResponse.h \
     main.cpp

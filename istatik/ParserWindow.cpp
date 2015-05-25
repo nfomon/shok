@@ -1,7 +1,7 @@
 // Copyright (C) 2015 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#include "ConnectorWindow.h"
+#include "ParserWindow.h"
 
 #include "ISError.h"
 
@@ -12,22 +12,22 @@ using std::string;
 
 using namespace istatik;
 
-ConnectorWindow::ConnectorWindow(statik::Rule& rule, const string& graphdir)
-  : m_connector(rule, rule.Name(), graphdir) {
-  g_log.info() << "Initialized ConnectorWindow for " << rule;
+ParserWindow::ParserWindow(statik::Rule& rule, const string& graphdir)
+  : m_incParser(rule, rule.Name(), graphdir) {
+  g_log.info() << "Initialized ParserWindow for " << rule;
 }
 
-WindowResponse ConnectorWindow::Input(const statik::Hotlist& ihotlist) {
-  g_log.info() << "Updating connector " << m_connector.Name() << " with hotlist: " << ihotlist.Print();
-  m_connector.UpdateWithHotlist(ihotlist.GetHotlist());
+WindowResponse ParserWindow::Input(const statik::Hotlist& ihotlist) {
+  g_log.info() << "Updating incParser " << m_incParser.Name() << " with hotlist: " << ihotlist.Print();
+  m_incParser.UpdateWithHotlist(ihotlist.GetHotlist());
   WindowResponse response;
-  // Find first item in connector's output list, and draw everything
+  // Find first item in incParser's output list, and draw everything
   response.actions.push_back(WindowAction(WindowAction::MOVE, 0, 0, 0));
   statik::Hotlist hotlist;
-  m_connector.ExtractHotlist(hotlist);
+  m_incParser.ExtractHotlist(hotlist);
   g_log.info() << "Printing WindowResponse list.  Hotlist size is: " << hotlist.Size();
   if (!hotlist.IsEmpty()) {
-    const statik::IList* inode = m_connector.GetFirstONode();
+    const statik::IList* inode = m_incParser.GetFirstONode();
     string old_str = m_str;
     m_str = "";
     bool first = true;

@@ -23,8 +23,6 @@
 
 namespace statik {
 
-class Connector;
-
 class Rule {
 public:
   typedef std::vector<Rule*> child_vec;

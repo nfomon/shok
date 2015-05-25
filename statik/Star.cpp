@@ -3,7 +3,7 @@
 
 #include "Star.h"
 
-#include "Connector.h"
+#include "IncParser.h"
 #include "OutputFunc.h"
 #include "SLog.h"
 #include "STree.h"
@@ -46,7 +46,7 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const IList& inod
 
   if (ParseAction::Restart == action) {
     g_log.debug() << "Restart start compare with inode " << inode;
-    int startCompare = m_node->GetConnector().INodeCompare((*m_node->children.begin())->IStart(), inode);
+    int startCompare = m_node->GetIncParser().INodeCompare((*m_node->children.begin())->IStart(), inode);
     if (startCompare < 0) {
       g_log.info() << "Prepending a new child behind our first child";
       m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, inode, m_node->children.begin());
@@ -54,16 +54,16 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const IList& inod
       return;
     } else if (startCompare > 0) {
       g_log.debug() << "Restart end compare";
-      int endCompare = m_node->GetConnector().INodeCompare(m_node->IEnd(), inode);
+      int endCompare = m_node->GetIncParser().INodeCompare(m_node->IEnd(), inode);
       if (endCompare < 0 || (0 == endCompare && !inode.right)) {
         g_log.debug() << "Restarting first child to new, further-ahead location";
-        m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **m_node->children.begin(), inode, m_node));
+        m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **m_node->children.begin(), inode, m_node));
         state.GoPending();
         return;
       } else {
         g_log.debug() << "Eliminating child that is now passed";
         m_node->children.erase(m_node->children.begin());
-        m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, *m_node, inode, m_node));
+        m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, *m_node, inode, m_node));
         state.GoPending();
         return;
       }
@@ -107,7 +107,7 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const IList& inod
         if (inode.right && inode.right->left != &inode) {
           g_log.info() << "Restarting self at right inode " << *inode.right;
           g_log.warning() << "Probably shouldn't be doing this here (is top-node behaviour different than subsidiaries?)";
-          m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, *m_node, *inode.right, m_node));
+          m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, *m_node, *inode.right, m_node));
           state.GoPending();
           return;
         } else {
@@ -135,7 +135,7 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const IList& inod
           // Keep going to determine our state
         } else {
           g_log.debug() << "Child end compare";
-          int childCompare = m_node->GetConnector().INodeCompare(prev_child->IEnd(), (*next)->IStart());
+          int childCompare = m_node->GetIncParser().INodeCompare(prev_child->IEnd(), (*next)->IStart());
           if (0 == childCompare) {
             throw SError("ComputeFunc_Star: prev->next children are not linked but INodeCompare returned 0");
           } else if (childCompare > 0) {
@@ -149,7 +149,7 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const IList& inod
             return;
           } else {  // childCompare < 0
             g_log.debug() << "Another child end compare";
-            int endCompare = m_node->GetConnector().INodeCompare(prev_child->IEnd(), (*next)->IEnd());
+            int endCompare = m_node->GetIncParser().INodeCompare(prev_child->IEnd(), (*next)->IEnd());
             if (endCompare < 0) {
               g_log.debug() << "Eliminating next, which is now passed";
               // We do need to enqueue a self-update on a node that will
@@ -157,12 +157,12 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const IList& inod
               (*next)->ClearNode(inode);
               m_node->children.erase(next);
               m_node->children.erase(child);
-              m_node->GetConnector().Enqueue(ParseAction(ParseAction::ChildUpdate, *m_node, inode, prev_child));
+              m_node->GetIncParser().Enqueue(ParseAction(ParseAction::ChildUpdate, *m_node, inode, prev_child));
               state.GoPending();
               return;
             } else {
               g_log.debug() << "Restarting next child to new, further-ahead location";
-              m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **next, prev_child->IEnd(), m_node));
+              m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, prev_child->IEnd(), m_node));
               m_node->children.erase(child);
               state.GoPending();
               return;
@@ -208,7 +208,7 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const IList& inod
     if (&(*child)->IEnd() == &(*next)->IStart()) {
       g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Next child is linked properly, so no changes to children";
     } else {
-      int childCompare = m_node->GetConnector().INodeCompare((*child)->IEnd(), (*next)->IStart());
+      int childCompare = m_node->GetIncParser().INodeCompare((*child)->IEnd(), (*next)->IStart());
       if (0 == childCompare) {
         throw SError("ComputeFunc_Star: children are not linked but INodeCompare returned 0");
       } else if (childCompare > 0) {
@@ -218,7 +218,7 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const IList& inod
         // that's a bit misleading, but let's err on the side of restarting the
         // bad node until we have experience otherwise.
         if ((*next)->GetState().IsBad()) {
-          m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **next, inode, m_node));
+          m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, inode, m_node));
           state.GoPending();
           return;
         } else {
@@ -230,19 +230,19 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const IList& inod
         }
       } else {  // childCompare < 0
         g_log.debug() << "end-start child compare < 0";
-        int endCompare = m_node->GetConnector().INodeCompare((*child)->IEnd(), (*next)->IEnd());
+        int endCompare = m_node->GetIncParser().INodeCompare((*child)->IEnd(), (*next)->IEnd());
         if (endCompare < 0) {
           g_log.debug() << "Eliminating next, which is now passed";
           // We must enqueue an update on the child that still exists and still
           // needs to link up to a next node.  It's virtually a child update :)
           (*next)->ClearNode(inode);
           m_node->children.erase(next);
-          m_node->GetConnector().Enqueue(ParseAction(ParseAction::ChildUpdate, *m_node, inode, *child));
+          m_node->GetIncParser().Enqueue(ParseAction(ParseAction::ChildUpdate, *m_node, inode, *child));
           state.GoPending();
           return;
         } else {
           g_log.debug() << "Restarting next child to new, further-ahead location";
-          m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **next, inode, m_node));
+          m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, inode, m_node));
           state.GoPending();
           return;
         }

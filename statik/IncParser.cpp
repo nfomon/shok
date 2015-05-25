@@ -1,7 +1,7 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#include "Connector.h"
+#include "IncParser.h"
 
 #include "Grapher.h"
 #include "Hotlist.h"
@@ -25,7 +25,7 @@ using namespace statik;
 
 /* public */
 
-Connector::Connector(Rule& grammar, const string& name, const string& graphdir)
+IncParser::IncParser(Rule& grammar, const string& name, const string& graphdir)
   : m_rootRule(name, MakeComputeFunc_Root(name), MakeOutputFunc_Pass()),
     m_root(*this, m_rootRule, NULL, MakeComputeFunc_Root(name), MakeOutputFunc_Pass()),
     m_grammar(grammar),
@@ -40,7 +40,7 @@ Connector::Connector(Rule& grammar, const string& name, const string& graphdir)
   }
 }
 
-void Connector::ExtractHotlist(Hotlist& out_hotlist) {
+void IncParser::ExtractHotlist(Hotlist& out_hotlist) {
   g_log.debug() << "EXTRACT START: " << m_name;
   if (m_touchedNodes.find(&m_root) != m_touchedNodes.end()) {
     ComputeOutput_Update(m_root, out_hotlist);
@@ -53,30 +53,30 @@ void Connector::ExtractHotlist(Hotlist& out_hotlist) {
   }
 }
 
-Connector::listener_set Connector::GetListeners(const IList& x) const {
+IncParser::listener_set IncParser::GetListeners(const IList& x) const {
   return m_listeners.GetListeners(&x);
 }
 
-void Connector::Insert(const IList& inode) {
+void IncParser::Insert(const IList& inode) {
   Hotlist hotlist;
   hotlist.Insert(inode);
   UpdateWithHotlist(hotlist.GetHotlist());
 }
 
-void Connector::Delete(const IList& inode) {
+void IncParser::Delete(const IList& inode) {
   Hotlist hotlist;
   hotlist.Delete(inode);
   UpdateWithHotlist(hotlist.GetHotlist());
 }
 
-void Connector::Update(const IList& inode) {
+void IncParser::Update(const IList& inode) {
   Hotlist hotlist;
   hotlist.Update(inode);
   UpdateWithHotlist(hotlist.GetHotlist());
 }
 
-void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
-  g_log.info() << "Updating Connector " << m_name << " with hotlist of size " << hotlist.size();
+void IncParser::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
+  g_log.info() << "Updating IncParser " << m_name << " with hotlist of size " << hotlist.size();
   CleanupIfNeeded();
   for (Hotlist::hotlist_iter i = hotlist.begin(); i != hotlist.end(); ++i) {
     switch (i->second) {
@@ -93,11 +93,11 @@ void Connector::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
       throw SError("Cannot update with hotlist with unknown hot operation");
     }
   }
-  g_log.info() << "Done updating Connector " << m_name << " with hotlist that had size " << hotlist.size();
+  g_log.info() << "Done updating IncParser " << m_name << " with hotlist that had size " << hotlist.size();
 }
 
-void Connector::Enqueue(ParseAction action) {
-  g_log.info() << "Connector " << m_name << ": Enqueuing action " << ParseAction::UnMapAction(action.action) << " - " << *action.node << " at depth " << action.node->depth;
+void IncParser::Enqueue(ParseAction action) {
+  g_log.info() << "IncParser " << m_name << ": Enqueuing action " << ParseAction::UnMapAction(action.action) << " - " << *action.node << " at depth " << action.node->depth;
   int depth = action.node->depth;
   action_map::iterator ai = m_actions_by_depth.find(depth);
   if (m_actions_by_depth.end() == ai) {
@@ -110,7 +110,7 @@ void Connector::Enqueue(ParseAction action) {
   }
 }
 
-void Connector::ClearNode(STree& x) {
+void IncParser::ClearNode(STree& x) {
   m_listeners.RemoveAllListenings(&x);
   if (&x != &m_root) {
     g_san.debug() << "xx Unlinking node " << x << " - " << &x;
@@ -118,46 +118,46 @@ void Connector::ClearNode(STree& x) {
   }
 }
 
-void Connector::Listen(STree& x, const IList& inode) {
+void IncParser::Listen(STree& x, const IList& inode) {
   if (m_listeners.IsListening(&inode, &x)) {
-    g_log.info() << "Connector: " << x << " is already listening to " << inode;
+    g_log.info() << "IncParser: " << x << " is already listening to " << inode;
   } else {
-    g_log.info() << "Connector: " << x << " will listen to " << inode;
+    g_log.info() << "IncParser: " << x << " will listen to " << inode;
     m_listeners.AddListener(&inode, &x);
   }
 }
 
-void Connector::Unlisten(STree& x, const IList& inode) {
-  g_log.info() << "Connector: " << x << " will NOT listen to " << inode;
+void IncParser::Unlisten(STree& x, const IList& inode) {
+  g_log.info() << "IncParser: " << x << " will NOT listen to " << inode;
   m_listeners.RemoveListener(&inode, &x);
 }
 
-void Connector::UnlistenAll(STree& x) {
-  g_log.info() << "Connector " << m_name << ": Unlistening all from node " << x;
+void IncParser::UnlistenAll(STree& x) {
+  g_log.info() << "IncParser " << m_name << ": Unlistening all from node " << x;
   m_listeners.RemoveAllListenings(&x);
 }
 
-STree* Connector::OwnNode(auto_ptr<STree> node) {
-  g_log.debug() << "Connector " << m_name << ": Owning node " << string(*node);
+STree* IncParser::OwnNode(auto_ptr<STree> node) {
+  g_log.debug() << "IncParser " << m_name << ": Owning node " << string(*node);
   return m_nodePool.Insert(node);
 }
 
-const IList* Connector::GetFirstINode() const {
+const IList* IncParser::GetFirstINode() const {
   if (m_root.IsClear() || m_root.GetIConnection().IsClear()) {
     return NULL;
   }
   return &m_root.IStart();
 }
 
-const IList* Connector::GetFirstONode() const {
+const IList* IncParser::GetFirstONode() const {
   return m_root.GetOutputFunc().OStart();
 }
 
-void Connector::TouchNode(const STree& node) {
+void IncParser::TouchNode(const STree& node) {
   m_touchedNodes.insert(&node);
 }
 
-void Connector::DrawGraph(const STree& onode, const IList* inode, const Hotlist* hotlist, const STree* initiator) {
+void IncParser::DrawGraph(const STree& onode, const IList* inode, const Hotlist* hotlist, const STree* initiator) {
   if (!m_grapher.get()) {
     return;
   }
@@ -187,7 +187,7 @@ void Connector::DrawGraph(const STree& onode, const IList* inode, const Hotlist*
   m_grapher->SaveAndClear();
 }
 
-void Connector::SanityCheck() {
+void IncParser::SanityCheck() {
   g_log.debug() << "Sanity check " << m_sancount;
   g_san.info();
   g_san.info() << "Sanity check " << m_sancount;
@@ -195,7 +195,7 @@ void Connector::SanityCheck() {
   ++m_sancount;
 }
 
-void Connector::SanityCheck(const STree* s) const {
+void IncParser::SanityCheck(const STree* s) const {
   g_san.info() << "SNode: " << s;
   g_san.info() << ":: " << *s;
   if (!s->GetIConnection().IsClear()) {
@@ -236,12 +236,12 @@ void Connector::SanityCheck(const STree* s) const {
 
 /* private */
 
-const STree& Connector::GetRoot() const {
+const STree& IncParser::GetRoot() const {
   return m_root;
 }
 
-void Connector::InsertNode(const IList& inode) {
-  g_log.info() << "Connector " << m_name << ": Inserting IList: " << inode << " with " << (inode.left ? "left" : "no left") << " and " << (inode.right ? "with a right" : "no right");
+void IncParser::InsertNode(const IList& inode) {
+  g_log.info() << "IncParser " << m_name << ": Inserting IList: " << inode << " with " << (inode.left ? "left" : "no left") << " and " << (inode.right ? "with a right" : "no right");
   m_orderList.Insert(inode);
   if (m_grapher.get()) {
     if (GetFirstINode()) {
@@ -285,10 +285,10 @@ void Connector::InsertNode(const IList& inode) {
     m_root.GetState().GoBad();
   }
   // Stronger check: every inode has at least one listener :)
-  g_log.debug() << "Connector: Insert done";
+  g_log.debug() << "IncParser: Insert done";
 }
 
-void Connector::DeleteNode(const IList& inode) {
+void IncParser::DeleteNode(const IList& inode) {
   g_log.info() << "Deleting list inode " << inode;
   if (m_grapher.get()) {
     if (GetFirstINode()) {
@@ -300,18 +300,18 @@ void Connector::DeleteNode(const IList& inode) {
   }
 
   if (!inode.left && !inode.right) {
-    g_log.debug() << "Connector: Deleted node has no left or right; clearing root";
+    g_log.debug() << "IncParser: Deleted node has no left or right; clearing root";
     m_root.ClearNode(inode);
   } else {
     if (inode.left) {
-      g_log.debug() << "Connector: Deleted node has inode.left, so enqueuing INodeDelete actions on its listeners";
+      g_log.debug() << "IncParser: Deleted node has inode.left, so enqueuing INodeDelete actions on its listeners";
       listener_set listeners = m_listeners.GetListeners(inode.left);
       for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
         Enqueue(ParseAction(ParseAction::INodeDelete, **i, inode));
       }
     }
     listener_set listeners = m_listeners.GetListeners(&inode);
-    g_log.debug() << "Connector: Deleted node has listeners, so either clearing them or sending INodeDelete";
+    g_log.debug() << "IncParser: Deleted node has listeners, so either clearing them or sending INodeDelete";
     for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
       if (&(*i)->IStart() == &inode) {
         (*i)->ClearNode(inode);
@@ -324,22 +324,22 @@ void Connector::DeleteNode(const IList& inode) {
   ProcessActions();
   m_listeners.RemoveAllListeners(&inode);
   m_orderList.Delete(inode);
-  g_log.debug() << "Connector: Delete done";
+  g_log.debug() << "IncParser: Delete done";
 }
 
-void Connector::UpdateNode(const IList& inode) {
-  g_log.info() << "Connector " << m_name << ": Updating listeners of inode " << inode;
+void IncParser::UpdateNode(const IList& inode) {
+  g_log.info() << "IncParser " << m_name << ": Updating listeners of inode " << inode;
   listener_set listeners = m_listeners.GetListeners(&inode);
   for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
     Enqueue(ParseAction(ParseAction::INodeUpdate, **i, inode));
   }
 }
 
-void Connector::ProcessActions() {
+void IncParser::ProcessActions() {
   while (!m_actions_by_depth.empty()) {
     STree::depth_t depth = m_actions_by_depth.rbegin()->first;
     action_queue& actions = m_actions_by_depth.rbegin()->second;
-    g_log.debug() << "Connector " << m_name << ": Applying actions at depth " << depth;
+    g_log.debug() << "IncParser " << m_name << ": Applying actions at depth " << depth;
     while (m_actions_by_depth.rbegin()->first == depth && !actions.empty()) {
       ParseAction* a = &actions.front();
       actions.pop_front();
@@ -353,14 +353,14 @@ void Connector::ProcessActions() {
       }
     }
     if (m_actions_by_depth.at(depth).empty()) {
-      g_log.debug() << "Connector " << m_name << " Clearing actions at depth " << depth;
+      g_log.debug() << "IncParser " << m_name << " Clearing actions at depth " << depth;
       m_actions_by_depth.erase(depth);
     }
   }
 }
 
-void Connector::ComputeOutput_Update(const STree& node, Hotlist& out_hotlist) {
-  g_log.debug() << "Connector " << m_name << ": Computing output UPDATE for node " << node;
+void IncParser::ComputeOutput_Update(const STree& node, Hotlist& out_hotlist) {
+  g_log.debug() << "IncParser " << m_name << ": Computing output UPDATE for node " << node;
 
   node.GetOutputFunc()();
   const OutputState& os = node.GetOutputFunc().GetState();
@@ -424,8 +424,8 @@ void Connector::ComputeOutput_Update(const STree& node, Hotlist& out_hotlist) {
   node.GetOutputFunc().ConnectONodes();
 }
 
-void Connector::ComputeOutput_Insert(const STree& node, Hotlist& out_hotlist) {
-  g_log.debug() << "Connector " << m_name << ": Computing output INSERT for node " << node;
+void IncParser::ComputeOutput_Insert(const STree& node, Hotlist& out_hotlist) {
+  g_log.debug() << "IncParser " << m_name << ": Computing output INSERT for node " << node;
 
   node.GetOutputFunc()();
   const OutputState& os = node.GetOutputFunc().GetState();
@@ -448,8 +448,8 @@ void Connector::ComputeOutput_Insert(const STree& node, Hotlist& out_hotlist) {
   node.GetOutputFunc().ConnectONodes();
 }
 
-void Connector::ComputeOutput_Delete(const STree& node, Hotlist& out_hotlist) {
-  g_log.debug() << "Connector " << m_name << ": Computing output DELETE for node " << node;
+void IncParser::ComputeOutput_Delete(const STree& node, Hotlist& out_hotlist) {
+  g_log.debug() << "IncParser " << m_name << ": Computing output DELETE for node " << node;
 
   output_mod_iter posi = m_outputPerNode.find(&node);
   if (m_outputPerNode.end() == posi) {
@@ -468,9 +468,9 @@ void Connector::ComputeOutput_Delete(const STree& node, Hotlist& out_hotlist) {
   g_log.debug() << "Done computing DELETE output for node " << node << ".  Hotlist so far: " << out_hotlist.Print();
 }
 
-void Connector::CleanupIfNeeded() {
+void IncParser::CleanupIfNeeded() {
   if (m_needsCleanup) {
-    g_log.debug() << "Connector " << m_name << " - cleaning up";
+    g_log.debug() << "IncParser " << m_name << " - cleaning up";
     g_san.debug() << "Cleaning up pool: " << string(m_nodePool);
     m_nodePool.Cleanup();
     m_needsCleanup = false;
@@ -478,6 +478,6 @@ void Connector::CleanupIfNeeded() {
   }
 }
 
-int Connector::INodeCompare(const IList& a, const IList& b) const {
+int IncParser::INodeCompare(const IList& a, const IList& b) const {
   return m_orderList.Compare(a, b);
 }

@@ -3,7 +3,7 @@
 
 #include "STree.h"
 
-#include "Connector.h"
+#include "IncParser.h"
 #include "Rule.h"
 #include "SLog.h"
 
@@ -21,11 +21,11 @@ using namespace statik;
 
 /* public */
 
-STree::STree(Connector& connector,
+STree::STree(IncParser& incParser,
                const Rule& rule, STree* parent,
                auto_ptr<ComputeFunc> computeFunc,
                auto_ptr<OutputFunc> outputFunc)
-  : m_connector(connector),
+  : m_incParser(incParser),
     m_rule(rule),
     m_parent(parent),
     m_isClear(true),
@@ -43,8 +43,8 @@ void STree::StartNode(const IList& istart) {
   }
   m_isClear = false;
   m_iconnection.Restart(istart);
-  m_connector.DrawGraph(*this, &istart);
-  m_connector.Enqueue(ParseAction(ParseAction::Restart, *this, istart));
+  m_incParser.DrawGraph(*this, &istart);
+  m_incParser.Enqueue(ParseAction(ParseAction::Restart, *this, istart));
 }
 
 void STree::ComputeNode(ParseAction::Action action, const IList& inode, const STree* initiator) {
@@ -76,19 +76,19 @@ void STree::ComputeNode(ParseAction::Action action, const IList& inode, const ST
   bool hasChanged2 = old_state != m_state;
   bool hasChanged = hasChanged0 || hasChanged1 || hasChanged2;
   g_log.info() << " - - - - " << *this << " has " << (hasChanged ? "" : "NOT ") << "changed  " << hasChanged1 << ":" << hasChanged2;
-  m_connector.TouchNode(*this);
+  m_incParser.TouchNode(*this);
   if (hasChanged && !m_isClear && m_parent && !m_state.IsPending()) {
     ParseAction::Action a = ParseAction::ChildUpdate;
-    m_connector.Enqueue(ParseAction(a, *m_parent, inode, this));
+    m_incParser.Enqueue(ParseAction(a, *m_parent, inode, this));
   }
-  m_connector.DrawGraph(*this, &inode, NULL, initiator);
+  m_incParser.DrawGraph(*this, &inode, NULL, initiator);
 }
 
 void STree::ClearNode(const IList& inode) {
   g_log.info() << "Clearing node " << *this;
   if (m_parent) {
     // The size we report is irrelevant; cleared nodes do not need to report how their IEnd changes
-    m_connector.Enqueue(ParseAction(ParseAction::ChildUpdate, *m_parent, inode, this));
+    m_incParser.Enqueue(ParseAction(ParseAction::ChildUpdate, *m_parent, inode, this));
   }
   ClearSubNode();
 }
@@ -164,8 +164,8 @@ void STree::ClearSubNode() {
   children.clear();
   m_state.Clear();
   m_iconnection.Clear();
-  m_connector.TouchNode(*this);
-  m_connector.ClearNode(*this);
+  m_incParser.TouchNode(*this);
+  m_incParser.ClearNode(*this);
   m_isClear = true;
 }
 

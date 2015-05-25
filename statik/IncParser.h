@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _statik_Connector_h_
-#define _statik_Connector_h_
+#ifndef _statik_IncParser_h_
+#define _statik_IncParser_h_
 
 #include "Hotlist.h"
 #include "IList.h"
@@ -22,12 +22,12 @@ namespace statik {
 
 class Grapher;
 
-class Connector {
+class IncParser {
 public:
   typedef typename ListenerTable<const IList*, STree*>::listener_set listener_set;
   typedef typename ListenerTable<const IList*, STree*>::listener_iter listener_iter;
 
-  Connector(Rule& rule, const std::string& name = "", const std::string& graphdir = "");
+  IncParser(Rule& grammar, const std::string& name = "", const std::string& graphdir = "");
 
   const STree& GetRoot() const; // for tests
   const State& GetState() const;
@@ -57,7 +57,7 @@ public:
   // Called from a node that's being restarted, to cancel all its listening
   void UnlistenAll(STree& x);
 
-  // Connector owns the STree nodes.  This allows a ComputeFunc() to "unlink" a
+  // IncParser owns the STree nodes.  This allows a ComputeFunc() to "unlink" a
   // node from the tree before it is actually deleted, so that an OutputFunc()
   // can refer to its destruction safely.
   STree* OwnNode(std::auto_ptr<STree> node);
@@ -123,4 +123,4 @@ private:
 
 }
 
-#endif // _statik_Connector_h_
+#endif // _statik_IncParser_h_

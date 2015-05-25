@@ -17,7 +17,7 @@
 
 namespace statik {
 
-class Connector;
+class IncParser;
 class Rule;
 
 class STree {
@@ -28,7 +28,7 @@ public:
   typedef child_vec::iterator child_mod_iter;
 
 private:
-  Connector& m_connector;
+  IncParser& m_incParser;
   const Rule& m_rule;
   State m_state;
   STree* m_parent;
@@ -38,7 +38,7 @@ public:
   child_vec children;
   depth_t depth;
 
-  STree(Connector& connector,
+  STree(IncParser& incParser,
          const Rule& rule, STree* parent,
          std::auto_ptr<ComputeFunc> computeFunc,
          std::auto_ptr<OutputFunc> outputFunc);
@@ -50,7 +50,7 @@ public:
   bool IsClear() const { return m_isClear; }
   const State& GetState() const { return m_state; }
   State& GetState() { return m_state; }
-  Connector& GetConnector() const { return m_connector; }
+  IncParser& GetIncParser() const { return m_incParser; }
   const Rule& GetRule() const { return m_rule; }
   STree* GetParent() const { return m_parent; }
   const IList& IStart() const { return m_iconnection.Start(); }

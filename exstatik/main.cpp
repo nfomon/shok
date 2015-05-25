@@ -8,10 +8,10 @@
 #include "Lexer.h"
 #include "Parser.h"
 
-#include "statik/Connector.h"
 #include "statik/Grapher.h"
 #include "statik/Hotlist.h"
 #include "statik/IList.h"
+#include "statik/IncParser.h"
 #include "statik/Rule.h"
 #include "statik/SError.h"
 #include "statik/SLog.h"
@@ -77,12 +77,12 @@ int main(int argc, char *argv[]) {
     if (compiler->empty()) {
       throw statik::SError("Empty compiler; nothing to do");
     }
-    typedef boost::ptr_vector<Connector> connector_vec;
-    typedef connector_vec::iterator connector_mod_iter;
-    connector_vec connectors;
+    typedef boost::ptr_vector<IncParser> parser_vec;
+    typedef parser_vec::iterator parser_mod_iter;
+    parser_vec parsers;
     for (Compiler_mod_iter i = compiler->begin(); i != compiler->end(); ++i) {
       g_log.info() << "Compiler item: " << i->Print();
-      connectors.push_back(new Connector(*i, i->Name(), graphdir));
+      parsers.push_back(new IncParser(*i, i->Name(), graphdir));
     }
 
     IList* start = NULL;
@@ -121,15 +121,15 @@ int main(int argc, char *argv[]) {
         if (s->right) {
           s->right->left = s->left;
         }
-        connectors.at(0).Delete(*s);
+        parsers.at(0).Delete(*s);
         Hotlist hotlist;
-        connectors.front().ExtractHotlist(hotlist);
-        for (connector_mod_iter i = connectors.begin()+1; i != connectors.end(); ++i) {
+        parsers.front().ExtractHotlist(hotlist);
+        for (parser_mod_iter i = parsers.begin()+1; i != parsers.end(); ++i) {
           if (hotlist.IsEmpty()) {
-            g_log.info() << "* main: Connector returned no hotlist items.";
+            g_log.info() << "* main: IncParser returned no hotlist items.";
             break;
           } else {
-            g_log.info() << "* main: Connector returned hotlist; sending to parser.  Hotlist:" << hotlist.Print();
+            g_log.info() << "* main: IncParser returned hotlist; sending to parser.  Hotlist:" << hotlist.Print();
             i->UpdateWithHotlist(hotlist.GetHotlist());
             i->ExtractHotlist(hotlist);
           }
@@ -145,15 +145,15 @@ int main(int argc, char *argv[]) {
         }
         g_log.info();
         g_log.info() << "* main: Inserting character '" << *c;
-        connectors.at(0).Insert(*c);
+        parsers.at(0).Insert(*c);
         Hotlist hotlist;
-        connectors.front().ExtractHotlist(hotlist);
-        for (connector_mod_iter i = connectors.begin()+1; i != connectors.end(); ++i) {
+        parsers.front().ExtractHotlist(hotlist);
+        for (parser_mod_iter i = parsers.begin()+1; i != parsers.end(); ++i) {
           if (hotlist.IsEmpty()) {
-            g_log.info() << "* main: Connector returned no hotlist items.";
+            g_log.info() << "* main: IncParser returned no hotlist items.";
             break;
           } else {
-            g_log.info() << "* main: Connector returned hotlist; sending to parser.  Hotlist:" << hotlist.Print();
+            g_log.info() << "* main: IncParser returned hotlist; sending to parser.  Hotlist:" << hotlist.Print();
             i->UpdateWithHotlist(hotlist.GetHotlist());
             i->ExtractHotlist(hotlist);
           }

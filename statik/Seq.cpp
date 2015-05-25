@@ -3,7 +3,7 @@
 
 #include "Seq.h"
 
-#include "Connector.h"
+#include "IncParser.h"
 #include "OutputFunc.h"
 #include "SLog.h"
 #include "STree.h"
@@ -69,7 +69,7 @@ void ComputeFunc_Seq::operator() (ParseAction::Action action, const IList& inode
       } else if (prev_child->GetState().IsPending()) {
         throw SError("Cannot investigate pending child");
       }
-      m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **next, prev_child->IEnd(), m_node));
+      m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, prev_child->IEnd(), m_node));
       state.GoOK();
       return;
     } 
@@ -95,7 +95,7 @@ void ComputeFunc_Seq::operator() (ParseAction::Action action, const IList& inode
           // Clear and Restart the next child
           g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child grew, so clearing and restarting next, which is " << **next;
           (*next)->ClearNode(inode);
-          m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
+          m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
           state.GoOK();
           return;
         }
@@ -111,7 +111,7 @@ void ComputeFunc_Seq::operator() (ParseAction::Action action, const IList& inode
       g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child shrank, so restarting next without clearing it";
       if (next != m_node->children.end()) {
         // Restart the next child
-        m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
+        m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
         state.GoOK();
         return;
       } else if (child_index != m_node->GetRule().GetChildren().size() - 1) {
@@ -126,7 +126,7 @@ void ComputeFunc_Seq::operator() (ParseAction::Action action, const IList& inode
       g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child update, but did not change size.  Make sure its next connection is correct";
       if (next != m_node->children.end()) {
         if (&(*child)->IEnd() != &(*next)->IStart()) {
-          m_node->GetConnector().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
+          m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
           state.GoOK();
           return;
         }
