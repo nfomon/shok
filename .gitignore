@@ -1,6 +1,8 @@
 *.py[cod]
 
 # shok
+build-aux
+config.h.in~
 lexer/shok_lexer
 parser/shok_parser
 c2/shok_c2
@@ -11,6 +13,13 @@ parser.log
 compiler.log
 vm.log
 graphs
+log.log
+slog.log
+slog.log_sanity
+g
+istatik/istatik
+exstatik/exstatik
+statik/test/statik_test
 
 # C extensions
 *.so
