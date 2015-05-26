@@ -1,6 +1,4 @@
 STATIK_SRCS = \
-    ComputeFunc.h \
-    ConnectorAction.h \
     Grapher.cpp \
     Grapher.h \
     Hotlist.cpp \
@@ -24,6 +22,8 @@ STATIK_SRCS = \
     OrderList.h \
     OutputFunc.cpp \
     OutputFunc.h \
+    ParseAction.h \
+    ParseFunc.h \
     Regexp.cpp \
     Regexp.h \
     Root.cpp \
