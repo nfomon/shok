@@ -6,6 +6,9 @@
 #include "ParserWindow.h"
 #include "InputWindow.h"
 
+#include "statik/Rule.h"
+
+#include <climits>
 #include <curses.h>
 #include <panel.h>
 #include <signal.h>
@@ -15,8 +18,10 @@
 using boost::ptr_vector;
 
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
+using std::auto_ptr;
 using std::endl;
 using std::string;
 using std::vector;
@@ -27,11 +32,7 @@ using namespace istatik;
 
 IStatik::IStatik(const string& compiler_name, const string& graphdir)
   : m_compiler_name(compiler_name),
-    m_graphdir(graphdir),
-    m_compiler(exstatik::MakeCompiler(m_compiler_name)) {
-  if (m_compiler->size() < 1) {
-    throw ISError("Cannot use empty Compiler " + m_compiler_name);
-  }
+    m_graphdir(graphdir) {
 }
 
 IStatik::~IStatik() {
@@ -41,7 +42,12 @@ IStatik::~IStatik() {
 void IStatik::run() {
   (void) signal(SIGINT, finish);
 
-  InitScreen();
+  auto_ptr<exstatik::Compiler> compiler = exstatik::MakeCompiler(m_compiler_name);
+  if (!compiler.get() || compiler->empty()) {
+    throw ISError("Cannot use empty Compiler " + m_compiler_name);
+  }
+
+  InitScreen(compiler->size());
 
   int inrows, incols;
   (void) getmaxyx(m_windows.at(0), inrows, incols);
@@ -50,10 +56,12 @@ void IStatik::run() {
   typedef ptr_vector<ParserWindow> parserWindow_vec;
   typedef parserWindow_vec::iterator parserWindow_mod_iter;
   ptr_vector<ParserWindow> parserWindows;
-  for (exstatik::Compiler_mod_iter i = m_compiler->begin();
-       i != m_compiler->end(); ++i) {
-    g_log.info() << "Adding parser window for " << i->Name();
-    parserWindows.push_back(new ParserWindow(*i, m_graphdir));
+
+  for (size_t i = 0; i < compiler->size(); ++i) {
+    exstatik::Compiler::auto_type c = compiler->release(compiler->begin());
+    string name = c->Name();
+    g_log.info() << "Adding parser window for " << name;
+    parserWindows.push_back(new ParserWindow(auto_ptr<statik::Rule>(c.release()), name, m_graphdir));
   }
 
   bool done = false;
@@ -97,7 +105,7 @@ void IStatik::finish(int sig) {
 
 /* private */
 
-void IStatik::InitScreen() {
+void IStatik::InitScreen(size_t numParsers) {
   (void) initscr();
   (void) cbreak();
   (void) noecho();
@@ -105,7 +113,10 @@ void IStatik::InitScreen() {
   int nrows, ncols;
   (void) getmaxyx(stdscr, nrows, ncols);
 
-  int numWindows = m_compiler->size() + 1;
+  if (numParsers >= INT_MAX) {
+    throw ISError("Too many parsers");
+  }
+  int numWindows = (int)numParsers + 1;
   int h = (nrows - numWindows) / numWindows;
   g_log.debug() << numWindows << " windows with h=" << h;
 

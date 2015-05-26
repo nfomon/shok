@@ -42,6 +42,9 @@ public:
       std::auto_ptr<OutputFunc>);
   ~Rule();
 
+  std::auto_ptr<ParseFunc> CloneParseFunc() const;
+  std::auto_ptr<OutputFunc> CloneOutputFunc() const;
+
   Rule& SetParseFunc(std::auto_ptr<ParseFunc> parseFunc);
   Rule& SetOutputFunc(std::auto_ptr<OutputFunc> outputFunc);
   Rule* SilenceOutput();

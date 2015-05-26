@@ -16,6 +16,7 @@
 
 #include <deque>
 #include <map>
+#include <memory>
 #include <set>
 
 namespace statik {
@@ -27,7 +28,9 @@ public:
   typedef typename ListenerTable<const List*, STree*>::listener_set listener_set;
   typedef typename ListenerTable<const List*, STree*>::listener_iter listener_iter;
 
-  IncParser(Rule& grammar, const std::string& name = "", const std::string& graphdir = "");
+  IncParser(std::auto_ptr<Rule> grammar,
+            const std::string& name = "",
+            const std::string& graphdir = "");
 
   const STree& GetRoot() const; // for tests
   const State& GetState() const;
@@ -105,7 +108,6 @@ private:
 
   Rule m_rootRule; // Rule for the Root node
   STree m_root; // Root of the parse tree
-  Rule& m_grammar; // Root of the grammar graph
   std::string m_name;
   bool m_needsCleanup;
   std::auto_ptr<Grapher> m_grapher;

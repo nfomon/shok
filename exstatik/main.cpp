@@ -74,15 +74,17 @@ int main(int argc, char *argv[]) {
     }
 
     auto_ptr<Compiler> compiler = MakeCompiler(compilerName);
-    if (compiler->empty()) {
+    if (!compiler.get() || compiler->empty()) {
       throw statik::SError("Empty compiler; nothing to do");
     }
     typedef boost::ptr_vector<IncParser> parser_vec;
     typedef parser_vec::iterator parser_mod_iter;
     parser_vec parsers;
-    for (Compiler_mod_iter i = compiler->begin(); i != compiler->end(); ++i) {
-      g_log.info() << "Compiler item: " << i->Print();
-      parsers.push_back(new IncParser(*i, i->Name(), graphdir));
+    for (size_t i = 0; i < compiler->size(); ++i) {
+      Compiler::auto_type c = compiler->release(compiler->begin());
+      g_log.info() << "Compiler item: " << c->Print();
+      string name = c->Name();
+      parsers.push_back(new IncParser(auto_ptr<Rule>(c.release()), name, graphdir));
     }
 
     List* start = NULL;

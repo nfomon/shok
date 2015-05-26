@@ -13,11 +13,15 @@
 
 #include <boost/noncopyable.hpp>
 
+#include <memory>
+
 namespace istatik {
 
 class ParserWindow : private boost::noncopyable {
 public:
-  ParserWindow(statik::Rule& rule, const std::string& graphdir);
+  ParserWindow(std::auto_ptr<statik::Rule> rule,
+               const std::string& name,
+               const std::string& graphdir);
   WindowResponse Input(const statik::Hotlist& hotlist);
 private:
   statik::IncParser m_incParser;

@@ -23,7 +23,7 @@ void Keyword::run() {
     bool p = false;
     try {
       auto_ptr<statik::Rule> r(KEYWORD(""));
-      statik::IncParser ip(*r.get(), "test1");
+      statik::IncParser ip(r, "test1");
     } catch (const statik::SError& e) {
       p = true;
     }
@@ -33,7 +33,7 @@ void Keyword::run() {
   // Single-character keyword
   {
     auto_ptr<statik::Rule> r(KEYWORD("a"));
-    statik::IncParser ip(*r.get(), "test2");
+    statik::IncParser ip(r, "test2");
 
     statik::List c1("1", "x");
     ip.Insert(c1);

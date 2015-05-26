@@ -22,16 +22,15 @@ using namespace statik;
 /* public */
 
 STree::STree(IncParser& incParser,
-               const Rule& rule, STree* parent,
-               auto_ptr<ParseFunc> parseFunc,
-               auto_ptr<OutputFunc> outputFunc)
+               const Rule& rule,
+               STree* parent)
   : m_incParser(incParser),
     m_rule(rule),
     m_parent(parent),
+    m_depth(m_parent ? m_parent->GetDepth() + 1 : 0),
     m_isClear(true),
-    depth(m_parent ? m_parent->depth + 1 : 0),
-    m_parseFunc(parseFunc),
-    m_outputFunc(outputFunc) {
+    m_parseFunc(rule.CloneParseFunc()),
+    m_outputFunc(rule.CloneOutputFunc()) {
   m_parseFunc->Init(*this);
   m_outputFunc->Init(*this);
 }

@@ -25,13 +25,12 @@ public:
 private:
   static void finish(int sig);
 
-  void InitScreen();
+  void InitScreen(size_t numParsers);
   void UpdateWindow(int window_index,
                     const WindowResponse::action_vec& actions);
 
   std::string m_compiler_name;
   std::string m_graphdir;
-  std::auto_ptr<exstatik::Compiler> m_compiler;
   std::vector<WINDOW*> m_windows;
   std::vector<int> m_windowSizes;
 };

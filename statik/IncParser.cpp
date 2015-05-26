@@ -25,14 +25,15 @@ using namespace statik;
 
 /* public */
 
-IncParser::IncParser(Rule& grammar, const string& name, const string& graphdir)
+IncParser::IncParser(auto_ptr<Rule> grammar,
+                     const string& name,
+                     const string& graphdir)
   : m_rootRule(name, MakeParseFunc_Root(name), MakeOutputFunc_Pass()),
-    m_root(*this, m_rootRule, NULL, MakeParseFunc_Root(name), MakeOutputFunc_Pass()),
-    m_grammar(grammar),
+    m_root(*this, m_rootRule, /*parent*/ NULL),
     m_name(name),
     m_needsCleanup(false),
     m_sancount(0) {
-  m_rootRule.AddChildRecursive(&m_grammar); // not "recursive", just unowned
+  m_rootRule.AddChild(grammar);
   if (!graphdir.empty()) {
     m_grapher.reset(new Grapher(graphdir, string(name + "_")));
     m_grapher->AddMachine(name, m_rootRule);
@@ -97,8 +98,8 @@ void IncParser::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
 }
 
 void IncParser::Enqueue(ParseAction action) {
-  g_log.info() << "IncParser " << m_name << ": Enqueuing action " << ParseAction::UnMapAction(action.action) << " - " << *action.node << " at depth " << action.node->depth;
-  int depth = action.node->depth;
+  g_log.info() << "IncParser " << m_name << ": Enqueuing action " << ParseAction::UnMapAction(action.action) << " - " << *action.node << " at depth " << action.node->GetDepth();
+  int depth = action.node->GetDepth();
   action_map::iterator ai = m_actions_by_depth.find(depth);
   if (m_actions_by_depth.end() == ai) {
     action_queue actions;
@@ -260,11 +261,7 @@ void IncParser::InsertNode(const List& inode) {
       g_log.debug() << " - Found left inode " << *inode.left << ": updating listeners of " << inode << "'s left and (if present) right";
       listener_set listeners = m_listeners.GetListeners(inode.left);
       for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
-        //if ((*i)->GetState().IsBad() || (*i)->GetState().IsComplete()) {
-        //  g_log.debug() << "Not enqueueing INodeInsert for left listener " << **i << " because it is bad or complete";
-        //} else {
-          Enqueue(ParseAction(ParseAction::INodeInsert, **i, inode));
-        //}
+        Enqueue(ParseAction(ParseAction::INodeInsert, **i, inode));
       }
       if (inode.right) {
         listeners = m_listeners.GetListeners(inode.right);

@@ -48,6 +48,14 @@ Rule::~Rule() {
   }
 }
 
+auto_ptr<ParseFunc> Rule::CloneParseFunc() const {
+  return m_parseFunc->Clone();
+}
+
+auto_ptr<OutputFunc> Rule::CloneOutputFunc() const {
+  return m_outputFunc->Clone();
+}
+
 Rule& Rule::SetParseFunc(auto_ptr<ParseFunc> parseFunc) {
   m_parseFunc = parseFunc;
   return *this;
@@ -73,7 +81,7 @@ STree* Rule::MakeNode(STree& parent, const List& istart) const {
 }
 
 STree* Rule::MakeNode(STree& parent, const List& istart, STree::child_mod_iter insertPos) const {
-  auto_ptr<STree> node(new STree(parent.GetIncParser(), *this, &parent, m_parseFunc->Clone(), m_outputFunc->Clone()));
+  auto_ptr<STree> node(new STree(parent.GetIncParser(), *this, &parent));
   g_log.debug() << "Rule " << m_name << " making node " << *node.get() << " under parent that had " << parent.children.size() << " children";
   STree* r = parent.GetIncParser().OwnNode(node);
   parent.children.insert(insertPos, r);

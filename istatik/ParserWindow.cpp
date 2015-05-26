@@ -7,16 +7,20 @@
 
 #include "statik/List.h"
 
+#include <memory>
 #include <string>
 #include <iostream>
+using std::auto_ptr;
 using std::endl;
 using std::string;
 
 using namespace istatik;
 
-ParserWindow::ParserWindow(statik::Rule& rule, const string& graphdir)
-  : m_incParser(rule, rule.Name(), graphdir) {
-  g_log.info() << "Initialized ParserWindow for " << rule;
+ParserWindow::ParserWindow(auto_ptr<statik::Rule> rule,
+                           const string& name,
+                           const string& graphdir)
+  : m_incParser(rule, name, graphdir) {
+  g_log.info() << "Initialized ParserWindow " << name;
 }
 
 WindowResponse ParserWindow::Input(const statik::Hotlist& ihotlist) {

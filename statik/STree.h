@@ -28,21 +28,14 @@ public:
   typedef child_vec::const_iterator child_iter;
   typedef child_vec::iterator child_mod_iter;
 
-private:
-  IncParser& m_incParser;
-  const Rule& m_rule;
-  State m_state;
-  STree* m_parent;
-  bool m_isClear;
-
 public:
   child_vec children;
-  depth_t depth;
 
   STree(IncParser& incParser,
-         const Rule& rule, STree* parent,
-         std::auto_ptr<ParseFunc> parseFunc,
-         std::auto_ptr<OutputFunc> outputFunc);
+         const Rule& rule,
+         STree* parent);
+
+  depth_t GetDepth() const { return m_depth; }
 
   void StartNode(const List& istart);
   void ParseNode(ParseAction::Action action, const List& inode, const STree* initiator);
@@ -65,6 +58,12 @@ public:
   std::string DrawNode(const std::string& context, const STree* initiator = NULL) const;
 
 private:
+  IncParser& m_incParser;
+  const Rule& m_rule;
+  STree* m_parent;
+  depth_t m_depth;
+  bool m_isClear;
+  State m_state;
   IConnection m_iconnection;
   std::auto_ptr<ParseFunc> m_parseFunc;
   std::auto_ptr<OutputFunc> m_outputFunc;
