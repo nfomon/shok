@@ -6,8 +6,17 @@
 
 /* Production rules
  *
- * A Rule represents a node of a parser-machine graph.  In essence it is a
- * factory for STree nodes which represent the process of the parse attempt.
+ * A Rule is a node in a grammar tree: the description of the grammar we intend
+ * to parse.  Note that the "tree" allows recursive back-edges.
+ * A Rule is parameterized by two functions:
+ *  - ParseFunc: Indicates how to parse this node.
+ *  - OutputFunc: Characterizes the output of a successful parse.
+ *
+ * From the Rule, we can generate STree nodes, which represents the actual
+ * attempt to parse the input.  So the Rule serves as a "factory" template for
+ * its STree nodes.  Its ParseFunc and OutputFunc are mere prototypes, not
+ * intended to be used, but we will Clone() them to provide an STree node via
+ * the MakeNode() method.
  */
 
 #include "ComputeFunc.h"
@@ -27,8 +36,6 @@ class Rule {
 public:
   typedef std::vector<Rule*> child_vec;
   typedef child_vec::const_iterator child_iter;
-  typedef std::vector<bool> childOwnership_vec;
-  typedef childOwnership_vec::const_iterator childOwnership_iter;
 
   Rule(const std::string& name,
       std::auto_ptr<ComputeFunc>,
@@ -52,15 +59,13 @@ public:
   std::string Print() const;
   std::string DrawNode(const std::string& context) const;
 
-protected:
-  void setParent(Rule* parent) {
-    m_parent = parent;
-  }
+private:
+  typedef std::vector<bool> childOwnership_vec;
+  typedef childOwnership_vec::const_iterator childOwnership_iter;
 
   std::string m_name;
   std::auto_ptr<ComputeFunc> m_computeFunc;
   std::auto_ptr<OutputFunc> m_outputFunc;
-  Rule* m_parent;
   child_vec m_children;
   // Same length as m_children.  True where a child is owned (should be deleted
   // at destruction time), false otherwise.

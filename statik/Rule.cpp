@@ -33,8 +33,7 @@ Rule::Rule(const string& name,
            auto_ptr<OutputFunc> outputFunc)
   : m_name(name),
     m_computeFunc(computeFunc),
-    m_outputFunc(outputFunc),
-    m_parent(NULL) {
+    m_outputFunc(outputFunc) {
 }
 
 Rule::~Rule() {
@@ -83,14 +82,12 @@ STree* Rule::MakeNode(STree& parent, const List& istart, STree::child_mod_iter i
 }
 
 Rule* Rule::AddChild(auto_ptr<Rule> child) {
-  child->setParent(this);
   m_children.push_back(child.release());
   m_childOwnership.push_back(true);
   return m_children.back();
 }
 
 Rule* Rule::AddChildRecursive(Rule* child) {
-  child->setParent(this);
   m_children.push_back(child);
   m_childOwnership.push_back(false);
   return m_children.back();
