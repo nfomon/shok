@@ -26,8 +26,8 @@ using namespace statik;
 /* public */
 
 IncParser::IncParser(Rule& grammar, const string& name, const string& graphdir)
-  : m_rootRule(name, MakeComputeFunc_Root(name), MakeOutputFunc_Pass()),
-    m_root(*this, m_rootRule, NULL, MakeComputeFunc_Root(name), MakeOutputFunc_Pass()),
+  : m_rootRule(name, MakeParseFunc_Root(name), MakeOutputFunc_Pass()),
+    m_root(*this, m_rootRule, NULL, MakeParseFunc_Root(name), MakeOutputFunc_Pass()),
     m_grammar(grammar),
     m_name(name),
     m_needsCleanup(false),
@@ -349,7 +349,7 @@ void IncParser::ProcessActions() {
         }
         a->node->StartNode(*a->inode);
       } else {
-        a->node->ComputeNode(a->action, *a->inode, a->initiator);
+        a->node->ParseNode(a->action, *a->inode, a->initiator);
       }
     }
     if (m_actions_by_depth.at(depth).empty()) {

@@ -19,9 +19,9 @@
  * the MakeNode() method.
  */
 
-#include "ComputeFunc.h"
 #include "List.h"
 #include "OutputFunc.h"
+#include "ParseFunc.h"
 #include "STree.h"
 #include "State.h"
 
@@ -38,11 +38,11 @@ public:
   typedef child_vec::const_iterator child_iter;
 
   Rule(const std::string& name,
-      std::auto_ptr<ComputeFunc>,
+      std::auto_ptr<ParseFunc>,
       std::auto_ptr<OutputFunc>);
   ~Rule();
 
-  Rule& SetComputeFunc(std::auto_ptr<ComputeFunc> computeFunc);
+  Rule& SetParseFunc(std::auto_ptr<ParseFunc> parseFunc);
   Rule& SetOutputFunc(std::auto_ptr<OutputFunc> outputFunc);
   Rule* SilenceOutput();
   Rule* CapOutput(const std::string& cap);
@@ -64,7 +64,7 @@ private:
   typedef childOwnership_vec::const_iterator childOwnership_iter;
 
   std::string m_name;
-  std::auto_ptr<ComputeFunc> m_computeFunc;
+  std::auto_ptr<ParseFunc> m_parseFunc;
   std::auto_ptr<OutputFunc> m_outputFunc;
   child_vec m_children;
   // Same length as m_children.  True where a child is owned (should be deleted

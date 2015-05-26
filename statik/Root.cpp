@@ -16,16 +16,16 @@ using std::string;
 
 using namespace statik;
 
-auto_ptr<ComputeFunc> statik::MakeComputeFunc_Root(const string& name) {
-  return auto_ptr<ComputeFunc>(new ComputeFunc_Root(name));
+auto_ptr<ParseFunc> statik::MakeParseFunc_Root(const string& name) {
+  return auto_ptr<ParseFunc>(new ParseFunc_Root(name));
 }
 
-ComputeFunc_Root::ComputeFunc_Root(const string& name)
+ParseFunc_Root::ParseFunc_Root(const string& name)
   : m_name(name) {
 }
 
-void ComputeFunc_Root::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
-  g_log.info() << "Computing Root at " << *m_node << " with inode " << inode << " and action " << ParseAction::UnMapAction(action);
+void ParseFunc_Root::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
+  g_log.info() << "Parsing Root at " << *m_node << " with inode " << inode << " and action " << ParseAction::UnMapAction(action);
   State& state = m_node->GetState();
   if (m_node->children.empty()) {
     if (inode.right && !inode.right->left) {

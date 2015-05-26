@@ -4,9 +4,9 @@
 #ifndef _statik_Or_h_
 #define _statik_Or_h_
 
-#include "ComputeFunc.h"
 #include "List.h"
 #include "ParseAction.h"
+#include "ParseFunc.h"
 #include "Rule.h"
 #include "STree.h"
 
@@ -17,15 +17,15 @@ namespace statik {
 
 std::auto_ptr<Rule> OR(const std::string& name);
 
-struct ComputeFunc_Or : public ComputeFunc {
-  virtual ~ComputeFunc_Or() {}
+struct ParseFunc_Or : public ParseFunc {
+  virtual ~ParseFunc_Or() {}
   virtual void operator() (ParseAction::Action action, const List& inode, const STree* initiator);
-  virtual std::auto_ptr<ComputeFunc> Clone() {
-    return std::auto_ptr<ComputeFunc>(new ComputeFunc_Or());
+  virtual std::auto_ptr<ParseFunc> Clone() {
+    return std::auto_ptr<ParseFunc>(new ParseFunc_Or());
   }
 };
 
-std::auto_ptr<ComputeFunc> MakeComputeFunc_Or();
+std::auto_ptr<ParseFunc> MakeParseFunc_Or();
 
 }
 

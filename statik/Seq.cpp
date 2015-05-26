@@ -19,17 +19,17 @@ using namespace statik;
 
 auto_ptr<Rule> statik::SEQ(const string& name) {
   return auto_ptr<Rule>(new Rule(name,
-      MakeComputeFunc_Seq(),
+      MakeParseFunc_Seq(),
       MakeOutputFunc_Sequence()));
 }
 
-auto_ptr<ComputeFunc> statik::MakeComputeFunc_Seq() {
-  return auto_ptr<ComputeFunc>(new ComputeFunc_Seq());
+auto_ptr<ParseFunc> statik::MakeParseFunc_Seq() {
+  return auto_ptr<ParseFunc>(new ParseFunc_Seq());
 }
 
-void ComputeFunc_Seq::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
+void ParseFunc_Seq::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
   // Process
-  g_log.debug() << "Computing Seq at " << *m_node << " with initiator " << (initiator ? string(*initiator) : "<null>");
+  g_log.debug() << "Parsing Seq at " << *m_node << " with initiator " << (initiator ? string(*initiator) : "<null>");
 
   if (m_node->children.empty()) {
     throw SError("SeqRule::Update: Seq node " + string(*m_node) + " must have children");
@@ -53,7 +53,7 @@ void ComputeFunc_Seq::operator() (ParseAction::Action action, const List& inode,
     ++child_index;
   }
   if (!foundInitiator) {
-    throw SError("ComputeFunc_Seq at " + string(*m_node) + " provided an initiator which is not a child");
+    throw SError("ParseFunc_Seq at " + string(*m_node) + " provided an initiator which is not a child");
   }
 
   // What happened to the initiator child?  Cleared / Shrank / Stayed / Grew
@@ -61,7 +61,7 @@ void ComputeFunc_Seq::operator() (ParseAction::Action action, const List& inode,
   const State& childState = (*child)->GetState();
   STree::child_mod_iter next = child+1;
   if ((*child)->IsClear()) {
-    g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child was cleared, so restarting next";
+    g_log.debug() << "ParseFunc_Seq at " << *m_node << ": Child was cleared, so restarting next";
     if (next != m_node->children.end()) {
       if (!prev_child) {
         m_node->ClearNode(inode);
@@ -76,7 +76,7 @@ void ComputeFunc_Seq::operator() (ParseAction::Action action, const List& inode,
     // This is safe down here because the above just enqueues stuff, nothing else.
     m_node->children.erase(child);
   } else if (!childState.IsComplete()) {
-    g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child is not complete, so not fixing its next connections";
+    g_log.debug() << "ParseFunc_Seq at " << *m_node << ": Child is not complete, so not fixing its next connections";
     if (next != m_node->children.end() && !(*child)->IEnd().right) {
       g_log.debug() << " - but we're at end of input, so clear all subsequent children";
       for (STree::child_mod_iter i = next; i != m_node->children.end(); ++i) {
@@ -90,17 +90,17 @@ void ComputeFunc_Seq::operator() (ParseAction::Action action, const List& inode,
     case ParseAction::ChildGrow: {
       if (next != m_node->children.end()) {
         if (&(*child)->IEnd() == &(*next)->IStart()) {
-          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child grew, but next node is already in the right spot";
+          g_log.debug() << "ParseFunc_Star at " << *m_node << ": Child grew, but next node is already in the right spot";
         } else {
           // Clear and Restart the next child
-          g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child grew, so clearing and restarting next, which is " << **next;
+          g_log.debug() << "ParseFunc_Seq at " << *m_node << ": Child grew, so clearing and restarting next, which is " << **next;
           (*next)->ClearNode(inode);
           m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
           state.GoOK();
           return;
         }
       } else if (child_index != m_node->GetRule().GetChildren().size() - 1) {
-        g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child grew, so creating new next";
+        g_log.debug() << "ParseFunc_Seq at " << *m_node << ": Child grew, so creating new next";
         // Create next child
         (void) m_node->GetRule().GetChildren().at(child_index+1)->MakeNode(*m_node, (*child)->IEnd());
         state.GoOK();
@@ -108,7 +108,7 @@ void ComputeFunc_Seq::operator() (ParseAction::Action action, const List& inode,
       }
     } break;
     case ParseAction::ChildShrink: {
-      g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child shrank, so restarting next without clearing it";
+      g_log.debug() << "ParseFunc_Seq at " << *m_node << ": Child shrank, so restarting next without clearing it";
       if (next != m_node->children.end()) {
         // Restart the next child
         m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
@@ -123,7 +123,7 @@ void ComputeFunc_Seq::operator() (ParseAction::Action action, const List& inode,
     } break;
 */
     case ParseAction::ChildUpdate: {
-      g_log.debug() << "ComputeFunc_Seq at " << *m_node << ": Child update, but did not change size.  Make sure its next connection is correct";
+      g_log.debug() << "ParseFunc_Seq at " << *m_node << ": Child update, but did not change size.  Make sure its next connection is correct";
       if (next != m_node->children.end()) {
         if (&(*child)->IEnd() != &(*next)->IStart()) {
           m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
@@ -138,7 +138,7 @@ void ComputeFunc_Seq::operator() (ParseAction::Action action, const List& inode,
       }
     } break;
     default:
-      throw SError("ComputeFunc_Seq at " + string(*m_node) + " received unexpected action " + ParseAction::UnMapAction(action));
+      throw SError("ParseFunc_Seq at " + string(*m_node) + " received unexpected action " + ParseAction::UnMapAction(action));
     }
   }
 
@@ -206,5 +206,5 @@ void ComputeFunc_Seq::operator() (ParseAction::Action action, const List& inode,
     }
   }
 
-  g_log.debug() << "Computing Seq at " << *m_node << " done update; now has state " << *m_node;
+  g_log.debug() << "Parsing Seq at " << *m_node << " done update; now has state " << *m_node;
 }

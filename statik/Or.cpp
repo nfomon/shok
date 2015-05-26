@@ -19,18 +19,18 @@ using namespace statik;
 
 auto_ptr<Rule> statik::OR(const string& name) {
   return auto_ptr<Rule>(new Rule(name,
-      MakeComputeFunc_Or(),
+      MakeParseFunc_Or(),
       MakeOutputFunc_Winner()));
 }
 
-auto_ptr<ComputeFunc> statik::MakeComputeFunc_Or() {
-  return auto_ptr<ComputeFunc>(new ComputeFunc_Or());
+auto_ptr<ParseFunc> statik::MakeParseFunc_Or() {
+  return auto_ptr<ParseFunc>(new ParseFunc_Or());
 }
 
 // TODO consider initiator, keep vectors as state that gets updated by each
 // call to this function, and then we finally just update State from the vecs.
-void ComputeFunc_Or::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
-  g_log.debug() << "Computing Or at " << *m_node;
+void ParseFunc_Or::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
+  g_log.debug() << "Parsing Or at " << *m_node;
 
   if (ParseAction::Restart == action) {
     if (m_node->children.empty()) {
@@ -62,7 +62,7 @@ void ComputeFunc_Or::operator() (ParseAction::Action action, const List& inode, 
   const STree* lockedChild = NULL;
 
   if (m_node->children.empty()) {
-    throw SError("Cannot compute Or at " + string(*m_node) + " that has no children");
+    throw SError("Cannot parse Or at " + string(*m_node) + " that has no children");
   }
   m_node->GetIConnection().SetEnd(m_node->IStart());
 
@@ -79,19 +79,19 @@ void ComputeFunc_Or::operator() (ParseAction::Action action, const List& inode, 
     bool thisChildLocked = false;
     if (istate.IsLocked()) {
       if (lockedChild) {
-        throw SError("Computing Or at " + string(*m_node) + " found more than one locked children");
+        throw SError("Parsing Or at " + string(*m_node) + " found more than one locked children");
       }
-      g_log.info() << "Computing Or at " << *m_node << " found locked child " << **i << " in state " << istate;
+      g_log.info() << "Parsing Or at " << *m_node << " found locked child " << **i << " in state " << istate;
       lockedChild = *i;
       thisChildLocked = true;
       state.Lock();
     }
     if (!istate.IsBad() && !haveSetEnd) {
       if (&(*i)->IStart() != &m_node->IStart()) {
-        throw SError("Computing Or at " + string(*m_node) + " and a child disagree about istart");
+        throw SError("Parsing Or at " + string(*m_node) + " and a child disagree about istart");
       }
       m_node->GetIConnection().SetEnd((*i)->IEnd());
-      g_log.debug() << "Computing Or at " << *m_node << " assigning iend " << m_node->IEnd() << " from istate " << istate;
+      g_log.debug() << "Parsing Or at " << *m_node << " assigning iend " << m_node->IEnd() << " from istate " << istate;
       haveSetEnd = true;
     }
     if (istate.IsOK()) {
@@ -135,15 +135,15 @@ void ComputeFunc_Or::operator() (ParseAction::Action action, const List& inode, 
         completes.push_back(*i);
       }
     } else {
-      throw SError("Computing Or at " + string(*m_node) + " found istate " + string(istate) + " in unknown station");
+      throw SError("Parsing Or at " + string(*m_node) + " found istate " + string(istate) + " in unknown station");
     }
   }
   if (1 == completes.size()) {
     m_node->GetIConnection().SetEnd(completes.at(0)->IEnd());
-    g_log.debug() << "Computing Or at " << *m_node << " declares complete winner " << *completes.at(0);
+    g_log.debug() << "Parsing Or at " << *m_node << " declares complete winner " << *completes.at(0);
   } else if (1 == dones.size()) {
     m_node->GetIConnection().SetEnd(dones.at(0)->IEnd());
-    g_log.debug() << "Computing Or at " << *m_node << " declares done winner " << *dones.at(0);
+    g_log.debug() << "Parsing Or at " << *m_node << " declares done winner " << *dones.at(0);
   }
   if (1 == completes.size()) {
     state.GoComplete();

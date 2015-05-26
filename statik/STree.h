@@ -4,11 +4,11 @@
 #ifndef _statik_STree_h_
 #define _statik_STree_h_
 
-#include "ComputeFunc.h"
 #include "IConnection.h"
 #include "List.h"
 #include "OutputFunc.h"
 #include "ParseAction.h"
+#include "ParseFunc.h"
 #include "State.h"
 
 #include <memory>
@@ -41,11 +41,11 @@ public:
 
   STree(IncParser& incParser,
          const Rule& rule, STree* parent,
-         std::auto_ptr<ComputeFunc> computeFunc,
+         std::auto_ptr<ParseFunc> parseFunc,
          std::auto_ptr<OutputFunc> outputFunc);
 
   void StartNode(const List& istart);
-  void ComputeNode(ParseAction::Action action, const List& inode, const STree* initiator);
+  void ParseNode(ParseAction::Action action, const List& inode, const STree* initiator);
   void ClearNode(const List& inode);
 
   bool IsClear() const { return m_isClear; }
@@ -66,7 +66,7 @@ public:
 
 private:
   IConnection m_iconnection;
-  std::auto_ptr<ComputeFunc> m_computeFunc;
+  std::auto_ptr<ParseFunc> m_parseFunc;
   std::auto_ptr<OutputFunc> m_outputFunc;
 
   void ClearSubNode();

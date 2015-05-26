@@ -4,9 +4,9 @@
 #ifndef _statik_Seq_h_
 #define _statik_Seq_h_
 
-#include "ComputeFunc.h"
 #include "List.h"
 #include "ParseAction.h"
+#include "ParseFunc.h"
 #include "Rule.h"
 #include "STree.h"
 
@@ -17,15 +17,15 @@ namespace statik {
 
 std::auto_ptr<Rule> SEQ(const std::string& name);
 
-struct ComputeFunc_Seq : public ComputeFunc {
-  virtual ~ComputeFunc_Seq() {}
+struct ParseFunc_Seq : public ParseFunc {
+  virtual ~ParseFunc_Seq() {}
   virtual void operator() (ParseAction::Action action, const List& inode, const STree* initiator);
-  virtual std::auto_ptr<ComputeFunc> Clone() {
-    return std::auto_ptr<ComputeFunc>(new ComputeFunc_Seq());
+  virtual std::auto_ptr<ParseFunc> Clone() {
+    return std::auto_ptr<ParseFunc>(new ParseFunc_Seq());
   }
 };
 
-std::auto_ptr<ComputeFunc> MakeComputeFunc_Seq();
+std::auto_ptr<ParseFunc> MakeParseFunc_Seq();
 
 }
 

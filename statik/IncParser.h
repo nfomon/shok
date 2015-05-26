@@ -57,7 +57,7 @@ public:
   // Called from a node that's being restarted, to cancel all its listening
   void UnlistenAll(STree& x);
 
-  // IncParser owns the STree nodes.  This allows a ComputeFunc() to "unlink" a
+  // IncParser owns the STree nodes.  This allows a ParseFunc() to "unlink" a
   // node from the tree before it is actually deleted, so that an OutputFunc()
   // can refer to its destruction safely.
   STree* OwnNode(std::auto_ptr<STree> node);
@@ -71,7 +71,7 @@ public:
   // Get the first node of the output list
   const List* GetFirstONode() const;
 
-  // Indicate that a node has been computed.  Called by STree::ComputeNode()
+  // Indicate that a node has been computed.  Called by STree::ParseNode()
   void TouchNode(const STree& node);
 
   int INodeCompare(const List& a, const List& b) const;
@@ -104,8 +104,8 @@ private:
   void CleanupIfNeeded();
 
   Rule m_rootRule; // Rule for the Root node
-  STree m_root; // Root of the output tree
-  Rule& m_grammar; // Root of the Grammar
+  STree m_root; // Root of the parse tree
+  Rule& m_grammar; // Root of the grammar graph
   std::string m_name;
   bool m_needsCleanup;
   std::auto_ptr<Grapher> m_grapher;

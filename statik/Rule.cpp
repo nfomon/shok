@@ -29,10 +29,10 @@ using namespace statik;
 /* public */
 
 Rule::Rule(const string& name,
-           auto_ptr<ComputeFunc> computeFunc,
+           auto_ptr<ParseFunc> parseFunc,
            auto_ptr<OutputFunc> outputFunc)
   : m_name(name),
-    m_computeFunc(computeFunc),
+    m_parseFunc(parseFunc),
     m_outputFunc(outputFunc) {
 }
 
@@ -48,8 +48,8 @@ Rule::~Rule() {
   }
 }
 
-Rule& Rule::SetComputeFunc(auto_ptr<ComputeFunc> computeFunc) {
-  m_computeFunc = computeFunc;
+Rule& Rule::SetParseFunc(auto_ptr<ParseFunc> parseFunc) {
+  m_parseFunc = parseFunc;
   return *this;
 }
 
@@ -73,7 +73,7 @@ STree* Rule::MakeNode(STree& parent, const List& istart) const {
 }
 
 STree* Rule::MakeNode(STree& parent, const List& istart, STree::child_mod_iter insertPos) const {
-  auto_ptr<STree> node(new STree(parent.GetIncParser(), *this, &parent, m_computeFunc->Clone(), m_outputFunc->Clone()));
+  auto_ptr<STree> node(new STree(parent.GetIncParser(), *this, &parent, m_parseFunc->Clone(), m_outputFunc->Clone()));
   g_log.debug() << "Rule " << m_name << " making node " << *node.get() << " under parent that had " << parent.children.size() << " children";
   STree* r = parent.GetIncParser().OwnNode(node);
   parent.children.insert(insertPos, r);

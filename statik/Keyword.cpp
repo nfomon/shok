@@ -22,22 +22,22 @@ auto_ptr<Rule> statik::KEYWORD(const string& str) {
 
 auto_ptr<Rule> statik::KEYWORD(const string& name, const string& str) {
   return auto_ptr<Rule>(new Rule(name,
-      MakeComputeFunc_Keyword(str),
+      MakeParseFunc_Keyword(str),
       MakeOutputFunc_Basic(name)));
 }
 
-auto_ptr<ComputeFunc> statik::MakeComputeFunc_Keyword(const string& str) {
-  return auto_ptr<ComputeFunc>(new ComputeFunc_Keyword(str));
+auto_ptr<ParseFunc> statik::MakeParseFunc_Keyword(const string& str) {
+  return auto_ptr<ParseFunc>(new ParseFunc_Keyword(str));
 }
 
-ComputeFunc_Keyword::ComputeFunc_Keyword(const string& str)
+ParseFunc_Keyword::ParseFunc_Keyword(const string& str)
   : m_str(str) {
   if (m_str.empty()) {
     throw SError("Cannot create empty Keyword");
   }
 }
 
-void ComputeFunc_Keyword::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
+void ParseFunc_Keyword::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
   g_log.info() << "Computing Keyword at " << *m_node << " with inode " << inode;
   State& state = m_node->GetState();
   state.Clear();

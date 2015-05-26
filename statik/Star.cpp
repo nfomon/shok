@@ -21,17 +21,17 @@ using namespace statik;
 
 auto_ptr<Rule> statik::STAR(const string& name) {
   return auto_ptr<Rule>(new Rule(name,
-      MakeComputeFunc_Star(),
+      MakeParseFunc_Star(),
       MakeOutputFunc_Sequence()));
 }
 
-auto_ptr<ComputeFunc> statik::MakeComputeFunc_Star() {
-  return auto_ptr<ComputeFunc>(new ComputeFunc_Star());
+auto_ptr<ParseFunc> statik::MakeParseFunc_Star() {
+  return auto_ptr<ParseFunc>(new ParseFunc_Star());
 }
 
-void ComputeFunc_Star::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
+void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
   // Process
-  g_log.debug() << "Computing Star at " << *m_node << " which has " << m_node->children.size() << " children";
+  g_log.debug() << "Parsing Star at " << *m_node << " which has " << m_node->children.size() << " children";
 
   State& state = m_node->GetState();
   if (ParseAction::Restart == action && m_node->children.empty()) {
@@ -41,7 +41,7 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const List& inode
   }
 
   if (m_node->children.empty()) {
-    throw SError("Cannot compute Star node which has no children");
+    throw SError("Cannot parse Star node which has no children");
   }
 
   if (ParseAction::Restart == action) {
@@ -91,7 +91,7 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const List& inode
     ++child;
   }
   if (!foundInitiator) {
-    g_log.info() << "ComputeFunc_Star at " << *m_node << " provided an initiator which is not a child; presumably we've already dealt with this update";
+    g_log.info() << "ParseFunc_Star at " << *m_node << " provided an initiator which is not a child; presumably we've already dealt with this update";
     return;
   }
 
@@ -102,7 +102,7 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const List& inode
   if ((*child)->IsClear()) {
     if (next != m_node->children.end()) {
       if (!prev_child) {
-        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": First child was cleared, determining what to do...";
+        g_log.debug() << "ParseFunc_Star at " << *m_node << ": First child was cleared, determining what to do...";
         m_node->children.erase(child);
         if (inode.right && inode.right->left != &inode) {
           g_log.info() << "Restarting self at right inode " << *inode.right;
@@ -111,7 +111,7 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const List& inode
           state.GoPending();
           return;
         } else {
-          g_log.warning() << "ComputeFunc_Star at " << *m_node << ": First child was cleared, but it's not as if our first INode was deleted but we can just move forward an INode.  Clearing self.";
+          g_log.warning() << "ParseFunc_Star at " << *m_node << ": First child was cleared, but it's not as if our first INode was deleted but we can just move forward an INode.  Clearing self.";
           m_node->ClearNode(inode);
           return;
         }
@@ -130,17 +130,17 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const List& inode
         if (&prev_child->IEnd() == &(*next)->IStart()) {
           // How can this happen?  It's because we received the update from the
           // cleared child before receiving the prev_child's update.
-          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Not-first Child was cleared, but next is already in the right spot";
+          g_log.debug() << "ParseFunc_Star at " << *m_node << ": Not-first Child was cleared, but next is already in the right spot";
           m_node->children.erase(child);
           // Keep going to determine our state
         } else {
           g_log.debug() << "Child end compare";
           int childCompare = m_node->GetIncParser().INodeCompare(prev_child->IEnd(), (*next)->IStart());
           if (0 == childCompare) {
-            throw SError("ComputeFunc_Star: prev->next children are not linked but INodeCompare returned 0");
+            throw SError("ParseFunc_Star: prev->next children are not linked but INodeCompare returned 0");
           } else if (childCompare > 0) {
             // Re-start cleared intermediary child
-            g_log.debug() << "ComputeFunc_Star at " << *m_node << ": in wake of cleared middle child, replacing it to soak up the middle INodes";
+            g_log.debug() << "ParseFunc_Star at " << *m_node << ": in wake of cleared middle child, replacing it to soak up the middle INodes";
             STree::child_mod_iter pos = child - 1;
             m_node->children.erase(child);
             ++pos;
@@ -172,11 +172,11 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const List& inode
       }
     } else {
       if (prev_child) {
-        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": last child was cleared; erasing it";
+        g_log.debug() << "ParseFunc_Star at " << *m_node << ": last child was cleared; erasing it";
         m_node->children.erase(child);
         // Keep going to determine our state
       } else {
-        g_log.debug() << "ComputeFunc_Star at " << *m_node << ": only child was cleared, so clearing self";
+        g_log.debug() << "ParseFunc_Star at " << *m_node << ": only child was cleared, so clearing self";
         m_node->ClearNode(inode);
         return;
       }
@@ -184,7 +184,7 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const List& inode
   } else if (childState.IsPending()) {
     throw SError("Star child should not be Pending");
   } else if (childState.IsOK() || childState.IsDone()) {
-    g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child is ok or done but not complete, so not fixing its next connections";
+    g_log.debug() << "ParseFunc_Star at " << *m_node << ": Child is ok or done but not complete, so not fixing its next connections";
     if (next != m_node->children.end() && !(*child)->IEnd().right) {
       g_log.debug() << " - but we're at end of input, so clear all subsequent children";
       for (STree::child_mod_iter i = next; i != m_node->children.end(); ++i) {
@@ -196,7 +196,7 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const List& inode
   } else if (childState.IsComplete()) {
     if (m_node->children.end() == next) {
       // Create new next child
-      g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Last child updated, and is complete.  Creating new next child.";
+      g_log.debug() << "ParseFunc_Star at " << *m_node << ": Last child updated, and is complete.  Creating new next child.";
       (void) m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, (*child)->IEnd());
       state.GoPending();
       return;
@@ -206,11 +206,11 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const List& inode
       g_log.warning() << "Using bad next child's IStart";
     }
     if (&(*child)->IEnd() == &(*next)->IStart()) {
-      g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Next child is linked properly, so no changes to children";
+      g_log.debug() << "ParseFunc_Star at " << *m_node << ": Next child is linked properly, so no changes to children";
     } else {
       int childCompare = m_node->GetIncParser().INodeCompare((*child)->IEnd(), (*next)->IStart());
       if (0 == childCompare) {
-        throw SError("ComputeFunc_Star: children are not linked but INodeCompare returned 0");
+        throw SError("ParseFunc_Star: children are not linked but INodeCompare returned 0");
       } else if (childCompare > 0) {
         // If the next child is bad, it's unclear if we want to restart it, or
         // create a new intermediary in-between.  If the node went bad because
@@ -223,7 +223,7 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const List& inode
           return;
         } else {
           // Create a new intermediary child
-          g_log.debug() << "ComputeFunc_Star at " << *m_node << ": Child shrank and is complete, so creating a new intermediary child";
+          g_log.debug() << "ParseFunc_Star at " << *m_node << ": Child shrank and is complete, so creating a new intermediary child";
           (void) m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, (*child)->IEnd(), next);
           state.GoPending();
           return;
@@ -294,7 +294,7 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const List& inode
       state.GoDone();
       m_node->GetIConnection().SetEnd(breachChild->IEnd());
     } else {
-      throw SError("Seq compute found breach in non-breach state");
+      throw SError("Seq parse found breach in non-breach state");
     }
   } else {
     // All children are complete until the last observed child.  Determine our
@@ -322,5 +322,5 @@ void ComputeFunc_Star::operator() (ParseAction::Action action, const List& inode
     }
   }
 
-  g_log.debug() << "Computing Star at " << *m_node << " done update; now has state " << *m_node;
+  g_log.debug() << "Parsing Star at " << *m_node << " done update; now has state " << *m_node;
 }

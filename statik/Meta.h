@@ -9,9 +9,9 @@
  * Recognizes a node output by another rule, by its name.
  */
 
-#include "ComputeFunc.h"
 #include "List.h"
 #include "ParseAction.h"
+#include "ParseFunc.h"
 #include "Rule.h"
 #include "STree.h"
 
@@ -24,21 +24,21 @@ std::auto_ptr<Rule> META(const std::string& searchName);
 std::auto_ptr<Rule> META(const std::string& name,
                          const std::string& searchName);
 
-class ComputeFunc_Meta : public ComputeFunc {
+class ParseFunc_Meta : public ParseFunc {
 public:
-  ComputeFunc_Meta(const std::string& searchName)
+  ParseFunc_Meta(const std::string& searchName)
     : m_searchName(searchName) {}
-  virtual ~ComputeFunc_Meta() {}
+  virtual ~ParseFunc_Meta() {}
   virtual void operator() (ParseAction::Action action, const List& inode, const STree* initiator);
-  virtual std::auto_ptr<ComputeFunc> Clone() {
-    return std::auto_ptr<ComputeFunc>(new ComputeFunc_Meta(m_searchName));
+  virtual std::auto_ptr<ParseFunc> Clone() {
+    return std::auto_ptr<ParseFunc>(new ParseFunc_Meta(m_searchName));
   }
 
 private:
   std::string m_searchName;
 };
 
-std::auto_ptr<ComputeFunc> MakeComputeFunc_Meta(const std::string& searchName);
+std::auto_ptr<ParseFunc> MakeParseFunc_Meta(const std::string& searchName);
 
 }
 

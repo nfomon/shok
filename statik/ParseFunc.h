@@ -1,8 +1,8 @@
 // Copyright (C) 2014 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _statik_ComputeFunc_h_
-#define _statik_ComputeFunc_h_
+#ifndef _statik_ParseFunc_h_
+#define _statik_ParseFunc_h_
 
 #include "List.h"
 #include "ParseAction.h"
@@ -11,16 +11,16 @@
 
 namespace statik {
 
-struct ComputeFunc {
+struct ParseFunc {
 public:
-  virtual ~ComputeFunc() {}
+  virtual ~ParseFunc() {}
   void Init(STree& x) { m_node = &x; }
   virtual void operator() (ParseAction::Action action, const List& inode, const STree* initiator) = 0;
-  virtual std::auto_ptr<ComputeFunc> Clone() = 0;
+  virtual std::auto_ptr<ParseFunc> Clone() = 0;
 protected:
   STree* m_node;
 };
 
 }
 
-#endif // _statik_ComputeFunc_h_
+#endif // _statik_ParseFunc_h_

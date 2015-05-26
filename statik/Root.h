@@ -6,9 +6,9 @@
 
 /* Special Rule for the Root node */
 
-#include "ComputeFunc.h"
 #include "List.h"
 #include "ParseAction.h"
+#include "ParseFunc.h"
 #include "Rule.h"
 #include "STree.h"
 
@@ -17,20 +17,20 @@
 
 namespace statik {
 
-class ComputeFunc_Root : public ComputeFunc {
+class ParseFunc_Root : public ParseFunc {
 public:
-  ComputeFunc_Root(const std::string& name);
-  virtual ~ComputeFunc_Root() {}
+  ParseFunc_Root(const std::string& name);
+  virtual ~ParseFunc_Root() {}
   virtual void operator() (ParseAction::Action action, const List& inode, const STree* initiator);
-  virtual std::auto_ptr<ComputeFunc> Clone() {
-    return std::auto_ptr<ComputeFunc>(new ComputeFunc_Root(m_name));
+  virtual std::auto_ptr<ParseFunc> Clone() {
+    return std::auto_ptr<ParseFunc>(new ParseFunc_Root(m_name));
   }
 
 private:
   const std::string m_name;
 };
 
-std::auto_ptr<ComputeFunc> MakeComputeFunc_Root(const std::string& name);
+std::auto_ptr<ParseFunc> MakeParseFunc_Root(const std::string& name);
 
 }
 

@@ -18,22 +18,22 @@ using namespace statik;
 
 auto_ptr<Rule> statik::REGEXP(const string& name, const boost::regex& regex) {
   return auto_ptr<Rule>(new Rule(name,
-      MakeComputeFunc_Regexp(regex),
+      MakeParseFunc_Regexp(regex),
       MakeOutputFunc_IValues(name)));
 }
 
-auto_ptr<ComputeFunc> statik::MakeComputeFunc_Regexp(const boost::regex& regex) {
-  return auto_ptr<ComputeFunc>(new ComputeFunc_Regexp(regex));
+auto_ptr<ParseFunc> statik::MakeParseFunc_Regexp(const boost::regex& regex) {
+  return auto_ptr<ParseFunc>(new ParseFunc_Regexp(regex));
 }
 
-ComputeFunc_Regexp::ComputeFunc_Regexp(const boost::regex& regex)
+ParseFunc_Regexp::ParseFunc_Regexp(const boost::regex& regex)
   : m_regex(regex) {
   if (m_regex.empty()) {
     throw SError("Cannot create Regexp with empty regex");
   }
 }
 
-void ComputeFunc_Regexp::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
+void ParseFunc_Regexp::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
   g_log.info() << "Computing Regexp at " << *m_node;
   State& state = m_node->GetState();
   state.Clear();

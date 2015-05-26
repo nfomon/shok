@@ -4,9 +4,9 @@
 #ifndef _statik_Star_h_
 #define _statik_Star_h_
 
-#include "ComputeFunc.h"
 #include "List.h"
 #include "ParseAction.h"
+#include "ParseFunc.h"
 #include "Rule.h"
 #include "STree.h"
 
@@ -17,15 +17,15 @@ namespace statik {
 
 std::auto_ptr<Rule> STAR(const std::string& name);
 
-struct ComputeFunc_Star : public ComputeFunc {
-  virtual ~ComputeFunc_Star() {}
+struct ParseFunc_Star : public ParseFunc {
+  virtual ~ParseFunc_Star() {}
   virtual void operator() (ParseAction::Action action, const List& inode, const STree* initiator);
-  virtual std::auto_ptr<ComputeFunc> Clone() {
-    return std::auto_ptr<ComputeFunc>(new ComputeFunc_Star());
+  virtual std::auto_ptr<ParseFunc> Clone() {
+    return std::auto_ptr<ParseFunc>(new ParseFunc_Star());
   }
 };
 
-std::auto_ptr<ComputeFunc> MakeComputeFunc_Star();
+std::auto_ptr<ParseFunc> MakeParseFunc_Star();
 
 }
 

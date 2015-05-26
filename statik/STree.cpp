@@ -23,16 +23,16 @@ using namespace statik;
 
 STree::STree(IncParser& incParser,
                const Rule& rule, STree* parent,
-               auto_ptr<ComputeFunc> computeFunc,
+               auto_ptr<ParseFunc> parseFunc,
                auto_ptr<OutputFunc> outputFunc)
   : m_incParser(incParser),
     m_rule(rule),
     m_parent(parent),
     m_isClear(true),
     depth(m_parent ? m_parent->depth + 1 : 0),
-    m_computeFunc(computeFunc),
+    m_parseFunc(parseFunc),
     m_outputFunc(outputFunc) {
-  m_computeFunc->Init(*this);
+  m_parseFunc->Init(*this);
   m_outputFunc->Init(*this);
 }
 
@@ -47,26 +47,26 @@ void STree::StartNode(const List& istart) {
   m_incParser.Enqueue(ParseAction(ParseAction::Restart, *this, istart));
 }
 
-void STree::ComputeNode(ParseAction::Action action, const List& inode, const STree* initiator) {
+void STree::ParseNode(ParseAction::Action action, const List& inode, const STree* initiator) {
   if (m_isClear) {
-    g_log.info() << "Not computing node " + string(*this) + " which has been cleared";
+    g_log.info() << "Not parsing node " + string(*this) + " which has been cleared";
     return;
   } else if (m_iconnection.IsClear()) {
-    throw SError("Cannot compute node " + string(*this) + " with cleared IConnection");
+    throw SError("Cannot parse node " + string(*this) + " with cleared IConnection");
   } else if (ParseAction::Start == action) {
-    throw SError("Cannot compute node " + string(*this) + " with Start action");
+    throw SError("Cannot parse node " + string(*this) + " with Start action");
   }
 
   if (ParseAction::Restart == action) {
     m_iconnection.Restart(inode);
   }
 
-  g_log.info() << "Computing node " << *this << " with inode " << inode << " and initiator " << (initiator ? string(*initiator) : "<null>");
+  g_log.info() << "Parsing node " << *this << " with inode " << inode << " and initiator " << (initiator ? string(*initiator) : "<null>");
   const State old_state = m_state;
   const List* old_istart = &IStart();
   const List* old_iend = &IEnd();
 
-  (*m_computeFunc)(action, inode, initiator);
+  (*m_parseFunc)(action, inode, initiator);
 
   const List* new_istart = (m_iconnection.IsClear() ? NULL : &IStart());
   const List* new_iend = (m_iconnection.IsClear() ? NULL : &IEnd());

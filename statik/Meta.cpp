@@ -21,15 +21,15 @@ auto_ptr<Rule> statik::META(const string& searchName) {
 
 auto_ptr<Rule> statik::META(const string& name, const string& searchName) {
   return auto_ptr<Rule>(new Rule(name,
-      MakeComputeFunc_Meta(searchName),
+      MakeParseFunc_Meta(searchName),
       MakeOutputFunc_IValues(name)));
 }
 
-auto_ptr<ComputeFunc> statik::MakeComputeFunc_Meta(const string& searchName) {
-  return auto_ptr<ComputeFunc>(new ComputeFunc_Meta(searchName));
+auto_ptr<ParseFunc> statik::MakeParseFunc_Meta(const string& searchName) {
+  return auto_ptr<ParseFunc>(new ParseFunc_Meta(searchName));
 }
 
-void ComputeFunc_Meta::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
+void ParseFunc_Meta::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
   g_log.info() << "Computing Meta at " << *m_node << " with inode "<< inode;
   State& state = m_node->GetState();
   state.Clear();

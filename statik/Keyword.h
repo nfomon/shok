@@ -6,9 +6,9 @@
 
 /* Keyword rule */
 
-#include "ComputeFunc.h"
 #include "List.h"
 #include "ParseAction.h"
+#include "ParseFunc.h"
 #include "Rule.h"
 #include "STree.h"
 
@@ -21,20 +21,20 @@ std::auto_ptr<Rule> KEYWORD(const std::string& str);
 std::auto_ptr<Rule> KEYWORD(const std::string& name,
                             const std::string& str);
 
-class ComputeFunc_Keyword : public ComputeFunc {
+class ParseFunc_Keyword : public ParseFunc {
 public:
-  ComputeFunc_Keyword(const std::string& str);
-  virtual ~ComputeFunc_Keyword() {}
+  ParseFunc_Keyword(const std::string& str);
+  virtual ~ParseFunc_Keyword() {}
   virtual void operator() (ParseAction::Action action, const List& inode, const STree* initiator);
-  virtual std::auto_ptr<ComputeFunc> Clone() {
-    return std::auto_ptr<ComputeFunc>(new ComputeFunc_Keyword(m_str));
+  virtual std::auto_ptr<ParseFunc> Clone() {
+    return std::auto_ptr<ParseFunc>(new ParseFunc_Keyword(m_str));
   }
 
 private:
   const std::string m_str;
 };
 
-std::auto_ptr<ComputeFunc> MakeComputeFunc_Keyword(const std::string& str);
+std::auto_ptr<ParseFunc> MakeParseFunc_Keyword(const std::string& str);
 
 }
 
