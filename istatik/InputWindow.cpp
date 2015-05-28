@@ -189,7 +189,7 @@ WindowResponse LineBuf::Insert(int y, int x, int ch) {
     x = 0;
     ++y;
   } while ((size_t)y < m_lines.size());
-  response.hotlist.Insert(c->inode);
+  response.batch.Insert(c->inode);
   if (prev) {
     g_log.info() << " found before: " << *prev;
     prev->SetNext(c);
@@ -205,7 +205,7 @@ WindowResponse LineBuf::Insert(int y, int x, int ch) {
     istart = istart->left;
   }
   response.actions.push_back(WindowAction(WindowAction::MOVE, y0, x0));
-  g_log.info() << "window0 hotlist: " << response.hotlist.Print();
+  g_log.info() << "window0 batch: " << response.batch.Print();
   return response;
 }
 
@@ -229,7 +229,7 @@ WindowResponse LineBuf::Delete(int y, int x) {
   Char* c = m_lines.at(y).Delete(x);
   response.actions.push_back(WindowAction(WindowAction::MOVE, y, x));
   response.actions.push_back(WindowAction(WindowAction::DELETE));
-  response.hotlist.Delete(c->inode);
+  response.batch.Delete(c->inode);
   return response;
 }
 

@@ -1,8 +1,8 @@
 STATIK_SRCS = \
+    Batch.cpp \
+    Batch.h \
     Grapher.cpp \
     Grapher.h \
-    Hotlist.cpp \
-    Hotlist.h \
     IConnection.cpp \
     IConnection.h \
     IncParser.cpp \

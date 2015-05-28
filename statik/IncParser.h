@@ -4,7 +4,7 @@
 #ifndef _statik_IncParser_h_
 #define _statik_IncParser_h_
 
-#include "Hotlist.h"
+#include "Batch.h"
 #include "List.h"
 #include "ListenerTable.h"
 #include "ObjectPool.h"
@@ -38,7 +38,7 @@ public:
   const STree& GetRoot() const; // for tests
   const State& GetState() const;
 
-  void ExtractHotlist(Hotlist& out_hotlist);
+  void ExtractBatch(Batch& out_batch);
   listener_set GetListeners(const List& x) const;
 
   // Insert a new item, after position pos (NULL for start).  Returns a handle
@@ -49,8 +49,8 @@ public:
   // Update an item with a new value.
   void Update(INode inode, const std::string& value);
 
-  // Apply a bunch of inode insertions/updates/deletions
-  void UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist);
+  // Apply a batch of inode insertions/updates/deletions
+  void UpdateWithBatch(const Batch& batch);
 
   void Enqueue(ParseAction action);
 
@@ -83,7 +83,7 @@ public:
 
   void DrawGraph(const STree& onode,
                  const List* inode = NULL,
-                 const Hotlist* hotlist = NULL,
+                 const Batch* batch = NULL,
                  const STree* initiator = NULL);
 
   void SanityCheck();
@@ -97,15 +97,15 @@ private:
   typedef action_queue::iterator action_mod_iter;
   typedef std::map<STree::depth_t, action_queue> action_map;
 
-  // Called by UpdateWithHotlist()
+  // Called by UpdateWithBatch() and public Insert()/Delete()/Update()
   void InsertNode(const List& inode);
   void DeleteNode(const List& inode);
   void UpdateNode(const List& inode);
 
   void ProcessActions();
-  void ComputeOutput_Update(const STree& node, Hotlist& out_hotlist);
-  void ComputeOutput_Insert(const STree& node, Hotlist& out_hotlist);
-  void ComputeOutput_Delete(const STree& node, Hotlist& out_hotlist);
+  void ComputeOutput_Update(const STree& node, Batch& out_batch);
+  void ComputeOutput_Insert(const STree& node, Batch& out_batch);
+  void ComputeOutput_Delete(const STree& node, Batch& out_batch);
   void CleanupIfNeeded();
 
   Rule m_rootRule; // Rule for the Root node

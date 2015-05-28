@@ -82,8 +82,8 @@ void IStatik::run() {
     for (parserWindow_mod_iter i = parserWindows.begin();
          i != parserWindows.end(); ++i) {
       g_log.info() << " - update parser?";
-      if (response.hotlist.IsEmpty()) { break; }
-      response = i->Input(response.hotlist);
+      if (response.batch.IsEmpty()) { break; }
+      response = i->Input(response.batch);
       ++window_index;
       UpdateWindow(window_index, response.actions);
     }

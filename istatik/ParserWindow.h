@@ -7,7 +7,7 @@
 #include "ISError.h"
 #include "WindowResponse.h"
 
-#include "statik/Hotlist.h"
+#include "statik/Batch.h"
 #include "statik/IncParser.h"
 #include "statik/Rule.h"
 
@@ -22,7 +22,7 @@ public:
   ParserWindow(std::auto_ptr<statik::Rule> rule,
                const std::string& name,
                const std::string& graphdir);
-  WindowResponse Input(const statik::Hotlist& hotlist);
+  WindowResponse Input(const statik::Batch& batch);
 private:
   statik::IncParser m_incParser;
   std::string m_str;

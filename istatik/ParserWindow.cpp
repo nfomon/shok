@@ -23,16 +23,16 @@ ParserWindow::ParserWindow(auto_ptr<statik::Rule> rule,
   g_log.info() << "Initialized ParserWindow " << name;
 }
 
-WindowResponse ParserWindow::Input(const statik::Hotlist& ihotlist) {
-  g_log.info() << "Updating incParser " << m_incParser.Name() << " with hotlist: " << ihotlist.Print();
-  m_incParser.UpdateWithHotlist(ihotlist.GetHotlist());
+WindowResponse ParserWindow::Input(const statik::Batch& ibatch) {
+  g_log.info() << "Updating incParser " << m_incParser.Name() << " with batch: " << ibatch.Print();
+  m_incParser.UpdateWithBatch(ibatch);
   WindowResponse response;
   // Find first item in incParser's output list, and draw everything
   response.actions.push_back(WindowAction(WindowAction::MOVE, 0, 0, 0));
-  statik::Hotlist hotlist;
-  m_incParser.ExtractHotlist(hotlist);
-  g_log.info() << "Printing WindowResponse list.  Hotlist size is: " << hotlist.Size();
-  if (!hotlist.IsEmpty()) {
+  statik::Batch batch;
+  m_incParser.ExtractBatch(batch);
+  g_log.info() << "Printing WindowResponse list.  Batch size is: " << batch.Size();
+  if (!batch.IsEmpty()) {
     const statik::List* inode = m_incParser.GetFirstONode();
     string old_str = m_str;
     m_str = "";
@@ -53,7 +53,7 @@ WindowResponse ParserWindow::Input(const statik::Hotlist& ihotlist) {
     for (size_t i = m_str.size(); i < old_str.size(); ++i) {
       response.actions.push_back(WindowAction(WindowAction::INSERT, 0, i, ' '));
     }
-    response.hotlist.Accept(hotlist.GetHotlist());
+    response.batch.Accept(batch);
   }
   return response;
 }

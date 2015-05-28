@@ -3,8 +3,8 @@
 
 #include "IncParser.h"
 
+#include "Batch.h"
 #include "Grapher.h"
-#include "Hotlist.h"
 #include "List.h"
 #include "Root.h"
 #include "Rule.h"
@@ -42,16 +42,16 @@ IncParser::IncParser(auto_ptr<Rule> grammar,
   }
 }
 
-void IncParser::ExtractHotlist(Hotlist& out_hotlist) {
+void IncParser::ExtractBatch(Batch& out_batch) {
   g_log.debug() << "EXTRACT START: " << m_name;
   if (m_touchedNodes.find(&m_root) != m_touchedNodes.end()) {
-    ComputeOutput_Update(m_root, out_hotlist);
+    ComputeOutput_Update(m_root, out_batch);
   }
   g_log.debug() << "EXTRACT DONE: " << m_name;
   m_touchedNodes.clear();
   m_needsCleanup = true;
-  if (!out_hotlist.IsEmpty()) {
-    DrawGraph(m_root, /*inode*/ NULL, &out_hotlist);
+  if (!out_batch.IsEmpty()) {
+    DrawGraph(m_root, /*inode*/ NULL, &out_batch);
   }
 }
 
@@ -61,27 +61,27 @@ IncParser::listener_set IncParser::GetListeners(const List& x) const {
 
 INode IncParser::Insert(const List& inode, INode pos) {
   auto_ptr<List> node(new List(inode));
-  INode h = node.get();
+  INode n = node.get();
   m_ilistPool.Insert(node);
   if (pos) {
-    h->left = pos;
-    h->right = pos->right;
-    if (h->right) {
-      h->right->left = h;
+    n->left = pos;
+    n->right = pos->right;
+    if (n->right) {
+      n->right->left = n;
     }
-    pos->right = h;
+    pos->right = n;
   } else {
     List* first = m_firstINode;
     if (first) {
-      h->right = first;
-      first->left = h;
+      n->right = first;
+      first->left = n;
     }
-    m_firstINode = h;
+    m_firstINode = n;
   }
-  Hotlist hotlist;
-  hotlist.Insert(*h);
-  UpdateWithHotlist(hotlist.GetHotlist());
-  return h;
+  Batch b;
+  b.Insert(*n);
+  UpdateWithBatch(b);
+  return n;
 }
 
 void IncParser::Delete(INode inode) {
@@ -95,37 +95,37 @@ void IncParser::Delete(INode inode) {
     m_firstINode = inode->right;
   }
   m_ilistPool.Unlink(*inode);
-  Hotlist hotlist;
-  hotlist.Delete(*inode);
-  UpdateWithHotlist(hotlist.GetHotlist());
+  Batch b;
+  b.Delete(*inode);
+  UpdateWithBatch(b);
 }
 
 void IncParser::Update(INode inode, const string& value) {
   inode->value = value;
-  Hotlist hotlist;
-  hotlist.Update(*inode);
-  UpdateWithHotlist(hotlist.GetHotlist());
+  Batch b;
+  b.Update(*inode);
+  UpdateWithBatch(b);
 }
 
-void IncParser::UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist) {
-  g_log.info() << "Updating IncParser " << m_name << " with hotlist of size " << hotlist.size();
+void IncParser::UpdateWithBatch(const Batch& batch) {
+  g_log.info() << "Updating IncParser " << m_name << " with batch of size " << batch.Size();
   CleanupIfNeeded();
-  for (Hotlist::hotlist_iter i = hotlist.begin(); i != hotlist.end(); ++i) {
+  for (Batch::batch_iter i = batch.begin(); i != batch.end(); ++i) {
     switch (i->second) {
-    case Hotlist::OP_INSERT:
+    case Batch::OP_INSERT:
       InsertNode(*i->first);
       break;
-    case Hotlist::OP_DELETE:
+    case Batch::OP_DELETE:
       DeleteNode(*i->first);
       break;
-    case Hotlist::OP_UPDATE:
+    case Batch::OP_UPDATE:
       UpdateNode(*i->first);
       break;
     default:
-      throw SError("Cannot update with hotlist with unknown hot operation");
+      throw SError("Cannot update with batch with unknown operation");
     }
   }
-  g_log.info() << "Done updating IncParser " << m_name << " with hotlist that had size " << hotlist.size();
+  g_log.info() << "Done updating IncParser " << m_name << " with batch of size " << batch.Size();
 }
 
 void IncParser::Enqueue(ParseAction action) {
@@ -186,7 +186,7 @@ void IncParser::TouchNode(const STree& node) {
   m_touchedNodes.insert(&node);
 }
 
-void IncParser::DrawGraph(const STree& onode, const List* inode, const Hotlist* hotlist, const STree* initiator) {
+void IncParser::DrawGraph(const STree& onode, const List* inode, const Batch* batch, const STree* initiator) {
   if (!m_grapher.get()) {
     return;
   }
@@ -200,9 +200,9 @@ void IncParser::DrawGraph(const STree& onode, const List* inode, const Hotlist* 
   if (ostart) {
     m_grapher->AddOList(m_name, *ostart, m_name + " olist");
   }
-  if (hotlist) {
-    g_log.debug() << "Drawing hotlist: " << hotlist->Print();
-    m_grapher->AddHotlist(m_name, hotlist->GetHotlist());
+  if (batch) {
+    g_log.debug() << "Drawing batch: " << batch->Print();
+    m_grapher->AddBatch(m_name, *batch);
   }
   if (istart) {
     m_grapher->AddIListeners(m_name, *this, *istart);
@@ -384,7 +384,7 @@ void IncParser::ProcessActions() {
   }
 }
 
-void IncParser::ComputeOutput_Update(const STree& node, Hotlist& out_hotlist) {
+void IncParser::ComputeOutput_Update(const STree& node, Batch& out_batch) {
   g_log.debug() << "IncParser " << m_name << ": Computing output UPDATE for node " << node;
 
   node.GetOutputFunc()();
@@ -394,7 +394,7 @@ void IncParser::ComputeOutput_Update(const STree& node, Hotlist& out_hotlist) {
   if (m_outputPerNode.end() == posi) {
     // We weren't emitting before, but are emitting now.  Insert all.
     g_log.debug() << " - was emitting nothing; inserting all";
-    return ComputeOutput_Insert(node, out_hotlist);
+    return ComputeOutput_Insert(node, out_batch);
   }
 
   OutputState& pos = posi->second;
@@ -405,18 +405,18 @@ void IncParser::ComputeOutput_Update(const STree& node, Hotlist& out_hotlist) {
     OutputState::onode_iter ponode = pos.onodes.find(*onode);
     if (pos.onodes.end() == ponode) {
       g_log.debug() << node << " WAS NOT EMITTING node " << **onode << "; inserting now.";
-      out_hotlist.Insert(**onode);
+      out_batch.Insert(**onode);
     } else {
       g_log.debug() << node << " WAS EMITTING node " << **onode << "; updating, and erasing from pos.";
       pos.onodes.erase(ponode);
       if (os.value != pos.value) {
-        out_hotlist.Update(**onode);
+        out_batch.Update(**onode);
       }
     }
   }
   for (OutputState::onode_iter ponode = pos.onodes.begin(); ponode != pos.onodes.end(); ++ponode) {
     g_log.debug() << "Update causes deletion of ponode " << **ponode;
-    out_hotlist.Delete(**ponode);
+    out_batch.Delete(**ponode);
   }
 
   // Children
@@ -424,19 +424,19 @@ void IncParser::ComputeOutput_Update(const STree& node, Hotlist& out_hotlist) {
     OutputState::child_iter pchild = pos.children.find(*child);
     if (pos.children.end() == pchild) {
       g_log.debug() << node << " WAS NOT EMITTING child " << **child << "; inserting now.";
-      ComputeOutput_Insert(**child, out_hotlist);
+      ComputeOutput_Insert(**child, out_batch);
     } else {
       g_log.debug() << node << " WAS EMITTING child " << **child << "; updating child.";
       pos.children.erase(pchild);
       if (m_touchedNodes.find(*child) != m_touchedNodes.end()) {
-        ComputeOutput_Update(**child, out_hotlist);
+        ComputeOutput_Update(**child, out_batch);
       }
     }
   }
 
   for (OutputState::child_iter pchild = pos.children.begin(); pchild != pos.children.end(); ++pchild) {
     g_log.debug() << "Update causes deletion of pchild " << **pchild;
-    ComputeOutput_Delete(**pchild, out_hotlist);
+    ComputeOutput_Delete(**pchild, out_batch);
   }
 
   if (os.onodes.empty() && os.children.empty()) {
@@ -444,12 +444,12 @@ void IncParser::ComputeOutput_Update(const STree& node, Hotlist& out_hotlist) {
   } else {
     m_outputPerNode[&node] = os;   // copy
   }
-  g_log.debug() << "Done computing UPDATE output for node " << node << ".  Hotlist so far: " << out_hotlist.Print();
+  g_log.debug() << "Done computing UPDATE output for node " << node << ".  Batch so far: " << out_batch.Print();
   g_log.debug() << " - have " << os.onodes.size() << " ONodes and " << os.children.size() << " children";
   node.GetOutputFunc().ConnectONodes();
 }
 
-void IncParser::ComputeOutput_Insert(const STree& node, Hotlist& out_hotlist) {
+void IncParser::ComputeOutput_Insert(const STree& node, Batch& out_batch) {
   g_log.debug() << "IncParser " << m_name << ": Computing output INSERT for node " << node;
 
   node.GetOutputFunc()();
@@ -457,10 +457,10 @@ void IncParser::ComputeOutput_Insert(const STree& node, Hotlist& out_hotlist) {
 
   // Just insert everything, disregard what the prev output says
   for (OutputState::onode_iter onode = os.onodes.begin(); onode != os.onodes.end(); ++onode) {
-    out_hotlist.Insert(**onode);
+    out_batch.Insert(**onode);
   }
   for (OutputState::child_iter child = os.children.begin(); child != os.children.end(); ++child) {
-    ComputeOutput_Insert(**child, out_hotlist);
+    ComputeOutput_Insert(**child, out_batch);
   }
 
   if (os.onodes.empty() && os.children.empty()) {
@@ -468,12 +468,12 @@ void IncParser::ComputeOutput_Insert(const STree& node, Hotlist& out_hotlist) {
   } else {
     m_outputPerNode[&node] = os;   // copy
   }
-  g_log.debug() << "Done computing INSERT output for node " << node << ".  Hotlist so far: " << out_hotlist.Print();
+  g_log.debug() << "Done computing INSERT output for node " << node << ".  Batch so far: " << out_batch.Print();
   g_log.debug() << m_name << " node " << node << " is now emitting " << os.onodes.size() << " ONodes and " << os.children.size() << " children.";
   node.GetOutputFunc().ConnectONodes();
 }
 
-void IncParser::ComputeOutput_Delete(const STree& node, Hotlist& out_hotlist) {
+void IncParser::ComputeOutput_Delete(const STree& node, Batch& out_batch) {
   g_log.debug() << "IncParser " << m_name << ": Computing output DELETE for node " << node;
 
   output_mod_iter posi = m_outputPerNode.find(&node);
@@ -484,13 +484,13 @@ void IncParser::ComputeOutput_Delete(const STree& node, Hotlist& out_hotlist) {
   // Just delete everything from prev, don't compute its current output
   const OutputState& pos = posi->second;
   for (OutputState::onode_iter ponode = pos.onodes.begin(); ponode != pos.onodes.end(); ++ponode) {
-    out_hotlist.Delete(**ponode);
+    out_batch.Delete(**ponode);
   }
   for (OutputState::child_iter child = pos.children.begin(); child != pos.children.end(); ++child) {
-    ComputeOutput_Delete(**child, out_hotlist);
+    ComputeOutput_Delete(**child, out_batch);
   }
   m_outputPerNode.erase(&node);
-  g_log.debug() << "Done computing DELETE output for node " << node << ".  Hotlist so far: " << out_hotlist.Print();
+  g_log.debug() << "Done computing DELETE output for node " << node << ".  Batch so far: " << out_batch.Print();
 }
 
 void IncParser::CleanupIfNeeded() {

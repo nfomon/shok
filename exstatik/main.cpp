@@ -8,8 +8,8 @@
 #include "Lexer.h"
 #include "Parser.h"
 
+#include "statik/Batch.h"
 #include "statik/Grapher.h"
-#include "statik/Hotlist.h"
 #include "statik/IncParser.h"
 #include "statik/List.h"
 #include "statik/Rule.h"
@@ -98,16 +98,16 @@ int main(int argc, char *argv[]) {
         g_log.info() << "* main: Inserting character '" << c << "'";
         INode node = parsers.at(0).Insert(List("", c), prev);
         if (!start) { start = node; }
-        Hotlist hotlist;
-        parsers.front().ExtractHotlist(hotlist);
+        Batch batch;
+        parsers.front().ExtractBatch(batch);
         for (parser_mod_iter i = parsers.begin()+1; i != parsers.end(); ++i) {
-          if (hotlist.IsEmpty()) {
-            g_log.info() << "* main: IncParser returned no hotlist items.";
+          if (batch.IsEmpty()) {
+            g_log.info() << "* main: IncParser returned no batch items.";
             break;
           } else {
-            g_log.info() << "* main: IncParser returned hotlist; sending to parser.  Hotlist:" << hotlist.Print();
-            i->UpdateWithHotlist(hotlist.GetHotlist());
-            i->ExtractHotlist(hotlist);
+            g_log.info() << "* main: IncParser returned batch; sending to parser.  Batch:" << batch.Print();
+            i->UpdateWithBatch(batch);
+            i->ExtractBatch(batch);
           }
         }
         prev = node;

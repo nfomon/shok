@@ -6,7 +6,7 @@
 
 #include "WindowAction.h"
 
-#include "statik/Hotlist.h"
+#include "statik/Batch.h"
 
 #include <vector>
 
@@ -16,7 +16,7 @@ struct WindowResponse {
   typedef std::vector<WindowAction> action_vec;
   typedef action_vec::const_iterator action_iter;
   action_vec actions;
-  statik::Hotlist hotlist;
+  statik::Batch batch;
 };
 
 }

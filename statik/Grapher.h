@@ -23,7 +23,7 @@ public:
   void AddSTree(const std::string& context, const STree& root, const std::string& label = "", const STree* initiator = NULL);
   void AddOList(const std::string& context, const List& start, const std::string& label = "");
   void AddIListeners(const std::string& context, const IncParser& incParser, const List& start);
-  void AddHotlist(const std::string& context, const Hotlist::hotlist_vec& hotlist);
+  void AddBatch(const std::string& context, const Batch& batch);
   void Signal(const std::string& context, const void*, bool isUpdate = false);
 
   bool IsDirty() const { return m_isDirty; }

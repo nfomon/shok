@@ -96,21 +96,21 @@ void Grapher::AddIListeners(const string& context, const IncParser& incParser, c
   m_isDirty = true;
 }
 
-void Grapher::AddHotlist(const string& context, const Hotlist::hotlist_vec& hotlist) {
-  for (Hotlist::hotlist_iter i = hotlist.begin(); i != hotlist.end(); ++i) {
+void Grapher::AddBatch(const string& context, const Batch& batch) {
+  for (Batch::batch_iter i = batch.begin(); i != batch.end(); ++i) {
     string color = "#770000";
     switch (i->second) {
-    case Hotlist::OP_INSERT:
+    case Batch::OP_INSERT:
       color = "#00bb44";
       break;
-    case Hotlist::OP_UPDATE:
+    case Batch::OP_UPDATE:
       color = "#2222cc";
       break;
-    case Hotlist::OP_DELETE:
+    case Batch::OP_DELETE:
       color = "#cc2222";
       break;
     default:
-      throw SError("Cannot add hotlist to Grapher: unknown Hotlist operation");
+      throw SError("Cannot add batch to Grapher: unknown operation");
     }
     m_graph += dotVar(i->first, context) + " [color=\"" + color + "\", penwidth=4.0];\n";
     m_isDirty = true;
