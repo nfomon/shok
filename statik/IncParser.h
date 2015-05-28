@@ -23,6 +23,9 @@ namespace statik {
 
 class Grapher;
 
+// Handle to an IList item; for the external Insert/Delete/Update caller
+typedef List* INode;
+
 class IncParser {
 public:
   typedef typename ListenerTable<const List*, STree*>::listener_set listener_set;
@@ -38,14 +41,13 @@ public:
   void ExtractHotlist(Hotlist& out_hotlist);
   listener_set GetListeners(const List& x) const;
 
-  // Insert() a new inode.  Call this AFTER attaching its connections in the
-  // input list.
-  void Insert(const List& inode);
-  // Delete() an inode.  Call this AFTER updating its left and right to point
-  // to each other, but leave this inode's left and right pointers intact.
-  void Delete(const List& inode);
-  // Update() the listeners of an inode, to let them know it has updated.
-  void Update(const List& inode);
+  // Insert a new item, after position pos (NULL for start).  Returns a handle
+  // to a copy of the item that is owned by the IncParser.
+  INode Insert(const List& inode, INode pos);
+  // Delete an item.
+  void Delete(INode inode);
+  // Update an item with a new value.
+  void Update(INode inode, const std::string& value);
 
   // Apply a bunch of inode insertions/updates/deletions
   void UpdateWithHotlist(const Hotlist::hotlist_vec& hotlist);
@@ -111,6 +113,7 @@ private:
   std::string m_name;
   bool m_needsCleanup;
   std::auto_ptr<Grapher> m_grapher;
+  ObjectPool<List> m_ilistPool;
   ObjectPool<STree> m_nodePool;
   OrderList m_orderList;
   action_map m_actions_by_depth;
@@ -120,6 +123,7 @@ private:
   typedef output_map::iterator output_mod_iter;
   output_map m_outputPerNode;
   std::set<const STree*> m_touchedNodes;
+  List* m_firstINode;
   int m_sancount;
 };
 

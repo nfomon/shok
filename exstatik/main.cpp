@@ -87,67 +87,17 @@ int main(int argc, char *argv[]) {
       parsers.push_back(new IncParser(auto_ptr<Rule>(c.release()), name, graphdir));
     }
 
-    List* start = NULL;
-    List* prev = NULL;
+    INode start = NULL;
+    INode prev = NULL;
     string line;
     while (getline(cin, line)) {
       //line += "\n";
-      // check for delete
-      if (line.size() >= 2 && line.size() <= 3 && line[0] == 'D' && line[1] >= '0' && line[1] <= '9') {
-        if (!start) {
-          throw SError("Cannot delete start of input: no input yet");
-        }
-        int delnum = line[1] - '0';
-        if (line.size() == 3 && line[2] >= '0' && line[2] <= '9') {
-          delnum *= 10;
-          delnum += line[2] - '0';
-        }
-        List* s = start;
-        if (!s) {
-          throw SError("Cannot delete entry without start");
-        }
-        if (0 == delnum) {
-          start = start->right;
-        }
-        for (int i = 0; i < delnum; ++i) {
-          s = s->right;
-          if (!s) {
-            throw SError("Reached end of input before reaching deletion index");
-          }
-        }
-        g_log.info();
-        g_log.info() << "* main: Deleting character '" << *s;
-        if (s->left) {
-          s->left->right = s->right;
-        }
-        if (s->right) {
-          s->right->left = s->left;
-        }
-        parsers.at(0).Delete(*s);
-        Hotlist hotlist;
-        parsers.front().ExtractHotlist(hotlist);
-        for (parser_mod_iter i = parsers.begin()+1; i != parsers.end(); ++i) {
-          if (hotlist.IsEmpty()) {
-            g_log.info() << "* main: IncParser returned no hotlist items.";
-            break;
-          } else {
-            g_log.info() << "* main: IncParser returned hotlist; sending to parser.  Hotlist:" << hotlist.Print();
-            i->UpdateWithHotlist(hotlist.GetHotlist());
-            i->ExtractHotlist(hotlist);
-          }
-        }
-        continue;
-      }
       for (size_t i=0; i < line.size(); ++i) {
-        List* c = new List("", string(1, line.at(i)));
-        if (!start) { start = c; }
-        if (prev) {
-          prev->right = c;
-          c->left = prev;
-        }
+        string c = string(1, line.at(i));
         g_log.info();
-        g_log.info() << "* main: Inserting character '" << *c;
-        parsers.at(0).Insert(*c);
+        g_log.info() << "* main: Inserting character '" << c << "'";
+        INode node = parsers.at(0).Insert(List("", c), prev);
+        if (!start) { start = node; }
         Hotlist hotlist;
         parsers.front().ExtractHotlist(hotlist);
         for (parser_mod_iter i = parsers.begin()+1; i != parsers.end(); ++i) {
@@ -160,7 +110,7 @@ int main(int argc, char *argv[]) {
             i->ExtractHotlist(hotlist);
           }
         }
-        prev = c;
+        prev = node;
       }
     }
     g_log.info() << "Clearing input";

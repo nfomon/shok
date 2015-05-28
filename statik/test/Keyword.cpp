@@ -34,50 +34,40 @@ void Keyword::run() {
   {
     auto_ptr<statik::Rule> r(KEYWORD("a"));
     statik::IncParser ip(r, "test2");
-
-    statik::List c1("1", "x");
-    ip.Insert(c1);
     const statik::STree& root = ip.GetRoot();
-    test(root.GetState().IsBad(), "x");
 
-    ip.Delete(c1);
-    test(root.IsClear());
+    {
+      statik::INode cx = ip.Insert(statik::List("cx", "x"), NULL);
+      test(root.GetState().IsBad(), "x");
 
-    statik::List c2("2", "a");
-    ip.Insert(c2);
-    test(root.GetState().IsDone(), "a");
+      ip.Delete(cx);
+      test(root.IsClear());
+    }
 
-    statik::List c3("3", "b");
-    c3.left = &c2;
-    c2.right = &c3;
-    ip.Insert(c3);
-    test(root.GetState().IsComplete(), "ab");
+    {
+      statik::INode ca = ip.Insert(statik::List("ca", "a"), NULL);
+      test(root.GetState().IsDone(), "a");
 
-    statik::List c4("4", "c");
-    c4.left = &c3;
-    c3.right = &c4;
-    ip.Insert(c4);
-    test(root.GetState().IsBad(), "abc");
+      statik::INode cb = ip.Insert(statik::List("cb", "b"), ca);
+      test(root.GetState().IsComplete(), "ab");
 
-    c2.right = &c4;
-    c4.left = &c2;
-    ip.Delete(c3);
-    test(root.GetState().IsComplete(), "ac");
+      statik::INode cc = ip.Insert(statik::List("cc", "c"), cb);
+      test(root.GetState().IsBad(), "abc");
 
-    c4.left = NULL;
-    ip.Delete(c2);
-    g_log.info() << root << " ; " << root.GetState();
-    test(root.GetState().IsBad(), "c");
+      ip.Delete(cb);
+      test(root.GetState().IsComplete(), "ac");
 
-    c4.left = &c2;
-    ip.Insert(c2);
-    test(root.GetState().IsComplete(), "ac");
+      ip.Delete(ca);
+      test(root.GetState().IsBad(), "c");
 
-    c2.right = NULL;
-    ip.Delete(c4);
-    test(root.GetState().IsDone(), "a");
+      statik::INode ca2 = ip.Insert(statik::List("2", "a"), NULL);
+      test(root.GetState().IsComplete(), "ac");
 
-    ip.Delete(c2);
-    test(root.IsClear());
+      ip.Delete(cc);
+      test(root.GetState().IsDone(), "a");
+
+      ip.Delete(ca2);
+      test(root.IsClear());
+    }
   }
 }

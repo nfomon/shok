@@ -32,6 +32,7 @@ IncParser::IncParser(auto_ptr<Rule> grammar,
     m_root(*this, m_rootRule, /*parent*/ NULL),
     m_name(name),
     m_needsCleanup(false),
+    m_firstINode(NULL),
     m_sancount(0) {
   m_rootRule.AddChild(grammar);
   if (!graphdir.empty()) {
@@ -58,21 +59,51 @@ IncParser::listener_set IncParser::GetListeners(const List& x) const {
   return m_listeners.GetListeners(&x);
 }
 
-void IncParser::Insert(const List& inode) {
+INode IncParser::Insert(const List& inode, INode pos) {
+  auto_ptr<List> node(new List(inode));
+  INode h = node.get();
+  m_ilistPool.Insert(node);
+  if (pos) {
+    h->left = pos;
+    h->right = pos->right;
+    if (h->right) {
+      h->right->left = h;
+    }
+    pos->right = h;
+  } else {
+    List* first = m_firstINode;
+    if (first) {
+      h->right = first;
+      first->left = h;
+    }
+    m_firstINode = h;
+  }
   Hotlist hotlist;
-  hotlist.Insert(inode);
+  hotlist.Insert(*h);
+  UpdateWithHotlist(hotlist.GetHotlist());
+  return h;
+}
+
+void IncParser::Delete(INode inode) {
+  if (inode->left) {
+    inode->left->right = inode->right;
+  }
+  if (inode->right) {
+    inode->right->left = inode->left;
+  }
+  if (m_firstINode == inode) {
+    m_firstINode = inode->right;
+  }
+  m_ilistPool.Unlink(*inode);
+  Hotlist hotlist;
+  hotlist.Delete(*inode);
   UpdateWithHotlist(hotlist.GetHotlist());
 }
 
-void IncParser::Delete(const List& inode) {
+void IncParser::Update(INode inode, const string& value) {
+  inode->value = value;
   Hotlist hotlist;
-  hotlist.Delete(inode);
-  UpdateWithHotlist(hotlist.GetHotlist());
-}
-
-void IncParser::Update(const List& inode) {
-  Hotlist hotlist;
-  hotlist.Update(inode);
+  hotlist.Update(*inode);
   UpdateWithHotlist(hotlist.GetHotlist());
 }
 
@@ -144,10 +175,7 @@ STree* IncParser::OwnNode(auto_ptr<STree> node) {
 }
 
 const List* IncParser::GetFirstINode() const {
-  if (m_root.IsClear() || m_root.GetIConnection().IsClear()) {
-    return NULL;
-  }
-  return &m_root.IStart();
+  return m_firstINode;
 }
 
 const List* IncParser::GetFirstONode() const {
@@ -468,8 +496,10 @@ void IncParser::ComputeOutput_Delete(const STree& node, Hotlist& out_hotlist) {
 void IncParser::CleanupIfNeeded() {
   if (m_needsCleanup) {
     g_log.debug() << "IncParser " << m_name << " - cleaning up";
-    g_san.debug() << "Cleaning up pool: " << string(m_nodePool);
+    g_san.debug() << "Cleaning up node pool: " << string(m_nodePool);
     m_nodePool.Cleanup();
+    g_san.debug() << "Cleaning up IList pool: " << string(m_ilistPool);
+    m_ilistPool.Cleanup();
     m_needsCleanup = false;
     SanityCheck();
   }
