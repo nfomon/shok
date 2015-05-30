@@ -41,21 +41,8 @@ IncParser::IncParser(auto_ptr<Rule> grammar,
   }
 }
 
-void IncParser::ExtractBatch(Batch& out_batch) {
-  g_log.debug() << "EXTRACT START: " << m_name;
-  if (m_touchedNodes.find(&m_root) != m_touchedNodes.end()) {
-    ComputeOutput_Update(m_root, out_batch);
-  }
-  g_log.debug() << "EXTRACT DONE: " << m_name;
-  m_touchedNodes.clear();
-  Cleanup();
-  if (!out_batch.IsEmpty()) {
-    DrawGraph(m_root, /*inode*/ NULL, &out_batch);
-  }
-}
-
-IncParser::listener_set IncParser::GetListeners(const List& x) const {
-  return m_listeners.GetListeners(&x);
+const STree& IncParser::GetRoot() const {
+  return m_root;
 }
 
 INode IncParser::Insert(const List& inode, INode pos) {
@@ -79,7 +66,7 @@ INode IncParser::Insert(const List& inode, INode pos) {
   }
   Batch b;
   b.Insert(*n);
-  UpdateWithBatch(b);
+  ApplyBatch(b);
   return n;
 }
 
@@ -96,17 +83,17 @@ void IncParser::Delete(INode inode) {
   m_ilistPool.Unlink(*inode);
   Batch b;
   b.Delete(*inode);
-  UpdateWithBatch(b);
+  ApplyBatch(b);
 }
 
 void IncParser::Update(INode inode, const string& value) {
   inode->value = value;
   Batch b;
   b.Update(*inode);
-  UpdateWithBatch(b);
+  ApplyBatch(b);
 }
 
-void IncParser::UpdateWithBatch(const Batch& batch) {
+void IncParser::ApplyBatch(const Batch& batch) {
   g_log.info() << "Updating IncParser " << m_name << " with batch of size " << batch.Size();
   for (Batch::batch_iter i = batch.begin(); i != batch.end(); ++i) {
     switch (i->second) {
@@ -126,6 +113,19 @@ void IncParser::UpdateWithBatch(const Batch& batch) {
   g_log.info() << "Done updating IncParser " << m_name << " with batch of size " << batch.Size();
 }
 
+void IncParser::ExtractChanges(Batch& out_batch) {
+  g_log.debug() << "EXTRACT START: " << m_name;
+  if (m_touchedNodes.find(&m_root) != m_touchedNodes.end()) {
+    ComputeOutput_Update(m_root, out_batch);
+  }
+  g_log.debug() << "EXTRACT DONE: " << m_name;
+  m_touchedNodes.clear();
+  Cleanup();
+  if (!out_batch.IsEmpty()) {
+    DrawGraph(m_root, /*inode*/ NULL, &out_batch);
+  }
+}
+
 void IncParser::Enqueue(ParseAction action) {
   g_log.info() << "IncParser " << m_name << ": Enqueuing action " << ParseAction::UnMapAction(action.action) << " - " << *action.node << " at depth " << action.node->GetDepth();
   int depth = action.node->GetDepth();
@@ -137,14 +137,6 @@ void IncParser::Enqueue(ParseAction action) {
   } else {
     // TODO if an equivalent action is already enqueued, just drop this one
     ai->second.push_back(action);
-  }
-}
-
-void IncParser::ClearNode(STree& x) {
-  m_listeners.RemoveAllListenings(&x);
-  if (&x != &m_root) {
-    g_san.debug() << "xx Unlinking node " << x << " - " << &x;
-    m_nodePool.Unlink(x);
   }
 }
 
@@ -172,6 +164,14 @@ STree* IncParser::OwnNode(auto_ptr<STree> node) {
   return m_nodePool.Insert(node);
 }
 
+void IncParser::ClearNode(STree& x) {
+  m_listeners.RemoveAllListenings(&x);
+  if (&x != &m_root) {
+    g_san.debug() << "xx Unlinking node " << x << " - " << &x;
+    m_nodePool.Unlink(x);
+  }
+}
+
 const List* IncParser::GetFirstINode() const {
   return m_firstINode;
 }
@@ -182,6 +182,14 @@ const List* IncParser::GetFirstONode() const {
 
 void IncParser::TouchNode(const STree& node) {
   m_touchedNodes.insert(&node);
+}
+
+int IncParser::INodeCompare(const List& a, const List& b) const {
+  return m_orderList.Compare(a, b);
+}
+
+IncParser::listener_set IncParser::GetListeners(const List& x) const {
+  return m_listeners.GetListeners(&x);
 }
 
 void IncParser::DrawGraph(const STree& onode, const List* inode, const Batch* batch, const STree* initiator) {
@@ -214,58 +222,7 @@ void IncParser::DrawGraph(const STree& onode, const List* inode, const Batch* ba
   m_grapher->SaveAndClear();
 }
 
-void IncParser::SanityCheck() {
-  g_log.debug() << "Sanity check " << m_sancount;
-  g_san.info();
-  g_san.info() << "Sanity check " << m_sancount;
-  SanityCheck(&m_root);
-  ++m_sancount;
-}
-
-void IncParser::SanityCheck(const STree* s) const {
-  g_san.info() << "SNode: " << s;
-  g_san.info() << ":: " << *s;
-  if (!s->GetIConnection().IsClear()) {
-    const List* inode = &s->IStart();
-    while (inode) {
-      g_san.info() << " - INode: " << inode;
-      g_san.info() << " - :: " << *inode;
-      if (inode == &s->IEnd()) {
-        break;
-      }
-      inode = inode->right;
-    }
-  }
-  for (STree::child_iter child = s->children.begin(); child != s->children.end(); ++child) {
-    g_san.info() << " - child: " << *child;
-    g_san.info() << " - :: " << **child;
-  }
-  for (STree::child_iter child = s->children.begin(); child != s->children.end(); ++child) {
-    if ((*child)->GetParent() != s) {
-      g_san.info() << " - child " << *child << " parent check fail; child's parent is: " << (*child)->GetParent();
-    }
-  }
-  for (STree::child_iter child = s->children.begin(); child != s->children.end(); ++child) {
-    g_san.info() << s << " (" << *s << ") -> " << *child;
-    SanityCheck(*child);
-  }
-  const List* onode = s->GetOutputFunc().OStart();
-  while (onode) {
-    g_san.info() << " - ONode: " << onode;
-    g_san.info() << " - :: " << *onode;
-    if (onode == s->GetOutputFunc().OEnd()) {
-      break;
-    }
-    onode = onode->right;
-  }
-  g_san.info() << "Sanity done for " << s;
-}
-
 /* private */
-
-const STree& IncParser::GetRoot() const {
-  return m_root;
-}
 
 void IncParser::InsertNode(const List& inode) {
   g_log.info() << "IncParser " << m_name << ": Inserting INode: " << inode << " with " << (inode.left ? "left" : "no left") << " and " << (inode.right ? "with a right" : "no right");
@@ -500,6 +457,49 @@ void IncParser::Cleanup() {
   SanityCheck();
 }
 
-int IncParser::INodeCompare(const List& a, const List& b) const {
-  return m_orderList.Compare(a, b);
+void IncParser::SanityCheck() {
+  g_log.debug() << "Sanity check " << m_sancount;
+  g_san.info();
+  g_san.info() << "Sanity check " << m_sancount;
+  SanityCheck(&m_root);
+  ++m_sancount;
+}
+
+void IncParser::SanityCheck(const STree* s) const {
+  g_san.info() << "SNode: " << s;
+  g_san.info() << ":: " << *s;
+  if (!s->GetIConnection().IsClear()) {
+    const List* inode = &s->IStart();
+    while (inode) {
+      g_san.info() << " - INode: " << inode;
+      g_san.info() << " - :: " << *inode;
+      if (inode == &s->IEnd()) {
+        break;
+      }
+      inode = inode->right;
+    }
+  }
+  for (STree::child_iter child = s->children.begin(); child != s->children.end(); ++child) {
+    g_san.info() << " - child: " << *child;
+    g_san.info() << " - :: " << **child;
+  }
+  for (STree::child_iter child = s->children.begin(); child != s->children.end(); ++child) {
+    if ((*child)->GetParent() != s) {
+      g_san.info() << " - child " << *child << " parent check fail; child's parent is: " << (*child)->GetParent();
+    }
+  }
+  for (STree::child_iter child = s->children.begin(); child != s->children.end(); ++child) {
+    g_san.info() << s << " (" << *s << ") -> " << *child;
+    SanityCheck(*child);
+  }
+  const List* onode = s->GetOutputFunc().OStart();
+  while (onode) {
+    g_san.info() << " - ONode: " << onode;
+    g_san.info() << " - :: " << *onode;
+    if (onode == s->GetOutputFunc().OEnd()) {
+      break;
+    }
+    onode = onode->right;
+  }
+  g_san.info() << "Sanity done for " << s;
 }

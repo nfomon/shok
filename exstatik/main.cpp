@@ -99,15 +99,15 @@ int main(int argc, char *argv[]) {
         INode node = parsers.at(0).Insert(List("", c), prev);
         if (!start) { start = node; }
         Batch batch;
-        parsers.front().ExtractBatch(batch);
+        parsers.front().ExtractChanges(batch);
         for (parser_mod_iter i = parsers.begin()+1; i != parsers.end(); ++i) {
           if (batch.IsEmpty()) {
             g_log.info() << "* main: IncParser returned no batch items.";
             break;
           } else {
             g_log.info() << "* main: IncParser returned batch; sending to parser.  Batch:" << batch.Print();
-            i->UpdateWithBatch(batch);
-            i->ExtractBatch(batch);
+            i->ApplyBatch(batch);
+            i->ExtractChanges(batch);
           }
         }
         prev = node;

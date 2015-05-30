@@ -25,12 +25,12 @@ ParserWindow::ParserWindow(auto_ptr<statik::Rule> rule,
 
 WindowResponse ParserWindow::Input(const statik::Batch& ibatch) {
   g_log.info() << "Updating incParser " << m_incParser.Name() << " with batch: " << ibatch.Print();
-  m_incParser.UpdateWithBatch(ibatch);
+  m_incParser.ApplyBatch(ibatch);
   WindowResponse response;
   // Find first item in incParser's output list, and draw everything
   response.actions.push_back(WindowAction(WindowAction::MOVE, 0, 0, 0));
   statik::Batch batch;
-  m_incParser.ExtractBatch(batch);
+  m_incParser.ExtractChanges(batch);
   g_log.info() << "Printing WindowResponse list.  Batch size is: " << batch.Size();
   if (!batch.IsEmpty()) {
     const statik::List* inode = m_incParser.GetFirstONode();

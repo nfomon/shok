@@ -36,10 +36,6 @@ public:
             const std::string& graphdir = "");
 
   const STree& GetRoot() const; // for tests
-  const State& GetState() const;
-
-  void ExtractBatch(Batch& out_batch);
-  listener_set GetListeners(const List& x) const;
 
   // Insert a new item, after position pos (NULL for start).  Returns a handle
   // to a copy of the item that is owned by the IncParser.
@@ -50,11 +46,13 @@ public:
   void Update(INode inode, const std::string& value);
 
   // Apply a batch of inode insertions/updates/deletions
-  void UpdateWithBatch(const Batch& batch);
+  void ApplyBatch(const Batch& batch);
+
+  void ExtractChanges(Batch& out_batch);
 
   void Enqueue(ParseAction action);
 
-  // Called from a rule/state regarding its DS node.
+  // Called from a rule, regarding its parse node.
   // Listens for updates to this inode.
   void Listen(STree& x, const List& inode);
   void Unlisten(STree& x, const List& inode);
@@ -81,13 +79,11 @@ public:
 
   int INodeCompare(const List& a, const List& b) const;
 
+  listener_set GetListeners(const List& x) const;
   void DrawGraph(const STree& onode,
                  const List* inode = NULL,
                  const Batch* batch = NULL,
                  const STree* initiator = NULL);
-
-  void SanityCheck();
-  void SanityCheck(const STree* s) const;
 
   std::string Name() const { return m_name; }
 
@@ -96,17 +92,23 @@ private:
   typedef action_queue::const_iterator action_iter;
   typedef action_queue::iterator action_mod_iter;
   typedef std::map<STree::depth_t, action_queue> action_map;
+  typedef std::map<const STree*, OutputState> output_map;
+  typedef output_map::const_iterator output_iter;
+  typedef output_map::iterator output_mod_iter;
 
-  // Called by UpdateWithBatch() and public Insert()/Delete()/Update()
+  // Called by ApplyBatch() and public Insert()/Delete()/Update()
   void InsertNode(const List& inode);
   void DeleteNode(const List& inode);
   void UpdateNode(const List& inode);
-
   void ProcessActions();
+
   void ComputeOutput_Update(const STree& node, Batch& out_batch);
   void ComputeOutput_Insert(const STree& node, Batch& out_batch);
   void ComputeOutput_Delete(const STree& node, Batch& out_batch);
   void Cleanup();
+
+  void SanityCheck();
+  void SanityCheck(const STree* s) const;
 
   Rule m_rootRule; // Rule for the Root node
   STree m_root; // Root of the parse tree
@@ -117,9 +119,7 @@ private:
   OrderList m_orderList;
   action_map m_actions_by_depth;
   ListenerTable<const List*, STree*> m_listeners;
-  typedef std::map<const STree*, OutputState> output_map;
-  typedef output_map::const_iterator output_iter;
-  typedef output_map::iterator output_mod_iter;
+
   output_map m_outputPerNode;
   std::set<const STree*> m_touchedNodes;
   List* m_firstINode;
