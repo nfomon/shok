@@ -50,6 +50,9 @@ INode IncParser::Insert(const List& inode, INode pos) {
   INode n = node.get();
   m_ilistPool.Insert(node);
   if (pos) {
+    if (&inode == pos) {
+      throw SError("Cannot Insert node " + string(inode) + " after itself");
+    }
     n->left = pos;
     n->right = pos->right;
     if (n->right) {
@@ -410,7 +413,8 @@ void IncParser::ComputeOutput_Insert(const STree& node, Batch& out_batch) {
   node.GetOutputFunc()();
   const OutputState& os = node.GetOutputFunc().GetState();
 
-  // Just insert everything, disregard what the prev output says
+  // Just insert everything the node is currently emitting; disregard its
+  // previous output
   for (OutputState::onode_iter onode = os.onodes.begin(); onode != os.onodes.end(); ++onode) {
     out_batch.Insert(**onode);
   }
@@ -436,7 +440,8 @@ void IncParser::ComputeOutput_Delete(const STree& node, Batch& out_batch) {
     return;
   }
 
-  // Just delete everything from prev, don't compute its current output
+  // Just delete everything the node was previously emitting; don't compute its
+  // current output
   const OutputState& pos = posi->second;
   for (OutputState::onode_iter ponode = pos.onodes.begin(); ponode != pos.onodes.end(); ++ponode) {
     out_batch.Delete(**ponode);

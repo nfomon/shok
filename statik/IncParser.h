@@ -44,7 +44,6 @@ public:
   void Delete(INode inode);
   // Update an item with a new value.
   void Update(INode inode, const std::string& value);
-
   // Apply a batch of inode insertions/updates/deletions
   void ApplyBatch(const Batch& batch);
 
