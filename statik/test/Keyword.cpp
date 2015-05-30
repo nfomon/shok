@@ -3,6 +3,7 @@
 
 #include "Keyword.h"
 
+#include "statik/Batch.h"
 #include "statik/IncParser.h"
 #include "statik/Keyword.h"
 #include "statik/List.h"
@@ -17,7 +18,6 @@ using std::auto_ptr;
 using namespace statik_test;
 
 void Keyword::run() {
-
   // Blank keyword
   {
     bool p = false;
@@ -41,7 +41,7 @@ void Keyword::run() {
       test(root.GetState().IsBad(), "x");
 
       ip.Delete(cx);
-      test(root.IsClear());
+      test(root.IsClear(), "clear");
     }
 
     {
@@ -68,6 +68,34 @@ void Keyword::run() {
 
       ip.Delete(ca2);
       test(root.IsClear());
+    }
+
+    // Batch updates
+    {
+      statik::Batch b;
+      statik::List ca("ca", "a");
+      statik::List cb("cb", "b");
+
+      b.Insert(ca);
+      ip.ApplyBatch(b);
+      test(root.GetState().IsDone(), "a");
+
+      b.Clear();
+      b.Delete(ca);
+      ip.ApplyBatch(b);
+      test(root.IsClear(), "clear");
+
+      b.Clear();
+      b.Insert(ca);
+      b.Insert(cb);
+      ip.ApplyBatch(b);
+      test(root.GetState().IsComplete(), "ab");
+
+      b.Clear();
+      b.Delete(ca);
+      b.Delete(cb);
+      ip.ApplyBatch(b);
+      test(root.IsClear(), "clear");
     }
   }
 }
