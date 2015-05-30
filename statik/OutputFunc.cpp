@@ -70,12 +70,14 @@ auto_ptr<OutputFunc> OutputFunc_Pass::Clone() {
 void OutputFunc_Pass::operator() () {
   if (m_node->children.empty()) {
     // Leave our dangling old state, I guess
-  } else {
-    const STree& child = *m_node->children.front();
-    m_state = child.GetOutputFunc().GetState();
-    m_ostart = child.GetOutputFunc().OStart();
-    m_oend = child.GetOutputFunc().OEnd();
+  } else if (m_node->children.size() != 1) {
+    throw SError("OutputFunc_Pass: must have exactly 1 child");
   }
+  const STree& child = *m_node->children.front();
+  m_state.children.clear();
+  m_state.children.insert(&child);
+  m_ostart = child.GetOutputFunc().OStart();
+  m_oend = child.GetOutputFunc().OEnd();
 }
 
 /* OutputFunc_Basic */
@@ -88,7 +90,6 @@ OutputFunc_Basic::OutputFunc_Basic(const string& name, const string& value)
 void OutputFunc_Basic::operator() () {
   g_log.debug() << "OutputFunc_Basic " << m_onode;
   if (!m_ostart) {
-    g_log.debug() << " - init";
     m_ostart = &m_onode;
     m_oend = &m_onode;
     m_state.onodes.insert(&m_onode);
@@ -109,7 +110,6 @@ OutputFunc_IValues::OutputFunc_IValues(const string& name)
 void OutputFunc_IValues::operator() () {
   g_log.debug() << "OutputFunc_IValues " << m_onode;
   if (!m_ostart) {
-    g_log.debug() << " - init";
     m_ostart = &m_onode;
     m_oend = &m_onode;
     m_state.onodes.insert(&m_onode);
