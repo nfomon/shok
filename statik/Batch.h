@@ -39,8 +39,8 @@ public:
   typedef std::vector<batchpair> batch_vec;
   typedef batch_vec::const_iterator batch_iter;
 
-  const batch_iter& begin() const { return m_batch.begin(); }
-  const batch_iter& end() const { return m_batch.end(); }
+  batch_iter begin() const { return m_batch.begin(); }
+  batch_iter end() const { return m_batch.end(); }
   size_t Size() const { return m_batch.size(); }
   bool IsEmpty() const { return m_batch.empty(); }
 
