@@ -31,7 +31,6 @@ IncParser::IncParser(auto_ptr<Rule> grammar,
   : m_rootRule(name, MakeParseFunc_Root(name), MakeOutputFunc_Pass()),
     m_root(*this, m_rootRule, /*parent*/ NULL),
     m_name(name),
-    m_needsCleanup(false),
     m_firstINode(NULL),
     m_sancount(0) {
   m_rootRule.AddChild(grammar);
@@ -49,7 +48,7 @@ void IncParser::ExtractBatch(Batch& out_batch) {
   }
   g_log.debug() << "EXTRACT DONE: " << m_name;
   m_touchedNodes.clear();
-  m_needsCleanup = true;
+  Cleanup();
   if (!out_batch.IsEmpty()) {
     DrawGraph(m_root, /*inode*/ NULL, &out_batch);
   }
@@ -109,7 +108,6 @@ void IncParser::Update(INode inode, const string& value) {
 
 void IncParser::UpdateWithBatch(const Batch& batch) {
   g_log.info() << "Updating IncParser " << m_name << " with batch of size " << batch.Size();
-  CleanupIfNeeded();
   for (Batch::batch_iter i = batch.begin(); i != batch.end(); ++i) {
     switch (i->second) {
     case Batch::OP_INSERT:
@@ -493,16 +491,13 @@ void IncParser::ComputeOutput_Delete(const STree& node, Batch& out_batch) {
   g_log.debug() << "Done computing DELETE output for node " << node << ".  Batch so far: " << out_batch.Print();
 }
 
-void IncParser::CleanupIfNeeded() {
-  if (m_needsCleanup) {
-    g_log.debug() << "IncParser " << m_name << " - cleaning up";
-    g_san.debug() << "Cleaning up node pool: " << string(m_nodePool);
-    m_nodePool.Cleanup();
-    g_san.debug() << "Cleaning up IList pool: " << string(m_ilistPool);
-    m_ilistPool.Cleanup();
-    m_needsCleanup = false;
-    SanityCheck();
-  }
+void IncParser::Cleanup() {
+  g_log.debug() << "IncParser " << m_name << " - cleaning up";
+  g_san.debug() << "Cleaning up node pool: " << string(m_nodePool);
+  m_nodePool.Cleanup();
+  g_san.debug() << "Cleaning up IList pool: " << string(m_ilistPool);
+  m_ilistPool.Cleanup();
+  SanityCheck();
 }
 
 int IncParser::INodeCompare(const List& a, const List& b) const {

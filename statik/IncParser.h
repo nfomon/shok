@@ -106,12 +106,11 @@ private:
   void ComputeOutput_Update(const STree& node, Batch& out_batch);
   void ComputeOutput_Insert(const STree& node, Batch& out_batch);
   void ComputeOutput_Delete(const STree& node, Batch& out_batch);
-  void CleanupIfNeeded();
+  void Cleanup();
 
   Rule m_rootRule; // Rule for the Root node
   STree m_root; // Root of the parse tree
   std::string m_name;
-  bool m_needsCleanup;
   std::auto_ptr<Grapher> m_grapher;
   ObjectPool<List> m_ilistPool;
   ObjectPool<STree> m_nodePool;
