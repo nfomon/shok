@@ -345,109 +345,127 @@ void IncParser::ProcessActions() {
 void IncParser::ComputeOutput_Update(const STree& node, Batch& out_batch) {
   g_log.debug() << "IncParser " << m_name << ": Computing output UPDATE for node " << node;
 
-  node.GetOutputFunc()();
-  const OutputState& os = node.GetOutputFunc().GetState();
-  output_mod_iter posi = m_outputPerNode.find(&node);
+  node.GetOutputFunc() ();
+  const OutputList& output = node.GetOutputFunc().GetOutput();
+  output_mod_iter prev_output_i = m_outputPerNode.find(&node);
 
-  if (m_outputPerNode.end() == posi) {
+  if (m_outputPerNode.end() == prev_output_i) {
     // We weren't emitting before, but are emitting now.  Insert all.
-    g_log.debug() << " - was emitting nothing; inserting all";
+    g_log.debug() << " - was not emitting, but is now; inserting all";
     return ComputeOutput_Insert(node, out_batch);
   }
 
-  OutputState& pos = posi->second;
-  g_log.debug() << node << " was emitting " << pos.onodes.size() << " ONodes and " << pos.children.size() << " children";
-  g_log.debug() << node << " is now emitting " << os.onodes.size() << " ONodes and " << os.children.size() << " children";
-  // ONodes
-  for (OutputState::onode_iter onode = os.onodes.begin(); onode != os.onodes.end(); ++onode) {
-    OutputState::onode_iter ponode = pos.onodes.find(*onode);
-    if (pos.onodes.end() == ponode) {
-      g_log.debug() << node << " WAS NOT EMITTING node " << **onode << "; inserting now.";
-      out_batch.Insert(**onode);
+  OutputList& prev_output = prev_output_i->second;
+  g_log.debug() << node << " was emitting " << prev_output.size() << " items";
+  g_log.debug() << node << " is now emitting " << output.size() << " items";
+
+  // Linear pass through both lists, comparing elements.
+  OutputList::const_iterator item = output.begin();
+  OutputList::const_iterator prev_item = prev_output.begin();
+  while (item != output.end() && prev_item != prev_output.end()) {
+    if (output.end() == item) {
+      RemoveOutput(*prev_item, out_batch);
+      ++prev_item;
+    } else if (prev_output.end() == prev_item) {
+      InsertOutput(*item, out_batch);
+      ++item;
+    } else if (&*item == &*prev_item) {
+      UpdateOutput(*item, out_batch);
+      ++item;
+      ++prev_item;
     } else {
-      g_log.debug() << node << " WAS EMITTING node " << **onode << "; updating, and erasing from pos.";
-      pos.onodes.erase(ponode);
-      if (os.value != pos.value) {
-        out_batch.Update(**onode);
+      // Buffer both sides, and keep a lookup-set so we can identify if/when we
+      // find a node in one list that was surpassed in the other.
+      typedef set<const OutputItem*> node_set;
+      typedef node_set::const_iterator node_mod_iter;
+      node_set ins_set;
+      node_set del_set;
+      OutputList::const_iterator ins_item = item;
+      OutputList::const_iterator del_item = prev_item;
+      while (ins_item != output.end() && del_item != prev_output.end()) {
+        node_mod_iter find_ins = ins_set.find(&*prev_item);
+        if (find_ins != ins_set.end()) {
+          // insert nodes up to find_ins
+          do {
+            InsertOutput(*item, out_batch);
+            ++item;
+          } while (*find_ins != &*item);
+          // then remove the nodes up to find_ins from ins_set, and advance item to find_ins+1
+            // - actually, we can just nix the ins_set, since we'll break. meh
+          ++item;
+          // prev_item stays where it is
+          // then break
+          break;
+        }
+        node_mod_iter find_del = del_set.find(&*item);
+        if (find_del != del_set.end()) {
+          do {
+            RemoveOutput(*prev_item, out_batch);
+            ++prev_item;
+          } while (*find_del != &*prev_item);
+          ++prev_item;
+          break;
+        }
+        ins_set.insert(&*ins_item);
+        del_set.insert(&*del_item);
+        ++ins_item;
+        ++del_item;
       }
     }
   }
-  for (OutputState::onode_iter ponode = pos.onodes.begin(); ponode != pos.onodes.end(); ++ponode) {
-    g_log.debug() << "Update causes deletion of ponode " << **ponode;
-    out_batch.Delete(**ponode);
+  for (; item != output.end(); ++item) {
+    InsertOutput(*item, out_batch);
+  }
+  for (; prev_item != prev_output.end(); ++prev_item) {
+    RemoveOutput(*prev_item, out_batch);
   }
 
-  // Children
-  for (OutputState::child_iter child = os.children.begin(); child != os.children.end(); ++child) {
-    OutputState::child_iter pchild = pos.children.find(*child);
-    if (pos.children.end() == pchild) {
-      g_log.debug() << node << " WAS NOT EMITTING child " << **child << "; inserting now.";
-      ComputeOutput_Insert(**child, out_batch);
-    } else {
-      g_log.debug() << node << " WAS EMITTING child " << **child << "; updating child.";
-      pos.children.erase(pchild);
-      if (m_touchedNodes.find(*child) != m_touchedNodes.end()) {
-        ComputeOutput_Update(**child, out_batch);
-      }
-    }
-  }
-
-  for (OutputState::child_iter pchild = pos.children.begin(); pchild != pos.children.end(); ++pchild) {
-    g_log.debug() << "Update causes deletion of pchild " << **pchild;
-    ComputeOutput_Delete(**pchild, out_batch);
-  }
-
-  if (os.onodes.empty() && os.children.empty()) {
+  if (output.empty()) {
     m_outputPerNode.erase(&node);
   } else {
-    m_outputPerNode[&node] = os;   // copy
+    m_outputPerNode[&node] = output;  // copy
   }
+
   g_log.debug() << "Done computing UPDATE output for node " << node << ".  Batch so far: " << out_batch.Print();
-  g_log.debug() << " - have " << os.onodes.size() << " ONodes and " << os.children.size() << " children";
-  node.GetOutputFunc().ConnectONodes();
+  node.GetOutputFunc().Sync();
 }
 
 void IncParser::ComputeOutput_Insert(const STree& node, Batch& out_batch) {
   g_log.debug() << "IncParser " << m_name << ": Computing output INSERT for node " << node;
 
-  node.GetOutputFunc()();
-  const OutputState& os = node.GetOutputFunc().GetState();
+  node.GetOutputFunc() ();
+  const OutputList& output = node.GetOutputFunc().GetOutput();
 
   // Just insert everything the node is currently emitting; disregard its
   // previous output
-  for (OutputState::onode_iter onode = os.onodes.begin(); onode != os.onodes.end(); ++onode) {
-    out_batch.Insert(**onode);
-  }
-  for (OutputState::child_iter child = os.children.begin(); child != os.children.end(); ++child) {
-    ComputeOutput_Insert(**child, out_batch);
+  for (OutputList::const_iterator item = output.begin();
+       item != output.end(); ++item) {
+    InsertOutput(*item, out_batch);
   }
 
-  if (os.onodes.empty() && os.children.empty()) {
+  if (output.empty()) {
     m_outputPerNode.erase(&node);
   } else {
-    m_outputPerNode[&node] = os;   // copy
+    m_outputPerNode[&node] = output;  // copy
   }
   g_log.debug() << "Done computing INSERT output for node " << node << ".  Batch so far: " << out_batch.Print();
-  g_log.debug() << m_name << " node " << node << " is now emitting " << os.onodes.size() << " ONodes and " << os.children.size() << " children.";
-  node.GetOutputFunc().ConnectONodes();
+  node.GetOutputFunc().Sync();
 }
 
 void IncParser::ComputeOutput_Delete(const STree& node, Batch& out_batch) {
   g_log.debug() << "IncParser " << m_name << ": Computing output DELETE for node " << node;
 
-  output_mod_iter posi = m_outputPerNode.find(&node);
-  if (m_outputPerNode.end() == posi) {
+  output_mod_iter prev_output_i = m_outputPerNode.find(&node);
+  if (m_outputPerNode.end() == prev_output_i) {
     return;
   }
+  OutputList& prev_output = prev_output_i->second;
 
   // Just delete everything the node was previously emitting; don't compute its
   // current output
-  const OutputState& pos = posi->second;
-  for (OutputState::onode_iter ponode = pos.onodes.begin(); ponode != pos.onodes.end(); ++ponode) {
-    out_batch.Delete(**ponode);
-  }
-  for (OutputState::child_iter child = pos.children.begin(); child != pos.children.end(); ++child) {
-    ComputeOutput_Delete(**child, out_batch);
+  for (OutputList::const_iterator prev_item = prev_output.begin();
+       prev_item != prev_output.end(); ++prev_item) {
+    RemoveOutput(*prev_item, out_batch);
   }
   m_outputPerNode.erase(&node);
   g_log.debug() << "Done computing DELETE output for node " << node << ".  Batch so far: " << out_batch.Print();
@@ -460,6 +478,30 @@ void IncParser::Cleanup() {
   g_san.debug() << "Cleaning up IList pool: " << string(m_ilistPool);
   m_ilistPool.Cleanup();
   SanityCheck();
+}
+
+void IncParser::InsertOutput(const OutputItem& item, Batch& out_batch) {
+  if (item.onode) {
+    out_batch.Insert(*item.onode);
+  } else {
+    ComputeOutput_Insert(*item.child, out_batch);
+  }
+}
+
+void IncParser::RemoveOutput(const OutputItem& item, Batch& out_batch) {
+  if (item.onode) {
+    out_batch.Delete(*item.onode);
+  } else {
+    ComputeOutput_Delete(*item.child, out_batch);
+  }
+}
+
+void IncParser::UpdateOutput(const OutputItem& item, Batch& out_batch) {
+  if (item.onode) {
+    out_batch.Update(*item.onode);
+  } else {
+    ComputeOutput_Update(*item.child, out_batch);
+  }
 }
 
 void IncParser::SanityCheck() {

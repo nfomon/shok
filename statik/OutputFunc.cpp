@@ -55,6 +55,29 @@ OutputFunc::OutputFunc()
     m_oend(NULL) {
 }
 
+void OutputFunc::Sync() {
+  if (m_output.empty()) {
+    m_ostart = NULL;
+    m_oend = NULL;
+    return;
+  }
+  {
+    OutputItem& front = m_output.front();
+    if (front.onode) {
+      m_ostart = front.onode;
+    } else {
+      m_ostart = front.child->GetOutputFunc().OStart();
+    }
+  } {
+    OutputItem& back = m_output.back();
+    if (back.onode) {
+      m_oend = back.onode;
+    } else {
+      m_oend = back.child->GetOutputFunc().OEnd();
+    }
+  }
+}
+
 /* OutputFunc_Silent */
 
 auto_ptr<OutputFunc> OutputFunc_Silent::Clone() {
@@ -74,10 +97,8 @@ void OutputFunc_Pass::operator() () {
     throw SError("OutputFunc_Pass: must have exactly 1 child");
   }
   const STree& child = *m_node->children.front();
-  m_state.children.clear();
-  m_state.children.insert(&child);
-  m_ostart = child.GetOutputFunc().OStart();
-  m_oend = child.GetOutputFunc().OEnd();
+  m_output.clear();
+  m_output.push_back(OutputItem(child));
 }
 
 /* OutputFunc_Basic */
@@ -89,10 +110,8 @@ OutputFunc_Basic::OutputFunc_Basic(const string& name, const string& value)
 
 void OutputFunc_Basic::operator() () {
   g_log.debug() << "OutputFunc_Basic " << m_onode;
-  if (!m_ostart) {
-    m_ostart = &m_onode;
-    m_oend = &m_onode;
-    m_state.onodes.insert(&m_onode);
+  if (m_output.empty()) {
+    m_output.push_back(OutputItem(m_onode));
   }
 }
 
@@ -109,12 +128,10 @@ OutputFunc_IValues::OutputFunc_IValues(const string& name)
 
 void OutputFunc_IValues::operator() () {
   g_log.debug() << "OutputFunc_IValues " << m_onode;
-  if (!m_ostart) {
-    m_ostart = &m_onode;
-    m_oend = &m_onode;
-    m_state.onodes.insert(&m_onode);
+  if (m_output.empty()) {
+    m_output.push_back(m_onode);
   }
-
+  /*
   string value;
   const List* ilast = NULL;
   if (m_node->GetState().IsComplete()) {
@@ -124,6 +141,7 @@ void OutputFunc_IValues::operator() () {
     value += i->value;
   }
   m_state.value = value;
+  */
 }
 
 auto_ptr<OutputFunc> OutputFunc_IValues::Clone() {
@@ -139,7 +157,7 @@ OutputFunc_Winner::OutputFunc_Winner()
 
 void OutputFunc_Winner::operator() () {
   g_log.debug() << "OutputFunc_Winner() " << *m_node;
-  m_state.children.clear();
+  m_output.clear();
   const State& state = m_node->GetState();
   const STree* winner = NULL;
   for (STree::child_iter i = m_node->children.begin(); i != m_node->children.end(); ++i) {
@@ -162,12 +180,13 @@ void OutputFunc_Winner::operator() () {
   if (winner) {
     g_log.debug() << "**** OutputFunc_Winner: " << *m_node << " Declaring winner " << *winner;
     m_winner = winner;
-    m_state.children.insert(m_winner);
+    m_output.push_back(OutputItem(*m_winner));
   } else {
     g_log.debug() << "**** OutputFunc_Winner: No winner.";
   }
 }
 
+/*
 void OutputFunc_Winner::ConnectONodes() {
   g_log.debug() << "OutputFunc_Winner::ConnectONodes() " << *m_node;
   if (m_winner) {
@@ -182,6 +201,7 @@ void OutputFunc_Winner::ConnectONodes() {
     m_oend = NULL;
   }
 }
+*/
 
 auto_ptr<OutputFunc> OutputFunc_Winner::Clone() {
   return auto_ptr<OutputFunc>(new OutputFunc_Winner());
@@ -191,12 +211,12 @@ auto_ptr<OutputFunc> OutputFunc_Winner::Clone() {
 
 void OutputFunc_Sequence::operator() () {
   g_log.debug() << "OutputFunc_Sequence() " << *m_node;
-  m_ostart = NULL;
-  m_oend = NULL;
-  m_state.children.clear();
+  m_output.clear();
 
   if (m_node->GetState().IsBad()) {
-    m_state.children.insert(m_node->children.begin(), m_node->children.end());
+    for (STree::child_iter child = m_node->children.begin(); child != m_node->children.end(); ++child) {
+      m_output.push_back(OutputItem(**child));
+    }
     return;
   }
 
@@ -211,15 +231,16 @@ void OutputFunc_Sequence::operator() () {
       break;
     } else if (istate.IsDone() || istate.IsOK()) {
       g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " aborting after " << (istate.IsOK() ? "ok" : "done") << " child " << **child;
-      m_state.children.insert(*child);
+      m_output.push_back(**child);
       break;
     } else if (!istate.IsComplete()) {
       throw SError("OutputFunc Seq found child in unknown state");
     }
-    m_state.children.insert(*child);
+    m_output.push_back(**child);
   }
 }
 
+/*
 void OutputFunc_Sequence::ConnectONodes() {
   g_log.debug() << "OutputFunc_Sequence::ConnectONodes() " << *m_node;
   g_log.debug() << "OutputFunc_Sequence at " << *m_node << ": Connecting ONodes";
@@ -256,6 +277,7 @@ void OutputFunc_Sequence::ConnectONodes() {
     }
   }
 }
+*/
 
 auto_ptr<OutputFunc> OutputFunc_Sequence::Clone() {
   return auto_ptr<OutputFunc>(new OutputFunc_Sequence());
@@ -278,17 +300,11 @@ void OutputFunc_Cap::Init(const STree& x) {
 
 void OutputFunc_Cap::operator() () {
   g_log.debug() << "OutputFunc_Cap() " << *m_node;
-  if (!m_ostart) {
-    m_ostart = &m_capStart;
-    m_oend = &m_capEnd;
-  }
-
   (*m_outputFunc)();
-  m_state = m_outputFunc->GetState();
-  m_state.onodes.insert(&m_capStart);
-  m_state.onodes.insert(&m_capEnd);
+  m_output = m_outputFunc->GetOutput();
 }
 
+/*
 void OutputFunc_Cap::ConnectONodes() {
   g_log.debug() << "OutputFunc_Cap at " << *m_node << ": Connecting ONodes";
   m_outputFunc->ConnectONodes();
@@ -305,6 +321,7 @@ void OutputFunc_Cap::ConnectONodes() {
     m_capEnd.left = &m_capStart;
   }
 }
+*/
 
 auto_ptr<OutputFunc> OutputFunc_Cap::Clone() {
   return auto_ptr<OutputFunc>(new OutputFunc_Cap(m_outputFunc->Clone(), m_cap));

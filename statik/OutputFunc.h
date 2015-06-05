@@ -6,6 +6,7 @@
 
 #include "List.h"
 
+#include <list>
 #include <map>
 #include <memory>
 #include <set>
@@ -24,15 +25,18 @@ std::auto_ptr<OutputFunc> MakeOutputFunc_Winner();
 std::auto_ptr<OutputFunc> MakeOutputFunc_Sequence();
 std::auto_ptr<OutputFunc> MakeOutputFunc_Cap(std::auto_ptr<OutputFunc> outputFunc, const std::string& cap);
 
-struct OutputState {
-  typedef std::set<const List*> onode_set;
-  typedef onode_set::const_iterator onode_iter;
-  typedef std::set<const STree*> child_set;
-  typedef child_set::const_iterator child_iter;
-  onode_set onodes;
-  child_set children;
-  std::string value;
+struct OutputItem {
+  OutputItem(const List& onode)
+    : onode(&onode),
+      child(NULL) {}
+  OutputItem(const STree& child)
+    : onode(NULL),
+      child(&child) {}
+  const List* onode;
+  const STree* child;
 };
+
+typedef std::list<OutputItem> OutputList;
 
 class OutputFunc {
 public:
@@ -41,19 +45,23 @@ public:
 
   virtual void Init(const STree& x) { m_node = &x; }
 
-  const OutputState& GetState() { return m_state; }
-  List* OStart() { return m_ostart; }
-  List* OEnd() { return m_oend; }
+  const OutputList& GetOutput() { return m_output; }
+  const List* OStart() { return m_ostart; }
+  const List* OEnd() { return m_oend; }
 
+  // Compute new output state.  Called before any children.
   virtual void operator() () = 0;
-  virtual void ConnectONodes() {}
+  void Sync();    // Determine start/end.  Called after children are computed.
   virtual std::auto_ptr<OutputFunc> Clone() = 0;
 
 protected:
+
   const STree* m_node;
-  OutputState m_state;
-  List* m_ostart;    // first emittable olist node that is spanned
-  List* m_oend;      // last emittable olist node that is spanned
+  OutputList m_output;
+
+private:
+  const List* m_ostart; // first emittable olist node that is spanned
+  const List* m_oend;   // last emittable olist node that is spanned
 };
 
 class OutputFunc_Silent : public OutputFunc {
@@ -110,7 +118,6 @@ public:
   virtual ~OutputFunc_Winner() {}
 
   virtual void operator() ();
-  virtual void ConnectONodes();
   virtual std::auto_ptr<OutputFunc> Clone();
 
 private:
@@ -125,7 +132,6 @@ public:
   virtual ~OutputFunc_Sequence() {}
 
   virtual void operator() ();
-  virtual void ConnectONodes();
   virtual std::auto_ptr<OutputFunc> Clone();
 };
 
@@ -137,7 +143,6 @@ public:
 
   virtual void Init(const STree& x);
   virtual void operator() ();
-  virtual void ConnectONodes();
   virtual std::auto_ptr<OutputFunc> Clone();
 
 protected:

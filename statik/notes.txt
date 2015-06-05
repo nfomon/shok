@@ -1110,3 +1110,22 @@ This has to do with what the consumer wants: do they care to know that our outpu
 Other work:
 3. Tests
 
+
+-----
+2k15-05-28
+
+Root isn't outputting
+
+IncParser::ExtractBatch()... can we clean that up
+ - IncParser has m_outputPerNode, a map<const STree*, OutputState>.
+ - ComputeOutput_Update (_Insert, _Delete) destructively changes m_outputPerNode -- just the parts with nodes we've cared to look at this round.  We'll leave a bunch of OutputStates alone in that "tree".
+
+
+Batches: Satisfy the contract please.  Going into the batch, need each item to pretend like it exists against the list that actually would exist at that point.
+ - Coming out of the batch, see if we can UpdateWithBatch() (rename to ApplyBatch()) one-by-one, then.
+
+I think we can eliminate ConnectONodes(), and just do the "connecting" implicitly when we add things to the batch.
+OutputState has a set of onodes and a set of children.  Replace this with a vector of either-onode-or-child.
+Batch should probably have Insert-pos on each element (or at least the Inserts).
+
+

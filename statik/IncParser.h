@@ -91,7 +91,7 @@ private:
   typedef action_queue::const_iterator action_iter;
   typedef action_queue::iterator action_mod_iter;
   typedef std::map<STree::depth_t, action_queue> action_map;
-  typedef std::map<const STree*, OutputState> output_map;
+  typedef std::map<const STree*, OutputList> output_map;
   typedef output_map::const_iterator output_iter;
   typedef output_map::iterator output_mod_iter;
 
@@ -105,6 +105,11 @@ private:
   void ComputeOutput_Insert(const STree& node, Batch& out_batch);
   void ComputeOutput_Delete(const STree& node, Batch& out_batch);
   void Cleanup();
+
+  // Convenience wrappers for ComputeOutput_*
+  void InsertOutput(const OutputItem& item, Batch& out_batch);
+  void RemoveOutput(const OutputItem& item, Batch& out_batch);
+  void UpdateOutput(const OutputItem& item, Batch& out_batch);
 
   void SanityCheck();
   void SanityCheck(const STree* s) const;
