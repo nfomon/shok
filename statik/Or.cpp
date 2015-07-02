@@ -34,6 +34,9 @@ void ParseFunc_Or::operator() (ParseAction::Action action, const List& inode, co
 
   if (ParseAction::Restart == action) {
     if (m_node->children.empty()) {
+      if (m_node->GetRule().GetChildren().empty()) {
+        throw SError("Or rule must have at least one child");
+      }
       for (Rule::child_iter i = m_node->GetRule().GetChildren().begin();
           i != m_node->GetRule().GetChildren().end(); ++i) {
         (*i)->MakeNode(*m_node, inode);

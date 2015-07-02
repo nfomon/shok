@@ -32,10 +32,51 @@ struct OutputItem {
   OutputItem(const STree& child)
     : onode(NULL),
       child(&child) {}
+  bool operator==(const OutputItem& rhs) const {
+    return onode == rhs.onode && child == rhs.child;
+  }
+  bool operator!=(const OutputItem& rhs) const {
+    return !(*this==rhs);
+  }
+  bool operator<(const OutputItem& rhs) const {
+    if (onode && rhs.onode) {
+      return onode < rhs.onode;
+    }
+    if (child && rhs.child) {
+      return child < rhs.child;
+    }
+    return !!child;
+  }
   const List* onode;
   const STree* child;
+  const List* ostart;     // set by IncParser
+  const List* oend;       // set by IncParser
+  std::string prev_value; // set/used by IncParser, not OutputFuncs
 };
 
+/*
+class OutputList {
+public:
+  typedef output_list::const_iterator const_iterator;
+  typedef output_list::iterator iterator;
+  const_iterator begin() const { return m_output.begin(); }
+  const_iterator end() const { return m_output.end(); }
+  size_t size() const { return m_output.size(); }
+  List* OStart() const {
+    if (m_output.empty()) {
+      return NULL;
+    }
+    OutputItem& start = m_output.front();
+    if (start.onode) {
+      return start.onode;
+    }
+    return start.child->GetOutputList().OStart();
+  }
+private:
+  typedef std::list<OutputItem> output_list;
+  output_list m_output;
+};
+*/
 typedef std::list<OutputItem> OutputList;
 
 class OutputFunc {
@@ -45,7 +86,7 @@ public:
 
   virtual void Init(const STree& x) { m_node = &x; }
 
-  const OutputList& GetOutput() { return m_output; }
+  OutputList& GetOutput() { return m_output; }
   const List* OStart() { return m_ostart; }
   const List* OEnd() { return m_oend; }
 

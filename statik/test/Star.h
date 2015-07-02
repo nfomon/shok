@@ -1,8 +1,8 @@
 // Copyright (C) 2015 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#ifndef _statik_test_Keyword_h_
-#define _statik_test_Keyword_h_
+#ifndef _statik_test_Star_h_
+#define _statik_test_Star_h_
 
 #include "Test.h"
 
@@ -10,11 +10,11 @@
 
 namespace statik_test {
 
-class Keyword : public Test {
+class Star : public Test {
 public:
-  Keyword()
-    : Test("Keyword") {}
-  virtual ~Keyword() {}
+  Star()
+    : Test("Star") {}
+  virtual ~Star() {}
 
 protected:
   virtual void run();
@@ -22,4 +22,4 @@ protected:
 
 }
 
-#endif // _statik_test_Keyword_h_
+#endif // _statik_test_Star_h_

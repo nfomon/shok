@@ -45,69 +45,82 @@ const STree& IncParser::GetRoot() const {
   return m_root;
 }
 
-INode IncParser::Insert(const List& inode, INode pos) {
-  auto_ptr<List> node(new List(inode));
-  INode n = node.get();
+void IncParser::Insert(const List& inode, const List* pos) {
+  auto_ptr<List> node(new List(inode.name, inode.value));
+  List* n = node.get();
   m_ilistPool.Insert(node);
-  if (pos) {
-    if (&inode == pos) {
+  std::pair<input_iter, bool> p = m_inputMap.insert(std::make_pair(&inode, n));
+  if (!p.second) {
+    throw SError("Cannot double-insert input node " + string(inode));
+  }
+  List* ipos = NULL;
+  input_iter ipos_i = m_inputMap.find(pos);
+  if (ipos_i != m_inputMap.end()) {
+    ipos = ipos_i->second;
+  }
+  if (ipos) {
+    if (n == ipos) {
       throw SError("Cannot Insert node " + string(inode) + " after itself");
     }
-    n->left = pos;
-    n->right = pos->right;
+    n->left = ipos;
+    n->right = ipos->right;
     if (n->right) {
       n->right->left = n;
     }
-    pos->right = n;
+    ipos->right = n;
   } else {
     List* first = m_firstINode;
     if (first) {
-      n->right = first;
       first->left = n;
+      n->right = first;
     }
     m_firstINode = n;
   }
-  Batch b;
-  b.Insert(*n);
-  ApplyBatch(b);
-  return n;
+  InsertNode(*n);
 }
 
-void IncParser::Delete(INode inode) {
-  if (inode->left) {
-    inode->left->right = inode->right;
+void IncParser::Delete(const List& inode) {
+  input_mod_iter n = m_inputMap.find(&inode);
+  if (m_inputMap.end() == n) {
+    throw SError("Cannot delete input node " + string(inode) + ": node not found");
   }
-  if (inode->right) {
-    inode->right->left = inode->left;
+  List& node = *n->second;
+  if (node.left) {
+    node.left->right = node.right;
   }
-  if (m_firstINode == inode) {
-    m_firstINode = inode->right;
+  if (node.right) {
+    node.right->left = node.left;
   }
-  m_ilistPool.Unlink(*inode);
-  Batch b;
-  b.Delete(*inode);
-  ApplyBatch(b);
+  if (m_firstINode == &node) {
+    m_firstINode = node.right;
+  }
+  m_ilistPool.Unlink(node);
+  DeleteNode(node);
+  m_inputMap.erase(n);
 }
 
-void IncParser::Update(INode inode, const string& value) {
-  inode->value = value;
-  Batch b;
-  b.Update(*inode);
-  ApplyBatch(b);
+void IncParser::Update(const List& inode, const string& value) {
+  input_iter n = m_inputMap.find(&inode);
+  if (m_inputMap.end() == n) {
+    throw SError("Cannot update input node " + string(inode) + ": node not found");
+  }
+  List& node = *n->second;
+  node.value = value;
+  UpdateNode(node);
 }
 
 void IncParser::ApplyBatch(const Batch& batch) {
   g_log.info() << "Updating IncParser " << m_name << " with batch of size " << batch.Size();
   for (Batch::batch_iter i = batch.begin(); i != batch.end(); ++i) {
-    switch (i->second) {
+    switch (i->op) {
     case Batch::OP_INSERT:
-      InsertNode(*i->first);
+      Insert(*i->node, i->pos);
       break;
     case Batch::OP_DELETE:
-      DeleteNode(*i->first);
+      Delete(*i->node);
       break;
     case Batch::OP_UPDATE:
-      UpdateNode(*i->first);
+      Update(*i->node, i->node->value);
       break;
     default:
       throw SError("Cannot update with batch with unknown operation");
@@ -119,7 +132,8 @@ void IncParser::ApplyBatch(const Batch& batch) {
 void IncParser::ExtractChanges(Batch& out_batch) {
   g_log.debug() << "EXTRACT START: " << m_name;
   if (m_touchedNodes.find(&m_root) != m_touchedNodes.end()) {
-    ComputeOutput_Update(m_root, out_batch);
+    const List* behind_node = NULL;
+    ComputeOutput_Update(m_root, out_batch, behind_node);
   }
   g_log.debug() << "EXTRACT DONE: " << m_name;
   m_touchedNodes.clear();
@@ -204,14 +218,9 @@ void IncParser::DrawGraph(const STree& onode, const List* inode, const Batch* ba
   if (istart) {
     m_grapher->AddIList(m_name, *istart, m_name + " input");
   }
-  m_grapher->AddSTree(m_name, m_root, m_name + " output", initiator);
-  const List* ostart = GetFirstONode();
-  if (ostart) {
-    m_grapher->AddOList(m_name, *ostart, m_name + " olist");
-  }
+  m_grapher->AddSTree(m_name, m_root, m_name + " parse", initiator);
   if (batch) {
-    g_log.debug() << "Drawing batch: " << batch->Print();
-    m_grapher->AddBatch(m_name, *batch);
+    m_grapher->AddOBatch(m_name, *batch, m_name + " output");
   }
   if (istart) {
     m_grapher->AddIListeners(m_name, *this, *istart);
@@ -227,9 +236,12 @@ void IncParser::DrawGraph(const STree& onode, const List* inode, const Batch* ba
 
 /* private */
 
-void IncParser::InsertNode(const List& inode) {
+void IncParser::InsertNode(List& inode) {
   g_log.info() << "IncParser " << m_name << ": Inserting INode: " << inode << " with " << (inode.left ? "left" : "no left") << " and " << (inode.right ? "with a right" : "no right");
   m_orderList.Insert(inode);
+  if (!m_firstINode) {
+    m_firstINode = &inode;
+  }
   if (m_grapher.get()) {
     if (GetFirstINode()) {
       m_grapher->AddOrderList(m_name, m_orderList, *GetFirstINode());
@@ -271,7 +283,7 @@ void IncParser::InsertNode(const List& inode) {
   g_log.debug() << "IncParser: Insert done";
 }
 
-void IncParser::DeleteNode(const List& inode) {
+void IncParser::DeleteNode(List& inode) {
   g_log.info() << "Deleting list inode " << inode;
   if (m_grapher.get()) {
     if (GetFirstINode()) {
@@ -310,7 +322,7 @@ void IncParser::DeleteNode(const List& inode) {
   g_log.debug() << "IncParser: Delete done";
 }
 
-void IncParser::UpdateNode(const List& inode) {
+void IncParser::UpdateNode(List& inode) {
   g_log.info() << "IncParser " << m_name << ": Updating listeners of inode " << inode;
   listener_set listeners = m_listeners.GetListeners(&inode);
   for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
@@ -342,54 +354,58 @@ void IncParser::ProcessActions() {
   }
 }
 
-void IncParser::ComputeOutput_Update(const STree& node, Batch& out_batch) {
+void IncParser::ComputeOutput_Update(const STree& node, Batch& out_batch, const List*& behind_node) {
   g_log.debug() << "IncParser " << m_name << ": Computing output UPDATE for node " << node;
 
   node.GetOutputFunc() ();
-  const OutputList& output = node.GetOutputFunc().GetOutput();
+  OutputList& output = node.GetOutputFunc().GetOutput();
   output_mod_iter prev_output_i = m_outputPerNode.find(&node);
 
   if (m_outputPerNode.end() == prev_output_i) {
     // We weren't emitting before, but are emitting now.  Insert all.
+    if (output.empty()) {
+      g_log.debug() << " - was not emitting, but is now, but it has no items; done";
+      return;
+    }
     g_log.debug() << " - was not emitting, but is now; inserting all";
-    return ComputeOutput_Insert(node, out_batch);
+    return ComputeOutput_Insert(node, out_batch, behind_node);
   }
 
-  OutputList& prev_output = prev_output_i->second;
+  const OutputList& prev_output = prev_output_i->second;
   g_log.debug() << node << " was emitting " << prev_output.size() << " items";
   g_log.debug() << node << " is now emitting " << output.size() << " items";
 
   // Linear pass through both lists, comparing elements.
-  OutputList::const_iterator item = output.begin();
+  OutputList::iterator item = output.begin();
   OutputList::const_iterator prev_item = prev_output.begin();
   while (item != output.end() && prev_item != prev_output.end()) {
-    if (output.end() == item) {
-      RemoveOutput(*prev_item, out_batch);
-      ++prev_item;
-    } else if (prev_output.end() == prev_item) {
-      InsertOutput(*item, out_batch);
-      ++item;
-    } else if (&*item == &*prev_item) {
-      UpdateOutput(*item, out_batch);
+    if (*item == *prev_item) {
+      g_log.debug() << "case 1";
+      UpdateOutput(*item, out_batch, behind_node);
+      behind_node = GetOEnd(*item);
       ++item;
       ++prev_item;
     } else {
+      g_log.debug() << "case 2";
       // Buffer both sides, and keep a lookup-set so we can identify if/when we
       // find a node in one list that was surpassed in the other.
-      typedef set<const OutputItem*> node_set;
+      typedef set<OutputItem> node_set;
       typedef node_set::const_iterator node_mod_iter;
       node_set ins_set;
       node_set del_set;
-      OutputList::const_iterator ins_item = item;
+      OutputList::iterator ins_item = item;
       OutputList::const_iterator del_item = prev_item;
       while (ins_item != output.end() && del_item != prev_output.end()) {
-        node_mod_iter find_ins = ins_set.find(&*prev_item);
+        g_log.debug() << "while";
+        node_mod_iter find_ins = ins_set.find(*prev_item);
         if (find_ins != ins_set.end()) {
           // insert nodes up to find_ins
           do {
-            InsertOutput(*item, out_batch);
+            g_log.debug() << "do1";
+            InsertOutput(*item, out_batch, behind_node);
+            behind_node = GetOEnd(*item);
             ++item;
-          } while (*find_ins != &*item);
+          } while (*find_ins != *item);
           // then remove the nodes up to find_ins from ins_set, and advance item to find_ins+1
             // - actually, we can just nix the ins_set, since we'll break. meh
           ++item;
@@ -397,24 +413,31 @@ void IncParser::ComputeOutput_Update(const STree& node, Batch& out_batch) {
           // then break
           break;
         }
-        node_mod_iter find_del = del_set.find(&*item);
+        node_mod_iter find_del = del_set.find(*item);
         if (find_del != del_set.end()) {
           do {
+            g_log.debug() << "do2";
             RemoveOutput(*prev_item, out_batch);
             ++prev_item;
-          } while (*find_del != &*prev_item);
+          } while (*find_del != *prev_item);
           ++prev_item;
           break;
         }
-        ins_set.insert(&*ins_item);
-        del_set.insert(&*del_item);
+        ins_set.insert(*ins_item);
+        del_set.insert(*del_item);
         ++ins_item;
         ++del_item;
+        g_log.debug() << "woop";
       }
+      item = ins_item;
+      prev_item = del_item;
+      g_log.debug() << "outwhile";
     }
   }
+  g_log.info() << " ok...";
   for (; item != output.end(); ++item) {
-    InsertOutput(*item, out_batch);
+    InsertOutput(*item, out_batch, behind_node);
+    behind_node = GetOEnd(*item);
   }
   for (; prev_item != prev_output.end(); ++prev_item) {
     RemoveOutput(*prev_item, out_batch);
@@ -430,7 +453,7 @@ void IncParser::ComputeOutput_Update(const STree& node, Batch& out_batch) {
   node.GetOutputFunc().Sync();
 }
 
-void IncParser::ComputeOutput_Insert(const STree& node, Batch& out_batch) {
+void IncParser::ComputeOutput_Insert(const STree& node, Batch& out_batch, const List*& behind_node) {
   g_log.debug() << "IncParser " << m_name << ": Computing output INSERT for node " << node;
 
   node.GetOutputFunc() ();
@@ -440,7 +463,9 @@ void IncParser::ComputeOutput_Insert(const STree& node, Batch& out_batch) {
   // previous output
   for (OutputList::const_iterator item = output.begin();
        item != output.end(); ++item) {
-    InsertOutput(*item, out_batch);
+    InsertOutput(*item, out_batch, behind_node);
+    g_log.info() << " insert woo...";
+    behind_node = GetOEnd(*item);
   }
 
   if (output.empty()) {
@@ -480,28 +505,47 @@ void IncParser::Cleanup() {
   SanityCheck();
 }
 
-void IncParser::InsertOutput(const OutputItem& item, Batch& out_batch) {
+void IncParser::InsertOutput(const OutputItem& item, Batch& out_batch, const List*& behind_node) {
   if (item.onode) {
-    out_batch.Insert(*item.onode);
+    g_log.debug() << "InsertOutput for item onode " << *item.onode;
+    if (behind_node) {
+      g_log.debug() << " - at pos " << *behind_node;
+    }
+    out_batch.Insert(*item.onode, behind_node);
   } else {
-    ComputeOutput_Insert(*item.child, out_batch);
+    g_log.debug() << "InsertOutput for item child " << *item.child;
+    ComputeOutput_Insert(*item.child, out_batch, behind_node);
   }
 }
 
 void IncParser::RemoveOutput(const OutputItem& item, Batch& out_batch) {
   if (item.onode) {
+    g_log.debug() << "RemoveOutput for item onode " << *item.onode;
     out_batch.Delete(*item.onode);
   } else {
+    g_log.debug() << "RemoveOutput for item child " << *item.child;
     ComputeOutput_Delete(*item.child, out_batch);
   }
 }
 
-void IncParser::UpdateOutput(const OutputItem& item, Batch& out_batch) {
-  if (item.onode) {
+void IncParser::UpdateOutput(OutputItem& item, Batch& out_batch, const List*& behind_node) {
+  if (item.onode && item.onode->value != item.prev_value) {
+    g_log.debug() << "UpdateOutput for item onode " << *item.onode;
+    item.prev_value = item.onode->value;
     out_batch.Update(*item.onode);
-  } else {
-    ComputeOutput_Update(*item.child, out_batch);
+  } else if (item.child && m_touchedNodes.find(item.child) != m_touchedNodes.end()) {
+    g_log.debug() << "UpdateOutput for item child " << *item.child;
+    ComputeOutput_Update(*item.child, out_batch, behind_node);
   }
+}
+
+const List* IncParser::GetOEnd(const OutputItem& item) const {
+  if (item.onode) {
+    return item.onode;
+  } else if (!item.child) {
+    throw SError("Defective GetOEnd()");
+  }
+  return item.child->GetOutputFunc().OEnd();
 }
 
 void IncParser::SanityCheck() {

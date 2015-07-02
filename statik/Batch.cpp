@@ -20,16 +20,16 @@ std::string Batch::UnMapBatchOp(const BATCH_OP& op) {
   }
 }
 
-void Batch::Insert(const List& inode) {
-  m_batch.push_back(std::make_pair(&inode, OP_INSERT));
+void Batch::Insert(const List& inode, const List* pos = NULL) {
+  m_batch.push_back(BatchItem(inode, OP_INSERT, pos));
 }
 
 void Batch::Delete(const List& inode) {
-  m_batch.push_back(std::make_pair(&inode, OP_DELETE));
+  m_batch.push_back(BatchItem(inode, OP_DELETE));
 }
 
 void Batch::Update(const List& inode) {
-  m_batch.push_back(std::make_pair(&inode, OP_UPDATE));
+  m_batch.push_back(BatchItem(inode, OP_UPDATE));
 }
 
 void Batch::Accept(const Batch& batch) {
@@ -46,7 +46,7 @@ void Batch::Clear() {
 string Batch::Print() const {
   string s;
   for (batch_iter i = m_batch.begin(); i != m_batch.end(); ++i) {
-    s += "\n" + UnMapBatchOp(i->second) + " - " + string(*i->first);
+    s += "\n" + UnMapBatchOp(i->op) + " - " + string(*i->node);
   }
   return s;
 }

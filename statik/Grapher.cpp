@@ -12,6 +12,7 @@
 #include "util/Graphviz.h"
 #include "util/Util.h"
 using Util::dotVar;
+using Util::safeLabelStr;
 
 #include <boost/lexical_cast.hpp>
 using boost::lexical_cast;
@@ -74,17 +75,6 @@ void Grapher::AddSTree(const string& context, const STree& snode, const string& 
   m_isDirty = true;
 }
 
-void Grapher::AddOList(const string& context, const List& onode, const string& label) {
-  m_graph += "subgraph cluster_" + context + dotVar(&onode, context) + " {\n";
-  if (!label.empty()) {
-    m_graph += "label=\"" + label + "\";\n";
-    m_graph += "fontsize=12.0;\n";
-  }
-  m_graph += onode.DrawNode(context);
-  m_graph += "}\n";
-  m_isDirty = true;
-}
-
 void Grapher::AddIListeners(const string& context, const IncParser& incParser, const List& inode) {
   IncParser::listener_set ls = incParser.GetListeners(inode);
   for (IncParser::listener_iter i = ls.begin(); i != ls.end(); ++i) {
@@ -96,10 +86,20 @@ void Grapher::AddIListeners(const string& context, const IncParser& incParser, c
   m_isDirty = true;
 }
 
-void Grapher::AddBatch(const string& context, const Batch& batch) {
+void Grapher::AddOBatch(const string& context, const Batch& batch, const string& label) {
+  if (batch.IsEmpty()) {
+    return;
+  }
+  const List& start = *batch.begin()->node;
+  m_graph += "subgraph cluster_" + context + dotVar(&start, context) + " {\n";
+  if (!label.empty()) {
+    m_graph += "label=\"" + label + "\";\n";
+    m_graph += "fontsize=12.0;\n";
+  }
+
   for (Batch::batch_iter i = batch.begin(); i != batch.end(); ++i) {
     string color = "#770000";
-    switch (i->second) {
+    switch (i->op) {
     case Batch::OP_INSERT:
       color = "#00bb44";
       break;
@@ -112,9 +112,15 @@ void Grapher::AddBatch(const string& context, const Batch& batch) {
     default:
       throw SError("Cannot add batch to Grapher: unknown operation");
     }
-    m_graph += dotVar(i->first, context) + " [color=\"" + color + "\", penwidth=4.0];\n";
-    m_isDirty = true;
+    const List& node = *i->node;
+    m_graph += dotVar(&node, context) + " [label=\"" + Util::safeLabelStr(node.name + (node.value.empty() ? "" : (node.name.empty() ? "" : ":") + node.value)) + "\", style=\"filled\", fillcolor=\"#dddddd\", fontsize=12.0, color=\"" + color + "\", penwidth=4.0];\n";
+    if (i+1 != batch.end()) {
+      const List& next = *(i+1)->node;
+      m_graph += dotVar(&node, context) + " -> " + dotVar(&next, context) + ";\n";
+    }
   }
+  m_graph += "}\n";
+  m_isDirty = true;
 }
 
 void Grapher::Signal(const string& context, const void* x, bool isUpdate) {

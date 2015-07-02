@@ -7,6 +7,8 @@
 #include "Battery.h"
 
 #include "Keyword.h"
+#include "Or.h"
+#include "Star.h"
 
 namespace statik_test {
 
@@ -16,6 +18,8 @@ public:
                 std::istream& input = std::cin,
                 std::ostream& output = std::cout) {
     m_tests.push_back(new Keyword());
+    m_tests.push_back(new Or());
+    m_tests.push_back(new Star());
   }
 };
 

@@ -3,9 +3,13 @@ STATIK_TEST_SRCS = \
     Battery.h \
     Keyword.cpp \
     Keyword.h \
+    Or.cpp \
+    Or.h \
     STError.h \
     STLog.cpp \
     STLog.h \
+    Star.cpp \
+    Star.h \
     StatikBattery.h \
     Test.cpp \
     Test.h \

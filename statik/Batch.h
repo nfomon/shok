@@ -35,8 +35,15 @@ public:
 
   static std::string UnMapBatchOp(const BATCH_OP& op);
 
-  typedef std::pair<const List*, BATCH_OP> batchpair;
-  typedef std::vector<batchpair> batch_vec;
+  struct BatchItem {
+    BatchItem(const List& node, BATCH_OP op, const List* pos = NULL)
+      : node(&node), op(op), pos(pos) {}
+    const List* node;
+    BATCH_OP op;
+    const List* pos;
+  };
+
+  typedef std::vector<BatchItem> batch_vec;
   typedef batch_vec::const_iterator batch_iter;
 
   batch_iter begin() const { return m_batch.begin(); }
@@ -44,7 +51,7 @@ public:
   size_t Size() const { return m_batch.size(); }
   bool IsEmpty() const { return m_batch.empty(); }
 
-  void Insert(const List& inode);
+  void Insert(const List& inode, const List* pos);
   void Update(const List& inode);
   void Delete(const List& inode);
   void Accept(const Batch& batch);

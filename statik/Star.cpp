@@ -35,6 +35,9 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
 
   State& state = m_node->GetState();
   if (ParseAction::Restart == action && m_node->children.empty()) {
+    if (m_node->GetRule().GetChildren().size() != 1) {
+      throw SError("Star rule must have exactly 1 child");
+    }
     m_node->GetRule().GetChildren().at(0)->MakeNode(*m_node, inode, m_node->children.begin());
     state.GoPending();
     return;

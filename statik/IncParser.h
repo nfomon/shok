@@ -23,9 +23,6 @@ namespace statik {
 
 class Grapher;
 
-// Handle to an IList item; for the external Insert/Delete/Update caller
-typedef List* INode;
-
 class IncParser {
 public:
   typedef typename ListenerTable<const List*, STree*>::listener_set listener_set;
@@ -37,13 +34,12 @@ public:
 
   const STree& GetRoot() const; // for tests
 
-  // Insert a new item, after position pos (NULL for start).  Returns a handle
-  // to a copy of the item that is owned by the IncParser.
-  INode Insert(const List& inode, INode pos);
+  // Insert a new item, after position pos (NULL for start).
+  void Insert(const List& inode, const List* pos);
   // Delete an item.
-  void Delete(INode inode);
+  void Delete(const List& inode);
   // Update an item with a new value.
-  void Update(INode inode, const std::string& value);
+  void Update(const List& inode, const std::string& value);
   // Apply a batch of inode insertions/updates/deletions
   void ApplyBatch(const Batch& batch);
 
@@ -94,22 +90,26 @@ private:
   typedef std::map<const STree*, OutputList> output_map;
   typedef output_map::const_iterator output_iter;
   typedef output_map::iterator output_mod_iter;
+  typedef std::map<const List*, List*> input_map;
+  typedef input_map::const_iterator input_iter;
+  typedef input_map::iterator input_mod_iter;
 
   // Called by ApplyBatch() and public Insert()/Delete()/Update()
-  void InsertNode(const List& inode);
-  void DeleteNode(const List& inode);
-  void UpdateNode(const List& inode);
+  void InsertNode(List& inode);
+  void DeleteNode(List& inode);
+  void UpdateNode(List& inode);
   void ProcessActions();
 
-  void ComputeOutput_Update(const STree& node, Batch& out_batch);
-  void ComputeOutput_Insert(const STree& node, Batch& out_batch);
+  void ComputeOutput_Update(const STree& node, Batch& out_batch, const List*& behind_node);
+  void ComputeOutput_Insert(const STree& node, Batch& out_batch, const List*& behind_node);
   void ComputeOutput_Delete(const STree& node, Batch& out_batch);
   void Cleanup();
 
   // Convenience wrappers for ComputeOutput_*
-  void InsertOutput(const OutputItem& item, Batch& out_batch);
+  void InsertOutput(const OutputItem& item, Batch& out_batch, const List*& behind_node);
   void RemoveOutput(const OutputItem& item, Batch& out_batch);
-  void UpdateOutput(const OutputItem& item, Batch& out_batch);
+  void UpdateOutput(OutputItem& item, Batch& out_batch, const List*& behind_node);
+  const List* GetOEnd(const OutputItem& item) const;
 
   void SanityCheck();
   void SanityCheck(const STree* s) const;
@@ -119,6 +119,7 @@ private:
   std::string m_name;
   std::auto_ptr<Grapher> m_grapher;
   ObjectPool<List> m_ilistPool;
+  input_map m_inputMap;
   ObjectPool<STree> m_nodePool;
   OrderList m_orderList;
   action_map m_actions_by_depth;

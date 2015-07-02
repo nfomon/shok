@@ -189,7 +189,7 @@ WindowResponse LineBuf::Insert(int y, int x, int ch) {
     x = 0;
     ++y;
   } while ((size_t)y < m_lines.size());
-  response.batch.Insert(c->inode);
+  response.batch.Insert(c->inode, (prev ? &prev->inode : NULL));
   if (prev) {
     g_log.info() << " found before: " << *prev;
     prev->SetNext(c);

@@ -36,6 +36,28 @@ void Test::fail(const std::string& msg) {
   g_log.info() << "fail" << (msg.empty() ? "" : ": " + msg);
 }
 
-void Test::test(bool t, const std::string& msg) {
+bool Test::test(bool t, const std::string& msg) {
   t ? pass(msg) : fail(msg);
+  return t;
+}
+
+bool Test::test(const statik::Batch& actual, const statik::Batch& expected, const string& msg) {
+  return test(actual.Size(), expected.Size(), msg + " batch size");
+/*
+  statik::Batch::batch_iter a, e;
+  for (a = actual.begin(); a != actual.end(); ++a) {
+    if (expected.end() == e) break;
+    const statik::Batch::batch_item& aitem = *a;
+    const statik::Batch::batch_item& eitem = *e;
+    if (test(aitem.op, eitem.op, msg + " batch item op")) {
+      if (test(item.node, "batch insert node")) {
+        test(item.node->name, string("a"), "batch insert node name");
+        test(item.node->value, string(""), "batch insert node value");
+      }
+      test(item.op, Batch::OP_INSERT, "batch insert op");
+      test(item.pos, (const List*)NULL, "batch insert pos");
+
+    }
+    ++e;
+*/
 }

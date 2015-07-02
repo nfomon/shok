@@ -61,7 +61,7 @@ void IStatik::run() {
     exstatik::Compiler::auto_type c = compiler->release(compiler->begin());
     string name = c->Name();
     g_log.info() << "Adding parser window for " << name;
-    parserWindows.push_back(new ParserWindow(auto_ptr<statik::Rule>(c.release()), name, m_graphdir));
+    parserWindows.push_back(new ParserWindow(auto_ptr<statik::Rule>(c.release()), m_compiler_name, m_graphdir));
   }
 
   bool done = false;

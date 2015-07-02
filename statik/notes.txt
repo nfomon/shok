@@ -1128,4 +1128,30 @@ I think we can eliminate ConnectONodes(), and just do the "connecting" implicitl
 OutputState has a set of onodes and a set of children.  Replace this with a vector of either-onode-or-child.
 Batch should probably have Insert-pos on each element (or at least the Inserts).
 
+-----
+2k15-06-07
 
+INode Insert(const List& inode, INode pos)
+ - clones+owns the inode, and returns the INode handle of the clone
+ - wires up our clone as necessary to InsertNode()
+void Delete(INode inode)
+ - wires up the INode (we already own it) as necessary to DeleteNode()
+void Update(INode inode, const string& value)
+
+ApplyBatch(const Batch&)
+ - Let's let these be the raw nodes that we don't own, coming out of an IncParser
+ - but... then we can't apply it.
+
+Design 1: BatchAdaptor
+ - who owns it?  Either the output IncParser, or the application, or the input IncParser
+ - It knows const List* of output, and maps those to the INodes of input (so it has to supervise the Apply or at least Inserts/Deletes on the inbound).
+
+When we output a Batch, it's: here are the incremental updates, using their own addresses.
+When we actually Insert a node, it gets a new address.
+Maybe an OutputBatch and an InputBatch are different objects!
+
+OutputBatch we have.  Input Batch: you have to transform it by replacing nodes, doing a mapping as we apply the updates.
+OK, we can do that.  In ApplyBatch we maintain that table.  Uuuuugh, kinda sucks.  Also we'll do it for Inserts too.  When you say "Insert this node" and we clone it, we'll also keep a map from that inserted node to our version.
+But then why have our own version at all?  Memory ownership.  murrrr....
+We don't need to give back the INode at all, then.  We'll just make our internal clone, but maintain the mapping ourselves.  That's.... ok!
+Because I didn't like those INodes anyway.

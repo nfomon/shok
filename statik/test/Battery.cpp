@@ -3,8 +3,12 @@
 
 #include "Battery.h"
 
+#include "STError.h"
 #include "Test.h"
 
+#include "statik/SError.h"
+
+#include <exception>
 #include <ostream>
 #include <string>
 using std::endl;
@@ -34,7 +38,22 @@ void Battery::Run() {
   bool silent = false;
   for (test_mod_iter i = m_tests.begin(); i != m_tests.end(); ++i) {
     m_output << " - " << i->Name() << " ... ";
-    i->Run();
+    try {
+      i->Run();
+    } catch (const STError& e) {
+      m_output << "STError: " << e.what() << "; ";
+      ++r.error;
+    } catch (const statik::SError& e) {
+      m_output << "SError: " << e.what() << "; ";
+      ++r.error;
+    } catch (const std::exception& e) {
+      m_output << "exception: " << e.what() << "; ";
+      ++r.error;
+    } catch (...) {
+      m_output << "unknown exception" << "; ";
+      ++r.error;
+    }
+
     const Result& t = i->GetResult();
     if (t.error > 0) {
       m_output << "error ";
@@ -75,7 +94,7 @@ void Battery::Run() {
       m_output << ")" << endl;
     }
   }
-  m_output << "Battery done:  ";
+  m_output << "\nBattery done:  ";
   bool comma = false;
   if (r.pass > 0) {
     comma = true;

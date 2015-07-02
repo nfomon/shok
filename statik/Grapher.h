@@ -21,9 +21,8 @@ public:
   void AddOrderList(const std::string& context, const OrderList& orderList, const List& start);
   void AddIList(const std::string& context, const List& start, const std::string& label = "");
   void AddSTree(const std::string& context, const STree& root, const std::string& label = "", const STree* initiator = NULL);
-  void AddOList(const std::string& context, const List& start, const std::string& label = "");
   void AddIListeners(const std::string& context, const IncParser& incParser, const List& start);
-  void AddBatch(const std::string& context, const Batch& batch);
+  void AddOBatch(const std::string& context, const Batch& batch, const std::string& label = "");
   void Signal(const std::string& context, const void*, bool isUpdate = false);
 
   bool IsDirty() const { return m_isDirty; }

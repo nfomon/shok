@@ -87,8 +87,8 @@ int main(int argc, char *argv[]) {
       parsers.push_back(new IncParser(auto_ptr<Rule>(c.release()), name, graphdir));
     }
 
-    INode start = NULL;
-    INode prev = NULL;
+    const List* start = NULL;
+    const List* prev = NULL;
     string line;
     while (getline(cin, line)) {
       //line += "\n";
@@ -96,7 +96,8 @@ int main(int argc, char *argv[]) {
         string c = string(1, line.at(i));
         g_log.info();
         g_log.info() << "* main: Inserting character '" << c << "'";
-        INode node = parsers.at(0).Insert(List("", c), prev);
+        const List* node = new List("", c);
+        parsers.at(0).Insert(*node, prev);
         if (!start) { start = node; }
         Batch batch;
         parsers.front().ExtractChanges(batch);
@@ -114,9 +115,9 @@ int main(int argc, char *argv[]) {
       }
     }
     g_log.info() << "Clearing input";
-    List* i = start;
+    const List* i = start;
     while (i) {
-      List* j = i->right;
+      const List* j = i->right;
       delete i;
       i = j;
     }
