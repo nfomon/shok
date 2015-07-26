@@ -25,8 +25,16 @@ auto_ptr<Rule> exstatik::CreateLexer_Simple() {
   Rule* or_ = lexer->AddChild(OR("or"));
   or_->AddChild(KEYWORD("new"));
   or_->AddChild(KEYWORD("del"));
-  //or_->AddChild(KEYWORD("x"));
   or_->AddChild(KEYWORD(";"));
+  return lexer;
+}
+
+auto_ptr<Rule> exstatik::CreateLexer_Splash() {
+  auto_ptr<Rule> lexer(STAR("star"));
+  Rule* or_ = lexer->AddChild(OR("or"));
+  or_->AddChild(KEYWORD("cat"));
+  or_->AddChild(KEYWORD("dog"));
+  or_->AddChild(KEYWORD("car"));
   return lexer;
 }
 

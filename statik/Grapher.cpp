@@ -70,7 +70,14 @@ void Grapher::AddSTree(const string& context, const STree& snode, const string& 
     m_graph += "label=\"" + label + "\";\n";
     m_graph += "fontsize=12.0;\n";
   }
+  // include the root node:
   m_graph += snode.DrawNode(context, initiator);
+  /*
+  // or alternatively, skip the root node:
+  for (STree::child_iter i = snode.children.begin(); i != snode.children.end(); ++i) {
+    m_graph += (*i)->DrawNode(context, initiator);
+  }
+  */
   m_graph += "}\n";
   m_isDirty = true;
 }
