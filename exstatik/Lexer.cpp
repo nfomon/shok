@@ -38,6 +38,11 @@ auto_ptr<Rule> exstatik::CreateLexer_Splash() {
   return lexer;
 }
 
+auto_ptr<Rule> exstatik::CreateLexer_KeywordTest() {
+  auto_ptr<Rule> lexer(KEYWORD("a"));
+  return lexer;
+}
+
 auto_ptr<Rule> exstatik::CreateLexer_Moderate() {
   auto_ptr<Rule> lexer(STAR("lexer"));
   Rule* or_ = lexer->AddChild(OR("Or"));

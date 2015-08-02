@@ -15,9 +15,25 @@ using namespace statik;
 
 /* public */
 
+string State::UnMapStation(Station st) {
+  switch (st) {
+  case ST_PENDING:  return "pending";
+  case ST_OK:       return "ok";
+  case ST_BAD:      return "bad";
+  case ST_DONE:     return "done";
+  case ST_COMPLETE: return "complete";
+  default: throw SError("Failed to unmap Station " + lexical_cast<string>(st));
+  }
+}
+
 State::State()
   : m_isLocked(false),
     m_station(ST_PENDING) {
+}
+
+State::State(Station station)
+  : m_isLocked(false),
+    m_station(station) {
 }
 
 void State::Clear() {
@@ -31,19 +47,6 @@ bool State::operator==(const State& rhs) const {
 
 bool State::operator!=(const State& rhs) const {
   return !(*this == rhs);
-}
-
-/* private */
-
-string State::UnMapStation(Station st) {
-  switch (st) {
-  case ST_PENDING:  return "pending";
-  case ST_OK:       return "ok";
-  case ST_BAD:      return "bad";
-  case ST_DONE:     return "done";
-  case ST_COMPLETE: return "complete";
-  default: throw SError("Failed to unmap Station " + lexical_cast<string>(st));
-  }
 }
 
 /* non-member */

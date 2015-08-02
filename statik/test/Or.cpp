@@ -11,12 +11,14 @@
 #include "statik/Rule.h"
 #include "statik/SError.h"
 #include "statik/STree.h"
+#include "statik/State.h"
 using statik::Batch;
 using statik::IncParser;
 using statik::KEYWORD;
 using statik::List;
 using statik::OR;
 using statik::Rule;
+using statik::State;
 
 #include <memory>
 #include <string>
@@ -26,7 +28,8 @@ using std::string;
 using namespace statik_test;
 
 void Or::run() {
-  // Blank Or
+  g_log.info();
+  g_log.info() << "Blank Or";
   {
     bool p = false;
     string msg;
@@ -42,33 +45,48 @@ void Or::run() {
     test(p, "Empty Or not allowed: " + msg);
   }
 
-  // Or with one Keyword child
+  // I used to run this test ("wrong input") and then in the same IncParser do
+  // the subsequent (reasonable input).  Separated them for now until the
+  // latter test passes at least in isolation...
   {
+    g_log.info();
+    g_log.info() << "Or with one Keyword child, wrong input";
+    {
+      auto_ptr<Rule> kr(KEYWORD("a"));
+      auto_ptr<Rule> r(OR("Or"));
+      r->AddChild(kr);
+      IncParser ip(r, "Or test 2");
+      const statik::STree& root = ip.GetRoot();
+
+      {
+        Batch out_batch;
+        List cx("cx", "x");
+        ip.Insert(cx, NULL);
+        test(root.GetState().IsBad(), "x");
+        ip.ExtractChanges(out_batch);
+        test(out_batch.IsEmpty(), "no output");
+        out_batch.Clear();
+
+        ip.Delete(cx);
+        test(root.IsClear(), "clear");
+        ip.ExtractChanges(out_batch);
+        test(out_batch.IsEmpty(), "no output");
+        out_batch.Clear();
+      }
+    }
+
+    g_log.info();
+    g_log.info() << "Or with one Keyword child";
     auto_ptr<Rule> kr(KEYWORD("a"));
     auto_ptr<Rule> r(OR("Or"));
     r->AddChild(kr);
     IncParser ip(r, "Or test 2");
     const statik::STree& root = ip.GetRoot();
-
     {
       Batch out_batch;
-      List cx("cx", "x");
-      ip.Insert(cx, NULL);
-      test(root.GetState().IsBad(), "x");
-      ip.ExtractChanges(out_batch);
-      test(out_batch.IsEmpty(), "no output");
-      out_batch.Clear();
-
-      ip.Delete(cx);
-      test(root.IsClear(), "clear");
-      test(out_batch.IsEmpty(), "no output");
-    }
-
-    {
-      Batch out_batch;
-      List ca("ca", "a");
+      List ca("a", "");
       ip.Insert(ca, NULL);
-      test(root.GetState().IsDone(), "a");
+      test(root.GetState(), State(State::ST_DONE), "a");
       ip.ExtractChanges(out_batch);
 
       {
@@ -80,7 +98,7 @@ void Or::run() {
 
       List cb("cb", "b");
       ip.Insert(cb, &ca);
-      test(root.GetState().IsComplete(), "ab");
+      test(root.GetState(), State(State::ST_COMPLETE), "ab");
 
       List cc("cc", "c");
       ip.Insert(cc, &cb);
@@ -104,7 +122,8 @@ void Or::run() {
     }
   }
 
-  // Or with two Keyword children
+  g_log.info();
+  g_log.info() << "Or with two Keyword children";
   {
     auto_ptr<Rule> kr1(KEYWORD("abcde"));
     auto_ptr<Rule> kr2(KEYWORD("abcfg"));
@@ -138,7 +157,7 @@ void Or::run() {
       ip.ExtractChanges(out_batch);
       {
         Batch expected_batch;
-        List e("abcde", "abcde");
+        List e("abcde", "");
         expected_batch.Insert(e, NULL);
         test(out_batch, expected_batch, "output");
       }

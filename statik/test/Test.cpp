@@ -28,12 +28,12 @@ void Test::Run() {
 
 void Test::pass(const std::string& msg) {
   ++m_result.pass;
-  g_log.info() << "pass" << (msg.empty() ? "" : ": " + msg);
+  g_log.info() << "pass" << (msg.empty() ? "" : ":\t" + msg);
 }
 
 void Test::fail(const std::string& msg) {
   ++m_result.fail;
-  g_log.info() << "fail" << (msg.empty() ? "" : ": " + msg);
+  g_log.info() << "FAIL" << (msg.empty() ? "" : ":\t" + msg);
 }
 
 bool Test::test(bool t, const std::string& msg) {
@@ -42,22 +42,46 @@ bool Test::test(bool t, const std::string& msg) {
 }
 
 bool Test::test(const statik::Batch& actual, const statik::Batch& expected, const string& msg) {
-  return test(actual.Size(), expected.Size(), msg + " batch size");
-/*
+  g_log.warning() << "one";
+  bool anyfail = false;
   statik::Batch::batch_iter a, e;
-  for (a = actual.begin(); a != actual.end(); ++a) {
-    if (expected.end() == e) break;
-    const statik::Batch::batch_item& aitem = *a;
-    const statik::Batch::batch_item& eitem = *e;
+  a = actual.begin();
+  e = expected.begin();
+  for (; a != actual.end(); ++a) {
+    g_log.warning() << "two";
+    if (!test(e != expected.end(), msg + " enough expected items")) {
+      g_log.warning() << "three";
+      anyfail = true;
+      break;
+    }
+    const statik::Batch::BatchItem& aitem = *a;
+    const statik::Batch::BatchItem& eitem = *e;
+    g_log.warning() << "four";
     if (test(aitem.op, eitem.op, msg + " batch item op")) {
-      if (test(item.node, "batch insert node")) {
-        test(item.node->name, string("a"), "batch insert node name");
-        test(item.node->value, string(""), "batch insert node value");
+      if (!eitem.node) {
+        g_log.warning() << "Expected batch item node is missing";
+      } else if (test(aitem.node, " - batch node")) {
+        anyfail |= test(aitem.node->name, eitem.node->name, " - - batch node name");
+        anyfail |= test(aitem.node->value, eitem.node->value, " - - batch node value");
+      } else {
+        anyfail = true;
       }
-      test(item.op, Batch::OP_INSERT, "batch insert op");
-      test(item.pos, (const List*)NULL, "batch insert pos");
-
+      anyfail |= test(aitem.pos, eitem.pos, " - batch item pos");
+    } else {
+      anyfail = true;
     }
     ++e;
-*/
+  }
+  for (; a != actual.end(); ++a) {
+    fail(msg + " extra item in batch: " + a->Print());
+    anyfail = true;
+  }
+  for (; e != expected.end(); ++e) {
+    fail(msg + " item not found in batch: " + e->Print());
+    anyfail = true;
+  }
+  if (!anyfail) {
+    pass(msg + ": batches match with no failures");
+  }
+  return anyfail;
 }

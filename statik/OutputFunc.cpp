@@ -98,7 +98,7 @@ void OutputFunc_Pass::operator() () {
   }
   const STree& child = *m_node->children.front();
   m_output.clear();
-  m_output.push_back(OutputItem(child));
+  m_output.push_back(OutputItem(child, m_node->GetState().GetStation()));
 }
 
 /* OutputFunc_Basic */
@@ -111,7 +111,7 @@ OutputFunc_Basic::OutputFunc_Basic(const string& name, const string& value)
 void OutputFunc_Basic::operator() () {
   g_log.debug() << "OutputFunc_Basic " << m_onode;
   if (m_output.empty()) {
-    m_output.push_back(OutputItem(m_onode));
+    m_output.push_back(OutputItem(m_onode, m_node->GetState().GetStation()));
   }
 }
 
@@ -129,7 +129,7 @@ OutputFunc_IValues::OutputFunc_IValues(const string& name)
 void OutputFunc_IValues::operator() () {
   g_log.debug() << "OutputFunc_IValues " << m_onode;
   if (m_output.empty()) {
-    m_output.push_back(m_onode);
+    m_output.push_back(OutputItem(m_onode, m_node->GetState().GetStation()));
   }
   /*
   string value;
@@ -180,28 +180,11 @@ void OutputFunc_Winner::operator() () {
   if (winner) {
     g_log.debug() << "**** OutputFunc_Winner: " << *m_node << " Declaring winner " << *winner;
     m_winner = winner;
-    m_output.push_back(OutputItem(*m_winner));
+    m_output.push_back(OutputItem(*m_winner, m_node->GetState().GetStation()));
   } else {
     g_log.debug() << "**** OutputFunc_Winner: No winner.";
   }
 }
-
-/*
-void OutputFunc_Winner::ConnectONodes() {
-  g_log.debug() << "OutputFunc_Winner::ConnectONodes() " << *m_node;
-  if (m_winner) {
-    g_log.debug() << "**** OutputFunc_Winner: " << *m_node << " Setting ONodes from winner " << *m_winner;
-    m_ostart = m_winner->GetOutputFunc().OStart();
-    m_oend = m_winner->GetOutputFunc().OEnd();
-    if (!m_ostart) {
-      g_log.error() << "Failed to set OStart from winner";
-    }
-  } else {
-    m_ostart = NULL;
-    m_oend = NULL;
-  }
-}
-*/
 
 auto_ptr<OutputFunc> OutputFunc_Winner::Clone() {
   return auto_ptr<OutputFunc>(new OutputFunc_Winner());
@@ -215,7 +198,7 @@ void OutputFunc_Sequence::operator() () {
 
   if (m_node->GetState().IsBad()) {
     for (STree::child_iter child = m_node->children.begin(); child != m_node->children.end(); ++child) {
-      m_output.push_back(OutputItem(**child));
+      m_output.push_back(OutputItem(**child, m_node->GetState().GetStation()));
     }
     return;
   }
@@ -231,53 +214,14 @@ void OutputFunc_Sequence::operator() () {
       break;
     } else if (istate.IsDone() || istate.IsOK()) {
       g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " aborting after " << (istate.IsOK() ? "ok" : "done") << " child " << **child;
-      m_output.push_back(**child);
+      m_output.push_back(OutputItem(**child, m_node->GetState().GetStation()));
       break;
     } else if (!istate.IsComplete()) {
       throw SError("OutputFunc Seq found child in unknown state");
     }
-    m_output.push_back(**child);
+    m_output.push_back(OutputItem(**child, m_node->GetState().GetStation()));
   }
 }
-
-/*
-void OutputFunc_Sequence::ConnectONodes() {
-  g_log.debug() << "OutputFunc_Sequence::ConnectONodes() " << *m_node;
-  g_log.debug() << "OutputFunc_Sequence at " << *m_node << ": Connecting ONodes";
-  for (STree::child_iter child = m_node->children.begin(); child != m_node->children.end(); ++child) {
-    g_log.debug() << " - processing child: " << **child;
-    // If m_node is Complete and this is the first child past the last approved
-    // child, then discard the output of this child onwards.
-    const State& istate = (*child)->GetState();
-    if (istate.IsBad()) {
-      g_log.debug() << " - child is bad -- abort";
-      break;
-    }
-
-    OutputFunc& cof = (*child)->GetOutputFunc();
-    if ((cof.OStart() && !cof.OEnd()) || (!cof.OStart() && cof.OEnd())) {
-      throw SError("OutputFunc_Sequence() found " + string(**child) + " with only an ostart or oend, but not both");
-    }
-    if (!cof.OStart()) {
-      g_log.debug() << " - child has no OStart; skipping";
-      continue;
-    }
-    if (!m_ostart) {
-      m_ostart = cof.OStart();
-      m_ostart->left = NULL;
-    } else {
-      cof.OStart()->left = m_oend;
-      m_oend->right = cof.OStart();
-    }
-    m_oend = cof.OEnd();
-    m_oend->right = NULL;
-    if (!istate.IsComplete()) {
-      g_log.debug() << " - child is not complete; aborting";
-      break;
-    }
-  }
-}
-*/
 
 auto_ptr<OutputFunc> OutputFunc_Sequence::Clone() {
   return auto_ptr<OutputFunc>(new OutputFunc_Sequence());
@@ -303,25 +247,6 @@ void OutputFunc_Cap::operator() () {
   (*m_outputFunc)();
   m_output = m_outputFunc->GetOutput();
 }
-
-/*
-void OutputFunc_Cap::ConnectONodes() {
-  g_log.debug() << "OutputFunc_Cap at " << *m_node << ": Connecting ONodes";
-  m_outputFunc->ConnectONodes();
-  if (m_outputFunc->OStart()) {
-    m_capStart.right = m_outputFunc->OStart();
-    m_outputFunc->OStart()->left = &m_capStart;
-  } else {
-    m_capStart.right = &m_capEnd;
-  }
-  if (m_outputFunc->OEnd()) {
-    m_outputFunc->OEnd()->right = &m_capEnd;
-    m_capEnd.left = m_outputFunc->OEnd();
-  } else {
-    m_capEnd.left = &m_capStart;
-  }
-}
-*/
 
 auto_ptr<OutputFunc> OutputFunc_Cap::Clone() {
   return auto_ptr<OutputFunc>(new OutputFunc_Cap(m_outputFunc->Clone(), m_cap));

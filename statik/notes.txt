@@ -1155,3 +1155,18 @@ OK, we can do that.  In ApplyBatch we maintain that table.  Uuuuugh, kinda sucks
 But then why have our own version at all?  Memory ownership.  murrrr....
 We don't need to give back the INode at all, then.  We'll just make our internal clone, but maintain the mapping ourselves.  That's.... ok!
 Because I didn't like those INodes anyway.
+
+-----
+2k15-07-29
+
+Why do nodes output things they've never output before, when they turn bad.  Shouldn't we just preserve things they were already emitting, but not output things that are new, if we're bad.
+
+-----
+2k15-08-02
+
+Let's mark each OutputItem with the state of its owning STree node regarding that item: good, ok, bad, etc.  That way the OutputFunc itself can say: ah, this item, it WAS ok but now it's bad, we'll mark it as such.  Or: we've never emit it before and it's bad, so we won't emit it now.
+
+This might get expensive, and the consumer might not care.  Oh well, let's give it a shot.
+
+Order the State::Stations: Pending, Bad, OK, Done, Complete.  The OItem's owning STree node slaps on the station it attributes to it.  Then going up the tree, we might overrule the item's station (on the Child instead of the ONode) with the min of the two.
+

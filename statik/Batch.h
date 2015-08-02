@@ -18,6 +18,7 @@
 
 #include "List.h"
 
+#include <ostream>
 #include <set>
 #include <string>
 #include <utility>
@@ -41,6 +42,8 @@ public:
     const List* node;
     BATCH_OP op;
     const List* pos;
+
+    std::string Print() const;
   };
 
   typedef std::vector<BatchItem> batch_vec;
@@ -62,6 +65,9 @@ public:
 private:
   batch_vec m_batch;
 };
+
+std::ostream& operator<< (std::ostream& out, const Batch::BatchItem& item);
+std::ostream& operator<< (std::ostream& out, const Batch& batch);
 
 }
 

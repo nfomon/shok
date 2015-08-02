@@ -356,6 +356,10 @@ void IncParser::ProcessActions() {
 
 void IncParser::ComputeOutput_Update(const STree& node, Batch& out_batch, const List*& behind_node) {
   g_log.debug() << "IncParser " << m_name << ": Computing output UPDATE for node " << node;
+  if (node.GetState().IsPending() || node.GetState().IsBad()) {
+    g_log.debug() << " - state is " << node.GetState() << ", so not computing output";
+    return;
+  }
 
   node.GetOutputFunc() ();
   OutputList& output = node.GetOutputFunc().GetOutput();
@@ -449,12 +453,16 @@ void IncParser::ComputeOutput_Update(const STree& node, Batch& out_batch, const 
     m_outputPerNode[&node] = output;  // copy
   }
 
-  g_log.debug() << "Done computing UPDATE output for node " << node << ".  Batch so far: " << out_batch.Print();
+  g_log.debug() << "Done computing UPDATE output for node " << node << ".  Batch so far: " << out_batch;
   node.GetOutputFunc().Sync();
 }
 
 void IncParser::ComputeOutput_Insert(const STree& node, Batch& out_batch, const List*& behind_node) {
   g_log.debug() << "IncParser " << m_name << ": Computing output INSERT for node " << node;
+  if (node.GetState().IsPending() || node.GetState().IsBad()) {
+    g_log.debug() << " - state is " << node.GetState() << ", so not computing output";
+    return;
+  }
 
   node.GetOutputFunc() ();
   const OutputList& output = node.GetOutputFunc().GetOutput();
@@ -473,12 +481,16 @@ void IncParser::ComputeOutput_Insert(const STree& node, Batch& out_batch, const 
   } else {
     m_outputPerNode[&node] = output;  // copy
   }
-  g_log.debug() << "Done computing INSERT output for node " << node << ".  Batch so far: " << out_batch.Print();
+  g_log.debug() << "Done computing INSERT output for node " << node << ".  Batch so far: " << out_batch;
   node.GetOutputFunc().Sync();
 }
 
 void IncParser::ComputeOutput_Delete(const STree& node, Batch& out_batch) {
   g_log.debug() << "IncParser " << m_name << ": Computing output DELETE for node " << node;
+  if (node.GetState().IsPending() || node.GetState().IsBad()) {
+    g_log.debug() << " - state is " << node.GetState() << ", so not computing output";
+    return;
+  }
 
   output_mod_iter prev_output_i = m_outputPerNode.find(&node);
   if (m_outputPerNode.end() == prev_output_i) {
@@ -493,7 +505,7 @@ void IncParser::ComputeOutput_Delete(const STree& node, Batch& out_batch) {
     RemoveOutput(*prev_item, out_batch);
   }
   m_outputPerNode.erase(&node);
-  g_log.debug() << "Done computing DELETE output for node " << node << ".  Batch so far: " << out_batch.Print();
+  g_log.debug() << "Done computing DELETE output for node " << node << ".  Batch so far: " << out_batch;
 }
 
 void IncParser::Cleanup() {
@@ -550,6 +562,7 @@ const List* IncParser::GetOEnd(const OutputItem& item) const {
 
 void IncParser::SanityCheck() {
   g_log.debug() << "Sanity check " << m_sancount;
+  g_log.debug();
   g_san.info();
   g_san.info() << "Sanity check " << m_sancount;
   SanityCheck(&m_root);

@@ -26,7 +26,8 @@ using std::string;
 using namespace statik_test;
 
 void Star::run() {
-  // Blank Star
+  g_log.info();
+  g_log.info() << "Blank Star";
   {
     bool p = false;
     string msg;
@@ -42,7 +43,8 @@ void Star::run() {
     test(p, "Empty Star not allowed: " + msg);
   }
 
-  // Star with a Keyword child
+  g_log.info();
+  g_log.info() << "Star with a Keyword child";
   {
     auto_ptr<Rule> kr(KEYWORD("a"));
     auto_ptr<Rule> r(STAR("Star"));

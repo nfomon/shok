@@ -20,6 +20,8 @@ auto_ptr<Compiler> exstatik::MakeCompiler(const string& name) {
   auto_ptr<Compiler> c(new Compiler());
   if ("Statik" == name) {
     c->push_back(CreateLexer_Simple());
+  } else if ("KeywordTest" == name) {
+    c->push_back(CreateLexer_KeywordTest());
   } else if ("Splash" == name) {
     c->push_back(CreateLexer_Splash());
   } else if ("Moderate" == name) {

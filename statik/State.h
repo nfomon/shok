@@ -15,9 +15,22 @@ namespace statik {
 
 class State {
 public:
+  // Ordering: worst to best
+  enum Station {
+    ST_PENDING,
+    ST_BAD,
+    ST_OK,
+    ST_DONE,
+    ST_COMPLETE
+  };
+  static std::string UnMapStation(Station st);
+
   State();
+  State(Station station);
 
   void Clear();
+
+  Station GetStation() const { return m_station; }
 
   bool IsPending() const { return ST_PENDING == m_station; }
   bool IsOK() const { return ST_OK == m_station; }
@@ -41,16 +54,6 @@ public:
   virtual operator std::string() const { return UnMapStation(m_station); }
 
 private:
-  enum Station {
-    ST_PENDING,
-    ST_OK,
-    ST_BAD,
-    ST_DONE,
-    ST_COMPLETE
-  };
-
-  static std::string UnMapStation(Station st);
-
   bool m_isLocked;
   Station m_station;
 };

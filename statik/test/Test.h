@@ -42,9 +42,15 @@ protected:
   void pass(const std::string& msg = "");
   void fail(const std::string& msg = "");
   bool test(bool t, const std::string& msg = "");
+
   template <typename T>
   bool test(T actual, T expected, const std::string& msg = "") {
     return test(actual == expected, msg + " (actual: " + boost::lexical_cast<std::string>(actual) + " expected: " + boost::lexical_cast<std::string>(expected) + ")");
+  }
+
+  template <typename T>
+  bool test_not(T actual, T unexpected, const std::string& msg = "") {
+    return test(actual != unexpected, msg + " (actual: " + boost::lexical_cast<std::string>(actual) + " unexpected: " + boost::lexical_cast<std::string>(unexpected) + ")");
   }
 
   bool test(const statik::Batch& actual, const statik::Batch& expected, const std::string& msg = "");

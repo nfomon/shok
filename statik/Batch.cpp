@@ -6,10 +6,27 @@
 #include "List.h"
 #include "SLog.h"
 
+#include <ostream>
 #include <string>
+using std::ostream;
 using std::string;
 
 using namespace statik;
+
+/* BatchItem public */
+
+std::string Batch::BatchItem::Print() const {
+  if (!node) {
+    throw SError("Cannot print defective BatchItem");
+  }
+  string s(UnMapBatchOp(op) + " " + string(*node));
+  if (pos) {
+    s += " @ " + string(*pos);
+  }
+  return s;
+}
+
+/* Batch public */
 
 std::string Batch::UnMapBatchOp(const BATCH_OP& op) {
   switch (op) {
@@ -46,7 +63,19 @@ void Batch::Clear() {
 string Batch::Print() const {
   string s;
   for (batch_iter i = m_batch.begin(); i != m_batch.end(); ++i) {
-    s += "\n" + UnMapBatchOp(i->op) + " - " + string(*i->node);
+    s += "\n" + i->Print();
   }
   return s;
+}
+
+/* non-member */
+
+ostream& statik::operator<< (ostream& out, const Batch::BatchItem& item) {
+  out << item.Print();
+  return out;
+}
+
+ostream& statik::operator<< (ostream& out, const Batch& batch) {
+  out << batch.Print();
+  return out;
 }

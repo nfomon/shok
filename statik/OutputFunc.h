@@ -5,6 +5,7 @@
 #define _statik_OutputFunc_h_
 
 #include "List.h"
+#include "State.h"
 
 #include <list>
 #include <map>
@@ -26,12 +27,14 @@ std::auto_ptr<OutputFunc> MakeOutputFunc_Sequence();
 std::auto_ptr<OutputFunc> MakeOutputFunc_Cap(std::auto_ptr<OutputFunc> outputFunc, const std::string& cap);
 
 struct OutputItem {
-  OutputItem(const List& onode)
+  OutputItem(const List& onode, State::Station station)
     : onode(&onode),
-      child(NULL) {}
-  OutputItem(const STree& child)
+      child(NULL),
+      station(station) {}
+  OutputItem(const STree& child, State::Station station)
     : onode(NULL),
-      child(&child) {}
+      child(&child),
+      station(station) {}
   bool operator==(const OutputItem& rhs) const {
     return onode == rhs.onode && child == rhs.child;
   }
@@ -49,34 +52,10 @@ struct OutputItem {
   }
   const List* onode;
   const STree* child;
-  const List* ostart;     // set by IncParser
-  const List* oend;       // set by IncParser
+  State::Station station;
   std::string prev_value; // set/used by IncParser, not OutputFuncs
 };
 
-/*
-class OutputList {
-public:
-  typedef output_list::const_iterator const_iterator;
-  typedef output_list::iterator iterator;
-  const_iterator begin() const { return m_output.begin(); }
-  const_iterator end() const { return m_output.end(); }
-  size_t size() const { return m_output.size(); }
-  List* OStart() const {
-    if (m_output.empty()) {
-      return NULL;
-    }
-    OutputItem& start = m_output.front();
-    if (start.onode) {
-      return start.onode;
-    }
-    return start.child->GetOutputList().OStart();
-  }
-private:
-  typedef std::list<OutputItem> output_list;
-  output_list m_output;
-};
-*/
 typedef std::list<OutputItem> OutputList;
 
 class OutputFunc {
@@ -96,7 +75,6 @@ public:
   virtual std::auto_ptr<OutputFunc> Clone() = 0;
 
 protected:
-
   const STree* m_node;
   OutputList m_output;
 
