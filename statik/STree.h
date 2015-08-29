@@ -54,7 +54,7 @@ public:
   const IConnection& GetIConnection() const { return m_iconnection; }
   OutputFunc& GetOutputFunc() const { return *m_outputFunc.get(); }
 
-  operator std::string() const;
+  std::string Print() const;
   std::string DrawNode(const std::string& context, const STree* initiator = NULL) const;
 
 private:

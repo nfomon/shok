@@ -100,15 +100,15 @@ private:
   void UpdateNode(List& inode);
   void ProcessActions();
 
-  void ComputeOutput_Update(const STree& node, Batch& out_batch, const List*& behind_node);
-  void ComputeOutput_Insert(const STree& node, Batch& out_batch, const List*& behind_node);
-  void ComputeOutput_Delete(const STree& node, Batch& out_batch);
+  void ComputeOutput_Update(const STree& node, Batch& out_batch, const List*& behind_node, State::Station worst_station);
+  void ComputeOutput_Insert(const STree& node, Batch& out_batch, const List*& behind_node, State::Station worst_station);
+  void ComputeOutput_Delete(const STree& node, Batch& out_batch, State::Station worst_station);
   void Cleanup();
 
   // Convenience wrappers for ComputeOutput_*
-  void InsertOutput(const OutputItem& item, Batch& out_batch, const List*& behind_node);
-  void RemoveOutput(const OutputItem& item, Batch& out_batch);
-  void UpdateOutput(OutputItem& item, Batch& out_batch, const List*& behind_node);
+  void InsertOutput(const OutputItem& item, Batch& out_batch, const List*& behind_node, State::Station worst_station);
+  void RemoveOutput(const OutputItem& item, Batch& out_batch, State::Station worst_station);
+  void UpdateOutput(OutputItem& item, Batch& out_batch, const List*& behind_node, State::Station worst_station);
   const List* GetOEnd(const OutputItem& item) const;
 
   void SanityCheck();

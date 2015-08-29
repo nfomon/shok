@@ -47,6 +47,7 @@ void Keyword::run() {
     const statik::STree& root = ip.GetRoot();
 
     Batch empty_batch;
+    std::vector<const statik::List*> received_onodes; // TODO populate and use for checking nodes in deletes, updates
     {
       Batch out_batch;
       List cx("cx", "x");
@@ -54,19 +55,6 @@ void Keyword::run() {
       test(root.GetState().IsBad(), "x");
       ip.ExtractChanges(out_batch);
       test(out_batch, empty_batch, "no output");
-      /*
-      // Even though it's bad, it contributes its output node
-      // xxx -- not anymore!
-      if (test(out_batch.Size(), (size_t)1, "output")) {
-        const Batch::BatchItem& item = *out_batch.begin();
-        if (test(item.node, "batch insert node")) {
-          test(item.node->name, string("a"), "batch insert node name");
-          test(item.node->value, string(""), "batch insert node value");
-        }
-        test(item.op, Batch::OP_INSERT, "batch insert op");
-        test(item.pos, (const List*)NULL, "batch insert pos");
-      }
-      */
       out_batch.Clear();
 
       ip.Delete(cx);
@@ -84,7 +72,7 @@ void Keyword::run() {
         Batch expected_batch;
         List xca("a", "");
         expected_batch.Insert(xca, NULL);
-        test(out_batch, expected_batch, "yay output");
+        test(out_batch, expected_batch, "output");
       }
       out_batch.Clear();
 
@@ -99,38 +87,53 @@ void Keyword::run() {
       test(root.GetState().IsBad(), "abc");
       ip.ExtractChanges(out_batch);
       test(out_batch, empty_batch, "no output");
+      out_batch.Clear();
 
       ip.Delete(cb);
-      test(root.GetState().IsComplete(), "ac");
+      test(root.GetState().GetStation(), statik::State::ST_COMPLETE, "ac");
       ip.ExtractChanges(out_batch);
       test(out_batch, empty_batch, "no output");
+      out_batch.Clear();
 
       ip.Delete(ca);
-      test(root.GetState().IsBad(), "c");
-      g_log.info() << "ok3";
+      test(root.GetState().GetStation(), statik::State::ST_BAD, "c");
       ip.ExtractChanges(out_batch);
-      g_log.info() << "ok4";
-      test(out_batch, empty_batch, "no output");
-      g_log.info() << "ok5";
+      {
+        Batch expected_batch;
+        expected_batch.Delete(ca);
+        test(out_batch, expected_batch, "output");
+      }
+      out_batch.Clear();
 
       List ca2("2", "a");
       ip.Insert(ca2, NULL);
       test(root.GetState().IsComplete(), "ac");
-      ip.ExtractChanges(out_batch);
-      test(out_batch, empty_batch, "no output");
+      ip.ExtractChanges(out_batch);   // wrong: expect insert of a
+      {
+        Batch expected_batch;
+        List xca2("a", "");
+        expected_batch.Insert(xca2, NULL);
+        test(out_batch, expected_batch, "output");
+      }
+      out_batch.Clear();
 
       ip.Delete(cc);
       test(root.GetState().IsDone(), "a");
       ip.ExtractChanges(out_batch);
       test(out_batch, empty_batch, "no output");
+      out_batch.Clear();
 
       ip.Delete(ca2);
       test(root.IsClear());
       ip.ExtractChanges(out_batch);
-      test(out_batch, empty_batch, "no output");
+      {
+        Batch expected_batch;
+        expected_batch.Delete(ca2);
+        test(out_batch, expected_batch, "output");
+      }
+      out_batch.Clear();
     }
 
-    // Batch updates
     g_log.info();
     g_log.info() << "Batch updates";
     {

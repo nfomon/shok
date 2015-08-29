@@ -57,7 +57,7 @@ void ParseFunc_Root::operator() (ParseAction::Action action, const List& inode, 
       m_node->GetIConnection().SetEnd(m_node->IStart());
     }
   } else if (childState.IsPending()) {
-    throw SError("Root node's child " + string(child) + " is pending");
+    throw SError("Root node's child " + child.Print() + " is pending");
   } else if (childState.IsBad()) {
     state.GoBad();
     m_node->GetIConnection().SetEnd(child.IEnd());
@@ -71,7 +71,7 @@ void ParseFunc_Root::operator() (ParseAction::Action action, const List& inode, 
     state.GoComplete();
     m_node->GetIConnection().SetEnd(child.IEnd());
   } else {
-    throw SError("Cannot determine state of Root node when Child's state is unknown.  Child: " + string(child));
+    throw SError("Cannot determine state of Root node when Child's state is unknown.  Child: " + child.Print());
   }
 
   g_log.debug() << "Root now at: " << *m_node << " with IStart: " << m_node->IStart() << " and IEnd: " << m_node->IEnd();

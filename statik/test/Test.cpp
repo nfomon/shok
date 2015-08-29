@@ -3,7 +3,9 @@
 
 #include "Test.h"
 
+#include "Batch.h"
 #include "STLog.h"
+using statik::Batch;
 
 #include <string>
 using std::string;
@@ -27,7 +29,7 @@ void Test::Run() {
 /* protected */
 
 void Test::pass(const std::string& msg) {
-  ++m_result.pass;
+  qpass();
   g_log.info() << "pass" << (msg.empty() ? "" : ":\t" + msg);
 }
 
@@ -41,47 +43,73 @@ bool Test::test(bool t, const std::string& msg) {
   return t;
 }
 
-bool Test::test(const statik::Batch& actual, const statik::Batch& expected, const string& msg) {
-  g_log.warning() << "one";
+void Test::qpass() {
+  ++m_result.pass;
+}
+
+bool Test::qtest(bool t, const std::string& msg) {
+  t ? qpass() : fail(msg);
+  return t;
+}
+
+bool Test::test(const Batch& actual, const Batch& expected, const string& msg) {
   bool anyfail = false;
-  statik::Batch::batch_iter a, e;
+  Batch::batch_iter a, e;
   a = actual.begin();
   e = expected.begin();
+  test(actual.Size(), expected.Size(), msg + " batch sizes");
   for (; a != actual.end(); ++a) {
-    g_log.warning() << "two";
-    if (!test(e != expected.end(), msg + " enough expected items")) {
-      g_log.warning() << "three";
+    if (!qtest(e != expected.end(), msg + " too many output items")) {
       anyfail = true;
       break;
     }
-    const statik::Batch::BatchItem& aitem = *a;
-    const statik::Batch::BatchItem& eitem = *e;
-    g_log.warning() << "four";
-    if (test(aitem.op, eitem.op, msg + " batch item op")) {
+    const Batch::BatchItem& aitem = *a;
+    const Batch::BatchItem& eitem = *e;
+    if (qtest(aitem.op, eitem.op, msg + " batch item op")) {
       if (!eitem.node) {
         g_log.warning() << "Expected batch item node is missing";
-      } else if (test(aitem.node, " - batch node")) {
-        anyfail |= test(aitem.node->name, eitem.node->name, " - - batch node name");
-        anyfail |= test(aitem.node->value, eitem.node->value, " - - batch node value");
+      } else if (qtest(aitem.node, " - batch node")) {
+        if (Batch::OP_DELETE == aitem.op) {
+          // We can't look at the deleted node's name/value, because it may
+          // have been *deleted*.  It's just a handle that should not be
+          // dereferenced; a label for the node that was removed.
+          // We also can't directly compare the expected node with the
+          // observed, because they're not the same (the Test-user is not
+          // actually providing the IncParser's previously-output node, as that
+          // would be inconvenient).
+          // So for now, don't do a check here, we can improve the API later.
+          //anyfail |= !qtest(aitem.node, eitem.node, " - - batch deleted node");
+        } else {
+          anyfail |= !qtest(aitem.node->name, eitem.node->name, " - - batch node name");
+          anyfail |= !qtest(aitem.node->value, eitem.node->value, " - - batch node value");
+        }
       } else {
+        fail(msg + " emit an output item with no node");
         anyfail = true;
       }
-      anyfail |= test(aitem.pos, eitem.pos, " - batch item pos");
+      anyfail |= !qtest(aitem.pos, eitem.pos, " - batch item pos");
     } else {
       anyfail = true;
     }
     ++e;
   }
   for (; a != actual.end(); ++a) {
-    fail(msg + " extra item in batch: " + a->Print());
+    const Batch::BatchItem& aitem = *a;
+    if (Batch::OP_DELETE == aitem.op) {
+      // Cannot display deleted item, as it may have been erased from memory.
+      // It is only a "token".
+      fail(msg + " extra deleted item in batch");
+    } else {
+      fail(msg + " extra item in batch: " + a->Print());
+    }
     anyfail = true;
   }
   for (; e != expected.end(); ++e) {
     fail(msg + " item not found in batch: " + e->Print());
     anyfail = true;
   }
-  if (!anyfail) {
-    pass(msg + ": batches match with no failures");
+  if (anyfail) {
+    fail(msg + ": failures in batch");
   }
   return anyfail;
 }

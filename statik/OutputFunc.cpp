@@ -12,10 +12,12 @@
 using Util::dotVar;
 
 #include <memory>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
 using std::auto_ptr;
+using std::ostream;
 using std::string;
 using std::vector;
 
@@ -92,7 +94,11 @@ auto_ptr<OutputFunc> OutputFunc_Pass::Clone() {
 
 void OutputFunc_Pass::operator() () {
   if (m_node->children.empty()) {
-    // Leave our dangling old state, I guess
+    // We might leave our dangling old state, I guess.
+    // But for now, clear everything.
+    g_log.debug() << "OutputFunc_Pass: Node has no children, so clearing output";
+    m_output.clear();
+    return;
   } else if (m_node->children.size() != 1) {
     throw SError("OutputFunc_Pass: must have exactly 1 child");
   }
@@ -250,4 +256,17 @@ void OutputFunc_Cap::operator() () {
 
 auto_ptr<OutputFunc> OutputFunc_Cap::Clone() {
   return auto_ptr<OutputFunc>(new OutputFunc_Cap(m_outputFunc->Clone(), m_cap));
+}
+
+/* non-member */
+
+ostream& statik::operator<< (ostream& out, const OutputItem& item) {
+  if (item.onode) {
+    out << *item.onode;
+  } else if (item.child) {
+    out << item.child->Print();
+  } else {
+    throw SError("Attempt to operator<< defective OutputItem");
+  }
+  return out;
 }

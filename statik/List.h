@@ -14,7 +14,7 @@ namespace statik {
 struct List {
   List(const std::string& name, const std::string& value = "");
 
-  operator std::string() const { return "(List " + name + ":" + value + ")"; }
+  std::string Print() const { return "(List " + name + ":" + value + ")"; }
   std::string DrawNode(const std::string& context) const;
 
   const std::string name;

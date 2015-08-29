@@ -51,7 +51,7 @@ public:
 
   bool operator==(const State& rhs) const;
   bool operator!=(const State& rhs) const;
-  virtual operator std::string() const { return UnMapStation(m_station); }
+  std::string Print() const { return UnMapStation(m_station); }
 
 private:
   bool m_isLocked;

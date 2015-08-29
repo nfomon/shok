@@ -110,7 +110,7 @@ void OrderNode::InsertLeafBefore(const List& leaf, const List& next, node_map& o
       return;
     }
   }
-  throw SError("Failed to find next-leaf " + string(next) + " to insert " + string(leaf) + " before");
+  throw SError("Failed to find next-leaf " + next.Print() + " to insert " + leaf.Print() + " before");
 }
 
 void OrderNode::InsertLeafAfter(const List& leaf, const List& prev, node_map& out_changes) {
@@ -126,7 +126,7 @@ void OrderNode::InsertLeafAfter(const List& leaf, const List& prev, node_map& ou
       return;
     }
   }
-  throw SError("Failed to find prev-leaf " + string(prev) + " to insert " + string(leaf) + " after");
+  throw SError("Failed to find prev-leaf " + prev.Print() + " to insert " + leaf.Print() + " after");
 }
 
 void OrderNode::InsertChildAfter(OrderNode* child, const OrderNode& prev, node_map& out_changes) {

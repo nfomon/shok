@@ -10,6 +10,7 @@
 
 #include <memory>
 #include <set>
+#include <sstream>
 #include <string>
 
 namespace statik {
@@ -36,7 +37,9 @@ public:
     g_log.debug() << "Object pool unlinking " << item << " - " << &item;
     g_san.debug() << "Object pool unlinking " << item << " - " << &item;
     if (m_active.end() == m_active.find(&item)) {
-      throw SError("Cannot unlink " + std::string(item) + "; item not found in pool");
+      std::stringstream s;
+      s << "Cannot unlink " << item << "; item not found in pool";
+      throw SError(s.str());
     }
     m_active.erase(&item);
     m_unlinked.insert(&item);
@@ -51,7 +54,7 @@ public:
     m_unlinked.clear();
   }
 
-  operator std::string() const {
+  std::string Print() const {
     return std::string("Object pool has " + boost::lexical_cast<std::string>(m_active.size()) + " active and " + boost::lexical_cast<std::string>(m_unlinked.size()) + " unlinked");
   }
 
@@ -61,6 +64,12 @@ private:
   item_set m_active;
   item_set m_unlinked;
 };
+
+template <typename T>
+inline std::ostream& operator<< (std::ostream& out, const ObjectPool<T>& pool) {
+  out << pool.Print();
+  return out;
+}
 
 }
 

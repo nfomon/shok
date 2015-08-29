@@ -49,11 +49,25 @@ protected:
   }
 
   template <typename T>
+  bool qtest(T actual, T expected, const std::string& msg = "") {
+    return qtest(actual == expected, msg + " (actual: " + boost::lexical_cast<std::string>(actual) + " expected: " + boost::lexical_cast<std::string>(expected) + ")");
+  }
+
+  template <typename T>
   bool test_not(T actual, T unexpected, const std::string& msg = "") {
     return test(actual != unexpected, msg + " (actual: " + boost::lexical_cast<std::string>(actual) + " unexpected: " + boost::lexical_cast<std::string>(unexpected) + ")");
   }
 
+  template <typename T>
+  bool qtest_not(T actual, T unexpected, const std::string& msg = "") {
+    return qtest(actual != unexpected, msg + " (actual: " + boost::lexical_cast<std::string>(actual) + " unexpected: " + boost::lexical_cast<std::string>(unexpected) + ")");
+  }
+
   bool test(const statik::Batch& actual, const statik::Batch& expected, const std::string& msg = "");
+
+  // Quiet (no message if pass)
+  void qpass();
+  bool qtest(bool t, const std::string& msg = "");
 
 private:
   Result m_result;

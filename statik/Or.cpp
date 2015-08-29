@@ -65,7 +65,7 @@ void ParseFunc_Or::operator() (ParseAction::Action action, const List& inode, co
   const STree* lockedChild = NULL;
 
   if (m_node->children.empty()) {
-    throw SError("Cannot parse Or at " + string(*m_node) + " that has no children");
+    throw SError("Cannot parse Or at " + m_node->Print() + " that has no children");
   }
   m_node->GetIConnection().SetEnd(m_node->IStart());
 
@@ -82,7 +82,7 @@ void ParseFunc_Or::operator() (ParseAction::Action action, const List& inode, co
     bool thisChildLocked = false;
     if (istate.IsLocked()) {
       if (lockedChild) {
-        throw SError("Parsing Or at " + string(*m_node) + " found more than one locked children");
+        throw SError("Parsing Or at " + m_node->Print() + " found more than one locked children");
       }
       g_log.info() << "Parsing Or at " << *m_node << " found locked child " << **i << " in state " << istate;
       lockedChild = *i;
@@ -91,7 +91,7 @@ void ParseFunc_Or::operator() (ParseAction::Action action, const List& inode, co
     }
     if (!istate.IsBad() && !haveSetEnd) {
       if (&(*i)->IStart() != &m_node->IStart()) {
-        throw SError("Parsing Or at " + string(*m_node) + " and a child disagree about istart");
+        throw SError("Parsing Or at " + m_node->Print() + " and a child disagree about istart");
       }
       m_node->GetIConnection().SetEnd((*i)->IEnd());
       g_log.debug() << "Parsing Or at " << *m_node << " assigning iend " << m_node->IEnd() << " from istate " << istate;
@@ -138,7 +138,7 @@ void ParseFunc_Or::operator() (ParseAction::Action action, const List& inode, co
         completes.push_back(*i);
       }
     } else {
-      throw SError("Parsing Or at " + string(*m_node) + " found istate " + string(istate) + " in unknown station");
+      throw SError("Parsing Or at " + m_node->Print() + " found istate " + istate.Print() + " in unknown station");
     }
   }
   if (1 == completes.size()) {

@@ -40,6 +40,6 @@ string List::DrawNode(const string& context) const {
 /* non-member */
 
 ostream& statik::operator<< (ostream& out, const List& node) {
-  out << string(node);
+  out << node.Print();
   return out;
 }

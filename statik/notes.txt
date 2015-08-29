@@ -1170,3 +1170,24 @@ This might get expensive, and the consumer might not care.  Oh well, let's give 
 
 Order the State::Stations: Pending, Bad, OK, Done, Complete.  The OItem's owning STree node slaps on the station it attributes to it.  Then going up the tree, we might overrule the item's station (on the Child instead of the ONode) with the min of the two.
 
+-----
+2k15-08-20
+
+We seem to be in a hilarious situation:
+ - compute CO_Update no matter what the worst_station is
+ - abort from CO_Insert before computing OutputFunc() if the worst_station is bad enough (including that node)
+
+Both are right and both are wrong !?!?
+
+--
+after the Compute pass, there should be no concerns about lingering memory.  We own all our Output nodes.
+ - uhhhh but we delete things, so make sure we tell people if we've deleted some output node.  nurrrr
+ - maybe we stay in the ownership pool *until* we tell people about it? but that leaves the problem, it will just stay in the pool forever.
+ - are Removes really more "important" than adds?  if a thing goes bad, we should still traverse down into it but just removing anything it wants removed??????
+
+Yes, Removes are stronger than Adds/Updates.  There are two ways to go about it:
+1. Traverse down the whole tree, and add/update are the only ones affected by worst_station
+2. When we clear out a node, push ownership of its output nodes up to the parent.  ugh, "indefinitely in the future" this.
+
+ -- uhh I think that's what the code is doing!?  so let's investigate.
+

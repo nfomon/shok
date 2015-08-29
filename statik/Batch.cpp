@@ -19,9 +19,9 @@ std::string Batch::BatchItem::Print() const {
   if (!node) {
     throw SError("Cannot print defective BatchItem");
   }
-  string s(UnMapBatchOp(op) + " " + string(*node));
+  string s(UnMapBatchOp(op) + " " + node->Print());
   if (pos) {
-    s += " @ " + string(*pos);
+    s += " @ " + pos->Print();
   }
   return s;
 }

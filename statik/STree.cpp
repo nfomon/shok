@@ -48,19 +48,19 @@ void STree::StartNode(const List& istart) {
 
 void STree::ParseNode(ParseAction::Action action, const List& inode, const STree* initiator) {
   if (m_isClear) {
-    g_log.info() << "Not parsing node " + string(*this) + " which has been cleared";
+    g_log.info() << "Not parsing node " << *this << " which has been cleared";
     return;
   } else if (m_iconnection.IsClear()) {
-    throw SError("Cannot parse node " + string(*this) + " with cleared IConnection");
+    throw SError("Cannot parse node " + Print() + " with cleared IConnection");
   } else if (ParseAction::Start == action) {
-    throw SError("Cannot parse node " + string(*this) + " with Start action");
+    throw SError("Cannot parse node " + Print() + " with Start action");
   }
 
   if (ParseAction::Restart == action) {
     m_iconnection.Restart(inode);
   }
 
-  g_log.info() << "Parsing node " << *this << " with inode " << inode << " and initiator " << (initiator ? string(*initiator) : "<null>");
+  g_log.info() << "Parsing node " << *this << " with inode " << inode << " and initiator " << (initiator ? initiator->Print() : "<null>");
   const State old_state = m_state;
   const List* old_istart = &IStart();
   const List* old_iend = &IEnd();
@@ -92,8 +92,8 @@ void STree::ClearNode(const List& inode) {
   ClearSubNode();
 }
 
-STree::operator std::string() const {
-  return m_rule.Name() + ":" + string(GetState());
+string STree::Print() const {
+  return m_rule.Name() + ":" + GetState().Print();
 }
 
 string STree::DrawNode(const string& context, const STree* initiator) const {
@@ -171,6 +171,6 @@ void STree::ClearSubNode() {
 /* non-member */
 
 ostream& statik::operator<< (ostream& out, const STree& node) {
-  out << string(node);
+  out << node.Print();
   return out;
 }

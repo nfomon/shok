@@ -52,6 +52,6 @@ bool State::operator!=(const State& rhs) const {
 /* non-member */
 
 ostream& statik::operator<< (ostream& out, const State& state) {
-  out << string(state);
+  out << state.Print();
   return out;
 }

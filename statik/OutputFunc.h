@@ -10,6 +10,7 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <ostream>
 #include <set>
 #include <string>
 
@@ -170,6 +171,8 @@ protected:
   List m_capStart;
   List m_capEnd;
 };
+
+std::ostream& operator<< (std::ostream& out, const OutputItem& item);
 
 }
 

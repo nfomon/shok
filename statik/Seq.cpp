@@ -29,12 +29,12 @@ auto_ptr<ParseFunc> statik::MakeParseFunc_Seq() {
 
 void ParseFunc_Seq::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
   // Process
-  g_log.debug() << "Parsing Seq at " << *m_node << " with initiator " << (initiator ? string(*initiator) : "<null>");
+  g_log.debug() << "Parsing Seq at " << m_node->Print() << " with initiator " << (initiator ? initiator->Print() : "<null>");
 
   if (m_node->children.empty()) {
-    throw SError("SeqRule::Update: Seq node " + string(*m_node) + " must have children");
+    throw SError("SeqRule::Update: Seq node " + m_node->Print() + " must have children");
   } else if (m_node->children.size() > m_node->GetRule().GetChildren().size()) {
-    throw SError("SeqRule::Update: Seq node " + string(*m_node) + " has more children than the rule");
+    throw SError("SeqRule::Update: Seq node " + m_node->Print() + " has more children than the rule");
   }
 
   // Find the initiator child
@@ -53,7 +53,7 @@ void ParseFunc_Seq::operator() (ParseAction::Action action, const List& inode, c
     ++child_index;
   }
   if (!foundInitiator) {
-    throw SError("ParseFunc_Seq at " + string(*m_node) + " provided an initiator which is not a child");
+    throw SError("ParseFunc_Seq at " + m_node->Print() + " provided an initiator which is not a child");
   }
 
   // What happened to the initiator child?  Cleared / Shrank / Stayed / Grew
@@ -138,7 +138,7 @@ void ParseFunc_Seq::operator() (ParseAction::Action action, const List& inode, c
       }
     } break;
     default:
-      throw SError("ParseFunc_Seq at " + string(*m_node) + " received unexpected action " + ParseAction::UnMapAction(action));
+      throw SError("ParseFunc_Seq at " + m_node->Print() + " received unexpected action " + ParseAction::UnMapAction(action));
     }
   }
 
