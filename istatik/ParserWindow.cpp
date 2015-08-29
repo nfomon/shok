@@ -42,7 +42,11 @@ WindowResponse ParserWindow::Input(const Batch& ibatch) {
   response.actions.push_back(WindowAction(WindowAction::MOVE, 0, 0, 0));
   Batch batch;
   m_incParser.ExtractChanges(batch);
-  g_log.info() << "Printing WindowResponse list.  Batch size is: " << batch.Size();
+  // WARNING: can't show the batch, because its deleted items may be gone already :O
+  g_log.info() << "Printing WindowResponse list for batch of size: " << batch.Size();
+  if (m_nodes) {
+    g_log.debug() << "m_nodes is: " << *m_nodes;
+  }
   if (!batch.IsEmpty()) {
     for (Batch::batch_iter i = batch.begin(); i != batch.end(); ++i) {
       switch (i->op) {
@@ -60,35 +64,49 @@ WindowResponse ParserWindow::Input(const Batch& ibatch) {
             node->left = pos;
             pos->right = node;
           } else {
+            g_log.debug() << "Setting this node as m_nodes";
             node->right = m_nodes;
+            if (node->right) {
+              node->right->left = node;
+            }
             m_nodes = node;
           }
           m_nodeMap.insert(std::make_pair(i->node, node));
+          g_log.debug() << "Done inserting node";
         }
         break;
+
       case Batch::OP_DELETE: {
-          g_log.debug() << "Delete node: " << i->node->name << ":" << i->node->value;
+          // Careful!  i->node is a pointer to dead data, it's just a lookup
+          // handle for us.
           node_mod_iter node_i = m_nodeMap.find(i->node);
           if (m_nodeMap.end() == node_i) {
             throw ISError("Received invalid node for Delete");
           }
           List* node = node_i->second;
+          g_log.debug() << "Delete node: " << node->name << ":" << node->value;
           if (node->left) {
             node->left->right = node->right;
             if (node->right) {
               node->right->left = node->left;
             }
-            delete node;
-          } else {
-            if (m_nodes != node) {
-              throw ISError("Attempt to delete node which has no left, but is not m_nodes either");
-            }
-            m_nodes = node->right;
-            delete node;
           }
+          if (m_nodes == node) {
+            g_log.debug() << "Deleted node is m_nodes";
+            if (node->left) {
+              g_log.debug() << "going left";
+              m_nodes = node->left;
+            } else {
+              g_log.debug() << "going right";
+              m_nodes = node->right;
+            }
+          }
+          delete node;
           m_nodeMap.erase(node_i);
+          g_log.debug() << "Done deleting node";
         }
         break;
+
       case Batch::OP_UPDATE:
         g_log.debug() << "Update node: " << i->node->name << ":" << i->node->value;
         break;
