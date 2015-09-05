@@ -18,5 +18,5 @@ bin_PROGRAMS = istatik
 istatik_SOURCES = $(ISTATIK_SRCS)
 istatik_LDADD = ../exstatik/libexstatik.a ../statik/libstatik.a ../util/libutil.a
 istatik_CXXFLAGS = -ggdb -Wall -pedantic $(BOOST_CXXFLAGS) $(LIB_CXXFLAGS)
-istatik_LDFLAGS = $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_REGEX_LDFLAGS)
+istatik_LDFLAGS = $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_REGEX_LDFLAGS) -lcurses
 LIBS = $(BOOST_PROGRAM_OPTIONS_LIBS) $(BOOST_REGEX_LIBS) $(CURSES_LIB)
