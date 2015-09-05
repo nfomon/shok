@@ -278,6 +278,7 @@ void IncParser::InsertNode(List& inode) {
 
   // Assert that the inode has at least one listener in the updated set.
   if (!m_listeners.HasAnyListeners(&inode)) {
+    g_log.warning() << "No listeners for node " << inode;
     m_root.GetState().GoBad();
   }
   // Stronger check: every inode has at least one listener :)
@@ -307,12 +308,16 @@ void IncParser::DeleteNode(List& inode) {
       }
     }
     listener_set listeners = m_listeners.GetListeners(&inode);
-    g_log.debug() << "IncParser: Deleted node has listeners, so either clearing them or sending INodeDelete";
-    for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
-      if (&(*i)->IStart() == &inode) {
-        (*i)->ClearNode(inode);
-      } else {
-        Enqueue(ParseAction(ParseAction::INodeDelete, **i, inode));
+    if (listeners.empty()) {
+      g_log.debug() << "IncParser: Deleted node has no listeners; taking no action";
+    } else {
+      g_log.debug() << "IncParser: Deleted node has listeners, so either clearing them or sending INodeDelete";
+      for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
+        if (&(*i)->IStart() == &inode) {
+          (*i)->ClearNode(inode);
+        } else {
+          Enqueue(ParseAction(ParseAction::INodeDelete, **i, inode));
+        }
       }
     }
   }
