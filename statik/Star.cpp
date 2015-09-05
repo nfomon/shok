@@ -288,8 +288,18 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
     if (istate.IsPending()) {
       throw SError("Star's breach child is Pending");
     } else if (istate.IsBad()) {
-      state.GoBad();
-      m_node->GetIConnection().SetEnd(breachChild->IEnd());
+      // last child bad, prev children all complete => complete
+      // otherwise, we're bad
+      if (m_node->children.empty()) {
+        throw SError("Should not be evaluating bad breach child when node has no children");
+      }
+      if (&*m_node->children.back() == breachChild) {
+        state.GoComplete();
+        m_node->GetIConnection().SetEnd(breachChild->IEnd());
+      } else {
+        state.GoBad();
+        m_node->GetIConnection().SetEnd(breachChild->IEnd());
+      }
     } else if (istate.IsOK()) {
       state.GoOK();
       m_node->GetIConnection().SetEnd(breachChild->IEnd());

@@ -1191,3 +1191,17 @@ Yes, Removes are stronger than Adds/Updates.  There are two ways to go about it:
 
  -- uhh I think that's what the code is doing!?  so let's investigate.
 
+-----
+How to deal with "overdones" (err, when we have extra stuff at end of input that isn't listened to by anything?)  Well, the Root Node should listen directly.  If the Root Node's actual real one child isn't handling it, then the root node takes the rest of the INodes in, and so long as there are any, it's Bad.  If they get cleared out, then its state is the main child's state.
+
+ - but we're not using RootNodes in any of the tests.  Sooooo... don't test a grammar going past the end?
+ - we NEED to test Root node though, because I bet its behaviour is wrong; its code has an awkward "this is wrong" message!!  And I bet it doesn't handle going way past end of input with nonsense characters properly..... and what happens if we get into that state just by changing some stuff in an otherwise-decent node?? humph.
+
+Ambiguous Star:
+grammar: a*
+
+input:
+a   # done at a, or complete at (nil)
+aa  # done at aa, or complete at a
+
+
