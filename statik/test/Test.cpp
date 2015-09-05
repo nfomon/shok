@@ -111,5 +111,5 @@ bool Test::test(const Batch& actual, const Batch& expected, const string& msg) {
   if (anyfail) {
     fail(msg + ": failures in batch");
   }
-  return anyfail;
+  return !anyfail;
 }

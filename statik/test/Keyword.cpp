@@ -47,7 +47,8 @@ void Keyword::run() {
     const statik::STree& root = ip.GetRoot();
 
     Batch empty_batch;
-    std::vector<const statik::List*> received_onodes; // TODO populate and use for checking nodes in deletes, updates
+    // TODO populate and use for checking nodes in deletes and updates
+    //std::vector<const statik::List*> received_onodes;
     {
       Batch out_batch;
       List cx("cx", "x");
@@ -60,6 +61,7 @@ void Keyword::run() {
       ip.Delete(cx);
       test(root.IsClear(), "clear");
       test(out_batch, empty_batch, "no output");
+      out_batch.Clear();
     }
 
     {
