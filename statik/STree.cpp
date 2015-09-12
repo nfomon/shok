@@ -30,7 +30,8 @@ STree::STree(IncParser& incParser,
     m_depth(m_parent ? m_parent->GetDepth() + 1 : 0),
     m_isClear(true),
     m_parseFunc(rule.CloneParseFunc()),
-    m_outputFunc(rule.CloneOutputFunc()) {
+    m_outputFunc(rule.CloneOutputFunc()),
+    m_forceChange(false) {
   m_parseFunc->Init(*this);
   m_outputFunc->Init(*this);
 }
@@ -73,14 +74,17 @@ void STree::ParseNode(ParseAction::Action action, const List& inode, const STree
   bool hasChanged0 = old_istart != new_istart;
   bool hasChanged1 = old_iend != new_iend;
   bool hasChanged2 = old_state != m_state;
-  bool hasChanged = hasChanged0 || hasChanged1 || hasChanged2;
-  g_log.info() << " - - - - " << *this << " has " << (hasChanged ? "" : "NOT ") << "changed  " << hasChanged1 << ":" << hasChanged2;
+  bool hasChanged3 = m_forceChange;
+  bool hasChanged = hasChanged0 || hasChanged1 || hasChanged2 || hasChanged3;
+  g_log.info() << " - - - - " << *this << " has " << (hasChanged ? "" : "NOT ") << "changed  " << hasChanged1 << ":" << hasChanged2 << ":" << hasChanged3;
   m_incParser.TouchNode(*this);
   if (hasChanged && !m_isClear && m_parent && !m_state.IsPending()) {
+    g_log.debug() << " - - - - " << " enqueueing child update due to change";
     ParseAction::Action a = ParseAction::ChildUpdate;
     m_incParser.Enqueue(ParseAction(a, *m_parent, inode, this));
   }
   m_incParser.DrawGraph(*this, &inode, NULL, initiator);
+  m_incParser.ForceChange(*this);
 }
 
 void STree::ClearNode(const List& inode) {

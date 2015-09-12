@@ -1,7 +1,7 @@
 // Copyright (C) 2015 Michael Biggs.  See the COPYING file at the top-level
 // directory of this distribution and at http://shok.io/code/copyright.html
 
-#include "Star.h"
+#include "Splash.h"
 
 #include "statik/Batch.h"
 #include "statik/IncParser.h"
@@ -25,26 +25,10 @@ using std::string;
 
 using namespace statik_test;
 
-void Star::run() {
+void Splash::run() {
   g_log.info();
-  g_log.info() << "Blank Star";
-  {
-    bool p = false;
-    string msg;
-    try {
-      auto_ptr<Rule> r(STAR("Star"));
-      IncParser ip(r, "Star test 1");
-      List cx("cx", "x");
-      ip.Insert(cx, NULL);
-    } catch (const statik::SError& e) {
-      p = true;
-      msg = e.what();
-    }
-    test(p, "Empty Star not allowed: " + msg);
-  }
-
-  g_log.info();
-  g_log.info() << "Star with a Keyword child";
+  g_log.info() << "Splash test cases";
+/*
   {
     auto_ptr<Rule> r(STAR("Star"));
     auto_ptr<Rule> kr(KEYWORD("a"));
@@ -127,6 +111,9 @@ void Star::run() {
       }
       out_batch.Clear();
 
+      // Deleting ca2 causes crash at ExtractChanges() during SanityCheck.
+      // Deleting ca3 is fine. Why?
+      // crash only repro'd on guava...
       ip.Delete(ca2);
       test(root.GetState().GetStation(), statik::State::ST_DONE, "a");
       ip.ExtractChanges(out_batch);
@@ -138,4 +125,5 @@ void Star::run() {
       out_batch.Clear();
     }
   }
+*/
 }

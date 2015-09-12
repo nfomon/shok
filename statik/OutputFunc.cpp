@@ -202,12 +202,14 @@ void OutputFunc_Sequence::operator() () {
   g_log.debug() << "OutputFunc_Sequence() " << *m_node;
   m_output.clear();
 
+/*
   if (m_node->GetState().IsBad()) {
     for (STree::child_iter child = m_node->children.begin(); child != m_node->children.end(); ++child) {
       m_output.push_back(OutputItem(**child, m_node->GetState().GetStation()));
     }
     return;
   }
+*/
 
   for (STree::child_iter child = m_node->children.begin(); child != m_node->children.end(); ++child) {
     g_log.debug() << " - Considering child " << **child;

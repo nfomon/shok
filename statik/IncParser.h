@@ -72,6 +72,10 @@ public:
   // Indicate that a node has been computed.  Called by STree::ParseNode()
   void TouchNode(const STree& node);
 
+  // Indicate that a node must be force-changed (i.e. its parent MUST believe
+  // that the node has changed)
+  void ForceChange(STree& node);
+
   int INodeCompare(const List& a, const List& b) const;
 
   listener_set GetListeners(const List& x) const;
@@ -111,7 +115,7 @@ private:
   void UpdateOutput(OutputItem& item, Batch& out_batch, const List*& behind_node, State::Station worst_station);
   const List* GetOEnd(const OutputItem& item) const;
 
-  void SanityCheck();
+  void SanityCheck(const std::string& why);
   void SanityCheck(const STree* s) const;
 
   Rule m_rootRule; // Rule for the Root node
@@ -121,9 +125,12 @@ private:
   ObjectPool<List> m_ilistPool;
   input_map m_inputMap;
   ObjectPool<STree> m_nodePool;
+  // because deleted nodes still need to be compared during ExtractChanges()
+  std::vector<const List*> m_deleteFromOrderListSoon;
   OrderList m_orderList;
   action_map m_actions_by_depth;
   ListenerTable<const List*, STree*> m_listeners;
+  std::vector<STree*> m_forcedChanges;
 
   output_map m_outputPerNode;
   std::set<const STree*> m_touchedNodes;

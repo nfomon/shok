@@ -138,6 +138,10 @@ void IncParser::ExtractChanges(Batch& out_batch) {
   }
   g_log.debug() << "EXTRACT DONE: " << m_name;
   m_touchedNodes.clear();
+  for (std::vector<STree*>::iterator i = m_forcedChanges.begin(); i != m_forcedChanges.end(); ++i) {
+    (*i)->Unforce();
+  }
+  m_forcedChanges.clear();
   Cleanup();
   if (!out_batch.IsEmpty()) {
     DrawGraph(m_root, /*inode*/ NULL, &out_batch);
@@ -202,6 +206,10 @@ void IncParser::TouchNode(const STree& node) {
   m_touchedNodes.insert(&node);
 }
 
+void IncParser::ForceChange(STree& node) {
+  m_forcedChanges.push_back(&node);
+}
+
 int IncParser::INodeCompare(const List& a, const List& b) const {
   return m_orderList.Compare(a, b);
 }
@@ -214,7 +222,7 @@ void IncParser::DrawGraph(const STree& onode, const List* inode, const Batch* ba
   if (!m_grapher.get()) {
     return;
   }
-  SanityCheck();
+  SanityCheck("DrawGraph");
   const List* istart = GetFirstINode();
   if (istart) {
     m_grapher->AddIList(m_name, *istart, m_name + " input");
@@ -324,7 +332,7 @@ void IncParser::DeleteNode(List& inode) {
 
   ProcessActions();
   m_listeners.RemoveAllListeners(&inode);
-  m_orderList.Delete(inode);
+  m_deleteFromOrderListSoon.push_back(&inode);
   g_log.debug() << "IncParser: Delete done";
 }
 
@@ -533,11 +541,17 @@ void IncParser::ComputeOutput_Delete(const STree& node, Batch& out_batch, State:
 
 void IncParser::Cleanup() {
   g_log.debug() << "IncParser " << m_name << " - cleaning up";
+  g_san.debug() << "Cleaning up order list";
+  for (std::vector<const List*>::const_iterator i = m_deleteFromOrderListSoon.begin();
+       i != m_deleteFromOrderListSoon.end(); ++i) {
+    m_orderList.Delete(**i);
+  }
+  m_deleteFromOrderListSoon.clear();
   g_san.debug() << "Cleaning up node pool: " << m_nodePool;
   m_nodePool.Cleanup();
   g_san.debug() << "Cleaning up IList pool: " << m_ilistPool;
   m_ilistPool.Cleanup();
-  SanityCheck();
+  SanityCheck("Cleanup");
 }
 
 void IncParser::InsertOutput(const OutputItem& item, Batch& out_batch, const List*& behind_node, State::Station worst_station) {
@@ -591,12 +605,13 @@ const List* IncParser::GetOEnd(const OutputItem& item) const {
   return item.child->GetOutputFunc().OEnd();
 }
 
-void IncParser::SanityCheck() {
-  g_log.debug() << "Sanity check " << m_sancount;
+void IncParser::SanityCheck(const std::string& why) {
+  g_log.debug() << "Sanity check " << m_sancount << " for " << why;
   g_log.debug();
   g_san.info();
   g_san.info() << "Sanity check " << m_sancount;
   SanityCheck(&m_root);
+  g_san.debug() << "Sanity " << m_sancount << " is done.";
   ++m_sancount;
 }
 

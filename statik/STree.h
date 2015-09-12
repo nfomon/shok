@@ -41,6 +41,8 @@ public:
   void ParseNode(ParseAction::Action action, const List& inode, const STree* initiator);
   void ClearNode(const List& inode);
 
+  void Unforce() { m_forceChange = false; }
+
   bool IsClear() const { return m_isClear; }
   const State& GetState() const { return m_state; }
   State& GetState() { return m_state; }
@@ -67,6 +69,7 @@ private:
   IConnection m_iconnection;
   std::auto_ptr<ParseFunc> m_parseFunc;
   std::auto_ptr<OutputFunc> m_outputFunc;
+  bool m_forceChange;
 
   void ClearSubNode();
 };

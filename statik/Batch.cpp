@@ -6,6 +6,9 @@
 #include "List.h"
 #include "SLog.h"
 
+#include <boost/lexical_cast.hpp>
+using boost::lexical_cast;
+
 #include <ostream>
 #include <string>
 using std::ostream;
@@ -19,7 +22,12 @@ std::string Batch::BatchItem::Print() const {
   if (!node) {
     throw SError("Cannot print defective BatchItem");
   }
-  string s(UnMapBatchOp(op) + " " + node->Print());
+  string s(UnMapBatchOp(op) + " ");
+  if (OP_DELETE == op) {
+    s += lexical_cast<string>(node);
+  } else {
+    s += lexical_cast<string>(node) + " " + node->Print();
+  }
   if (pos) {
     s += " @ " + pos->Print();
   }

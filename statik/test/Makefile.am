@@ -8,6 +8,8 @@ STATIK_TEST_SRCS = \
     STError.h \
     STLog.cpp \
     STLog.h \
+    Splash.cpp \
+    Splash.h \
     Star.cpp \
     Star.h \
     StatikBattery.h \

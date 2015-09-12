@@ -109,10 +109,11 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
         m_node->children.erase(child);
         if (inode.right && inode.right->left != &inode) {
           g_log.info() << "Restarting self at right inode " << *inode.right;
-          g_log.warning() << "Probably shouldn't be doing this here (is top-node behaviour different than subsidiaries?)";
-          m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, *m_node, *inode.right, m_node));
-          state.GoPending();
-          return;
+          g_log.warning() << "Probably shouldn't be doing this here, i.e.  maybe the parent should decide that we should restart at our right inode now that our IStart is gone.  But is top-node behaviour different than subsidiaries?";
+          //m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, *m_node, *inode.right, m_node));
+          g_log.info() << "Setting our IStart to the child's IStart, and continuing to determine state.";
+          m_node->GetIConnection().Restart(m_node->children.at(0)->IStart());
+          // keep going to determine our state
         } else {
           g_log.warning() << "ParseFunc_Star at " << *m_node << ": First child was cleared, but it's not as if our first INode was deleted but we can just move forward an INode.  Clearing self.";
           m_node->ClearNode(inode);
@@ -266,10 +267,10 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
   const STree* lockedChild = NULL;
   for (STree::child_iter i = m_node->children.begin(); i != m_node->children.end(); ++i) {
     const State& istate = (*i)->GetState();
-    if (!istate.IsComplete()) {
+    if (!breachChild && !istate.IsComplete()) {
       breachChild = *i;
     }
-    if (istate.IsLocked()) {
+    if (!lockedChild && istate.IsLocked()) {
       lockedChild = *i;
     }
     if (breachChild && lockedChild) {

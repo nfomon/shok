@@ -119,11 +119,19 @@ void Grapher::AddOBatch(const string& context, const Batch& batch, const string&
     default:
       throw SError("Cannot add batch to Grapher: unknown operation");
     }
-    const List& node = *i->node;
-    m_graph += dotVar(&node, context) + " [label=\"" + Util::safeLabelStr(node.name + (node.value.empty() ? "" : (node.name.empty() ? "" : ":") + node.value)) + "\", style=\"filled\", fillcolor=\"#dddddd\", fontsize=12.0, color=\"" + color + "\", penwidth=4.0];\n";
-    if (i+1 != batch.end()) {
-      const List& next = *(i+1)->node;
-      m_graph += dotVar(&node, context) + " -> " + dotVar(&next, context) + ";\n";
+    if (Batch::OP_DELETE == i->op) {
+      m_graph += dotVar(i->node, context) + " [label=\"(deleted)\", style=\"filled\", fillcolor=\"#dddddd\", fontsize=12.0, color=\"" + color + "\", penwidth=4.0];\n";
+      if (i+1 != batch.end()) {
+        const List& next = *(i+1)->node;
+        m_graph += dotVar(i->node, context) + " -> " + dotVar(&next, context) + ";\n";
+      }
+    } else {
+      const List& node = *i->node;
+      m_graph += dotVar(&node, context) + " [label=\"" + Util::safeLabelStr(node.name + (node.value.empty() ? "" : (node.name.empty() ? "" : ":") + node.value)) + "\", style=\"filled\", fillcolor=\"#dddddd\", fontsize=12.0, color=\"" + color + "\", penwidth=4.0];\n";
+      if (i+1 != batch.end()) {
+        const List& next = *(i+1)->node;
+        m_graph += dotVar(&node, context) + " -> " + dotVar(&next, context) + ";\n";
+      }
     }
   }
   m_graph += "}\n";

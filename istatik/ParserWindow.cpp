@@ -41,9 +41,9 @@ WindowResponse ParserWindow::Input(const Batch& ibatch) {
   // Find first item in incParser's output list, and draw everything
   response.actions.push_back(WindowAction(WindowAction::MOVE, 0, 0, 0));
   Batch batch;
+  g_log.debug() << "Extracting changes from IncParser";
   m_incParser.ExtractChanges(batch);
-  // WARNING: can't show the batch, because its deleted items may be gone already :O
-  g_log.info() << "Printing WindowResponse list for batch of size: " << batch.Size();
+  g_log.info() << "Printing WindowResponse list for batch of size " << batch.Size() << ": " << batch;
   if (m_nodes) {
     g_log.debug() << "m_nodes is: " << *m_nodes;
   }
@@ -63,6 +63,22 @@ WindowResponse ParserWindow::Input(const Batch& ibatch) {
             node->right = pos->right;
             node->left = pos;
             pos->right = node;
+            if (node->right) {
+              node->right->left = node;
+            }
+            g_log.debug() << "Inserted " << *node;
+            if (node->left) {
+              g_log.debug() << " - with left: " << *node->left;
+              if (node->left->right) {
+                g_log.debug() << " - - which has right: " << *node->left->right;
+              }
+            }
+            if (node->right) {
+              g_log.debug() << " - with right: " << *node->right;
+              if (node->right->left) {
+                g_log.debug() << " - - which has left: " << *node->right->left;
+              }
+            }
           } else {
             g_log.debug() << "Setting this node as m_nodes";
             node->right = m_nodes;
@@ -85,21 +101,35 @@ WindowResponse ParserWindow::Input(const Batch& ibatch) {
           }
           List* node = node_i->second;
           g_log.debug() << "Delete node: " << node->name << ":" << node->value;
-          if (node->left) {
-            node->left->right = node->right;
-            if (node->right) {
-              node->right->left = node->left;
-            }
+          List* left = node->left;
+          List* right = node->right;
+          if (left && left->right == node) {
+            left->right = right;
+          }
+          if (right && right->left == node) {
+            right->left = left;
           }
           if (m_nodes == node) {
             g_log.debug() << "Deleted node is m_nodes";
-            if (node->left) {
+            if (left) {
               g_log.debug() << "going left";
-              m_nodes = node->left;
-            } else {
+              g_log.debug() << "going left to " << *left << " from " << *node;
+              m_nodes = left;
+            } else if (right) {
               g_log.debug() << "going right";
-              m_nodes = node->right;
+              g_log.debug() << "going right to " << *right << " from " << *node;
+              m_nodes = right;
+            } else {
+              g_log.debug() << "nowhere to go; m_nodes is clear";
+              m_nodes = NULL;
             }
+          }
+          g_log.debug() << "Deleted " << *node;
+          if (node->left) {
+            g_log.debug() << " - with left: " << *node->left;
+          }
+          if (node->right) {
+            g_log.debug() << " - with right: " << *node->right;
           }
           delete node;
           m_nodeMap.erase(node_i);

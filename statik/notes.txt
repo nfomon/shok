@@ -1204,4 +1204,98 @@ input:
 a   # done at a, or complete at (nil)
 aa  # done at aa, or complete at a
 
+-----
+2k15-09-06
+
+OutputFunc needs to respond to specifically the parts of the Compute that changed.
+ - Reason: (cat, _d_, car).  We just want to say "cool a new bad node in between cat and car.  don't eject car.".
+ - But this means OutputFunc is not stateless, or rather, its "state" is the children that actually changed.
+ - That's pretty happy for Or too.  Maybe just "what children decided they're
+   relevant" is what we want here, a set of that.
+    - but if a child of a Seq/Star changed, then all the subsequent children might have changed.
+    - ah but if that child has changed and is bad, leave the subsequent output nodes.
+    - but if the child changed and is ok........ well, we should still have the subsequent nodes in our output, right?  so keep them?
+
+I'm not sure I'm comfortable with any of this.  Because what if it's Complete with only a subset of its children?
+Let's write more test cases first.
+
+I need a good way to express test cases for this whole system.
+
+Note: We're determining *state* correctly.  Everyone knows if they're pending/bad/ok/done/complete just fine, at least I think it's fine so far.
+The only problem is who outputs when.
+
+--
+Known problem case: Star last testcase, a -> aa -> a.  Maybe this is only because we aren't using a real Root.
+But we need to review all that logic.  ugh
+
+--
+I think there's something different about being bad and owning the end of input, vs. being bad in the middle.  At the end, more tolerant to keeping bad stuff in the output list.
+
+Star test cases:
+a*
+
+_     done
+b     complete
+bc    error: should not go over-complete (how is this handled?)
+
+_     done
+b     complete
+_     done
+a     done, emit ins:1:a
+ab    complete
+a     done
+_     done, emit del:1:a
+a     done, emit ins:1:a
+ba    can this happen?  I don't think so??
+
+_     done
+a     done, emit ins:1:a
+ab    complete
+aab   complete, emit ins:2:a
+ab    complete, emit del:1:a  (say we del'd the first one)
+b     complete, emit del:1:a
+
+_     done
+a     done, emit ins:1:a
+aa    done, emit ins:1:a  (we inserted at the beginning; CAN we do that?)
+aaa   done, emit ins:3:a
+aaba  complete, emit del:3:a (unless we're at the end??)
+aaa   done, emit ins:3:a (if we removed it above??)
+
+_
+a
+aa
+aba   ?
+abaa  ??
+aaa
+a a
+  a   ?
+
+and now tests where we just change the state of children (rather than inserting/removing them):
+
+_                 done
+a:ok              ok
+a:bad             complete
+a:done            done, ins:1:a             a
+a:bad             complete, del:1:a         _
+a:complete        done, ins:1:a             a
+a:co  a:co        done, ins:2:a             aa
+a:bad a:co        done, del:1:a, del:2:a    _
+a:ok  a:co        ok
+a:done a:co       ??? error, should not happen
+
+-----
+2k15-09-12
+
+dogcat
+dgcat   del dog cat
+gcat    emits cat (why?)
+
+and more importantly, it leaves the root ("Splash") with IStart at the dead node, "d".
+The reason is that this is the case where we've deleted the start node of a Star (that had multiple nodes), so it moves its IStart forward, but that "restart from the bottom" does not propagate upwards.
+
+Let's make that an event that can propagate upward: hey I really want to start here now.
+ - shouldn't that just be a "hey Restart me please"?  Is "Restart" sufficient, or do we need to StartNode?
+ - Let's review the whole Start/Restart logic, I'm not sure our separation there is good enough
+ - e.g. not clear what should happen when this Star-that-moved-itself-forward is a child of another Star/Seq.
 

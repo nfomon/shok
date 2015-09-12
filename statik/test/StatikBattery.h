@@ -8,6 +8,7 @@
 
 #include "Keyword.h"
 #include "Or.h"
+#include "Splash.h"
 #include "Star.h"
 
 namespace statik_test {
@@ -20,6 +21,7 @@ public:
     m_tests.push_back(new Keyword());
     m_tests.push_back(new Or());
     m_tests.push_back(new Star());
+    m_tests.push_back(new Splash());
   }
 };
 
