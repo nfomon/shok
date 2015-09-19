@@ -396,25 +396,29 @@ void IncParser::ComputeOutput_Update(const STree& node, Batch& out_batch, const 
   OutputList::const_iterator prev_item = prev_output.begin();
   while (item != output.end() && prev_item != prev_output.end()) {
     if (*item == *prev_item) {
-      g_log.debug() << "CO_Update linear pass, case 1 (lists match); before call, have batch=" << out_batch;
+      g_log.debug() << "CO_Update for " << node << " linear pass, case 1 (lists match); before call, have batch=" << out_batch;
       UpdateOutput(*item, out_batch, behind_node, worst_station);
-      g_log.debug() << "case 1 inner call gave us batch: " << out_batch << " at item " << *item;
+      g_log.debug() << "case 1 " << node << " inner call gave us batch: " << out_batch << " at item " << *item;
       behind_node = GetOEnd(*item);
       ++item;
       ++prev_item;
     } else {
-      g_log.debug() << "CO_Update linear pass, case 2 (lists don't match)";
+      g_log.debug() << "CO_Update for " << node << " linear pass, case 2 (lists don't match)";
       // Buffer both sides, and keep a lookup-set so we can identify if/when we
       // find a node in one list that was surpassed in the other.
       typedef set<OutputItem> node_set;
-      typedef node_set::const_iterator node_mod_iter;
+      typedef node_set::const_iterator node_iter;
       node_set ins_set;
       node_set del_set;
       OutputList::iterator ins_item = item;
       OutputList::const_iterator del_item = prev_item;
       while (ins_item != output.end() && del_item != prev_output.end()) {
         g_log.debug() << "while";
-        node_mod_iter find_ins = ins_set.find(*prev_item);
+        for (node_iter i = ins_set.begin(); i != ins_set.end(); ++i) {
+          g_log.debug() << " ins set: " << *i;
+        }
+        g_log.debug() << "Looking for del item " << &*del_item << ": " << *del_item;
+        node_iter find_ins = ins_set.find(*del_item);
         if (find_ins != ins_set.end()) {
           // insert nodes up to find_ins
           do {
@@ -432,7 +436,11 @@ void IncParser::ComputeOutput_Update(const STree& node, Batch& out_batch, const 
           // then break
           break;
         }
-        node_mod_iter find_del = del_set.find(*item);
+        for (node_iter i = del_set.begin(); i != del_set.end(); ++i) {
+          g_log.debug() << " del set: " << *i;
+        }
+        g_log.debug() << "Looking for ins item " << &*ins_item << ": " << *ins_item;
+        node_iter find_del = del_set.find(*ins_item);
         if (find_del != del_set.end()) {
           do {
             g_log.debug() << "do2";
@@ -472,7 +480,7 @@ void IncParser::ComputeOutput_Update(const STree& node, Batch& out_batch, const 
       }
     }
   }
-  g_log.info() << " ok...";
+  g_log.info() << " " << node << " ok...";
   for (; item != output.end(); ++item) {
     InsertOutput(*item, out_batch, behind_node, worst_station);
     behind_node = GetOEnd(*item);
