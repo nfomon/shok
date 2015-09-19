@@ -18,7 +18,7 @@ using namespace exstatik;
 
 auto_ptr<Compiler> exstatik::MakeCompiler(const string& name) {
   auto_ptr<Compiler> c(new Compiler());
-  if ("Statik" == name) {
+  if ("Simple" == name) {
     c->push_back(CreateLexer_Simple());
   } else if ("KeywordTest" == name) {
     c->push_back(CreateLexer_KeywordTest());
@@ -26,14 +26,14 @@ auto_ptr<Compiler> exstatik::MakeCompiler(const string& name) {
     c->push_back(CreateLexer_Splash());
   } else if ("Moderate" == name) {
     c->push_back(CreateLexer_Moderate());
-    c->push_back(CreateParser_Moderate());
+    //c->push_back(CreateParser_Moderate());
   } else if ("Complex" == name) {
     c->push_back(CreateLexer_Complex());
-    c->push_back(CreateParser_Complex());
+    //c->push_back(CreateParser_Complex());
   } else if ("Nifty" == name) {
     c->push_back(CreateLexer_Nifty());
-    c->push_back(CreateParser_Nifty());
-    c->push_back(CreateCodegen_Nifty());
+    //c->push_back(CreateParser_Nifty());
+    //c->push_back(CreateCodegen_Nifty());
   } else {
     throw statik::SError("Unknown compiler " + name);
   }
