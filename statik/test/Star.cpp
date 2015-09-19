@@ -131,7 +131,12 @@ void Star::run() {
       test(root.GetState().GetStation(), statik::State::ST_DONE, "a");
       ip.ExtractChanges(out_batch);
       {
+        // Both items are deleted, then the remaining one is added back.
+        // That seems ok.
         Batch expected_batch;
+        List xca("a", "");
+        expected_batch.Insert(xca, NULL);
+        expected_batch.Delete(ca3);
         expected_batch.Delete(ca2);
         test(out_batch, expected_batch, "output");
       }
