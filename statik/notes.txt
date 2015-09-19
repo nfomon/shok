@@ -1299,3 +1299,11 @@ Let's make that an event that can propagate upward: hey I really want to start h
  - Let's review the whole Start/Restart logic, I'm not sure our separation there is good enough
  - e.g. not clear what should happen when this Star-that-moved-itself-forward is a child of another Star/Seq.
 
+Start:
+ - done by IncParser::Insert on the Root, if the IList is empty
+ - done by Rule::MakeNode to start up an STree child node
+ - performed by STree::StartNode which just does IConnection.Restart(istart) and then enqueues a Restart
+    - setting the IStart here is just cosmetic, i.e. it's for DrawGraph.  The Restart will also set the IStart.
+
+Restart:
+
