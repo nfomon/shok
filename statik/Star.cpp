@@ -71,9 +71,8 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
         return;
       }
     } else {
-      g_log.info() << "Star node found Restart=0 action even though we have children.  This is presumably caused by a forced self-update after our first child was deleted so we moved ourselves right.  Go on to re-determine our state.";
-      action = ParseAction::ChildUpdate;  // force move-along
-      initiator = m_node->children.front();
+      g_log.warning() << "Star node found Restart=0 action even though we have children.  Useless restart?";
+      return;
     }
   }
 
@@ -112,11 +111,8 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
           g_log.info() << "Restarting self at right inode " << *inode.right;
           g_log.warning() << "Probably shouldn't be doing this here, i.e.  maybe the parent should decide that we should restart at our right inode now that our IStart is gone.  But is top-node behaviour different than subsidiaries?";
           //m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, *m_node, *inode.right, m_node));
-          g_log.info() << "Setting our IStart to the right INode, and continuing to determine state.";
-          //m_node->GetIConnection().Restart(*inode.right); // not necessary
-          m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, *m_node, *inode.right, m_node));
-          m_node->GetIncParser().ForceChange(*m_node);
-          return;
+          g_log.info() << "Setting our IStart to the child's IStart, and continuing to determine state.";
+          m_node->GetIConnection().Restart(m_node->children.at(0)->IStart());
           // keep going to determine our state
         } else {
           g_log.warning() << "ParseFunc_Star at " << *m_node << ": First child was cleared, but it's not as if our first INode was deleted but we can just move forward an INode.  Clearing self.";

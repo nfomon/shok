@@ -142,7 +142,7 @@ void IncParser::ExtractChanges(Batch& out_batch) {
   g_log.debug() << "EXTRACT DONE: " << m_name;
   m_touchedNodes.clear();
   for (std::vector<STree*>::iterator i = m_forcedChanges.begin(); i != m_forcedChanges.end(); ++i) {
-    (*i)->UnforceChange();
+    (*i)->Unforce();
   }
   m_forcedChanges.clear();
   Cleanup();
@@ -210,7 +210,6 @@ void IncParser::TouchNode(const STree& node) {
 }
 
 void IncParser::ForceChange(STree& node) {
-  node.ForceChange();
   m_forcedChanges.push_back(&node);
 }
 

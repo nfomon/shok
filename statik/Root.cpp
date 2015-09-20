@@ -45,10 +45,6 @@ void ParseFunc_Root::operator() (ParseAction::Action action, const List& inode, 
   }
   const STree& child = **m_node->children.begin();
   const State& childState = child.GetState();
-  if (!child.IsClear()) {
-    // Set our IStart to the child's IStart just in case it moved
-    m_node->GetIConnection().Restart(child.IStart());
-  }
   if (child.IsClear()) {
     // This is wrong.  Supposed to set to m_firstINode but we removed that because tricky to maintain lol...
     m_node->children.erase(m_node->children.begin());

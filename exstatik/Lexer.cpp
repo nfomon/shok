@@ -132,3 +132,94 @@ auto_ptr<Rule> exstatik::CreateLexer_Nifty() {
   or_->AddChild(KEYWORD(";"));
   return lexer;
 }
+
+auto_ptr<Rule> exstatik::CreateLexer_C() {
+  auto_ptr<Rule> lexer(STAR("C"));
+  Rule* or_ = lexer->AddChild(OR("or"));
+  // symbols
+  or_->AddChild(KEYWORD(";"));
+  or_->AddChild(KEYWORD("{"));
+  or_->AddChild(KEYWORD("}"));
+  or_->AddChild(KEYWORD(","));
+  or_->AddChild(KEYWORD("="));
+  or_->AddChild(KEYWORD(":"));
+  or_->AddChild(KEYWORD("("));
+  or_->AddChild(KEYWORD(")"));
+  or_->AddChild(KEYWORD("["));
+  or_->AddChild(KEYWORD("]"));
+  or_->AddChild(KEYWORD("*"));
+  or_->AddChild(KEYWORD("..."));
+  // keywords
+  or_->AddChild(KEYWORD("if"));
+  or_->AddChild(KEYWORD("else"));
+  or_->AddChild(KEYWORD("switch"));
+  or_->AddChild(KEYWORD("while"));
+  or_->AddChild(KEYWORD("do"));
+  or_->AddChild(KEYWORD("for"));
+  or_->AddChild(KEYWORD("goto"));
+  or_->AddChild(KEYWORD("continue"));
+  or_->AddChild(KEYWORD("break"));
+  or_->AddChild(KEYWORD("return"));
+  // assignment operators
+  or_->AddChild(KEYWORD("*="));
+  or_->AddChild(KEYWORD("/="));
+  or_->AddChild(KEYWORD("%="));
+  or_->AddChild(KEYWORD("+="));
+  or_->AddChild(KEYWORD("-="));
+  or_->AddChild(KEYWORD("<<="));
+  or_->AddChild(KEYWORD(">>="));
+  or_->AddChild(KEYWORD("&="));
+  or_->AddChild(KEYWORD("^="));
+  or_->AddChild(KEYWORD("|="));
+  // expression symbols
+  or_->AddChild(KEYWORD("?"));
+  or_->AddChild(KEYWORD("||"));
+  or_->AddChild(KEYWORD("&&"));
+  // operators
+  or_->AddChild(KEYWORD("|"));
+  or_->AddChild(KEYWORD("^"));
+  or_->AddChild(KEYWORD("&"));
+  or_->AddChild(KEYWORD("=="));
+  or_->AddChild(KEYWORD("!="));
+  or_->AddChild(KEYWORD("<="));
+  or_->AddChild(KEYWORD(">="));
+  or_->AddChild(KEYWORD("<<"));
+  or_->AddChild(KEYWORD(">>"));
+  or_->AddChild(KEYWORD("<"));
+  or_->AddChild(KEYWORD(">"));
+  or_->AddChild(KEYWORD("+"));
+  or_->AddChild(KEYWORD("-"));
+  or_->AddChild(KEYWORD("/"));
+  or_->AddChild(KEYWORD("%"));
+  or_->AddChild(KEYWORD("++"));
+  or_->AddChild(KEYWORD("--"));
+  or_->AddChild(KEYWORD("~"));
+  or_->AddChild(KEYWORD("!"));
+  // accessors
+  or_->AddChild(KEYWORD("."));
+  or_->AddChild(KEYWORD("->"));
+  // storage-class-specifier
+  or_->AddChild(KEYWORD("auto"));
+  or_->AddChild(KEYWORD("register"));
+  or_->AddChild(KEYWORD("static"));
+  or_->AddChild(KEYWORD("extern"));
+  or_->AddChild(KEYWORD("typedef"));
+  // type-specifier
+  or_->AddChild(KEYWORD("void"));
+  or_->AddChild(KEYWORD("char"));
+  or_->AddChild(KEYWORD("short"));
+  or_->AddChild(KEYWORD("int"));
+  or_->AddChild(KEYWORD("long"));
+  or_->AddChild(KEYWORD("float"));
+  or_->AddChild(KEYWORD("double"));
+  or_->AddChild(KEYWORD("signed"));
+  or_->AddChild(KEYWORD("unsigned"));
+  // type-qualifier
+  or_->AddChild(KEYWORD("const"));
+  or_->AddChild(KEYWORD("volatile"));
+  // regexps
+  or_->AddChild(REGEXP("ID", boost::regex("[A-Za-z_][0-9A-Za-z_]*")));
+  or_->AddChild(REGEXP("INT", boost::regex("[0-9]+")));
+  or_->AddChild(REGEXP("WS", boost::regex("[ \t\r]+")));
+  return lexer;
+}

@@ -41,8 +41,7 @@ public:
   void ParseNode(ParseAction::Action action, const List& inode, const STree* initiator);
   void ClearNode(const List& inode);
 
-  void ForceChange() { m_forceChange = true; }
-  void UnforceChange() { m_forceChange = false; }
+  void Unforce() { m_forceChange = false; }
 
   bool IsClear() const { return m_isClear; }
   const State& GetState() const { return m_state; }
