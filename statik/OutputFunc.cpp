@@ -266,7 +266,7 @@ ostream& statik::operator<< (ostream& out, const OutputItem& item) {
   if (item.onode) {
     out << *item.onode;
   } else if (item.child) {
-    out << item.child->Print();
+    out << item.child->Print() << " <" << item.child << ">";
   } else {
     throw SError("Attempt to operator<< defective OutputItem");
   }
