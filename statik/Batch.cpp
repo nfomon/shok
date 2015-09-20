@@ -29,7 +29,7 @@ std::string Batch::BatchItem::Print() const {
     s += lexical_cast<string>(node) + " " + node->Print();
   }
   if (pos) {
-    s += " @ " + pos->Print();
+    s += " @ " + lexical_cast<string>(pos) + " " + pos->Print();
   }
   return s;
 }

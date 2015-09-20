@@ -107,10 +107,11 @@ void Star::run() {
       {
         Batch expected_batch;
         List xca("a", "");
+        expected_batch.Delete(ca);
         expected_batch.Insert(xca, NULL);
-        expected_batch.Delete(ca);  // why does delete come after insert?
         if (test(out_batch, expected_batch, "output")) {
-          xca_pos = out_batch.begin()->node;
+          xca_pos = (out_batch.begin()+1)->node;
+          g_log.debug() << " xca_pos: " << xca_pos;
         }
       }
       out_batch.Clear();
@@ -131,12 +132,7 @@ void Star::run() {
       test(root.GetState().GetStation(), statik::State::ST_DONE, "a");
       ip.ExtractChanges(out_batch);
       {
-        // Both items are deleted, then the remaining one is added back.
-        // That seems ok.
         Batch expected_batch;
-        List xca("a", "");
-        expected_batch.Insert(xca, NULL);
-        expected_batch.Delete(ca3);
         expected_batch.Delete(ca2);
         test(out_batch, expected_batch, "output");
       }
