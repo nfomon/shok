@@ -16,6 +16,7 @@ std::auto_ptr<statik::Rule> CreateLexer_KeywordTest();
 std::auto_ptr<statik::Rule> CreateLexer_Moderate();
 std::auto_ptr<statik::Rule> CreateLexer_Complex();
 std::auto_ptr<statik::Rule> CreateLexer_Nifty();
+std::auto_ptr<statik::Rule> CreateLexer_C();
 
 }
 

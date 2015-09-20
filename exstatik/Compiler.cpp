@@ -34,6 +34,8 @@ auto_ptr<Compiler> exstatik::MakeCompiler(const string& name) {
     c->push_back(CreateLexer_Nifty());
     c->push_back(CreateParser_Nifty());
     c->push_back(CreateCodegen_Nifty());
+  } else if ("C" == name) {
+    c->push_back(CreateLexer_C());
   } else {
     throw statik::SError("Unknown compiler " + name);
   }
