@@ -128,15 +128,42 @@ Char* Line::Insert(int x, int ch) {
   return c;
 }
 
+Char* Line::Insert(int x, auto_ptr<Char> ac) {
+  Char* c = m_charpool.Insert(ac);  // FIXME ObjectPool violation... ah well.
+                                    // OP is dumb anyway.
+  g_log.info() << "Line " << y << " inserting " << *c;
+  if ((size_t)x > m_chars.size()) {
+    std::stringstream s;
+    s << "Cannot insert " << *c << "; x out of bounds";
+    throw ISError(s.str());
+  } else if (m_chars.size() == (size_t)x) {
+    m_chars.push_back(c);
+  } else {
+    m_chars.insert(m_chars.begin() + x, c);
+  }
+  return c;
+}
+
 Char* Line::Delete(int x) {
   if ((size_t)x >= m_chars.size()) {
-    throw ISError("Cannot insert; x out of bounds");
+    throw ISError("Cannot delete; x out of bounds");
   }
   Char* c = m_chars.at(x);
   c->Unlink();
   m_charpool.Unlink(*c);
   m_chars.erase(m_chars.begin() + x);
   return c;
+}
+
+auto_ptr<Char> Line::Extract(int x) {
+  if ((size_t)x >= m_chars.size()) {
+    throw ISError("Cannot extract; x out of bounds");
+  }
+  Char* c = m_chars.at(x);
+  g_log.debug() << " before extract: " << m_chars.size();
+  m_chars.erase(m_chars.begin() + x);
+  g_log.debug() << " after extract: " << m_chars.size();
+  return m_charpool.Extract(*c);
 }
 
 /* LineBuf public */
@@ -182,7 +209,9 @@ WindowResponse LineBuf::Insert(int y, int x, int ch) {
   int y0 = y;
   // Re-draw the window starting at the newly-entered character
   do {
+    response.actions.push_back(WindowAction(WindowAction::MOVE, y, x));
     string s = m_lines.at(y).GetString(x);
+    g_log.debug() << "Printing str: " << s;
     for (size_t i = 0; i < s.size(); ++i) {
       response.actions.push_back(WindowAction(WindowAction::INSERT, y, x + i, s[i]));
     }
@@ -210,7 +239,37 @@ WindowResponse LineBuf::Insert(int y, int x, int ch) {
 }
 
 WindowResponse LineBuf::Enter(int y, int x, int ch) {
+  g_log.debug() << "Processing Enter at (" << y << "," << x << ")";
+  g_log.debug();
   WindowResponse response;
+  if ((size_t)y > m_lines.size()) {
+    throw ISError(string("Cannot insert Enter; y out of bounds"));
+  } else if (m_lines.size() == (size_t)y) {
+    g_log.debug() << "Inserting blank line right here at end";
+    m_lines.push_back(new Line(y));
+  } else {
+    g_log.debug() << "Inserting blank line in the middle";
+    m_lines.insert(m_lines.begin()+y+1, new Line(y+1));
+    for (line_vec::iterator i = m_lines.begin()+y+2; i != m_lines.end(); ++i) {
+      ++i->y;
+    }
+  }
+  // Clear end of this line
+  while ((size_t)x < m_lines.at(y).Size()) {
+    g_log.debug() << "Enter: clearing (" << y << "," << m_lines.at(y).LastIndex() << ")";
+    response.actions.push_back(WindowAction(WindowAction::DELETE));
+    auto_ptr<Char> c = m_lines.at(y).Extract(m_lines.at(y).LastIndex());
+    m_lines.at(y+1).Insert(0, c);
+  }
+
+  // Next line is populated; draw it
+  string s = m_lines.at(y+1).GetString(0);
+  response.actions.push_back(WindowAction(WindowAction::MOVE, y+1, 0));
+  for (size_t i = 0; i < s.size(); ++i) {
+    g_log.debug() << "Enter: inserting " << y+1 << "," << i << ":" << s[i];
+    response.actions.push_back(WindowAction(WindowAction::INSERT, y+1, i, s[i]));
+  }
+  response.actions.push_back(WindowAction(WindowAction::MOVE, y+1, 0));
   return response;
 }
 
@@ -308,7 +367,7 @@ WindowResponse InputWindow::Input(int y, int x, int ch) {
     WindowResponse response;
     if (m_linebuf.HasLine(y-1)) {
       if (!m_linebuf.HasChar(y-1, x)) {
-        x = m_linebuf.LastIndexOfLine(y-1);
+        x = std::max(m_linebuf.LastIndexOfLine(y-1), 0);
       }
       response.actions.push_back(WindowAction(WindowAction::MOVE, y-1, x));
     }
@@ -317,9 +376,11 @@ WindowResponse InputWindow::Input(int y, int x, int ch) {
     WindowResponse response;
     if (m_linebuf.HasLine(y+1)) {
       if (!m_linebuf.HasChar(y+1, x)) {
-        x = m_linebuf.LastIndexOfLine(y+1);
+        x = std::max(m_linebuf.LastIndexOfLine(y+1), 0);
       }
       response.actions.push_back(WindowAction(WindowAction::MOVE, y+1, x));
+    } else if (m_linebuf.HasLine(y)) {
+      response.actions.push_back(WindowAction(WindowAction::MOVE, y+1, 0));
     }
     return response;
   } else if (KEY_DC == ch) {
@@ -327,7 +388,7 @@ WindowResponse InputWindow::Input(int y, int x, int ch) {
   } else if (KEY_BACKSPACE == ch) {
     return m_linebuf.Backspace(y, x);
   } else if (KEY_ENTER == ch || '\n' == ch) {
-    //return m_linebuf.Enter(y, x, ch);
+    return m_linebuf.Enter(y, x, ch);
   } else {
     return m_linebuf.Insert(y, x, ch);
   }

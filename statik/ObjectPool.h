@@ -45,6 +45,18 @@ public:
     m_unlinked.insert(&item);
   }
 
+  std::auto_ptr<T> Extract(T& item) {
+    g_log.debug() << "Object pool extracting " << item << " - " << &item;
+    g_san.debug() << "Object pool extracting " << item << " - " << &item;
+    if (m_active.end() == m_active.find(&item)) {
+      std::stringstream s;
+      s << "Cannot extract " << item << "; item not found in pool";
+      throw SError(s.str());
+    }
+    m_active.erase(&item);
+    return std::auto_ptr<T>(&item);
+  }
+
   void Cleanup() {
     for (item_mod_iter i = m_unlinked.begin(); i != m_unlinked.end(); ++i) {
       g_log.debug() << "Object pool deleting " << **i << " - " << *i;

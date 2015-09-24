@@ -41,10 +41,12 @@ public:
   Char* GetBefore(int x);
   Char* GetAtOrAfter(int x);
   Char* Insert(int x, int ch);
+  Char* Insert(int x, std::auto_ptr<Char> c);
   Char* Delete(int x);
+  std::auto_ptr<Char> Extract(int x);
+  int y;
 private:
   typedef std::vector<Char*> char_vec;
-  int y;
   char_vec m_chars;
   statik::ObjectPool<Char> m_charpool;
 };
@@ -54,6 +56,7 @@ public:
   LineBuf(size_t maxcols);
   bool HasChar(int y, int x) const;
   bool HasLine(int y) const;
+  size_t Size() const { return m_lines.size(); }
   int LastIndexOfLine(int y) const;
   WindowResponse Insert(int y, int x, int ch);
   WindowResponse Enter(int y, int x, int ch);
