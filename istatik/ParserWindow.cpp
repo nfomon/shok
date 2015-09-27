@@ -21,7 +21,8 @@ using namespace istatik;
 ParserWindow::ParserWindow(auto_ptr<statik::Rule> rule,
                            const string& name,
                            const string& graphdir)
-  : m_incParser(rule, name, graphdir) {
+  : m_incParser(rule, name, graphdir),
+    m_nodes(NULL) {
   g_log.info() << "Initialized ParserWindow " << name;
 }
 

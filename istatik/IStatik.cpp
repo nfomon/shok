@@ -57,11 +57,12 @@ void IStatik::run() {
   typedef parserWindow_vec::iterator parserWindow_mod_iter;
   ptr_vector<ParserWindow> parserWindows;
 
-  for (size_t i = 0; i < compiler->size(); ++i) {
+  size_t num_compilers = compiler->size();
+  for (size_t i = 0; i < num_compilers; ++i) {
     exstatik::Compiler::auto_type c = compiler->release(compiler->begin());
     string name = c->Name();
     g_log.info() << "Adding parser window for " << name;
-    parserWindows.push_back(new ParserWindow(auto_ptr<statik::Rule>(c.release()), m_compiler_name, m_graphdir));
+    parserWindows.push_back(new ParserWindow(auto_ptr<statik::Rule>(c.release()), name, m_graphdir));
   }
 
   bool done = false;
