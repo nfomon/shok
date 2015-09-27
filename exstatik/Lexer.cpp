@@ -6,11 +6,13 @@
 #include "statik/Keyword.h"
 #include "statik/Regexp.h"
 #include "statik/Or.h"
+#include "statik/Seq.h"
 #include "statik/Star.h"
 using statik::KEYWORD;
 using statik::REGEXP;
 using statik::Rule;
 using statik::OR;
+using statik::SEQ;
 using statik::STAR;
 
 #include <boost/regex.hpp>
@@ -35,6 +37,14 @@ auto_ptr<Rule> exstatik::CreateLexer_Splash() {
   or_->AddChild(KEYWORD("cat"));
   or_->AddChild(KEYWORD("dog"));
   or_->AddChild(KEYWORD("car"));
+  return lexer;
+}
+
+auto_ptr<Rule> exstatik::CreateLexer_Seq() {
+  auto_ptr<Rule> lexer(SEQ("seq"));
+  lexer->AddChild(KEYWORD("cat"));
+  lexer->AddChild(KEYWORD("dog"));
+  lexer->AddChild(KEYWORD("car"));
   return lexer;
 }
 

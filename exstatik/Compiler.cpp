@@ -18,8 +18,10 @@ using namespace exstatik;
 
 auto_ptr<Compiler> exstatik::MakeCompiler(const string& name) {
   auto_ptr<Compiler> c(new Compiler());
-  if ("Statik" == name) {
+  if ("Simple" == name) {
     c->push_back(CreateLexer_Simple());
+  } else if ("Seq" == name) {
+    c->push_back(CreateLexer_Seq());
   } else if ("KeywordTest" == name) {
     c->push_back(CreateLexer_KeywordTest());
   } else if ("Splash" == name) {
