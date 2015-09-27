@@ -23,7 +23,7 @@ using std::auto_ptr;
 using namespace exstatik;
 
 auto_ptr<Rule> exstatik::CreateLexer_Simple() {
-  auto_ptr<Rule> lexer(STAR("star"));
+  auto_ptr<Rule> lexer(STAR("lexer"));
   Rule* or_ = lexer->AddChild(OR("or"));
   or_->AddChild(KEYWORD("new"));
   or_->AddChild(KEYWORD("del"));
