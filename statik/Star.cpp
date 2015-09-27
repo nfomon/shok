@@ -107,7 +107,7 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
         m_node->children.erase(child);
         if (inode.right && inode.right->left != &inode) {
           g_log.info() << "Restarting self at right inode " << *inode.right;
-          g_log.warning() << "Probably shouldn't be doing this here, i.e.  maybe the parent should decide that we should restart at our right inode now that our IStart is gone.  But is top-node behaviour different than subsidiaries?";
+          //g_log.warning() << "Probably shouldn't be doing this here, i.e.  maybe the parent should decide that we should restart at our right inode now that our IStart is gone.  But is top-node behaviour different than subsidiaries?";
           //m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, *m_node, *inode.right, m_node));
           g_log.info() << "Our IStart will be set to the right INode, and we'll come back to Restart.";
           //m_node->GetIConnection().Restart(*inode.right); // not necessary
@@ -115,7 +115,7 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
           m_node->GetIncParser().ForceChange(*m_node);
           return;
         } else {
-          g_log.warning() << "ParseFunc_Star at " << *m_node << ": First child was cleared, but it's not as if our first INode was deleted but we can just move forward an INode.  Clearing self.";
+          //g_log.warning() << "ParseFunc_Star at " << *m_node << ": First child was cleared, but it's not as if our first INode was deleted but we can just move forward an INode.  Clearing self.";
           m_node->ClearNode(inode);
           return;
         }
@@ -128,9 +128,11 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
       } else {
         // TODO this chunk might be aggressive; we're using prev_child's IEnd even if it's somehow Bad.
         g_log.info() << "Dealing with cleared middle child";
+        /*
         if (prev_child->GetState().IsBad()) {
           g_log.warning() << "Using bad prev_child's IEnd";
         }
+        */
         if (&prev_child->IEnd() == &(*next)->IStart()) {
           // How can this happen?  It's because we received the update from the
           // cleared child before receiving the prev_child's update.
@@ -206,9 +208,13 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
       return;
     }
 
+    // TODO I'm not sure what to do, if not look at the next child's IStart,
+    // even if it's bad.  But I'm not sure this isn't terrible.
+    /*
     if ((*next)->GetState().IsBad()) {
       g_log.warning() << "Using bad next child's IStart";
     }
+    */
     if (&(*child)->IEnd() == &(*next)->IStart()) {
       g_log.debug() << "ParseFunc_Star at " << *m_node << ": Next child is linked properly, so no changes to children";
     } else {

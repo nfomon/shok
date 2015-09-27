@@ -82,9 +82,11 @@ void ParseFunc_Seq::operator() (ParseAction::Action action, const List& inode, c
       } else if (prev_child->GetState().IsPending()) {
         throw SError("Cannot investigate pending child");
       }
+      /*
       if (prev_child->GetState().IsBad()) {
         g_log.warning() << "Seq: in response to cleared child, is using bad prev_child " << *prev_child << "'s IEnd";
       }
+      */
       m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, prev_child->IEnd(), m_node));
       state.GoPending();
       return;

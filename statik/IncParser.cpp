@@ -288,9 +288,9 @@ void IncParser::InsertNode(List& inode) {
 
   ProcessActions();
 
-  // Assert that the inode has at least one listener in the updated set.
+  // The inode should have at least one listener in the updated set.  If this
+  // is violated, it's probably stuff past the end of accepted input.
   if (!m_listeners.HasAnyListeners(&inode)) {
-    g_log.warning() << "No listeners for node " << inode;
     m_root.GetState().GoBad();
   }
   // Stronger check: every inode has at least one listener :)
