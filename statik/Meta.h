@@ -26,8 +26,7 @@ std::auto_ptr<Rule> META(const std::string& name,
 
 class ParseFunc_Meta : public ParseFunc {
 public:
-  ParseFunc_Meta(const std::string& searchName)
-    : m_searchName(searchName) {}
+  ParseFunc_Meta(const std::string& searchName);
   virtual ~ParseFunc_Meta() {}
   virtual void operator() (ParseAction::Action action, const List& inode, const STree* initiator);
   virtual std::auto_ptr<ParseFunc> Clone() {

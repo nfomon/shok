@@ -193,18 +193,8 @@ void ParseFunc_Seq::operator() (ParseAction::Action action, const List& inode, c
     if (istate.IsPending()) {
       throw SError("Seq's breach child is Pending");
     } else if (istate.IsBad()) {
-      // last child bad, prev children all complete => complete
-      // otherwise, we're bad
-      if (m_node->children.empty()) {
-        throw SError("Should not be evaluating bad breach child when node has no children");
-      }
-      if (&*m_node->children.back() == breachChild) {
-        state.GoComplete();
-        m_node->GetIConnection().SetEnd(breachChild->IEnd());
-      } else {
-        state.GoBad();
-        m_node->GetIConnection().SetEnd(breachChild->IEnd());
-      }
+      state.GoBad();
+      m_node->GetIConnection().SetEnd(breachChild->IEnd());
     } else if (istate.IsOK()) {
       state.GoOK();
       m_node->GetIConnection().SetEnd(breachChild->IEnd());

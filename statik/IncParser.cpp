@@ -411,14 +411,18 @@ void IncParser::ComputeOutput_Update(const STree& node, Batch& out_batch, const 
        item != output.end(); ++item) {
     node_mod_iter find_ins = nodes.find(*item);
     if (nodes.end() == find_ins) {
-      g_log.debug() << "Updating item " << *item << " behind node " << behind_node;
+      g_log.debug() << "Updating item " << *item << " after behind-node " << behind_node;
       UpdateOutput(*item, out_batch, behind_node, worst_station);
     } else {
       nodes.erase(find_ins);
-      g_log.debug() << "Inserting item " << *item << " behind node " << behind_node;
+      g_log.debug() << "Inserting item " << *item << " after behind-node " << behind_node;
       InsertOutput(*item, out_batch, behind_node, worst_station);
     }
-    behind_node = GetOEnd(*item);
+    const List* b = GetOEnd(*item);
+    if (b) {
+      g_log.debug() << "Update of " << node << ": Set behind_node to " << *b;
+      behind_node = b;
+    }
   }
 
   if (output.empty()) {
@@ -447,8 +451,11 @@ void IncParser::ComputeOutput_Insert(const STree& node, Batch& out_batch, const 
   for (OutputList::const_iterator item = output.begin();
        item != output.end(); ++item) {
     InsertOutput(*item, out_batch, behind_node, worst_station);
-    g_log.info() << " insert woo...";
-    behind_node = GetOEnd(*item);
+    const List* b = GetOEnd(*item);
+    if (b) {
+      g_log.debug() << "Inserting " << node << "; set behind_node to " << *b;
+      behind_node = b;
+    }
   }
 
   if (output.empty()) {

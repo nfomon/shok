@@ -5,6 +5,7 @@
 
 #include "IncParser.h"
 #include "OutputFunc.h"
+#include "SError.h"
 #include "SLog.h"
 #include "STree.h"
 
@@ -29,23 +30,32 @@ auto_ptr<ParseFunc> statik::MakeParseFunc_Meta(const string& searchName) {
   return auto_ptr<ParseFunc>(new ParseFunc_Meta(searchName));
 }
 
+ParseFunc_Meta::ParseFunc_Meta(const string& searchName)
+  : m_searchName(searchName) {
+  if (m_searchName.empty()) {
+    throw SError("Cannot create empty Meta");
+  }
+}
+
 void ParseFunc_Meta::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
   g_log.info() << "Computing Meta at " << *m_node << " with inode "<< inode;
   State& state = m_node->GetState();
   state.Clear();
   const List& first = m_node->IStart();
   m_node->GetIncParser().Listen(*m_node, first);
+  m_node->GetIConnection().SetEnd(first);
   if (first.name == m_searchName) {
     state.GoDone();
     const List* second = first.right;
     if (second) {
       state.GoComplete();
       m_node->GetIConnection().SetEnd(*second);
-    } else {
-      m_node->GetIConnection().SetEnd(first);
     }
   } else {
     state.GoBad();
   }
-  g_log.debug() << "Meta now at: " << *m_node;
+  if (state.IsPending()) {
+    throw SError("Meta failed to determine state");
+  }
+  g_log.debug() << "Meta now at: " << *m_node << " with IStart: " << m_node->IStart() << " and IEnd: " << m_node->IEnd();
 }
