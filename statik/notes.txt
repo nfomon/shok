@@ -1315,9 +1315,3 @@ Splash test cases
 Lexer should be perfect.
  - Then try a C lexer!
 
-In "Simple" only, this fails:
-new;del
-new;;del
-   ^
- (invalid pos for insert)
-

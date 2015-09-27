@@ -218,10 +218,13 @@ void OutputFunc_Sequence::operator() () {
     if (istate.IsPending()) {
       throw SError("OutputFunc Sequence found Pending child");
     } else if (istate.IsBad()) {
-      g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " aborting at bad child " << **child;
+      g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " breaking at bad child " << **child;
       break;
-    } else if (istate.IsDone() || istate.IsOK()) {
-      g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " aborting after " << (istate.IsOK() ? "ok" : "done") << " child " << **child;
+    } else if (istate.IsOK()) {
+      g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " breaking at ok child " << **child;
+      break;
+    } else if (istate.IsDone()) {
+      g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " breaking after " << (istate.IsOK() ? "ok" : "done") << " child " << **child;
       m_output.push_back(OutputItem(**child, m_node->GetState().GetStation()));
       break;
     } else if (!istate.IsComplete()) {

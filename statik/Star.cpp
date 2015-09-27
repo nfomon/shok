@@ -9,11 +9,9 @@
 #include "STree.h"
 
 #include <memory>
-#include <set>
 #include <string>
 #include <vector>
 using std::auto_ptr;
-using std::set;
 using std::string;
 using std::vector;
 
@@ -48,7 +46,7 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
   }
 
   if (ParseAction::Restart == action) {
-    g_log.debug() << "Restart start compare with inode " << inode;
+    g_log.debug() << "Star restart: comparing first child's IStart against inode " << inode;
     int startCompare = m_node->GetIncParser().INodeCompare((*m_node->children.begin())->IStart(), inode);
     if (startCompare < 0) {
       g_log.info() << "Prepending a new child behind our first child";
@@ -98,7 +96,6 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
     g_log.info() << "ParseFunc_Star at " << *m_node << " provided an initiator which is not a child; presumably we've already dealt with this update";
     return;
   }
-
   g_log.debug() << "Initiator child: " << **child;
 
   const State& childState = (*child)->GetState();
@@ -311,12 +308,11 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
       state.GoDone();
       m_node->GetIConnection().SetEnd(breachChild->IEnd());
     } else {
-      throw SError("Seq parse found breach in non-breach state");
+      throw SError("Star parse found breach in non-breach state");
     }
   } else {
     // All children are complete until the last observed child.  Determine our
     // state and IEnd based on this last child.
-    g_log.debug() << " - no breach child";
     if (m_node->children.empty()) {
       throw SError("Star no breach; how did all my children get empty?");
     } else {

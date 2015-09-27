@@ -90,7 +90,6 @@ void STree::ParseNode(ParseAction::Action action, const List& inode, const STree
 void STree::ClearNode(const List& inode) {
   g_log.info() << "Clearing node " << *this;
   if (m_parent) {
-    // The size we report is irrelevant; cleared nodes do not need to report how their IEnd changes
     m_incParser.Enqueue(ParseAction(ParseAction::ChildUpdate, *m_parent, inode, this));
   }
   ClearSubNode();
