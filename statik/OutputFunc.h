@@ -19,7 +19,6 @@ namespace statik {
 class STree;
 class OutputFunc;
 
-std::auto_ptr<OutputFunc> MakeOutputFunc_Silent();
 std::auto_ptr<OutputFunc> MakeOutputFunc_Pass();
 std::auto_ptr<OutputFunc> MakeOutputFunc_Basic(const std::string& name, const std::string& value = "");
 std::auto_ptr<OutputFunc> MakeOutputFunc_IValues(const std::string& name);
@@ -82,15 +81,6 @@ protected:
 private:
   const List* m_ostart; // first emittable olist node that is spanned
   const List* m_oend;   // last emittable olist node that is spanned
-};
-
-class OutputFunc_Silent : public OutputFunc {
-public:
-  OutputFunc_Silent()
-    : OutputFunc() {}
-  virtual ~OutputFunc_Silent() {}
-  virtual void operator() () {}
-  virtual std::auto_ptr<OutputFunc> Clone();
 };
 
 // Simple pass through the child node's output, no changes

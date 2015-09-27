@@ -23,10 +23,6 @@ using std::vector;
 
 using namespace statik;
 
-auto_ptr<OutputFunc> statik::MakeOutputFunc_Silent() {
-  return auto_ptr<OutputFunc>(new OutputFunc_Silent());
-}
-
 auto_ptr<OutputFunc> statik::MakeOutputFunc_Pass() {
   return auto_ptr<OutputFunc>(new OutputFunc_Pass());
 }
@@ -61,6 +57,7 @@ void OutputFunc::Sync() {
   if (m_output.empty()) {
     m_ostart = NULL;
     m_oend = NULL;
+    g_log.debug() << "OutputFunc::Sync for node " << *m_node << " wiped ostart/oend";
     return;
   }
   {
@@ -78,12 +75,7 @@ void OutputFunc::Sync() {
       m_oend = back.child->GetOutputFunc().OEnd();
     }
   }
-}
-
-/* OutputFunc_Silent */
-
-auto_ptr<OutputFunc> OutputFunc_Silent::Clone() {
-  return auto_ptr<OutputFunc>(new OutputFunc_Silent());
+  g_log.debug() << "OutputFunc::Sync for node " << *m_node << " - yields ostart: " << (m_ostart ? m_ostart->Print() : "<null>") << " and oend: " << (m_oend ? m_oend->Print() : "<null>");
 }
 
 /* OutputFunc_Pass */

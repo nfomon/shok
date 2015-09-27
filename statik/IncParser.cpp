@@ -541,6 +541,8 @@ void IncParser::UpdateOutput(OutputItem& item, Batch& out_batch, const List*& be
   } else if (item.child && m_touchedNodes.find(item.child) != m_touchedNodes.end()) {
     g_log.debug() << "UpdateOutput for item child " << *item.child;
     ComputeOutput_Update(*item.child, out_batch, behind_node, worst_station);
+  } else {
+    g_log.debug() << " - nothing to output for item " << item;
   }
 }
 
