@@ -16,7 +16,8 @@ graphs
 log.log
 slog.log
 slog.log_sanity
-g
+g/*.dot
+g/*.png
 istatik/istatik
 exstatik/exstatik
 statik/test/statik_test
