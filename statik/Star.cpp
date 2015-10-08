@@ -167,7 +167,7 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
               state.GoPending();
               return;
             } else {
-              g_log.debug() << "Restarting next child to new, further-ahead location";
+              g_log.debug() << "Restarting next child to new, further-ahead location (1)";
               m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, prev_child->IEnd(), m_node));
               m_node->children.erase(child);
               state.GoPending();
@@ -217,6 +217,8 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
     */
     if (&(*child)->IEnd() == &(*next)->IStart()) {
       g_log.debug() << "ParseFunc_Star at " << *m_node << ": Next child is linked properly, so no changes to children";
+      g_log.debug() << " child: " << *child << ":" << **child << " and next: " << *next << ":" << **next;
+      g_log.debug() << " child iend: " << (*child)->IEnd() << ":" << &(*child)->IEnd() << " and next istart: " << (*next)->IStart() << ":" << &(*next)->IStart();
     } else {
       int childCompare = m_node->GetIncParser().INodeCompare((*child)->IEnd(), (*next)->IStart());
       if (0 == childCompare) {
@@ -247,12 +249,12 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
           // needs to link up to a next node.  It's virtually a child update :)
           (*next)->ClearNode(inode);
           m_node->children.erase(next);
-          m_node->GetIncParser().Enqueue(ParseAction(ParseAction::ChildUpdate, *m_node, inode, *child));
+          m_node->GetIncParser().Enqueue(ParseAction(ParseAction::ChildUpdate, *m_node, (*child)->IEnd(), *child));
           state.GoPending();
           return;
         } else {
-          g_log.debug() << "Restarting next child to new, further-ahead location";
-          m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, inode, m_node));
+          g_log.debug() << "Restarting next child to new, further-ahead location (2)";
+          m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
           state.GoPending();
           return;
         }

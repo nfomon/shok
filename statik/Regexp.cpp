@@ -34,16 +34,20 @@ ParseFunc_Regexp::ParseFunc_Regexp(const boost::regex& regex)
 }
 
 void ParseFunc_Regexp::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
-  g_log.info() << "Computing Regexp at " << *m_node;
+  g_log.info() << "Computing Regexp at " << *m_node << " with inode " << inode;
   State& state = m_node->GetState();
   state.Clear();
   string str;
   const List* i = &m_node->IStart();
+  state.GoOK();
   for (; i != NULL; i = i->right) {
     m_node->GetIncParser().Listen(*m_node, *i);
     m_node->GetIConnection().SetEnd(*i);
     str += i->value;
-    if (!boost::regex_match(str, m_regex)) {
+    if (boost::regex_match(str, m_regex)) {
+      state.GoDone();
+      // keep going if possible, in case we can get complete
+    } else {
       if (str.size() > 1) {
         if (boost::regex_match(str.begin(), str.end()-1, m_regex)) {
           state.GoComplete();
@@ -54,12 +58,8 @@ void ParseFunc_Regexp::operator() (ParseAction::Action action, const List& inode
       break;
     }
   }
-  if (NULL == i) {
-    boost::match_results<string::const_iterator> match_result;
-    if (boost::regex_match(str, match_result, m_regex, boost::match_default | boost::match_partial)
-        && match_result[0].matched) {
-      state.GoDone();
-    }
+  if (state.IsPending()) {
+    throw SError("Regexp failed to determine state");
   }
-  g_log.debug() << "Regexp now at " << *m_node;
+  g_log.debug() << "Regexp now at: " << *m_node << " with IStart: " << m_node->IStart() << " and IEnd: " << m_node->IEnd();
 }

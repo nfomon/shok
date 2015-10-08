@@ -31,7 +31,7 @@ using namespace statik;
 IncParser::IncParser(auto_ptr<Rule> grammar,
                      const string& name,
                      const string& graphdir)
-  : m_rootRule(name, MakeParseFunc_Root(name), MakeOutputFunc_Pass()),
+  : m_rootRule(name, MakeParseFunc_Root(name), MakeOutputFunc_Root()),
     m_root(*this, m_rootRule, /*parent*/ NULL),
     m_name(name),
     m_firstINode(NULL),
@@ -420,7 +420,7 @@ void IncParser::ComputeOutput_Update(const STree& node, Batch& out_batch, const 
     }
     const List* b = GetOEnd(*item);
     if (b) {
-      g_log.debug() << "Update of " << node << ": Set behind_node to " << *b;
+      g_log.debug() << "Update of " << node << ": set behind_node to " << *b;
       behind_node = b;
     }
   }
@@ -560,19 +560,23 @@ void IncParser::SanityCheck(const std::string& why) {
   g_log.debug();
   g_san.info();
   g_san.info() << "Sanity check " << m_sancount;
-  SanityCheck(&m_root);
+  SanityCheck(&m_root, 0);
   g_san.debug() << "Sanity " << m_sancount << " is done.";
   ++m_sancount;
 }
 
-void IncParser::SanityCheck(const STree* s) const {
-  g_san.info() << "SNode: " << s;
-  g_san.info() << ":: " << *s;
+void IncParser::SanityCheck(const STree* s, int depth) const {
+  string space;
+  for (int i = 0; i < depth; ++i) {
+    space += " - ";
+  }
+  g_san.info() << space << "SNode: " << s;
+  g_san.info() << space << ":: " << *s;
   if (!s->GetIConnection().IsClear()) {
     const List* inode = &s->IStart();
     while (inode) {
-      g_san.info() << " - INode: " << inode;
-      g_san.info() << " - :: " << *inode;
+      g_san.info() << space << " - INode: " << inode;
+      g_san.info() << space <<" - :: " << *inode;
       if (inode == &s->IEnd()) {
         break;
       }
@@ -580,26 +584,29 @@ void IncParser::SanityCheck(const STree* s) const {
     }
   }
   for (STree::child_iter child = s->children.begin(); child != s->children.end(); ++child) {
-    g_san.info() << " - child: " << *child;
-    g_san.info() << " - :: " << **child;
+    g_san.info() << space << " - child: " << *child;
+    g_san.info() << space << " - :: " << **child;
   }
   for (STree::child_iter child = s->children.begin(); child != s->children.end(); ++child) {
     if ((*child)->GetParent() != s) {
-      g_san.info() << " - child " << *child << " parent check fail; child's parent is: " << (*child)->GetParent();
+      g_san.info() << space << " - child " << *child << " parent check fail; child's parent is: " << (*child)->GetParent();
     }
   }
   for (STree::child_iter child = s->children.begin(); child != s->children.end(); ++child) {
-    g_san.info() << s << " (" << *s << ") -> " << *child;
-    SanityCheck(*child);
+    g_san.info() << space << s << " (" << *s << ") -> " << *child;
+    SanityCheck(*child, depth+1);
   }
+  // Can't output OList; something something deleted something
+/*
   const List* onode = s->GetOutputFunc().OStart();
   while (onode) {
-    g_san.info() << " - ONode: " << onode;
-    g_san.info() << " - :: " << *onode;
+    g_san.info() << space << " - ONode: " << onode;
+    g_san.info() << space << " - :: " << *onode;
     if (onode == s->GetOutputFunc().OEnd()) {
       break;
     }
     onode = onode->right;
   }
-  g_san.info() << "Sanity done for " << s;
+*/
+  g_san.info() << space << "Sanity done for " << s;
 }

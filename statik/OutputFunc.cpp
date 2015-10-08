@@ -23,8 +23,8 @@ using std::vector;
 
 using namespace statik;
 
-auto_ptr<OutputFunc> statik::MakeOutputFunc_Pass() {
-  return auto_ptr<OutputFunc>(new OutputFunc_Pass());
+auto_ptr<OutputFunc> statik::MakeOutputFunc_Root() {
+  return auto_ptr<OutputFunc>(new OutputFunc_Root());
 }
 
 auto_ptr<OutputFunc> statik::MakeOutputFunc_Basic(const string& name, const string& value) {
@@ -78,25 +78,27 @@ void OutputFunc::Sync() {
   g_log.debug() << "OutputFunc::Sync for node " << *m_node << " - yields ostart: " << (m_ostart ? m_ostart->Print() : "<null>") << " and oend: " << (m_oend ? m_oend->Print() : "<null>");
 }
 
-/* OutputFunc_Pass */
+/* OutputFunc_Root */
 
-auto_ptr<OutputFunc> OutputFunc_Pass::Clone() {
-  return std::auto_ptr<OutputFunc>(new OutputFunc_Pass());
+auto_ptr<OutputFunc> OutputFunc_Root::Clone() {
+  return std::auto_ptr<OutputFunc>(new OutputFunc_Root());
 }
 
-void OutputFunc_Pass::operator() () {
+void OutputFunc_Root::operator() () {
   if (m_node->children.empty()) {
     // We might leave our dangling old state, I guess.
     // But for now, clear everything.
-    g_log.debug() << "OutputFunc_Pass: Node has no children, so clearing output";
+    g_log.debug() << "OutputFunc_Root: Node has no children, so clearing output";
     m_output.clear();
     return;
   } else if (m_node->children.size() != 1) {
-    throw SError("OutputFunc_Pass: must have exactly 1 child");
+    throw SError("OutputFunc_Root: must have exactly 1 child");
   }
   const STree& child = *m_node->children.front();
   m_output.clear();
-  m_output.push_back(OutputItem(child, m_node->GetState().GetStation()));
+  if (child.GetState().IsOK() || child.GetState().IsDone() || child.GetState().IsComplete()) {
+    m_output.push_back(OutputItem(child));
+  }
 }
 
 /* OutputFunc_Basic */
@@ -109,7 +111,7 @@ OutputFunc_Basic::OutputFunc_Basic(const string& name, const string& value)
 void OutputFunc_Basic::operator() () {
   g_log.debug() << "OutputFunc_Basic " << m_onode;
   if (m_output.empty()) {
-    m_output.push_back(OutputItem(m_onode, m_node->GetState().GetStation()));
+    m_output.push_back(OutputItem(m_onode));
   }
 }
 
@@ -127,7 +129,7 @@ OutputFunc_IValues::OutputFunc_IValues(const string& name)
 void OutputFunc_IValues::operator() () {
   g_log.debug() << "OutputFunc_IValues " << m_onode;
   if (m_output.empty()) {
-    m_output.push_back(OutputItem(m_onode, m_node->GetState().GetStation()));
+    m_output.push_back(OutputItem(m_onode));
   }
   /*
   string value;
@@ -178,7 +180,7 @@ void OutputFunc_Winner::operator() () {
   if (winner) {
     g_log.debug() << "**** OutputFunc_Winner: " << *m_node << " Declaring winner " << *winner;
     m_winner = winner;
-    m_output.push_back(OutputItem(*m_winner, m_node->GetState().GetStation()));
+    m_output.push_back(OutputItem(*m_winner));
   } else {
     g_log.debug() << "**** OutputFunc_Winner: No winner.";
   }
@@ -197,7 +199,7 @@ void OutputFunc_Sequence::operator() () {
 /*
   if (m_node->GetState().IsBad()) {
     for (STree::child_iter child = m_node->children.begin(); child != m_node->children.end(); ++child) {
-      m_output.push_back(OutputItem(**child, m_node->GetState().GetStation()));
+      m_output.push_back(OutputItem(**child));
     }
     return;
   }
@@ -214,15 +216,16 @@ void OutputFunc_Sequence::operator() () {
       break;
     } else if (istate.IsOK()) {
       g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " breaking at ok child " << **child;
+      m_output.push_back(OutputItem(**child));
       break;
     } else if (istate.IsDone()) {
       g_log.debug() << "**** OutputFunc_Sequence: " << *m_node << " breaking after " << (istate.IsOK() ? "ok" : "done") << " child " << **child;
-      m_output.push_back(OutputItem(**child, m_node->GetState().GetStation()));
+      m_output.push_back(OutputItem(**child));
       break;
     } else if (!istate.IsComplete()) {
       throw SError("OutputFunc Seq found child in unknown state");
     }
-    m_output.push_back(OutputItem(**child, m_node->GetState().GetStation()));
+    m_output.push_back(OutputItem(**child));
   }
 }
 

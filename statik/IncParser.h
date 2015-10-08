@@ -116,7 +116,7 @@ private:
   const List* GetOEnd(const OutputItem& item) const;
 
   void SanityCheck(const std::string& why);
-  void SanityCheck(const STree* s) const;
+  void SanityCheck(const STree* s, int depth) const;
 
   Rule m_rootRule; // Rule for the Root node
   STree m_root; // Root of the parse tree

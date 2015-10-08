@@ -1315,3 +1315,60 @@ Splash test cases
 Lexer should be perfect.
  - Then try a C lexer!
 
+-----
+Problem case:
+new;del;          117
+new;dnel;         118-130
+new;dneel;        131-134
+new;dnewel;       135-136
+new;denewel;      137-143
+new;delnewel;     144-184
+new;del;newel;    185-212
+new;del;new;el;   213-
+new;del;new;del;
+
+it dies there: the lexer is emitting the latter 'new;del;' but the pos of the
+"new" is a node that we previously deleted, it seems.
+ - what is that pos?  Is it the ""-Basic "silent" ONode of the ; from the first del; ?
+
+It's the del that was emit in the beginning, then destroyed by bonking in the "new".
+The "del" Or goes bad and deletes its ONode.  Then it gets fixed later and emits the del ONode again.
+ - Note that that's the same ONode that's emit!  I think.  But the listener creates its own recipient node for it?  And that becomes a different thing maybe?
+    - not quite...
+    - I think we're just not updating the (cached vertically) ONode list.
+
+After we delete 0x1508818, the next time we use it is as a behind_node for an or:complete.
+
+AH!  When we set behind_node, it's processing "lexer" (the Star), and then its first Or.  That Or sets its OEnd first to the OEnd of "new", then the OEnd of ";", then the OEnd of "del".  Even though those ONodes aren't even being emit!
+
+That strategy works only for Seq/Star, but not for Or nodes.  Not sure how anything worked rly.
+
+Only set behind_node after the latest ONode we've found.  We could compare all those ONodes, if we have an OrderList for them (do we?).  Or we can think of something more legit....
+
+
+Need:
+ - Get last ONode from an STree node
+ - Get the last OutputItem from an STree node
+  - which is semantically last, not just last in the list!  wait... no..... hmmmm
+  - semantically last STree node, then actual last OutputItem
+
+
+First/Last ActiveChild?  (winner, last of seq/star)  ugh
+
+
+nonono.  that's not what's happening at all.
+
+--
+At:
+new;denewel;
+
+We were emitting just "new ;"
+
+Then when we change to:
+new;delnewel;
+
+We have:   Root  ->  lexer(*)  ->  (or:new) (or:;) (or:del) (or:new) (..bad..)
+So the lexer(*) changes from emitting 2 to 4 things
+But its parent, the root, is still bad, so we don't actually output the "del new".
+
+

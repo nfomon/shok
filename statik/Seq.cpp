@@ -67,31 +67,24 @@ void ParseFunc_Seq::operator() (ParseAction::Action action, const List& inode, c
     ++child_index;
   }
   if (!foundInitiator) {
-    throw SError("ParseFunc_Seq at " + m_node->Print() + " provided an initiator which is not a child");
+    g_log.info() << "ParseFunc_Seq at " << m_node->Print() << " provided an initiator which is not a child";
+    g_log.info() << " - not an error, because presumably that child was recently cleared... so just dropping this update.";
+    return;
   }
   g_log.debug() << "Initiator child: " << **child;
 
   const State& childState = (*child)->GetState();
   STree::child_mod_iter next = child+1;
   if ((*child)->IsClear()) {
-    g_log.debug() << "ParseFunc_Seq at " << *m_node << ": Child was cleared, so restarting next";
-    if (next != m_node->children.end()) {
-      if (!prev_child) {
-        m_node->ClearNode(inode);
-        return;
-      } else if (prev_child->GetState().IsPending()) {
-        throw SError("Cannot investigate pending child");
-      }
-      /*
-      if (prev_child->GetState().IsBad()) {
-        g_log.warning() << "Seq: in response to cleared child, is using bad prev_child " << *prev_child << "'s IEnd";
-      }
-      */
-      m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, prev_child->IEnd(), m_node));
-      state.GoPending();
+    g_log.debug() << "ParseFunc_Seq at " << *m_node << ": Child was cleared, so clearing any next children";
+    for (STree::child_mod_iter i = next; i != m_node->children.end(); ++i) {
+      (*i)->ClearNode(inode);
+    }
+    m_node->children.erase(child, m_node->children.end());
+    if (!prev_child) {
+      m_node->ClearNode(inode);
       return;
     } 
-    m_node->children.erase(child);
     // Keep going to determine our state
   } else if (childState.IsPending()) {
     throw SError("Seq child should not be Pending");

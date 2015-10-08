@@ -19,7 +19,7 @@ namespace statik {
 class STree;
 class OutputFunc;
 
-std::auto_ptr<OutputFunc> MakeOutputFunc_Pass();
+std::auto_ptr<OutputFunc> MakeOutputFunc_Root();
 std::auto_ptr<OutputFunc> MakeOutputFunc_Basic(const std::string& name, const std::string& value = "");
 std::auto_ptr<OutputFunc> MakeOutputFunc_IValues(const std::string& name);
 std::auto_ptr<OutputFunc> MakeOutputFunc_Winner();
@@ -27,14 +27,12 @@ std::auto_ptr<OutputFunc> MakeOutputFunc_Sequence();
 std::auto_ptr<OutputFunc> MakeOutputFunc_Cap(std::auto_ptr<OutputFunc> outputFunc, const std::string& cap);
 
 struct OutputItem {
-  OutputItem(const List& onode, State::Station station)
+  OutputItem(const List& onode)
     : onode(&onode),
-      child(NULL),
-      station(station) {}
-  OutputItem(const STree& child, State::Station station)
+      child(NULL) {}
+  OutputItem(const STree& child)
     : onode(NULL),
-      child(&child),
-      station(station) {}
+      child(&child) {}
   bool operator==(const OutputItem& rhs) const {
     return onode == rhs.onode && child == rhs.child;
   }
@@ -52,7 +50,6 @@ struct OutputItem {
   }
   const List* onode;
   const STree* child;
-  State::Station station;
   std::string prev_value; // set/used by IncParser, not OutputFuncs
 };
 
@@ -83,12 +80,12 @@ private:
   const List* m_oend;   // last emittable olist node that is spanned
 };
 
-// Simple pass through the child node's output, no changes
-class OutputFunc_Pass : public OutputFunc {
+// Simple pass through the child node's output, if it's neither pending nor bad
+class OutputFunc_Root : public OutputFunc {
 public:
-  OutputFunc_Pass()
+  OutputFunc_Root()
     : OutputFunc() {}
-  virtual ~OutputFunc_Pass() {}
+  virtual ~OutputFunc_Root() {}
   virtual void operator() ();
   virtual std::auto_ptr<OutputFunc> Clone();
 };

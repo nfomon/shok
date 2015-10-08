@@ -4,7 +4,6 @@
 #include "Root.h"
 
 #include "IncParser.h"
-#include "OutputFunc.h"
 #include "SError.h"
 #include "SLog.h"
 #include "STree.h"
