@@ -9,6 +9,7 @@
 #include "statik/Star.h"
 using statik::META;
 using statik::OR;
+using statik::PLUS;
 using statik::Rule;
 using statik::SEQ;
 using statik::STAR;
@@ -127,4 +128,245 @@ auto_ptr<Rule> exstatik::CreateParser_Nifty() {
     ->SilenceOutput();
 
   return parser;
+}
+
+// C parser
+auto_ptr<Rule> exstatik::CreateParser_C() {
+
+  auto_ptr<Rule> identifier_(META("identifier", "ID"));
+
+  auto_ptr<Rule> unary_operator_(OR("unary-operator"));
+  unary_operator_->AddChild(META("&", "&"));
+  unary_operator_->AddChild(META("*", "*"));
+  unary_operator_->AddChild(META("+", "+"));
+  unary_operator_->AddChild(META("-", "-"));
+  unary_operator_->AddChild(META("~", "~"));
+  unary_operator_->AddChild(META("!", "!"));
+
+  auto_ptr<Rule> assignment_operator_(OR("assignment-operator"));
+  assignment_operator_->AddChild(META("=", "="));
+  assignment_operator_->AddChild(META("*=", "*="));
+  assignment_operator_->AddChild(META("/=", "/="));
+  assignment_operator_->AddChild(META("%=", "%="));
+  assignment_operator_->AddChild(META("+=", "+="));
+  assignment_operator_->AddChild(META("-=", "+="));
+  assignment_operator_->AddChild(META("<<=", "<<="));
+  assignment_operator_->AddChild(META(">>=", ">>="));
+  assignment_operator_->AddChild(META("&=", "&="));
+  assignment_operator_->AddChild(META("^=", "^="));
+  assignment_operator_->AddChild(META("|=", "|="));
+
+  auto_ptr<Rule> jump_statement_(OR("jump-statement"));
+  Rule* goto_statement_ = jump_statement_->AddChild(SEQ("goto-statement"));
+  goto_statement_->AddChild(META("goto", "goto"));
+  goto_statement_->AddChild(identifier_);
+  goto_statement_->AddChild(META(";", ";"));
+  Rule* continue_statement_ = jump_statement_->AddChild(SEQ("continue-statement"));
+  continue_statement_->AddChild(META("continue", "continue"));
+  continue_statement_->AddChild(META(";", ";"));
+  Rule* break_statement_ = jump_statement_->AddChild(SEQ("break-statement"));
+  break_statement_->AddChild(META("break", "break"));
+  break_statement_->AddChild(META(";", ";"));
+  Rule* return_statement_ = jump_statement_->AddChild(SEQ("return-statement"));
+  return_statement_->AddChild(META("return", "return"));
+  //return_statement_->AddChild(OPT(expression_));
+  return_statement_->AddChild(META(";", ";"));
+
+
+  // type-qualifier-list
+  // parameter-type-list
+  // parameter-list
+  // parameter-declaration
+  // identifier-list
+  // initializer
+  // initializer-list
+  // type-name
+  // abstract-declarator
+  // direct-abstract-declarator
+  // statement
+  // labeled-statement
+  // expression-statement
+  // compound-statement
+  // statement-list
+  // selection-statement
+  // iteration-statement
+  // v
+
+  auto_ptr<Rule> statement_(OR("statement"));
+  //statement_->AddChild(labeled_statement_);
+  //statement_->AddChild(expression_statement_);
+  //statement_->AddChild(compound_statement_);
+  //statement_->AddChild(selection_statement_);
+  //statement_->AddChild(iteration_statement_);
+  statement_->AddChild(jump_statement_);
+
+  // ^
+  // direct-declarator
+  // declarator
+
+/*
+  auto_ptr<Rule> enumerator_1(SEQ("enumerator-1"));
+  enumerator_1->AddChild(META("=", "="));
+  enumerator_1->AddChild(constant_expression_);
+
+  auto_ptr<Rule> enumerator_(SEQ("enumerator"));
+  enumerator_->AddChild(identifier_);
+  enumerator_->AddChild(OPT(enumerator_1));
+
+  auto_ptr<Rule> enumerator_list_1(SEQ("enumerator-list-1"));
+  enumerator_list_1->AddChild(META(",", ","));
+  enumerator_list_1->AddChild(enumerator_);
+
+  auto_ptr<Rule> enumerator_list_(SEQ("enumerator-list"));
+  enumerator_list->AddChild(enumerator_);
+  enumerator_list->AddChild(STAR(enumerator_list_1));
+
+  auto_ptr<Rule> enum_specifier_1(SEQ("enum-specifier-1"));
+  enum_specifier_1->AddChild(META("enum", "enum"));
+  enum_specifier_1->AddChild(identifier_);
+
+  auto_ptr<Rule> enum_specifier_2(SEQ("enum-specifier-2"));
+  enum_specifier_2->AddChild(META("enum", "enum"));
+  enum_specifier_2->AddChild(OPT(identifier_));
+  enum_specifier_2->AddChild(META("{", "{"));
+  enum_specifier_2->AddChild(enumerator_list_);
+  enum_specifier_2->AddChild(META("}", "}"));
+
+  auto_ptr<Rule> enum_specifier_(OR("enum-specifier"));
+  enum_specifier_->AddChild(enum_specifier_1);
+  enum_specifier_->AddChild(enum_specifier_2);
+*/
+
+/*
+  auto_ptr<Rule> struct_declarator_1(SEQ("struct-declarator-1"));
+  struct_declarator_1->AddChild(OPT(declarator_));
+  struct_declarator_1->AddChild(META(":", ":"));
+  struct_declarator_1->AddChild(constant_expression_);
+
+  auto_ptr<Rule> struct_declarator_(OR("struct-declarator"));
+  struct_declarator_->AddChild(declarator_);
+  struct_declarator_->AddChild(struct_declarator_1);
+
+  auto_ptr<Rule> struct_declarator_list_1(OR("struct-declarator-list-1"));
+  struct_declarator_list_1->AddChild(META(",", ","));
+  struct_declarator_list_1->AddChild(struct_declarator_);
+
+  auto_ptr<Rule> struct_declarator_list_(SEQ("struct-declarator-list"));
+  struct_declarator_list_->AddChild(struct_declarator_);
+  struct_declarator_list_->AddChild(struct_declarator_list_1);
+
+  auto_ptr<Rule> specifier_qualifier_list_1(OR("specifier-qualifier-list-1"));
+  specifier_qualifier_list_1->AddChild(type_specifier_);
+  specifier_qualifier_list_1->AddChild(type_qualifier_);
+
+  auto_ptr<Rule> specifier_qualifier_list_(OR("specifier-qualifier-list"));
+  specifier_qualifier_list_->AddChild(specifier_qualifier_list_1);
+  specifier_qualifier_list_->AddChild(OPT(specifier_qualifier_list_);
+
+  auto_ptr<Rule> struct_declaration_(SEQ("struct-declaration"));
+  struct_declaration_->AddChild(specifier_qualifier_list_);
+  struct_declaration_->AddChild(struct_declarator_list_);
+  struct_declaration_->AddChild(META(";", ";"));
+
+  auto_ptr<Rule> init_declarator_1(OR("init-declarator-1"));
+  init_declarator_1->AddChild(declarator_);
+  init_declarator_1->AddChild(META("=", "="));
+  init_declarator_1->AddChild(initializer_);
+
+  auto_ptr<Rule> init_declarator_(OR("init-declarator"));
+  init_declarator_->AddChild(declarator_);
+  init_declarator_->AddChild(init_declarator_1);
+
+  auto_ptr<Rule> init_declarator_list_1(SEQ("init-declarator-list-1"));
+  init_declarator_list_1->AddChild(META(",", ","));
+  init_declarator_list_1->AddChildRecursive(init_declarator_);
+
+  auto_ptr<Rule> init_declarator_list_(SEQ("init-declarator-list"));
+  init_declarator_list_->AddChild(init_declarator_);
+  init_declarator_list_->AddChild(STAR(init_declarator_list_1));
+
+  auto_ptr<Rule> struct_or_union_(OR("struct-or-union"));
+  struct_or_union_->AddChild(META("struct", "struct"));
+  struct_or_union_->AddChild(META("union", "union"));
+
+  auto_ptr<Rule> struct_or_union_specifier_1(SEQ("struct-or-union-specifier-1"));
+  struct_or_union_specifier_1->AddChild(struct_or_union_);
+  struct_or_union_specifier_1->AddChild(OPT(identifier_));
+  struct_or_union_specifier_1->AddChild(META("{", "{"));
+  struct_or_union_specifier_1->AddChild(PLUS(struct_declaration_));
+  struct_or_union_specifier_1->AddChild(META("}", "}"));
+
+  auto_ptr<Rule> struct_or_union_specifier_2(SEQ("struct-or-union-specifier-2"));
+  struct_or_union_specifier_2->AddChildRecursive(struct_or_union_);
+  struct_or_union_specifier_1->AddChildRecursive(identifier_);
+
+  auto_ptr<Rule> struct_or_union_specifier_(OR("struct-or-union-specifier"));
+  struct_or_union_specifier_->AddChild(struct_or_union_specifier_1);
+  struct_or_union_specifier_->AddChild(struct_or_union_specifier_2);
+*/
+
+/*
+  auto_ptr<Rule> type_qualifier_(OR("type-qualifier"));
+  type_qualifier_->AddChild(META("const", "const"));
+  type_qualifier_->AddChild(META("volatile", "volatile"));
+
+  auto_ptr<Rule> pointer_1(SEQ("pointer-1"));
+  pointer_1->AddChild(META("*", "*"));
+  Rule* pointer_type_qualifier_ = pointer_1->AddChild(STAR("pointer-type-qualifier"));
+  pointer_type_qualifier_->AddChild(type_qualifier_);
+
+  auto_ptr<Rule> pointer_(PLUS("pointer"));
+  pointer_->AddChild(pointer_1);
+
+  auto_ptr<Rule> typedef_name_(identifier_);
+
+  auto_ptr<Rule> type_specifier_(OR("type-specifier"));
+  type_specifier_->AddChild(META("void", "void"));
+  type_specifier_->AddChild(META("char", "char"));
+  type_specifier_->AddChild(META("short", "short"));
+  type_specifier_->AddChild(META("int", "int"));
+  type_specifier_->AddChild(META("long", "long"));
+  type_specifier_->AddChild(META("float", "float"));
+  type_specifier_->AddChild(META("double", "double"));
+  type_specifier_->AddChild(META("signed", "signed"));
+  type_specifier_->AddChild(META("unsigned", "unsigned"));
+  //type_specifier_->AddChild(struct_or_union_specifier_);
+  //type_specifier_->AddChild(enum_specifier_);
+  type_specifier_->AddChild(typedef_name_);
+
+  auto_ptr<Rule> storage_class_specifier_(OR("storage-class-specifier"));
+  storage_class_specifier_->AddChild(META("auto", "auto"));
+  storage_class_specifier_->AddChild(META("register", "register"));
+  storage_class_specifier_->AddChild(META("static", "static"));
+  storage_class_specifier_->AddChild(META("extern", "extern"));
+  storage_class_specifier_->AddChild(META("typedef", "typedef"));
+
+  auto_ptr<Rule> declaration_specifiers_1(OR("declaration-specifiers-1"));
+  declaration_specifiers_1->AddChild(storage_class_specifier_);
+  declaration_specifiers_1->AddChild(type_specifier_);
+  declaration_specifiers_1->AddChild(type_qualifier_);
+
+  auto_ptr<Rule> declaration_specifiers_(SEQ("declaration-specifiers"));
+  declaration_specifiers_->AddChild(declaration_specifiers_1);
+  declaration_specifiers_->AddChild(OPT(declaration_specifiers_));
+
+  auto_ptr<Rule> declaration_(SEQ("declaration"));
+  declaration_->AddChild(declaration_specifiers_);
+  declaration_->AddChild(OPT(init_declarator_list_));
+  declaration_->AddChild(META(";", ";"));
+
+  auto_ptr<Rule> function_definition_(SEQ("function-definition"));
+  function_definition->AddChild(OPT(declaration_specifiers_));
+  function_definition->AddChild(declarator_);
+  function_definition->AddChild(PLUS(declaration_));
+  function_definition->AddChild(compound_statement_);
+
+  auto_ptr<Rule> external_declaration_(OR("external-declaration"));
+  external_declaration_->AddChild(function_definition_);
+  external_declaration_->AddChild(declaration_);
+*/
+
+  auto_ptr<Rule> translation_unit_(PLUS("C parser"));
+  //translation_unit_->AddChild(external_declaration_);
+  return translation_unit_;
 }

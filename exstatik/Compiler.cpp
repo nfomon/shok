@@ -29,16 +29,17 @@ auto_ptr<Compiler> exstatik::MakeCompiler(const string& name) {
     c->push_back(CreateLexer_Splash());
   } else if ("Moderate" == name) {
     c->push_back(CreateLexer_Moderate());
-    //c->push_back(CreateParser_Moderate());
+    c->push_back(CreateParser_Moderate());
   } else if ("Complex" == name) {
     c->push_back(CreateLexer_Complex());
-    //c->push_back(CreateParser_Complex());
+    c->push_back(CreateParser_Complex());
   } else if ("Nifty" == name) {
     c->push_back(CreateLexer_Nifty());
-    //c->push_back(CreateParser_Nifty());
-    //c->push_back(CreateCodegen_Nifty());
+    c->push_back(CreateParser_Nifty());
+    c->push_back(CreateCodegen_Nifty());
   } else if ("C" == name) {
     c->push_back(CreateLexer_C());
+    c->push_back(CreateParser_C());
   } else {
     throw statik::SError("Unknown compiler " + name);
   }

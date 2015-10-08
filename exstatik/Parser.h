@@ -14,6 +14,7 @@ std::auto_ptr<statik::Rule> CreateParser_Simple();
 std::auto_ptr<statik::Rule> CreateParser_Moderate();
 std::auto_ptr<statik::Rule> CreateParser_Complex();
 std::auto_ptr<statik::Rule> CreateParser_Nifty();
+std::auto_ptr<statik::Rule> CreateParser_C();
 
 }
 
