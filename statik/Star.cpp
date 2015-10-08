@@ -19,12 +19,18 @@ using namespace statik;
 
 auto_ptr<Rule> statik::STAR(const string& name) {
   return auto_ptr<Rule>(new Rule(name,
-      MakeParseFunc_Star(),
+      MakeParseFunc_Star(/*plus*/false),
       MakeOutputFunc_Sequence()));
 }
 
-auto_ptr<ParseFunc> statik::MakeParseFunc_Star() {
-  return auto_ptr<ParseFunc>(new ParseFunc_Star());
+auto_ptr<Rule> statik::PLUS(const string& name) {
+  return auto_ptr<Rule>(new Rule(name,
+      MakeParseFunc_Star(/*plus*/true),
+      MakeOutputFunc_Sequence()));
+}
+
+auto_ptr<ParseFunc> statik::MakeParseFunc_Star(bool plus) {
+  return auto_ptr<ParseFunc>(new ParseFunc_Star(plus));
 }
 
 void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, const STree* initiator) {
@@ -297,14 +303,19 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
     if (istate.IsPending()) {
       throw SError("Star's breach child is Pending");
     } else if (istate.IsBad()) {
-      // last child bad, prev children all complete => complete
+      // last child breached, prev children all complete => complete
       // otherwise, we're bad
       if (m_node->children.empty()) {
         throw SError("Should not be evaluating bad breach child when node has no children");
       }
       if (&*m_node->children.back() == breachChild) {
-        state.GoComplete();
-        m_node->GetIConnection().SetEnd(breachChild->IEnd());
+        if (m_plus && &*m_node->children.front() == breachChild) {
+          state.GoBad();
+          m_node->GetIConnection().SetEnd(breachChild->IEnd());
+        } else {
+          state.GoComplete();
+          m_node->GetIConnection().SetEnd(breachChild->IEnd());
+        }
       } else {
         state.GoBad();
         m_node->GetIConnection().SetEnd(breachChild->IEnd());
@@ -313,8 +324,13 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
       state.GoOK();
       m_node->GetIConnection().SetEnd(breachChild->IEnd());
     } else if (istate.IsDone()) {
-      state.GoDone();
-      m_node->GetIConnection().SetEnd(breachChild->IEnd());
+      if (m_plus && &*m_node->children.front() == breachChild) {
+        state.GoOK();
+        m_node->GetIConnection().SetEnd(breachChild->IEnd());
+      } else {
+        state.GoDone();
+        m_node->GetIConnection().SetEnd(breachChild->IEnd());
+      }
     } else {
       throw SError("Star parse found breach in non-breach state");
     }
