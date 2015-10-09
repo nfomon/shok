@@ -114,7 +114,7 @@ string STree::DrawNode(const string& context, const STree* initiator) const {
   } else if (m_state.IsComplete()) {
     fillcolor = "#aaaaff";
   } else {
-    throw SError("Stree::DrawNode() - unknown state");
+    throw SError("STree::DrawNode() - unknown state");
   }
   s += dotVar(this, context) + " [label=\"" + Util::safeLabelStr(m_rule.Name()) + "\", style=\"filled\", fillcolor=\"" + fillcolor + "\", fontsize=12.0];\n";
 

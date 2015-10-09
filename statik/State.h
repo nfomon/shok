@@ -31,6 +31,7 @@ public:
   void Clear();
 
   Station GetStation() const { return m_station; }
+  void SetStation(Station station) { m_station = station; }
 
   bool IsPending() const { return ST_PENDING == m_station; }
   bool IsOK() const { return ST_OK == m_station; }

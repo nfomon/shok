@@ -5,12 +5,14 @@
 
 #include "statik/Keyword.h"
 #include "statik/Regexp.h"
+#include "statik/Opt.h"
 #include "statik/Or.h"
 #include "statik/Seq.h"
 #include "statik/Star.h"
 using statik::KEYWORD;
 using statik::REGEXP;
 using statik::Rule;
+using statik::OPT;
 using statik::OR;
 using statik::SEQ;
 using statik::STAR;
@@ -44,6 +46,8 @@ auto_ptr<Rule> exstatik::CreateLexer_Seq() {
   auto_ptr<Rule> lexer(SEQ("seq"));
   lexer->AddChild(KEYWORD("cat"));
   lexer->AddChild(KEYWORD("dog"));
+  Rule* optmoo = lexer->AddChild(OPT("opt"));
+  optmoo->AddChild(KEYWORD("moo"));
   lexer->AddChild(KEYWORD("car"));
   return lexer;
 }

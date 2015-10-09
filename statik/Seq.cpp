@@ -101,6 +101,13 @@ void ParseFunc_Seq::operator() (ParseAction::Action action, const List& inode, c
   } else if (childState.IsComplete()) {
     g_log.debug() << "ParseFunc_Seq at " << *m_node << ": Child is complete.  Check on its next connections.";
     if (next != m_node->children.end()) {
+      if ((*next)->IsClear()) {
+        g_log.debug() << " - next child is clear; erasing and re-creating it at the correct location";
+        m_node->children.erase(next);
+        (void) m_node->GetRule().GetChildren().at(child_index+1)->MakeNode(*m_node, (*child)->IEnd(), child+1);
+        state.GoPending();
+        return;
+      }
       if (&(*child)->IEnd() != &(*next)->IStart()) {
         m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
         state.GoPending();
@@ -112,43 +119,6 @@ void ParseFunc_Seq::operator() (ParseAction::Action action, const List& inode, c
       state.GoPending();
       return;
     }
-/*
-    switch(action) {
-    case ParseAction::ChildGrow: {
-      if (next != m_node->children.end()) {
-        if (&(*child)->IEnd() == &(*next)->IStart()) {
-          g_log.debug() << "ParseFunc_Seq at " << *m_node << ": Child grew, but next node is already in the right spot";
-        } else {
-          // Clear and Restart the next child
-          g_log.debug() << "ParseFunc_Seq at " << *m_node << ": Child grew, so clearing and restarting next, which is " << **next;
-          (*next)->ClearNode(inode);
-          m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
-          state.GoOK();
-          return;
-        }
-      } else if (child_index != m_node->GetRule().GetChildren().size() - 1) {
-        g_log.debug() << "ParseFunc_Seq at " << *m_node << ": Child grew, so creating new next";
-        // Create next child
-        (void) m_node->GetRule().GetChildren().at(child_index+1)->MakeNode(*m_node, (*child)->IEnd());
-        state.GoOK();
-        return;
-      }
-    } break;
-    case ParseAction::ChildShrink: {
-      g_log.debug() << "ParseFunc_Seq at " << *m_node << ": Child shrank, so restarting next without clearing it";
-      if (next != m_node->children.end()) {
-        // Restart the next child
-        m_node->GetIncParser().Enqueue(ParseAction(ParseAction::Restart, **next, (*child)->IEnd(), m_node));
-        state.GoOK();
-        return;
-      } else if (child_index != m_node->GetRule().GetChildren().size() - 1) {
-        // Create next child
-        (void) m_node->GetRule().GetChildren().at(child_index+1)->MakeNode(*m_node, (*child)->IEnd());
-        state.GoOK();
-        return;
-      }
-    } break;
-*/
   } else if (childState.IsBad()) {
     g_log.debug() << "Seq: Child is bad, so leaving subsequent connections alone; let it breach";
   } else {
@@ -184,7 +154,17 @@ void ParseFunc_Seq::operator() (ParseAction::Action action, const List& inode, c
     const State& istate = breachChild->GetState();
     g_log.debug() << "Investigating breach child " << *breachChild;
     if (istate.IsPending()) {
-      throw SError("Seq's breach child is Pending");
+      g_log.info() << "Seq's breach child is Pending; clearing it and recomputing self";
+      for (STree::child_mod_iter i = m_node->children.begin(); i != m_node->children.end(); ++i) {
+        if (breachChild == *i) {
+          m_node->children.erase(i);
+          g_log.debug() << " - erasing the cleared child!";
+          state.GoPending();
+          m_node->GetIncParser().Enqueue(ParseAction(ParseAction::ChildUpdate, *m_node, inode, m_node));
+          return;
+        }
+      }
+      throw SError("Failed to erase the pending child");
     } else if (istate.IsBad()) {
       state.GoBad();
       m_node->GetIConnection().SetEnd(breachChild->IEnd());

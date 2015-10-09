@@ -16,6 +16,8 @@ STATIK_SRCS = \
     Meta.h \
     ObjectPool.h \
     OData.h \
+    Opt.cpp \
+    Opt.h \
     Or.cpp \
     Or.h \
     OrderList.cpp \
