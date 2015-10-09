@@ -67,7 +67,7 @@ Rule& Rule::SetOutputFunc(auto_ptr<OutputFunc> outputFunc) {
 }
 
 Rule* Rule::SilenceOutput() {
-  m_outputFunc = MakeOutputFunc_Basic("");
+  m_outputFunc = MakeOutputFunc_Silent();
   return this;
 }
 

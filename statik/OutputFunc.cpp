@@ -27,6 +27,10 @@ auto_ptr<OutputFunc> statik::MakeOutputFunc_Root() {
   return auto_ptr<OutputFunc>(new OutputFunc_Root());
 }
 
+auto_ptr<OutputFunc> statik::MakeOutputFunc_Silent() {
+  return auto_ptr<OutputFunc>(new OutputFunc_Silent());
+}
+
 auto_ptr<OutputFunc> statik::MakeOutputFunc_Basic(const string& name, const string& value) {
   return auto_ptr<OutputFunc>(new OutputFunc_Basic(name, value));
 }
@@ -99,6 +103,12 @@ void OutputFunc_Root::operator() () {
   if (child.GetState().IsOK() || child.GetState().IsDone() || child.GetState().IsComplete()) {
     m_output.push_back(OutputItem(child));
   }
+}
+
+/* OutputFunc_Silent */
+
+auto_ptr<OutputFunc> OutputFunc_Silent::Clone() {
+  return std::auto_ptr<OutputFunc>(new OutputFunc_Silent());
 }
 
 /* OutputFunc_Basic */

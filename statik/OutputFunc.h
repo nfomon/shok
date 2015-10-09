@@ -20,6 +20,7 @@ class STree;
 class OutputFunc;
 
 std::auto_ptr<OutputFunc> MakeOutputFunc_Root();
+std::auto_ptr<OutputFunc> MakeOutputFunc_Silent();
 std::auto_ptr<OutputFunc> MakeOutputFunc_Basic(const std::string& name, const std::string& value = "");
 std::auto_ptr<OutputFunc> MakeOutputFunc_IValues(const std::string& name);
 std::auto_ptr<OutputFunc> MakeOutputFunc_Winner();
@@ -87,6 +88,16 @@ public:
     : OutputFunc() {}
   virtual ~OutputFunc_Root() {}
   virtual void operator() ();
+  virtual std::auto_ptr<OutputFunc> Clone();
+};
+
+// Emits nothing
+class OutputFunc_Silent : public OutputFunc {
+public:
+  OutputFunc_Silent() {}
+  virtual ~OutputFunc_Silent() {}
+
+  virtual void operator() () {}
   virtual std::auto_ptr<OutputFunc> Clone();
 };
 

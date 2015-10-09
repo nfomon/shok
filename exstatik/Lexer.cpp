@@ -234,6 +234,7 @@ auto_ptr<Rule> exstatik::CreateLexer_C() {
   // regexps
   or_->AddChild(REGEXP("ID", boost::regex("[A-Za-z_][0-9A-Za-z_]*")));
   or_->AddChild(REGEXP("INT", boost::regex("[0-9]+")));
-  or_->AddChild(REGEXP("WS", boost::regex("[ \t\r\n]+")));
+  or_->AddChild(REGEXP("WS", boost::regex("[ \t\r\n]+")))
+    ->SilenceOutput();
   return lexer;
 }
