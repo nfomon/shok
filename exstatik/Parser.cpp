@@ -4,10 +4,12 @@
 #include "Parser.h"
 
 #include "statik/Meta.h"
+#include "statik/Opt.h"
 #include "statik/Or.h"
 #include "statik/Seq.h"
 #include "statik/Star.h"
 using statik::META;
+using statik::OPT;
 using statik::OR;
 using statik::PLUS;
 using statik::Rule;
@@ -133,7 +135,7 @@ auto_ptr<Rule> exstatik::CreateParser_Nifty() {
 // C parser
 auto_ptr<Rule> exstatik::CreateParser_C() {
 
-  auto_ptr<Rule> identifier_(META("identifier", "ID"));
+  auto_ptr<Rule> identifier_(META("identifier", "ID"));   // typedef_name_
 
   auto_ptr<Rule> unary_operator_(OR("unary-operator"));
   unary_operator_->AddChild(META("&", "&"));
@@ -156,21 +158,29 @@ auto_ptr<Rule> exstatik::CreateParser_C() {
   assignment_operator_->AddChild(META("^=", "^="));
   assignment_operator_->AddChild(META("|=", "|="));
 
-  auto_ptr<Rule> jump_statement_(OR("jump-statement"));
-  Rule* goto_statement_ = jump_statement_->AddChild(SEQ("goto-statement"));
+  auto_ptr<Rule> goto_statement_(SEQ("goto-statement"));  // jump_statement_
   goto_statement_->AddChild(META("goto", "goto"));
-  goto_statement_->AddChild(identifier_);
+  //goto_statement_->AddChild(identifier_);
   goto_statement_->AddChild(META(";", ";"));
-  Rule* continue_statement_ = jump_statement_->AddChild(SEQ("continue-statement"));
+
+  auto_ptr<Rule> continue_statement_(SEQ("continue-statement"));  // jump_statement_
   continue_statement_->AddChild(META("continue", "continue"));
   continue_statement_->AddChild(META(";", ";"));
-  Rule* break_statement_ = jump_statement_->AddChild(SEQ("break-statement"));
+
+  auto_ptr<Rule> break_statement_(SEQ("break-statement"));  // jump_statement_
   break_statement_->AddChild(META("break", "break"));
   break_statement_->AddChild(META(";", ";"));
-  Rule* return_statement_ = jump_statement_->AddChild(SEQ("return-statement"));
+
+  auto_ptr<Rule> return_statement_(SEQ("return-statement"));  // jump_statement_
   return_statement_->AddChild(META("return", "return"));
   //return_statement_->AddChild(OPT(expression_));
   return_statement_->AddChild(META(";", ";"));
+
+  auto_ptr<Rule> jump_statement_(OR("jump-statement")); // statement_
+  jump_statement_->AddChild(goto_statement_);
+  jump_statement_->AddChild(continue_statement_);
+  jump_statement_->AddChild(break_statement_);
+  jump_statement_->AddChild(return_statement_);
 
 
   // type-qualifier-list
@@ -306,10 +316,6 @@ auto_ptr<Rule> exstatik::CreateParser_C() {
 */
 
 /*
-  auto_ptr<Rule> type_qualifier_(OR("type-qualifier"));
-  type_qualifier_->AddChild(META("const", "const"));
-  type_qualifier_->AddChild(META("volatile", "volatile"));
-
   auto_ptr<Rule> pointer_1(SEQ("pointer-1"));
   pointer_1->AddChild(META("*", "*"));
   Rule* pointer_type_qualifier_ = pointer_1->AddChild(STAR("pointer-type-qualifier"));
@@ -317,10 +323,15 @@ auto_ptr<Rule> exstatik::CreateParser_C() {
 
   auto_ptr<Rule> pointer_(PLUS("pointer"));
   pointer_->AddChild(pointer_1);
+*/
 
-  auto_ptr<Rule> typedef_name_(identifier_);
+  auto_ptr<Rule> typedef_name_(identifier_);  // type_specifier_
 
-  auto_ptr<Rule> type_specifier_(OR("type-specifier"));
+  auto_ptr<Rule> type_qualifier_(OR("type-qualifier")); // declaration_specifiers_1
+  type_qualifier_->AddChild(META("const", "const"));
+  type_qualifier_->AddChild(META("volatile", "volatile"));
+
+  auto_ptr<Rule> type_specifier_(OR("type-specifier")); // declaration_specifiers_1
   type_specifier_->AddChild(META("void", "void"));
   type_specifier_->AddChild(META("char", "char"));
   type_specifier_->AddChild(META("short", "short"));
@@ -334,39 +345,42 @@ auto_ptr<Rule> exstatik::CreateParser_C() {
   //type_specifier_->AddChild(enum_specifier_);
   type_specifier_->AddChild(typedef_name_);
 
-  auto_ptr<Rule> storage_class_specifier_(OR("storage-class-specifier"));
+  auto_ptr<Rule> storage_class_specifier_(OR("storage-class-specifier")); // declaration_specifiers_1
   storage_class_specifier_->AddChild(META("auto", "auto"));
   storage_class_specifier_->AddChild(META("register", "register"));
   storage_class_specifier_->AddChild(META("static", "static"));
   storage_class_specifier_->AddChild(META("extern", "extern"));
   storage_class_specifier_->AddChild(META("typedef", "typedef"));
 
-  auto_ptr<Rule> declaration_specifiers_1(OR("declaration-specifiers-1"));
+  auto_ptr<Rule> declaration_specifiers_1(OR("declaration-specifiers-1"));  // declaration_specifiers_
   declaration_specifiers_1->AddChild(storage_class_specifier_);
   declaration_specifiers_1->AddChild(type_specifier_);
   declaration_specifiers_1->AddChild(type_qualifier_);
 
-  auto_ptr<Rule> declaration_specifiers_(SEQ("declaration-specifiers"));
+  auto_ptr<Rule> declaration_specifiers_(SEQ("declaration-specifiers"));  // declaration_
   declaration_specifiers_->AddChild(declaration_specifiers_1);
-  declaration_specifiers_->AddChild(OPT(declaration_specifiers_));
+  Rule* declaration_specifiers_OPT = declaration_specifiers_->AddChild(OPT("declaration-specifiers-OPT"));
 
-  auto_ptr<Rule> declaration_(SEQ("declaration"));
-  declaration_->AddChild(declaration_specifiers_);
-  declaration_->AddChild(OPT(init_declarator_list_));
+  auto_ptr<Rule> declaration_(SEQ("declaration"));  // external_declaration_
+  Rule* declaration_specifiers_REC = declaration_->AddChild(declaration_specifiers_);
+  //declaration_->AddChild(OPT(init_declarator_list_));
   declaration_->AddChild(META(";", ";"));
 
+  declaration_specifiers_OPT->AddChildRecursive(declaration_specifiers_REC);
+
+/*
   auto_ptr<Rule> function_definition_(SEQ("function-definition"));
   function_definition->AddChild(OPT(declaration_specifiers_));
   function_definition->AddChild(declarator_);
   function_definition->AddChild(PLUS(declaration_));
   function_definition->AddChild(compound_statement_);
-
-  auto_ptr<Rule> external_declaration_(OR("external-declaration"));
-  external_declaration_->AddChild(function_definition_);
-  external_declaration_->AddChild(declaration_);
 */
 
-  auto_ptr<Rule> translation_unit_(PLUS("C parser"));
-  //translation_unit_->AddChild(external_declaration_);
+  auto_ptr<Rule> external_declaration_(OR("external-declaration")); // translation_unit_
+  //external_declaration_->AddChild(function_definition_);
+  external_declaration_->AddChild(declaration_);
+
+  auto_ptr<Rule> translation_unit_(PLUS("C_parser"));
+  translation_unit_->AddChild(external_declaration_);
   return translation_unit_;
 }
