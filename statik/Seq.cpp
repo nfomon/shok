@@ -51,6 +51,20 @@ void ParseFunc_Seq::operator() (ParseAction::Action action, const List& inode, c
     throw SError("Seq failed to process non-ChildUpdate-action properly");
   }
 
+  // FIXME SLOPPY: erase any clear/pending children. LoL :D
+  vector<STree::child_mod_iter> children_to_erase;
+  STree::child_mod_iter clear_child = m_node->children.begin();
+  for (; clear_child != m_node->children.end(); ++clear_child) {
+    if ((*clear_child)->IsClear() || (*clear_child)->GetState().IsPending()) {
+      children_to_erase.push_back(clear_child);
+    }
+  }
+  vector<STree::child_mod_iter>::reverse_iterator i = children_to_erase.rbegin();
+  for (; i != children_to_erase.rend(); ++i) {
+    g_log.debug() << "Seq " << *m_node << ": Erasing clear/pending child " << **i;
+    m_node->children.erase(*i);
+  }
+
   // Find the initiator child
   bool foundInitiator = false;
   STree::child_mod_iter child = m_node->children.begin();

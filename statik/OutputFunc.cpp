@@ -262,6 +262,8 @@ void OutputFunc_Cap::operator() () {
   g_log.debug() << "OutputFunc_Cap() " << *m_node;
   (*m_outputFunc)();
   m_output = m_outputFunc->GetOutput();
+  m_output.push_front(m_capStart);
+  m_output.push_back(m_capEnd);
 }
 
 auto_ptr<OutputFunc> OutputFunc_Cap::Clone() {

@@ -401,7 +401,7 @@ void IncParser::ComputeOutput_Update(const STree& node, Batch& out_batch, const 
        prev_item != prev_output.end(); ++prev_item) {
     node_mod_iter find_del = nodes.find(*prev_item);
     if (nodes.end() == find_del) {
-      g_log.debug() << "Removing prev_item " << *prev_item;
+      //g_log.debug() << "Removing prev_item " << *prev_item; // UNSAFE
       RemoveOutput(*prev_item, out_batch, worst_station);
     } else {
       nodes.erase(find_del);
@@ -468,7 +468,7 @@ void IncParser::ComputeOutput_Insert(const STree& node, Batch& out_batch, const 
 }
 
 void IncParser::ComputeOutput_Delete(const STree& node, Batch& out_batch, State::Station worst_station) {
-  g_log.debug() << "IncParser " << m_name << ": Computing output DELETE for node " << node;
+  //g_log.debug() << "IncParser " << m_name << ": Computing output DELETE for node " << node; // UNSAFE
   worst_station = std::min(node.GetState().GetStation(), worst_station);
 
   output_mod_iter prev_output_i = m_outputPerNode.find(&node);
@@ -484,7 +484,7 @@ void IncParser::ComputeOutput_Delete(const STree& node, Batch& out_batch, State:
     RemoveOutput(*prev_item, out_batch, worst_station);
   }
   m_outputPerNode.erase(&node);
-  g_log.debug() << "Done computing DELETE output for node " << node << ".  Batch so far: " << out_batch;
+  //g_log.debug() << "Done computing DELETE output for node " << node << ".  Batch so far: " << out_batch;  // UNSAFE
 }
 
 void IncParser::Cleanup() {
@@ -521,10 +521,10 @@ void IncParser::InsertOutput(const OutputItem& item, Batch& out_batch, const Lis
 
 void IncParser::RemoveOutput(const OutputItem& item, Batch& out_batch, State::Station worst_station) {
   if (item.onode) {
-    g_log.debug() << "RemoveOutput for item onode " << *item.onode;
+    //g_log.debug() << "RemoveOutput for item onode " << *item.onode; // UNSAFE
     out_batch.Delete(*item.onode);
   } else {
-    g_log.debug() << "RemoveOutput for item child " << *item.child;
+    //g_log.debug() << "RemoveOutput for item child " << *item.child; // UNSAFE
     ComputeOutput_Delete(*item.child, out_batch, worst_station);
   }
 }

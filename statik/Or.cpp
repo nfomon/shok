@@ -72,9 +72,9 @@ void ParseFunc_Or::operator() (ParseAction::Action action, const List& inode, co
   STree::child_mod_iter i = m_node->children.begin();
   bool haveSetEnd = false;
   for (; i != m_node->children.end(); ++i) {
-    if ((*i)->IsClear()) {
+    if ((*i)->IsClear() || (*i)->GetState().IsPending()) {
       // Clear ourselves!
-      g_log.info() << "Or: " << *m_node << " child " << **i << " is clear - giving up on entire Or!";
+      g_log.info() << "Or: " << *m_node << " child " << **i << " is clear or pending - giving up on entire Or!";
       m_node->ClearNode(inode);
       return;
     }

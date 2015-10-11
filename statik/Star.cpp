@@ -85,6 +85,20 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
     throw SError("Star failed to process non-ChildUpdate-action properly");
   }
 
+  // FIXME SLOPPY: erase any clear/pending children. LoL :D
+  vector<STree::child_mod_iter> children_to_erase;
+  STree::child_mod_iter clear_child = m_node->children.begin();
+  for (; clear_child != m_node->children.end(); ++clear_child) {
+    if ((*clear_child)->IsClear() || (*clear_child)->GetState().IsPending()) {
+      children_to_erase.push_back(clear_child);
+    }
+  }
+  vector<STree::child_mod_iter>::reverse_iterator i = children_to_erase.rbegin();
+  for (; i != children_to_erase.rend(); ++i) {
+    g_log.debug() << "Star " << *m_node << ": Erasing clear/pending child " << **i;
+    m_node->children.erase(*i);
+  }
+
   // Find the initiator child
   bool foundInitiator = false;
   STree::child_mod_iter child = m_node->children.begin();
@@ -126,11 +140,15 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
           return;
         }
       } else if (prev_child->GetState().IsPending()) {
-        throw SError("Cannot investigate Pending prev child");
+        throw SError("Star cannot investigate Pending prev child");
       } else if (prev_child->IsClear() || prev_child->GetState().IsPending()) {
-        throw SError("Would look at clear prev_child");
+        throw SError("Star would look at clear prev_child");
       } else if ((*next)->IsClear() || (*next)->GetState().IsPending()) {
-        throw SError("Would look at clear next");
+        throw SError("Star would look at clear next child");
+        //g_log.info() << "Next child is cleared; enqueueing an update on self to deal with it, followed by a repeat of this update. eeks";
+        //m_node->GetIncParser().Enqueue(ParseAction(ParseAction::ChildUpdate, *m_node, inode, *next));
+        //m_node->GetIncParser().Enqueue(ParseAction(ParseAction::ChildUpdate, *m_node, inode, *child));
+        //return;
       } else {
         // TODO this chunk might be aggressive; we're using prev_child's IEnd even if it's somehow Bad.
         g_log.info() << "Dealing with cleared middle child";
@@ -301,7 +319,17 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
     const State& istate = breachChild->GetState();
     g_log.debug() << "Investigating breach child " << *breachChild;
     if (istate.IsPending()) {
-      throw SError("Star's breach child is Pending");
+      g_log.info() << "Star's breach child is Pending; clearing it and recomputing self";
+      for (STree::child_mod_iter i = m_node->children.begin(); i != m_node->children.end(); ++i) {
+        if (breachChild == *i) {
+          m_node->children.erase(i);
+          g_log.debug() << " - erasing the cleared child!";
+          state.GoPending();
+          m_node->GetIncParser().Enqueue(ParseAction(ParseAction::ChildUpdate, *m_node, inode, m_node));
+          return;
+        }
+      }
+      throw SError("Failed to erase the pending child");
     } else if (istate.IsBad()) {
       // last child breached, prev children all complete => complete
       // otherwise, we're bad
