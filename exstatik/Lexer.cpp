@@ -52,18 +52,13 @@ auto_ptr<Rule> exstatik::CreateLexer_Seq() {
   return lexer;
 }
 
-auto_ptr<Rule> exstatik::CreateLexer_KeywordTest() {
-  auto_ptr<Rule> lexer(KEYWORD("a"));
-  return lexer;
-}
-
 auto_ptr<Rule> exstatik::CreateLexer_Moderate() {
   auto_ptr<Rule> lexer(STAR("lexer"));
   Rule* or_ = lexer->AddChild(OR("Or"));
   or_->AddChild(KEYWORD("new"));
   or_->AddChild(KEYWORD("del"));
   or_->AddChild(REGEXP("ID", boost::regex("[A-Za-z_][0-9A-Za-z_]*")));
-  //or_->AddChild(REGEXP("INT", boost::regex("[0-9]+")));
+  or_->AddChild(REGEXP("INT", boost::regex("[0-9]+")));
   or_->AddChild(REGEXP("WS", boost::regex("[ \t\r]+")));
   or_->AddChild(KEYWORD(";"));
   return lexer;

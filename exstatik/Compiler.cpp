@@ -21,22 +21,26 @@ auto_ptr<Compiler> exstatik::MakeCompiler(const string& name) {
   if ("Simple" == name) {
     c->push_back(CreateLexer_Simple());
     c->push_back(CreateParser_Simple());
+
   } else if ("Seq" == name) {
     c->push_back(CreateLexer_Seq());
-  } else if ("KeywordTest" == name) {
-    c->push_back(CreateLexer_KeywordTest());
+
   } else if ("Splash" == name) {
     c->push_back(CreateLexer_Splash());
+
   } else if ("Moderate" == name) {
     c->push_back(CreateLexer_Moderate());
     c->push_back(CreateParser_Moderate());
+
   } else if ("Complex" == name) {
     c->push_back(CreateLexer_Complex());
     c->push_back(CreateParser_Complex());
+
   } else if ("Nifty" == name) {
     c->push_back(CreateLexer_Nifty());
     c->push_back(CreateParser_Nifty());
     c->push_back(CreateCodegen_Nifty());
+
   } else if ("C" == name) {
     c->push_back(CreateLexer_C());
     c->push_back(CreateParser_C());
