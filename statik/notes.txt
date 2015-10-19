@@ -1371,4 +1371,29 @@ We have:   Root  ->  lexer(*)  ->  (or:new) (or:;) (or:del) (or:new) (..bad..)
 So the lexer(*) changes from emitting 2 to 4 things
 But its parent, the root, is still bad, so we don't actually output the "del new".
 
+--
+new x;del y;      new WS ID ; del WS ID ;
+new xdel y;       new WS ID WS ID ;
+
+segfault.  did we double-remove ';' for no reason or smthg?
+why do we delete EIGHT things when the user removes the first semi?
+ - those are from the PARSER.  In response to the LEXER giving us 5 deletes, 3 inserts.
+
+lexer_300: emits ID y
+lexer_337: emits terminal ;
+lexer_392: emits del(semi1) del(semi2) del(del) WS(@new) del ID del SEMI
+
+OP_DELETE 0x216b3d8 semi1
+OP_DELETE 0x2171058 semi2
+OP_DELETE 0x216d768 del
+OP_INSERT 0x216bf18 (List WS:) @ 0x21682c8 (List ID:)
+OP_DELETE 0x2177748
+OP_INSERT 0x2177eb8 (List ID:) @ 0x216bf18 (List WS:)
+OP_DELETE 0x2178728
+OP_INSERT 0x216f988 (List ;:) @ 0x2177eb8 (List ID:)
+
+Parser looks bad in several ways.  Let's try without that wonky new* in its middle, although that can't be the entire problem.
+
+--
+at parser_181, we're deleting "del" INode.  But some things don't tell their parent to update right when I would expect...
 

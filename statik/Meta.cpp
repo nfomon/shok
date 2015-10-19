@@ -42,6 +42,7 @@ void ParseFunc_Meta::operator() (ParseAction::Action action, const List& inode, 
   State& state = m_node->GetState();
   state.Clear();
   const List& first = m_node->IStart();
+  g_log.debug() << " - Meta wants '" << m_searchName << "', we are provided first '" << first.name << "'";
   m_node->GetIncParser().Listen(*m_node, first);
   m_node->GetIConnection().SetEnd(first);
   if (first.name == m_searchName) {

@@ -85,10 +85,13 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
     throw SError("Star failed to process non-ChildUpdate-action properly");
   }
 
-  // FIXME SLOPPY: erase any clear/pending children. LoL :D
+  // FIXME SLOPPY: erase any clear/pending children, except the initiator. LoL :D
   vector<STree::child_mod_iter> children_to_erase;
   STree::child_mod_iter clear_child = m_node->children.begin();
   for (; clear_child != m_node->children.end(); ++clear_child) {
+    if (*clear_child == initiator) {
+      continue;
+    }
     if ((*clear_child)->IsClear() || (*clear_child)->GetState().IsPending()) {
       children_to_erase.push_back(clear_child);
     }
@@ -113,7 +116,13 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
     ++child;
   }
   if (!foundInitiator) {
-    g_log.info() << "ParseFunc_Star at " << *m_node << " provided an initiator which is not a child; presumably we've already dealt with this update";
+    g_log.info() << "ParseFunc_Star at " << *m_node << " provided an initiator which is not a child";
+    g_log.info() << " - not an error, because presumably that child was recently cleared... so just dropping this update.";
+    if (m_node->children.empty()) {
+      g_log.info() << " - but we're out of children! So clearing self";
+      m_node->ClearNode(inode);
+      return;
+    }
     return;
   }
   g_log.debug() << "Initiator child: " << **child;
@@ -344,6 +353,9 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
           state.GoComplete();
           m_node->GetIConnection().SetEnd(breachChild->IEnd());
         }
+      } else if (!m_plus && &*m_node->children.front() == breachChild) {
+        state.GoComplete();
+        m_node->GetIConnection().SetEnd(breachChild->IEnd());
       } else {
         state.GoBad();
         m_node->GetIConnection().SetEnd(breachChild->IEnd());

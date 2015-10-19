@@ -51,10 +51,13 @@ void ParseFunc_Seq::operator() (ParseAction::Action action, const List& inode, c
     throw SError("Seq failed to process non-ChildUpdate-action properly");
   }
 
-  // FIXME SLOPPY: erase any clear/pending children. LoL :D
+  // FIXME SLOPPY: erase any clear/pending children, except the initiator. LoL :D
   vector<STree::child_mod_iter> children_to_erase;
   STree::child_mod_iter clear_child = m_node->children.begin();
   for (; clear_child != m_node->children.end(); ++clear_child) {
+    if (*clear_child == initiator) {
+      continue;
+    }
     if ((*clear_child)->IsClear() || (*clear_child)->GetState().IsPending()) {
       children_to_erase.push_back(clear_child);
     }
@@ -83,6 +86,11 @@ void ParseFunc_Seq::operator() (ParseAction::Action action, const List& inode, c
   if (!foundInitiator) {
     g_log.info() << "ParseFunc_Seq at " << m_node->Print() << " provided an initiator which is not a child";
     g_log.info() << " - not an error, because presumably that child was recently cleared... so just dropping this update.";
+    if (m_node->children.empty()) {
+      g_log.info() << " - but we're out of children! So clearing self";
+      m_node->ClearNode(inode);
+      return;
+    }
     return;
   }
   g_log.debug() << "Initiator child: " << **child;
