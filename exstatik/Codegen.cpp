@@ -51,12 +51,14 @@ auto_ptr<Rule> exstatik::CreateCodegen_Nifty() {
   Rule* stmts_ = stmt_->AddChild(OR("stmts"));
   stmt_->AddChild(META(")"));
 
-  Rule* cmdstmt_ = stmts_->AddChild(SEQ("cmd stmt"));
-  Rule* newstmt_ = stmts_->AddChild(SEQ("new stmt"));
-  Rule* delstmt_ = stmts_->AddChild(SEQ("del stmt"));
+  //Rule* cmdstmt_ = stmts_->AddChild(SEQ("cmd stmt"));
+  Rule* newstmt_ = stmts_->AddChild(SEQ("new stmt"))
+    ->CapOutput("PUSH");
+  Rule* delstmt_ = stmts_->AddChild(SEQ("del stmt"))
+    ->CapOutput("POP");
 
-  Rule* cmd_ = cmdstmt_->AddChild(STAR("cmd"));
-  cmd_->AddChild(META("cmdtext", "cmd"));
+  //Rule* cmd_ = cmdstmt_->AddChild(STAR("cmd"));
+  //cmd_->AddChild(META("cmdtext", "cmd"));
 
   newstmt_->AddChild(META("new"));
   newstmt_->AddChild(META("identifier"));

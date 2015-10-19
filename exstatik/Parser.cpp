@@ -103,6 +103,7 @@ auto_ptr<Rule> exstatik::CreateParser_Nifty() {
   Rule* stmts_ = parser->AddChild(OR("Or (stmts)"))
     ->CapOutput("stmt");
 
+  /*
   Rule* cmd_ = stmts_->AddChild(SEQ("cmd stmt"));
   cmd_->AddChild(META("cmd", "ID"));
 
@@ -110,6 +111,7 @@ auto_ptr<Rule> exstatik::CreateParser_Nifty() {
   Rule* cmdext_ = cmdexts_->AddChild(SEQ("cmdext"));
   cmdext_->AddChild(META("cmd", "WS"));
   cmdext_->AddChild(META("cmd", "ID"));
+  */
 
   Rule* newstmt_ = stmts_->AddChild(SEQ("new stmt"));
   newstmt_->AddChild(META("new"));
@@ -175,7 +177,7 @@ auto_ptr<Rule> exstatik::CreateParser_C() {
   unary_operator_->AddChild(META("!", "!"));
 
   // FAKE
-  auto_ptr<Rule> constant_expression_(constant_);
+  auto_ptr<Rule> constant_expression_(constant_); // FAKE direct-declarator-suffix-1
 
   /*
     conditional-expression:
@@ -307,6 +309,7 @@ auto_ptr<Rule> exstatik::CreateParser_C() {
   statement_->AddChild(jump_statement_);
 
   auto_ptr<Rule> compound_statement_(SEQ("compound-statement"));  // function_definition_
+  compound_statement_->CapOutput("compound-statement");
   compound_statement_->AddChild(META("{", "{"));
   Rule* declaration_STAR = compound_statement_->AddChild(STAR("declaration-STAR"));
   Rule* statement_STAR = compound_statement_->AddChild(STAR("statement-STAR"));
@@ -316,16 +319,22 @@ auto_ptr<Rule> exstatik::CreateParser_C() {
   /*
     type-name:
       specifier-qualifier-list abstract-declarator_OPT
-    abstract-declarator:
-      pointer
-      pointer_OPT direct-abstract-declarator
-    direct-abstract-declarator:
-      ( abstract-declarator )
-      direct-abstract-declarator_OPT [ constant-expression_OPT ]
-      direct-abstract-declarator_OPT ( parameter-type-list_OPT )
-    typedef-name:
-      identifier
   */
+
+  auto_ptr<Rule> direct_abstract_declarator_3(SEQ("direct-abstract-declarator-3")); // direct_abstract_declarator_
+
+  auto_ptr<Rule> direct_abstract_declarator_2(SEQ("direct-abstract-declarator-2")); // direct_abstract_declarator_
+
+  auto_ptr<Rule> direct_abstract_declarator_1(SEQ("direct-abstract-declarator-1")); // direct_abstract_declarator_
+
+  auto_ptr<Rule> direct_abstract_declarator_(OR("direct-abstract-declarator"));  // abstract_declarator_1
+  Rule* direct_abstract_declarator_1_REC = direct_abstract_declarator_->AddChild(direct_abstract_declarator_1);
+  Rule* direct_abstract_declarator_2_REC = direct_abstract_declarator_->AddChild(direct_abstract_declarator_2);
+  Rule* direct_abstract_declarator_3_REC = direct_abstract_declarator_->AddChild(direct_abstract_declarator_3);
+
+  auto_ptr<Rule> abstract_declarator_1(SEQ("abstract-declarator-1")); // abstract_declarator_
+
+  auto_ptr<Rule> abstract_declarator_(OR("abstract-declarator")); // parameter_declaration_1
 
   auto_ptr<Rule> initializer_2(SEQ("initializer-2")); // initializer_1
 
@@ -336,52 +345,78 @@ auto_ptr<Rule> exstatik::CreateParser_C() {
   Rule* initializer_1_REC = initializer_->AddChild(initializer_1);
   Rule* initializer_2_REC = initializer_->AddChild(initializer_2);
 
-  /*
-    parameter-type-list:
-      parameter-list
-      parameter-list , ...
-    parameter-list:
-      parameter-declaration
-      parameter-list , parameter-declaration
-    parameter-declaration:
-      declaration-specifiers declarator
-      declaration-specifiers abstract-declarator_OPT
-    identifier-list:
-      identifier
-      identifier-list , identifier
-  */
+  auto_ptr<Rule> identifier_list_1(SEQ("identifier-list-1")); // identifier_list_
+  identifier_list_1->AddChild(META(",", ","));
+  identifier_list_1->AddChildRecursive(identifier_REC);
+
+  auto_ptr<Rule> identifier_list_(SEQ("identifier-list"));  // direct_declarator_suffix_3
+  identifier_list_->AddChildRecursive(identifier_REC);
+  Rule* identifier_list_1_STAR = identifier_list_->AddChild(STAR("identifier-list-1-STAR"));
+  identifier_list_1_STAR->AddChild(identifier_list_1);
+
+  auto_ptr<Rule> parameter_declaration_1(OR("parameter-declaration-1"));  // parameter_declaration_
+
+  auto_ptr<Rule> parameter_declaration_(SEQ("parameter-declaration"));  // parameter_list_1
+
+  auto_ptr<Rule> parameter_list_1(SEQ("parameter-list-1")); // parameter_list_
+  parameter_list_1->AddChild(META(",", ","));
+  Rule* parameter_declaration_REC = parameter_list_1->AddChild(parameter_declaration_);
+
+  auto_ptr<Rule> parameter_list_(SEQ("parameter-list"));  // parameter_type_list_
+  parameter_list_->CapOutput("parameter-list");
+  parameter_list_->AddChildRecursive(parameter_declaration_REC);
+  Rule* parameter_list_1_STAR = parameter_list_->AddChild(STAR("parameter-list-1-STAR"));
+  parameter_list_1_STAR->AddChild(parameter_list_1);
+
+  auto_ptr<Rule> parameter_type_list_1(SEQ("parameter-type-list-1")); // parameter_type_list_
+  parameter_type_list_1->AddChild(META(",", ","));
+  parameter_type_list_1->AddChild(META("...", "..."));
+
+  auto_ptr<Rule> parameter_type_list_(SEQ("parameter-type-list"));  // direct_declarator_suffix_
+  parameter_type_list_->AddChild(parameter_list_);
+  Rule* parameter_type_list_1_OPT = parameter_type_list_->AddChild(OPT("parameter-type-list-1-OPT"));
+  parameter_type_list_1_OPT->AddChild(parameter_type_list_1);
 
   auto_ptr<Rule> pointer_1(SEQ("pointer-1")); // pointer_
 
   auto_ptr<Rule> pointer_(PLUS("pointer")); // declarator_
+  pointer_->CapOutput("pointer");
   Rule* pointer_1_REC = pointer_->AddChild(pointer_1);
 
-/*
-  auto_ptr<Rule> direct_declarator_4(SEQ("direct-declarator-4")); // direct_declarator_
-  direct_declarator_4->AddChildRecursive(direct_declarator_REC);
-  direct_declarator_4->AddChild(META("(", "("));
-  //Rule* identifier_list_OPT = direct_declarator_4->AddChild(OPT("identifier-list-OPT"));
-  //identifier_list_OPT->AddChild(identifier_list_);
-  direct_declarator_4->AddChild(META(")", ")"));
-*/
+  auto_ptr<Rule> direct_declarator_suffix_3(SEQ("direct-declarator-suffix-3")); // direct_declarator_suffix_
+  direct_declarator_suffix_3->AddChild(META("(", "("));
+  Rule* identifier_list_OPT = direct_declarator_suffix_3->AddChild(OPT("identifier-list-OPT"));
+  identifier_list_OPT->AddChild(identifier_list_);
+  direct_declarator_suffix_3->AddChild(META(")", ")"));
 
-  //auto_ptr<Rule> direct_declarator_3(SEQ("direct-declarator-3")); // direct_declarator_
+  auto_ptr<Rule> direct_declarator_suffix_2(SEQ("direct-declarator-suffix-2")); // direct_declarator_suffix_
+  direct_declarator_suffix_2->AddChild(META("(", "("));
+  Rule* parameter_type_list_REC = direct_declarator_suffix_2->AddChild(parameter_type_list_);
+  direct_declarator_suffix_2->AddChild(META(")", ")"));
 
-  //auto_ptr<Rule> direct_declarator_2(SEQ("direct-declarator-2")); // direct_declarator_
+  auto_ptr<Rule> direct_declarator_suffix_1(SEQ("direct-declarator-suffix-1")); // direct_declarator_suffix_
+  direct_declarator_suffix_1->AddChild(META("[", "["));
+  Rule* constant_expression_REC = direct_declarator_suffix_1->AddChild(constant_expression_);
+  direct_declarator_suffix_1->AddChild(META("]", "]"));
 
-  //auto_ptr<Rule> direct_declarator_1(SEQ("direct-declarator-1")); // direct_declarator_
+  auto_ptr<Rule> direct_declarator_suffix_(OR("direct-declarator-suffix")); // direct_declarator_2
+  direct_declarator_suffix_->AddChild(direct_declarator_suffix_1);
+  direct_declarator_suffix_->AddChild(direct_declarator_suffix_2);
+  direct_declarator_suffix_->AddChild(direct_declarator_suffix_3);
+
+  auto_ptr<Rule> direct_declarator_2(SEQ("direct-declarator-2")); // direct_declarator_
+
+  auto_ptr<Rule> direct_declarator_1(SEQ("direct-declarator-1")); // direct_declarator_
 
   auto_ptr<Rule> direct_declarator_(OR("direct-declarator")); // declarator_
-  direct_declarator_->AddChildRecursive(identifier_REC);
-  //Rule* direct_declarator_1_REC = direct_declarator_->AddChild(direct_declarator_1);
-  //Rule* direct_declarator_2_REC = direct_declarator_->AddChild(direct_declarator_2);
-  //Rule* direct_declarator_3_REC = direct_declarator_->AddChild(direct_declarator_3);
-  //Rule* direct_declarator_4_REC = direct_declarator_->AddChild(direct_declarator_4);
+  Rule* direct_declarator_1_REC = direct_declarator_->AddChild(direct_declarator_1);
+  Rule* direct_declarator_2_REC = direct_declarator_->AddChild(direct_declarator_2);
 
   auto_ptr<Rule> declarator_(SEQ("declarator"));  // struct_declarator_1
+  declarator_->CapOutput("declarator");
   Rule* pointer_OPT = declarator_->AddChild(OPT("pointer-OPT"));
-  /*Rule* pointer_REC = */ pointer_OPT->AddChild(pointer_);
-  Rule* direct_declarator_REC = declarator_->AddChild(direct_declarator_);
+  Rule* pointer_REC = pointer_OPT->AddChild(pointer_);
+  declarator_->AddChild(direct_declarator_);
 
 /*
   auto_ptr<Rule> enumerator_1(SEQ("enumerator-1"));
@@ -532,7 +567,7 @@ auto_ptr<Rule> exstatik::CreateParser_C() {
   function_definition_->AddChildRecursive(declaration_specifiers_OPT);
   function_definition_->AddChildRecursive(declarator_REC);
   function_definition_->AddChildRecursive(declaration_STAR);
-  Rule* compound_statement_REC = function_definition_->AddChild(compound_statement_);
+  Rule* compound_statement_REC = function_definition_->AddChild(compound_statement_); // { ... }
 
   auto_ptr<Rule> external_declaration_(OR("external-declaration")); // translation_unit_
   external_declaration_->CapOutput("external-declaration");
@@ -557,24 +592,23 @@ auto_ptr<Rule> exstatik::CreateParser_C() {
   struct_declaration_REC->AddChildRecursive(struct_declarator_list_REC);
   struct_declaration_REC->AddChild(META(";", ";"));
 
-/*
-  direct_declarator_1_REC->AddChild(META("(", "("));
-  direct_declarator_1_REC->AddChildRecursive(declarator_REC);
-  direct_declarator_1_REC->AddChild(META(")", ")"));
+  direct_declarator_2_REC->AddChild(META("(", "("));
+  direct_declarator_2_REC->AddChildRecursive(declarator_REC);
+  direct_declarator_2_REC->AddChild(META(")", ")"));
+  Rule* direct_declarator_suffix_STAR = direct_declarator_2_REC->AddChild(STAR("direct-declarator-suffix-STAR"));
+  direct_declarator_suffix_STAR->AddChild(direct_declarator_suffix_);
 
-  direct_declarator_2_REC->AddChildRecursive(direct_declarator_REC);
-  direct_declarator_2_REC->AddChild(META("[", "["));
-  Rule* constant_expression_REC = direct_declarator_2_REC->AddChild(constant_expression_);
-  direct_declarator_2_REC->AddChild(META("]", "]"));
+  direct_declarator_1_REC->AddChildRecursive(identifier_REC);
+  direct_declarator_1_REC->AddChildRecursive(direct_declarator_suffix_STAR);
 
-  direct_declarator_3_REC->AddChildRecursive(direct_declarator_REC);
-  direct_declarator_3_REC->AddChild(META("(", "("));
-  //direct_declarator_3_REC->AddChild(parameter_type_list_);
-  direct_declarator_3_REC->AddChild(META(")", ")"));
-*/
+  parameter_declaration_1->AddChildRecursive(declarator_REC);
+  Rule* abstract_declarator_OPT = parameter_declaration_1->AddChild(OPT("abstract-declarator-OPT"));
+  Rule* abstract_declarator_REC = abstract_declarator_OPT->AddChild(abstract_declarator_);
 
+  parameter_declaration_REC->AddChildRecursive(declaration_specifiers_REC);
+  parameter_declaration_REC->AddChild(parameter_declaration_1);
   struct_declarator_1_REC->AddChild(META(":", ":"));
-  //struct_declarator_1_REC->AddChildRecursive(constant_expression_REC);
+  struct_declarator_1_REC->AddChildRecursive(constant_expression_REC);
 
   initializer_2_REC->AddChild(META(",", ","));
   Rule* initializer_OPT = initializer_2_REC->AddChild(OPT("initializer-OPT"));
@@ -590,9 +624,30 @@ auto_ptr<Rule> exstatik::CreateParser_C() {
   Rule* type_qualifier_STAR = pointer_1_REC->AddChild(STAR("type-qualifier-STAR"));
   type_qualifier_STAR->AddChildRecursive(type_qualifier_REC);
 
-  statement_REC->AddChildRecursive(compound_statement_REC);
+  abstract_declarator_1->AddChildRecursive(pointer_OPT);
+  Rule* direct_abstract_declarator_REC = abstract_declarator_1->AddChild(direct_abstract_declarator_);
 
-  statement_STAR->AddChildRecursive(statement_REC);
+  Rule* direct_abstract_declarator_OPT = direct_abstract_declarator_3_REC->AddChild(OPT("direct-abstract-declarator-OPT"));
+  direct_abstract_declarator_OPT->AddChildRecursive(direct_abstract_declarator_REC);
+  direct_abstract_declarator_3_REC->AddChild(META("[", "["));
+  Rule* constant_expression_OPT = direct_abstract_declarator_3_REC->AddChild(OPT("constant-expression-OPT"));
+  constant_expression_OPT->AddChildRecursive(constant_expression_REC);
+  direct_abstract_declarator_3_REC->AddChild(META("]", "]"));
+
+  direct_abstract_declarator_2_REC->AddChildRecursive(direct_abstract_declarator_OPT);
+  direct_abstract_declarator_2_REC->AddChild(META("[", "["));
+  Rule* parameter_type_list_OPT = direct_abstract_declarator_2_REC->AddChild(OPT("parameter-type-list-OPT"));
+  parameter_type_list_OPT->AddChildRecursive(parameter_type_list_REC);
+  direct_abstract_declarator_2_REC->AddChild(META("]", "]"));
+
+  direct_abstract_declarator_1_REC->AddChild(META("(", "("));
+  direct_abstract_declarator_1_REC->AddChildRecursive(abstract_declarator_REC);
+  direct_abstract_declarator_1_REC->AddChild(META(")", ")"));
+
+  abstract_declarator_REC->AddChildRecursive(pointer_REC);
+  abstract_declarator_REC->AddChild(abstract_declarator_1);
+
+  statement_REC->AddChildRecursive(compound_statement_REC);
 
   return translation_unit_;
 }

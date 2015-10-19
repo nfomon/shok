@@ -136,7 +136,7 @@ auto_ptr<Rule> exstatik::CreateLexer_Nifty() {
   or_->AddChild(KEYWORD("new"));
   or_->AddChild(KEYWORD("del"));
   or_->AddChild(REGEXP("ID", boost::regex("[A-Za-z_][0-9A-Za-z_]*")));
-  or_->AddChild(REGEXP("INT", boost::regex("[0-9]+")));
+  //or_->AddChild(REGEXP("INT", boost::regex("[0-9]+")));
   or_->AddChild(REGEXP("WS", boost::regex("[ \t\r]+")));
   or_->AddChild(KEYWORD(";"));
   return lexer;
