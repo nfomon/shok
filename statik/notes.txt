@@ -1397,3 +1397,20 @@ Parser looks bad in several ways.  Let's try without that wonky new* in its midd
 --
 at parser_181, we're deleting "del" INode.  But some things don't tell their parent to update right when I would expect...
 
+-----
+C:
+new x = 5  then backspace.  get invalid pos for insert (pos was recently deleted).
+
+--
+kousu case:
+ (cat|car|dog*)*
+
+Need a Star to say: if a child doesn't advance anywhere along the input, then we're bad!  No holds barred.... do not go past a child that goes nowhere.
+
+--
+1. Display: keep bad nodes?
+ - ParserWindow.cpp: implement Update
+ - I'm definitely corrupting values somehow...
+
+2. Nick case, at least understand what we should do
+

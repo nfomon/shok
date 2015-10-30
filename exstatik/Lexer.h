@@ -10,6 +10,7 @@
 
 namespace exstatik {
 
+std::auto_ptr<statik::Rule> CreateLexer_Nick();
 std::auto_ptr<statik::Rule> CreateLexer_Simple();
 std::auto_ptr<statik::Rule> CreateLexer_Splash();
 std::auto_ptr<statik::Rule> CreateLexer_Seq();
@@ -17,6 +18,7 @@ std::auto_ptr<statik::Rule> CreateLexer_KeywordTest();
 std::auto_ptr<statik::Rule> CreateLexer_Moderate();
 std::auto_ptr<statik::Rule> CreateLexer_Complex();
 std::auto_ptr<statik::Rule> CreateLexer_Nifty();
+std::auto_ptr<statik::Rule> CreateLexer_JSON();
 std::auto_ptr<statik::Rule> CreateLexer_C();
 
 }

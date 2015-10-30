@@ -22,6 +22,9 @@ auto_ptr<Compiler> exstatik::MakeCompiler(const string& name) {
     c->push_back(CreateLexer_Simple());
     c->push_back(CreateParser_Simple());
 
+  } else if ("Nick" == name) {
+    c->push_back(CreateLexer_Nick());
+
   } else if ("Seq" == name) {
     c->push_back(CreateLexer_Seq());
 
@@ -40,6 +43,10 @@ auto_ptr<Compiler> exstatik::MakeCompiler(const string& name) {
     c->push_back(CreateLexer_Nifty());
     c->push_back(CreateParser_Nifty());
     c->push_back(CreateCodegen_Nifty());
+
+  } else if ("JSON" == name || "Json" == name || "json" == name) {
+    c->push_back(CreateLexer_JSON());
+    c->push_back(CreateParser_JSON());
 
   } else if ("C" == name) {
     c->push_back(CreateLexer_C());

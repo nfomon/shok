@@ -134,6 +134,33 @@ auto_ptr<Rule> exstatik::CreateParser_Nifty() {
   return parser;
 }
 
+// JSON parser
+auto_ptr<Rule> exstatik::CreateParser_JSON() {
+  auto_ptr<Rule> parser(STAR("JSON"));
+  Rule* var_ = parser->AddChild(SEQ("var"))
+    ->CapOutput("var");
+  Rule* ws_OPT = var_->AddChild(OPT("ws?"));
+  ws_OPT->AddChild(META("WS", "WS"));
+  var_->AddChild(META("name", "ID"));
+  var_->AddChildRecursive(ws_OPT);
+  var_->AddChild(META("=", "="));
+  var_->AddChildRecursive(ws_OPT);
+  Rule* value_ = var_->AddChild(OR("value"));
+  Rule* semi_OPT = var_->AddChild(OPT("semi?"));
+  var_->AddChildRecursive(ws_OPT);
+  semi_OPT->AddChild(META(";", ";"));
+  var_->AddChildRecursive(ws_OPT);
+
+  value_->AddChild(META("string", "STR"));
+  Rule* object_ = value_->AddChild(SEQ("object"));
+
+  object_->AddChild(META("{", "{"));
+  Rule* var_STAR = object_->AddChild(STAR("varstar"));
+  var_STAR->AddChildRecursive(var_);
+  object_->AddChild(META("}", "}"));
+  return parser;
+}
+
 // C parser
 auto_ptr<Rule> exstatik::CreateParser_C() {
 

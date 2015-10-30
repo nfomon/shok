@@ -24,6 +24,16 @@ using std::auto_ptr;
 
 using namespace exstatik;
 
+auto_ptr<Rule> exstatik::CreateLexer_Nick() {
+  auto_ptr<Rule> lexer(STAR("star"));
+  Rule* or1_ = lexer->AddChild(OR("or1"));
+  or1_->AddChild(KEYWORD("car"));
+  or1_->AddChild(KEYWORD("cat"));
+  Rule* star2_ = or1_->AddChild(STAR("star2"));
+  star2_->AddChild(KEYWORD("dog"));
+  return lexer;
+}
+
 auto_ptr<Rule> exstatik::CreateLexer_Simple() {
   auto_ptr<Rule> lexer(STAR("lexer"));
   Rule* or_ = lexer->AddChild(OR("or"));
@@ -61,6 +71,20 @@ auto_ptr<Rule> exstatik::CreateLexer_Moderate() {
   or_->AddChild(REGEXP("INT", boost::regex("[0-9]+")));
   or_->AddChild(REGEXP("WS", boost::regex("[ \t\r]+")));
   or_->AddChild(KEYWORD(";"));
+  return lexer;
+}
+
+auto_ptr<Rule> exstatik::CreateLexer_JSON() {
+  auto_ptr<Rule> lexer(STAR("lexer"));
+  Rule* or_ = lexer->AddChild(OR("Or"));
+  or_->AddChild(KEYWORD("="));
+  or_->AddChild(KEYWORD("{"));
+  or_->AddChild(KEYWORD("}"));
+  or_->AddChild(KEYWORD(";"));
+  or_->AddChild(REGEXP("ID", boost::regex("[A-Za-z_][0-9A-Za-z_]*")));
+  or_->AddChild(REGEXP("INT", boost::regex("[0-9]+")));
+  or_->AddChild(REGEXP("STR", boost::regex("(\'([^\'\\\\\\\\]|\\\\.)*\')|(\\\"([^\\\"\\\\\\\\]|\\\\.)*\\\")")));
+  or_->AddChild(REGEXP("WS", boost::regex("[ \t\r]+")));
   return lexer;
 }
 
