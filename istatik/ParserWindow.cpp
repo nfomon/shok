@@ -38,7 +38,12 @@ ParserWindow::~ParserWindow() {
 WindowResponse ParserWindow::Input(const Batch& ibatch) {
   g_log.info() << "Updating incParser " << m_incParser.Name() << " with batch: " << ibatch.Print();
   m_incParser.ApplyBatch(ibatch);
+  const statik::STree& root = m_incParser.GetRoot();
   WindowResponse response;
+  if (root.GetState().IsBad()) {
+    g_log.debug() << " - Not extracting output, because root is bad!";
+    return response;
+  }
   // Find first item in incParser's output list, and draw everything
   response.actions.push_back(WindowAction(WindowAction::MOVE, 0, 0, 0));
   Batch batch;
@@ -138,8 +143,18 @@ WindowResponse ParserWindow::Input(const Batch& ibatch) {
         }
         break;
 
-      case Batch::OP_UPDATE:
-        g_log.debug() << "Update node: " << i->node->name << ":" << i->node->value;
+      case Batch::OP_UPDATE: {
+          g_log.debug() << "Update node: " << i->node->name << ":" << i->node->value;
+/*
+          node_mod_iter node_i = m_nodeMap.find(i->node);
+          if (m_nodeMap.end() == node_i) {
+            throw ISError("Received invalid node for Update");
+          }
+          List* node = node_i->second;
+          g_log.debug() << "Update node: " << node->name << ":" << node->value << " -> " << i->node->name << ":" << i->node->value;
+          node->value = i->node->value;
+*/
+        }
         break;
       default:
         throw ISError("Unknown batch operation " + Batch::UnMapBatchOp(i->op));
@@ -157,6 +172,9 @@ WindowResponse ParserWindow::Input(const Batch& ibatch) {
         m_str += " ";
       }
       m_str += node->name;
+      /*if (!node->value.empty()) {
+        m_str += "[" + node->value + "]";
+      }*/
       node = node->right;
     }
     g_log.info() << "Printing str: '" << m_str << "'";

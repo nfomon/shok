@@ -141,7 +141,6 @@ void OutputFunc_IValues::operator() () {
   if (m_output.empty()) {
     m_output.push_back(OutputItem(m_onode));
   }
-  /*
   string value;
   const List* ilast = NULL;
   if (m_node->GetState().IsComplete()) {
@@ -150,8 +149,8 @@ void OutputFunc_IValues::operator() () {
   for (const List* i = &m_node->IStart(); i != ilast; i = i->right) {
     value += i->value;
   }
-  m_state.value = value;
-  */
+  m_onode.value = value;
+  //g_log.debug() << "VALUE: " << m_onode.value;
 }
 
 auto_ptr<OutputFunc> OutputFunc_IValues::Clone() {

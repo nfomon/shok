@@ -346,6 +346,7 @@ void IncParser::UpdateNode(List& inode) {
   for (listener_iter i = listeners.begin(); i != listeners.end(); ++i) {
     Enqueue(ParseAction(ParseAction::INodeUpdate, **i, inode));
   }
+  ProcessActions();
 }
 
 void IncParser::ProcessActions() {

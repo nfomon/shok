@@ -47,13 +47,13 @@ void ParseFunc_Regexp::operator() (ParseAction::Action action, const List& inode
     if (boost::regex_match(str, m_regex)) {
       state.GoDone();
       // keep going if possible, in case we can get complete
+    } else if (str.size() > 1 && boost::regex_match(str.begin(), str.end()-1, m_regex)) {
+      state.GoComplete();
+      break;
+    } else if (boost::regex_match(str, m_regex, boost::match_partial)) {
+      state.GoDone();
+      // keep going if possible, in case we can get done or complete
     } else {
-      if (str.size() > 1) {
-        if (boost::regex_match(str.begin(), str.end()-1, m_regex)) {
-          state.GoComplete();
-          break;
-        }
-      }
       state.GoBad();
       break;
     }
