@@ -308,7 +308,12 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
   const STree* lockedChild = NULL;
   for (STree::child_iter i = m_node->children.begin(); i != m_node->children.end(); ++i) {
     const State& istate = (*i)->GetState();
+    // OR check if it goes nowhere along the input; that should make it a breach :)
     if (!breachChild && !istate.IsComplete()) {
+      breachChild = *i;
+    }
+    if (!breachChild && &(*i)->IStart() == &(*i)->IEnd()) {
+      g_log.debug() << "Breaching child " << *i << " with IStart==IEnd";
       breachChild = *i;
     }
     if (!lockedChild && istate.IsLocked()) {
@@ -339,7 +344,7 @@ void ParseFunc_Star::operator() (ParseAction::Action action, const List& inode, 
         }
       }
       throw SError("Failed to erase the pending child");
-    } else if (istate.IsBad()) {
+    } else if (istate.IsBad() || &breachChild->IStart() == &breachChild->IEnd()) {
       // last child breached, prev children all complete => complete
       // otherwise, we're bad
       if (m_node->children.empty()) {
